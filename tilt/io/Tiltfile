@@ -1,0 +1,41 @@
+# -*- mode: Python -*-
+
+def dir_create(path):
+    """Create a directory
+
+    Args:
+        path: The path of the directory to create
+    
+    """
+    local("mkdir -p {}".format(path),echo_off=True,quiet=True)
+
+def file_write(path, contents):
+    """Write contents to a file
+
+    Args:
+        path: The path of the file to write the contents to
+        contents: The contents of the file
+    
+    """
+    local('echo "$CONTENTS" > {}'.format(path),
+        env={'CONTENTS': str(contents)},
+        echo_off=True,
+        quiet=True)
+
+def info(message):
+    """Log an information message
+
+    Args:
+        message: The message to log
+    
+    """
+    print("INFO: {}".format(message))
+
+def warn(message):
+    """Log a warning message
+
+    Args:
+        message: The message to log
+    
+    """
+    print("WARN: {}".format(message))

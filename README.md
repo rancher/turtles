@@ -1,4 +1,4 @@
-# rancher-turtles - CAPI + Rancher = :cupid:
+# CAPI + Rancher = :cupid:
 
 A proof-of-concept project looking at various aspects of making Rancher :heart: Cluster API.
 
@@ -6,7 +6,9 @@ A proof-of-concept project looking at various aspects of making Rancher :heart: 
 
 ## What is covered in this PoC?
 
-Nothing yet.
+Currently this project has the following functionality:
+
+- Automatically import CAPI created cluster into Rancher
 
 ## How to use this?
 

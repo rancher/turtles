@@ -1,0 +1,48 @@
+# -*- mode: Python -*-
+
+def k8s_find_object_name(objs, kind):
+    """Find the name of the given k8s kind
+
+    Args:
+        name: the array of k8s objects.
+        kind: the name of the kind to find.
+
+    Returns:
+        The name of the object if found, otherwise empty string
+    """ 
+
+    for o in objs:
+        if o["kind"] == kind:
+            return o["metadata"]["name"]
+    return ""
+
+def k8s_find_object_qualified_name(objs, kind):
+    """Find the name, kind, namespace of the given k8s kind
+
+    Args:
+        name: the array of k8s objects.
+        kind: the name of the kind to find.
+
+    Returns:
+        The name of the fully qualified name of object if found, otherwise empty string
+    """ 
+    for o in objs:
+        if o["kind"] == kind:
+            return "{}:{}:{}".format(o["metadata"]["name"], kind, o["metadata"]["namespace"])
+    return ""
+
+def create_kind_cluster(name, cfg_path, kubeconfig_path):
+    """Create a kind cluster
+
+    Args:
+        name: the name of teh cluster.
+        cfg_path: the path to the kind config to use.
+        kubeconfig_path: the path to save the kubeconfig to.
+
+    """ 
+    cmd = "kind create cluster --name {name} --config {cfg_path} --kubeconfig {kubeconfig_path}".format(
+        name = name,
+        cfg_path = cfg_path,
+        kubeconfig_path = kubeconfig_path,
+    )
+    local(cmd)
