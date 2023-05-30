@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-        - image: ghcr.io/rancher-sandbox/rancher-turtles-arm64:dev
+        - image: ghcr.io/rancher-sandbox/rancher-turtles:dev
           name: manager
