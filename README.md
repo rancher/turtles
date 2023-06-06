@@ -13,3 +13,22 @@ Currently this project has the following functionality:
 ## How to use this?
 
 Instructions coming soon :)
+
+## How to contribute?
+
+Instructions coming soon :)
+
+Create **tilt-settings.yaml** like this:
+
+```yaml
+{
+    "k8s_context": "k3d-rancher-test",
+    "default_registry": "ghcr.io/richardcase",
+    "debug": {
+        "turtles": {
+            "continue": true,
+            "port": 40000
+        }
+    }
+}
+```
