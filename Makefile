@@ -94,6 +94,9 @@ GH_REPO ?= $(GH_ORG_NAME)/$(GH_REPO_NAME)
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= Always
 
+# Development config
+RANCHER_HOSTNAME ?= my.hostname.dev
+
 
 .PHONY: all
 all: build
@@ -134,6 +137,10 @@ fmt: ## Run go fmt against code.
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
+
+.PHOHY: dev-env
+dev-env: ## Create a local development environment
+	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
 
 ## --------------------------------------
 ## Testing
