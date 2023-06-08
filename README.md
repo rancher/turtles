@@ -16,9 +16,11 @@ Instructions coming soon :)
 
 ## How to contribute?
 
-Instructions coming soon :)
+More instructions coming soon :)
 
-Create **tilt-settings.yaml** like this:
+To create a local development environment:
+
+1. Create **tilt-settings.yaml** like this:
 
 ```yaml
 {
@@ -32,3 +34,15 @@ Create **tilt-settings.yaml** like this:
     }
 }
 ```
+
+2. Open a terminal in the root of the repo
+3. Run the following
+
+```bash
+make dev-denv
+
+# Or if you want to use a custom hostname for Rancher
+RANCHER_HOSTNAME=my.customhost.dev make dev-denv
+```
+
+4. When tilt has started then start ngrok or inlets
