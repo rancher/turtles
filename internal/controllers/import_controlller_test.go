@@ -52,7 +52,7 @@ func TestImportController_NoExistingRancherCluster(t *testing.T) {
 
 	rancherCluster := &unstructured.Unstructured{}
 	rancherCluster.SetGroupVersionKind(gvkRancherCluster)
-	err = c.Get(ctx, types.NamespacedName{Namespace: "ns1", Name: "cluster1"}, rancherCluster)
+	err = c.Get(ctx, types.NamespacedName{Namespace: "ns1", Name: "cluster1-capi"}, rancherCluster)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
