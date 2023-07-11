@@ -1,0 +1,21 @@
+name: Run CI checks
+
+on: [pull_request, workflow_dispatch]
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.19'
+          check-latest: true
+          cache: true
+      - name: Verify
+        run: make verify
+      - name: Build
+        run: make build
+      - name: Test
+        run: make test
