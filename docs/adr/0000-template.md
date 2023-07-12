@@ -1,4 +1,4 @@
-# 0. Title
+# Title
 <!-- A short and clear title which is prefixed with the ADR number -->
 
 * Status: [proposed | rejected | accepted | deprecated | … | superseded by [ADR-0005](0005-example.md)] <!-- mandatory -->
@@ -7,7 +7,7 @@
 * Deciders: [list of GitHub handles for those that made the decision]  <!-- mandatory -->
 
 ## Context
-<!-- What is the context of the decision and whats the motivation -->
+<!-- What is the context of the decision and what's the motivation -->
 
 ## Decision
 <!-- What is the decision that has been made -->
