@@ -1,0 +1,31 @@
+name: ✨ Feature request
+description: Suggest an idea for Rancher Turtles project.
+body:
+  - type: textarea
+    id: user_story
+    attributes:
+      label: What would you like to be added (User Story)?
+      placeholder: "As a [developer/user/operator] I would like to [high level description] for [reasons]."
+    validations:
+      required: true
+
+  - type: textarea
+    id: detailed_feature_description
+    attributes:
+      label: Detailed Description
+      placeholder: "A clear and concise description of what you want to happen."
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else you would like to add?
+      placeholder: "Miscellaneous information that will assist in solving the issue."
+
+  - type: textarea
+    id: templateLabel
+    attributes:
+      label: Label(s) to be applied
+      value: |
+        /kind feature
