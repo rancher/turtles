@@ -22,6 +22,8 @@ export GO111MODULE=on
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
+CURL_RETRIES=3
+
 # Directories
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 BIN_DIR := bin
@@ -73,6 +75,10 @@ GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(abspath $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER))
 GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
 
+HELM_VER := v3.8.1
+HELM_BIN := helm
+HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
+
 GOLANGCI_LINT_VER := v1.49.0
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
@@ -85,6 +91,14 @@ REGISTRY ?= ghcr.io
 ORG ?= rancher-sandbox
 CONTROLLER_IMAGE_NAME := rancher-turtles
 CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
+
+# Relase
+RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
+HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
+RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
+RELEASE_DIR := out
+CHART_DIR := $(RELEASE_DIR)/charts/rancher-turtles
+CHART_PACKAGE_DIR := $(RELEASE_DIR)/package
 
 # Repo
 GH_ORG_NAME ?= $ORG
@@ -170,6 +184,30 @@ build: manifests generate fmt vet ## Build manager binary.
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
+
+## --------------------------------------
+## Docker
+## --------------------------------------
+
+.PHONY: docker-push
+docker-push: ## Push the docker images
+	docker push $(CONTROLLER_IMG)-$(ARCH):$(TAG)
+
+.PHONY: docker-push-all
+docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))  ## Push all the architecture docker images
+	$(MAKE) docker-push-manifest-rancher-turtles
+
+docker-push-%:
+	$(MAKE) ARCH=$* docker-push
+
+.PHONY: docker-push-manifest-rancher-turtles
+docker-push-manifest-rancher-turtles: ## Push the multiarch manifest for the rancher turtles docker images
+	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
+	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
+	docker manifest push --purge $(CONTROLLER_IMG):$(TAG)
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
@@ -305,3 +343,69 @@ $(GH): # Download GitHub cli into the tools bin folder
 	hack/ensure-gh.sh \
 		-b $(TOOLS_BIN_DIR) \
 		$(GH_VERSION)
+
+## --------------------------------------
+## Release
+## --------------------------------------
+
+$(RELEASE_DIR):
+	mkdir -p $(RELEASE_DIR)/
+
+$(CHART_DIR):
+	mkdir -p $(CHART_DIR)/templates
+
+$(CHART_PACKAGE_DIR):
+	mkdir -p $(CHART_PACKAGE_DIR)
+
+.PHONY: release
+release: clean-release $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
+	@if [ -z "${RELEASE_TAG}" ]; then echo "RELEASE_TAG is not set"; exit 1; fi
+	@if ! [ -z "$$(git status --porcelain)" ]; then echo "Your local git repository contains uncommitted changes, use git clean before proceeding."; exit 1; fi
+	git checkout "${RELEASE_TAG}"
+	# Set the manifest image to the production bucket.
+	$(MAKE) manifest-modification REGISTRY=$(PROD_REGISTRY)
+	$(MAKE) chart-manifest-modification REGISTRY=$(PROD_REGISTRY)
+	$(MAKE) release-manifests
+	$(MAKE) release-chart
+
+.PHONY: manifest-modification
+manifest-modification:
+	$(MAKE) set-manifest-image \
+		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
+		TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
+
+.PHONY: chart-manifest-modification
+chart-manifest-modification:
+	$(MAKE) set-manifest-image \
+		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
+		TARGET_RESOURCE="./config/chart/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent TARGET_RESOURCE="./config/chart/manager_pull_policy.yaml"
+
+.PHONY: release-manifests
+release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
+	$(KUSTOMIZE) build ./config/default > $(RELEASE_DIR)/rancher-turtles-components.yaml
+	$(MAKE) set-manifest-image \
+		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
+		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml
+
+	# # Add metadata to the release artifacts
+	# cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
+
+.PHONY: release-chart
+release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
+	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
+	cp -rf $(ROOT)/hack/chart/. $(CHART_DIR)
+	$(HELM) package $(CHART_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
+
+.PHONY: update-helm-repo
+update-helm-repo:
+	./hack/update-helm-repo.sh $(RELEASE_TAG)
+
+## --------------------------------------
+## Cleanup / Verification
+## --------------------------------------
+
+.PHONY: clean-release
+clean-release: ## Remove the release folder
+	rm -rf $(RELEASE_DIR)
