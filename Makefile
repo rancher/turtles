@@ -409,3 +409,7 @@ update-helm-repo:
 .PHONY: clean-release
 clean-release: ## Remove the release folder
 	rm -rf $(RELEASE_DIR)
+
+.PHOHY: clean-dev-env
+clean-dev-env: ## Remove the dev env
+	kind delete cluster --name=capi-test

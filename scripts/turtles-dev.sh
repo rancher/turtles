@@ -24,7 +24,7 @@ clusterctl init -i docker
 
 kubectl create namespace cattle-system
 
-helm install rancher rancher-stable/rancher --namespace cattle-system --set bootstrapPassword=admin --set replicas=1  --set hostname="$RANCHER_HOSTNAME" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=embedded-cluster-api=false' --set global.cattle.psp.enabled=false --version 2.7.3
+helm install rancher rancher-stable/rancher --namespace cattle-system --set bootstrapPassword=admin --set replicas=1  --set hostname="$RANCHER_HOSTNAME" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=embedded-cluster-api=false' --set global.cattle.psp.enabled=false --version 2.7.5
 
 kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 
