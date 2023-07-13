@@ -26,7 +26,7 @@ jobs:
     - name: setupGo
       uses: actions/setup-go@v4
       with:
-        go-version: '=1.19.4'
+        go-version: '=1.20.4'
     - name: Docker login
       uses: docker/login-action@v2
       with:
@@ -50,7 +50,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: '1.20'
       - name: Generate release artifacts
         run: |
           make release
