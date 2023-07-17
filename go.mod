@@ -3,7 +3,7 @@ module github.com/rancher-sandbox/rancher-turtles
 go 1.19
 
 require (
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/gobuffalo/flect v1.0.2
 	github.com/jonboulle/clockwork v0.3.0
 	github.com/mitchellh/mapstructure v1.5.0
