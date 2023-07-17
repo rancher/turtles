@@ -170,42 +170,6 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			log.Error(err, "failed creating rancher cluster")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
-	}
-
-	// Get the cluster name
-	clusterStatus, ok := rancherCluster.Object["status"]
-	if !ok {
-		log.Info("cluster status not set, requeue")
-		return ctrl.Result{Requeue: true}, nil
-	}
-	clusterName, ok := clusterStatus.(map[string]interface{})["clusterName"]
-	if !ok {
-		log.Info("clusterName not set, requeue")
-		return ctrl.Result{Requeue: true}, nil
-	}
-	log.Info("found cluster name", "name", clusterName)
-
-	agentDeployed, ok := rancherCluster.Object["status"].(map[string]interface{})["agentDeployed"]
-	if ok {
-		if agentDeployed.(bool) {
-			log.Info("agent already deployed, no action needed")
-			return ctrl.Result{}, nil
-		}
-	}
-
-	// get the registration manifest
-	manifest, err := r.getClusterRegistrationManifest(ctx, clusterName.(string))
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	if manifest == "" {
-		log.Info("Import manifest URL not set yet, requeue")
-		return ctrl.Result{Requeue: true}, nil
-	}
-
-	if applyErr := r.applyImportManifest(ctx, capiCluster, manifest); applyErr != nil {
-		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
@@ -400,35 +364,18 @@ func (r *CAPIImportReconciler) createRancherCluster(ctx context.Context, capiClu
 	clusterName := rancherClusterNameFromCAPICluster(capiCluster.Name)
 	rancherCluster := &unstructured.Unstructured{}
 
-	// spec := map[string]interface{}{
-	// 	"localClusterAuthEndpoint": nil,
-	// }
-
 	rancherCluster.SetUnstructuredContent(map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"name":      clusterName,
 			"namespace": capiCluster.Namespace,
 		},
-		"spec": map[string]interface{}{},
+		"spec": map[string]interface{}{
+			"clusterAPIConfig": map[string]interface{}{
+				"clusterName": capiCluster.Name,
+			},
+		},
 	})
-	//rancherCluster.Object["spec"] = spec
-
 	rancherCluster.SetGroupVersionKind(gvkRancherCluster)
-
-	// annotations := map[string]string{
-	// 	"field.cattle.io/creatorId": "user-6xsdl",
-	// }
-	// rancherCluster.SetAnnotations(annotations)
-
-	// ownerRefs := []metav1.OwnerReference{
-	// 	{
-	// 		Kind:       "Cluster",
-	// 		APIVersion: clusterv1.GroupVersion.Identifier(),
-	// 		Name:       capiCluster.Name,
-	// 		UID:        capiCluster.UID,
-	// 	},
-	// }
-	// rancherCluster.SetOwnerReferences(ownerRefs)
 
 	if err := r.Client.Create(ctx, rancherCluster); err != nil {
 		return fmt.Errorf("creating rancher cluster: %w", err)
