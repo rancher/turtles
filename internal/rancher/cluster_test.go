@@ -1,4 +1,4 @@
-package ranchercluster
+package rancher
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -11,16 +11,20 @@ import (
 
 var _ = Describe("get rancher cluster", func() {
 	var (
-		rancherClusterHandler *rancherClusterHandler
-		ranchercluster        *RancherCluster
+		rancherClusterHandler *ClusterHandler
+		ranchercluster        *Cluster
 	)
 
 	BeforeEach(func() {
-		rancherClusterHandler = NewRancherClusterHandler(ctx, cl)
-		ranchercluster = &RancherCluster{
+		rancherClusterHandler = NewClusterHandler(ctx, cl)
+		ranchercluster = &Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: "test",
+			},
+			Status: ClusterStatus{
+				ClusterName:   "test-cluster",
+				AgentDeployed: true,
 			},
 		}
 
@@ -34,15 +38,25 @@ var _ = Describe("get rancher cluster", func() {
 
 	It("should get rancher cluster when it exists", func() {
 		Expect(rancherClusterHandler.Create(ranchercluster)).To(Succeed())
-		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: "test", Name: "test"})
+		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: ranchercluster.Namespace, Name: ranchercluster.Name})
+		Expect(err).NotTo(HaveOccurred())
+		cluster.Status = ClusterStatus{
+			ClusterName:   "test-cluster",
+			AgentDeployed: true,
+		}
+		Expect(rancherClusterHandler.UpdateStatus(cluster))
+
+		cluster, err = rancherClusterHandler.Get(types.NamespacedName{Namespace: ranchercluster.Namespace, Name: ranchercluster.Name})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cluster).NotTo(BeNil())
 		Expect(cluster.Name).To(Equal("test"))
 		Expect(cluster.Namespace).To(Equal("test"))
+		Expect(cluster.Status.ClusterName).To(Equal("test-cluster"))
+		Expect(cluster.Status.AgentDeployed).To(BeTrue())
 	})
 
 	It("fail to get rancher cluster when it doesn't exist", func() {
-		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: "test", Name: "test"})
+		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: ranchercluster.Namespace, Name: ranchercluster.Name})
 		Expect(err).To(HaveOccurred())
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
 		Expect(cluster).To(BeNil())
@@ -51,13 +65,13 @@ var _ = Describe("get rancher cluster", func() {
 
 var _ = Describe("create rancher cluster", func() {
 	var (
-		rancherClusterHandler *rancherClusterHandler
-		ranchercluster        *RancherCluster
+		rancherClusterHandler *ClusterHandler
+		ranchercluster        *Cluster
 	)
 
 	BeforeEach(func() {
-		rancherClusterHandler = NewRancherClusterHandler(ctx, cl)
-		ranchercluster = &RancherCluster{
+		rancherClusterHandler = NewClusterHandler(ctx, cl)
+		ranchercluster = &Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: "test",
@@ -85,13 +99,13 @@ var _ = Describe("create rancher cluster", func() {
 
 var _ = Describe("delete rancher cluster", func() {
 	var (
-		rancherClusterHandler *rancherClusterHandler
-		ranchercluster        *RancherCluster
+		rancherClusterHandler *ClusterHandler
+		ranchercluster        *Cluster
 	)
 
 	BeforeEach(func() {
-		rancherClusterHandler = NewRancherClusterHandler(ctx, cl)
-		ranchercluster = &RancherCluster{
+		rancherClusterHandler = NewClusterHandler(ctx, cl)
+		ranchercluster = &Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: "test",

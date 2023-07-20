@@ -1,4 +1,4 @@
-package ranchercluster
+package rancher
 
 import (
 	"context"
@@ -26,11 +26,17 @@ var (
 	}
 )
 
-type RancherCluster struct {
+type Cluster struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Status            ClusterStatus `json:"status,omitempty"`
 }
 
-func (r *RancherCluster) ToUnstructured() (*unstructured.Unstructured, error) {
+type ClusterStatus struct {
+	ClusterName   string `json:"clusterName,omitempty"`
+	AgentDeployed bool   `json:"agentDeployed,omitempty"`
+}
+
+func (r *Cluster) ToUnstructured() (*unstructured.Unstructured, error) {
 	rancherClusterUnstructured := &unstructured.Unstructured{}
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName:    "json",
@@ -51,7 +57,7 @@ func (r *RancherCluster) ToUnstructured() (*unstructured.Unstructured, error) {
 	return rancherClusterUnstructured, nil
 }
 
-func (r *RancherCluster) FromUnstructured(rancherClusterUnstructured *unstructured.Unstructured) error {
+func (r *Cluster) FromUnstructured(rancherClusterUnstructured *unstructured.Unstructured) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName:    "json",
 		Result:     &r,
@@ -68,26 +74,26 @@ func (r *RancherCluster) FromUnstructured(rancherClusterUnstructured *unstructur
 	return nil
 }
 
-type rancherClusterHandler struct {
+type ClusterHandler struct {
 	cl  client.Client
 	ctx context.Context
 }
 
-func NewRancherClusterHandler(ctx context.Context, cl client.Client) *rancherClusterHandler {
-	return &rancherClusterHandler{
+func NewClusterHandler(ctx context.Context, cl client.Client) *ClusterHandler {
+	return &ClusterHandler{
 		cl:  cl,
 		ctx: ctx,
 	}
 }
 
-func (h *rancherClusterHandler) Get(objKey client.ObjectKey) (*RancherCluster, error) {
+func (h *ClusterHandler) Get(objKey client.ObjectKey) (*Cluster, error) {
 	rancherClusterUnstructured := &unstructured.Unstructured{}
 	rancherClusterUnstructured.SetGroupVersionKind(gvkRancherCluster)
 	if err := h.cl.Get(h.ctx, objKey, rancherClusterUnstructured); err != nil {
 		return nil, fmt.Errorf("failed to get rancher cluster: %w", err)
 	}
 
-	rancherCluster := &RancherCluster{}
+	rancherCluster := &Cluster{}
 	if err := rancherCluster.FromUnstructured(rancherClusterUnstructured); err != nil {
 		return nil, fmt.Errorf("failed to convert rancher cluster: %w", err)
 	}
@@ -95,7 +101,7 @@ func (h *rancherClusterHandler) Get(objKey client.ObjectKey) (*RancherCluster, e
 	return rancherCluster, nil
 }
 
-func (h *rancherClusterHandler) Create(rancherCluster *RancherCluster) error {
+func (h *ClusterHandler) Create(rancherCluster *Cluster) error {
 	rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
 	if err != nil {
 		return fmt.Errorf("failed to convert rancher cluster: %w", err)
@@ -108,7 +114,7 @@ func (h *rancherClusterHandler) Create(rancherCluster *RancherCluster) error {
 	return nil
 }
 
-func (h *rancherClusterHandler) Delete(rancherCluster *RancherCluster) error {
+func (h *ClusterHandler) Delete(rancherCluster *Cluster) error {
 	rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
 	if err != nil {
 		return fmt.Errorf("failed to convert rancher cluster: %w", err)
@@ -116,6 +122,19 @@ func (h *rancherClusterHandler) Delete(rancherCluster *RancherCluster) error {
 
 	if err := h.cl.Delete(h.ctx, rancherClusterUnstructured); err != nil {
 		return fmt.Errorf("failed to delete rancher cluster: %w", err)
+	}
+
+	return nil
+}
+
+func (h *ClusterHandler) UpdateStatus(rancherCluster *Cluster) error {
+	rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
+	if err != nil {
+		return fmt.Errorf("failed to convert rancher cluster: %w", err)
+	}
+
+	if err := h.cl.Status().Update(h.ctx, rancherClusterUnstructured); err != nil {
+		return fmt.Errorf("failed to update rancher cluster status: %w", err)
 	}
 
 	return nil

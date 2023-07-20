@@ -25,6 +25,7 @@ func init() {
 func StartEnvTest(testEnv *envtest.Environment) (*rest.Config, client.Client, error) {
 	testEnv.CRDs = []*apiextensionsv1.CustomResourceDefinition{
 		fakeRancherClusterCRD,
+		fakeRegistrationTokenCRD,
 		fakeCAPIClusterCRD,
 	}
 

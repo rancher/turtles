@@ -28,13 +28,19 @@ import (
 )
 
 var (
-	managementGroupVersion = schema.GroupVersion{Group: "provisioning.cattle.io", Version: "v1"}
-	clusterGroupVersion    = schema.GroupVersion{Group: "cluster.x-k8s.io", Version: "v1beta1"}
+	managementGroupVersion      = schema.GroupVersion{Group: "provisioning.cattle.io", Version: "v1"}
+	clusterGroupVersion         = schema.GroupVersion{Group: "cluster.x-k8s.io", Version: "v1beta1"}
+	clusterRegTokenGroupVersion = schema.GroupVersion{Group: "management.cattle.io", Version: "v3"}
 
 	// fakeRancherClusterKind is the Kind for the RancherCluster object.
 	fakeRancherClusterKind = "Cluster"
 	// fakeRancherClusterCRD is a fake RancherCluster CRD.
 	fakeRancherClusterCRD = generateCRD(managementGroupVersion.WithKind(fakeRancherClusterKind), apiextensionsv1.NamespaceScoped)
+
+	// fakeRegistrationTokenKind is the Kind for the RegistrationToken object.
+	fakeRegistrationTokenKind = "ClusterRegistrationToken"
+	// fakeRegistrationTokenCRD is a fake RegistrationToken CRD.
+	fakeRegistrationTokenCRD = generateCRD(clusterRegTokenGroupVersion.WithKind(fakeRegistrationTokenKind), apiextensionsv1.NamespaceScoped)
 
 	// fakeCAPIClusterKind is the Kind for the CAPI Cluster object.
 	fakeCAPIClusterKind = "Cluster"
