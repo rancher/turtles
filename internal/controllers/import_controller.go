@@ -184,6 +184,11 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	if rancherCluster.Status.ClusterName == "" {
+		log.Info("cluster name not set yet, requeue")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	log.Info("found cluster name", "name", rancherCluster.Status.ClusterName)
 
 	if rancherCluster.Status.AgentDeployed {
