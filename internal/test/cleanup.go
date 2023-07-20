@@ -12,14 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	cacheSyncBackoff = wait.Backoff{
-		Duration: 100 * time.Millisecond,
-		Factor:   1.5,
-		Steps:    8,
-		Jitter:   0.4,
-	}
-)
+var cacheSyncBackoff = wait.Backoff{
+	Duration: 100 * time.Millisecond,
+	Factor:   1.5,
+	Steps:    8,
+	Jitter:   0.4,
+}
 
 // CleanupAndWait deletes all the given objects and waits for the cache to be updated accordingly.
 func CleanupAndWait(ctx context.Context, cl client.Client, objs ...client.Object) error {
@@ -29,13 +27,18 @@ func CleanupAndWait(ctx context.Context, cl client.Client, objs ...client.Object
 
 	// Makes sure the cache is updated with the deleted object
 	errs := []error{}
+
 	for _, o := range objs {
 		// Ignoring namespaces because in testenv the namespace cleaner is not running.
 		if o.GetObjectKind().GroupVersionKind().GroupKind() == corev1.SchemeGroupVersion.WithKind("Namespace").GroupKind() {
 			continue
 		}
 
-		oCopy := o.DeepCopyObject().(client.Object)
+		oCopy, ok := o.DeepCopyObject().(client.Object)
+		if !ok {
+			return errors.Errorf("unable to convert object %s to client.Object", o.GetObjectKind().GroupVersionKind().String())
+		}
+
 		key := client.ObjectKeyFromObject(o)
 		err := wait.ExponentialBackoff(
 			cacheSyncBackoff,
@@ -51,25 +54,34 @@ func CleanupAndWait(ctx context.Context, cl client.Client, objs ...client.Object
 				}
 				return false, nil
 			})
-		errs = append(errs, errors.Wrapf(err, "key %s, %s is not being deleted from the testenv client cache", o.GetObjectKind().GroupVersionKind().String(), key))
+		errs = append(errs,
+			errors.Wrapf(err, "key %s, %s is not being deleted from the testenv client cache", o.GetObjectKind().GroupVersionKind().String(), key))
 	}
+
 	return kerrors.NewAggregate(errs)
 }
 
 // cleanup deletes all the given objects.
 func cleanup(ctx context.Context, cl client.Client, objs ...client.Object) error {
 	errs := []error{}
+
 	for _, o := range objs {
-		copyObj := o.DeepCopyObject().(client.Object)
+		copyObj, ok := o.DeepCopyObject().(client.Object)
+		if !ok {
+			return errors.Errorf("unable to convert object %s to client.Object", o.GetObjectKind().GroupVersionKind().String())
+		}
 
 		if err := cl.Get(ctx, client.ObjectKeyFromObject(o), copyObj); err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
 			}
+
 			if o.GetName() == "" { // resource is being deleted
 				continue
 			}
+
 			errs = append(errs, err)
+
 			continue
 		}
 
@@ -82,13 +94,16 @@ func cleanup(ctx context.Context, cl client.Client, objs ...client.Object) error
 		if apierrors.IsNotFound(err) {
 			continue
 		}
+
 		errs = append(errs, err)
 
 		err = cl.Delete(ctx, copyObj)
 		if apierrors.IsNotFound(err) {
 			continue
 		}
+
 		errs = append(errs, err)
 	}
+
 	return kerrors.NewAggregate(errs)
 }

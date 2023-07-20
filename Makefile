@@ -79,7 +79,7 @@ HELM_VER := v3.8.1
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-GOLANGCI_LINT_VER := v1.49.0
+GOLANGCI_LINT_VER := v1.53.3
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
 
@@ -148,6 +148,16 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
 
+.PHOHY: dev-env
+dev-env: ## Create a local development environment
+	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
+
+## --------------------------------------
+## Lint / Verify
+## --------------------------------------
+
+##@ lint and verify:
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -156,9 +166,13 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-.PHOHY: dev-env
-dev-env: ## Create a local development environment
-	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
+.PHONY: lint
+lint: $(GOLANGCI_LINT) ## Lint the codebase
+	$(GOLANGCI_LINT) run -v --timeout 5m $(GOLANGCI_LINT_EXTRA_ARGS)
+
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
+	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
 ## --------------------------------------
 ## Testing

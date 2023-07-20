@@ -8,20 +8,20 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-var (
-	scheme = runtime.NewScheme()
-)
+var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 }
 
+// StartEnvTest starts a new test environment.
 func StartEnvTest(testEnv *envtest.Environment) (*rest.Config, client.Client, error) {
 	testEnv.CRDs = []*apiextensionsv1.CustomResourceDefinition{
 		fakeRancherClusterCRD,
@@ -46,6 +46,7 @@ func StartEnvTest(testEnv *envtest.Environment) (*rest.Config, client.Client, er
 	return cfg, cl, nil
 }
 
+// StopEnvTest stops the test environment.
 func StopEnvTest(testEnv *envtest.Environment) error {
 	return testEnv.Stop()
 }

@@ -16,7 +16,7 @@ import (
 var (
 	gvkRancherCluster = schema.GroupVersionKind{Group: "provisioning.cattle.io", Version: "v1", Kind: "Cluster"}
 
-	// stringToTimeHook is a hook for the mapstructure library to proprely decode into metav1.Time
+	// stringToTimeHook is a hook for the mapstructure library to proprely decode into metav1.Time.
 	stringToTimeHook = func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 		if f.Kind() == reflect.String && t == reflect.TypeOf(metav1.Time{}) {
 			time, err := time.Parse(time.RFC3339, data.(string))
@@ -26,18 +26,22 @@ var (
 	}
 )
 
+// Cluster is the struct representing a Rancher Cluster.
 type Cluster struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Status            ClusterStatus `json:"status,omitempty"`
 }
 
+// ClusterStatus is the struct representing the status of a Rancher Cluster.
 type ClusterStatus struct {
 	ClusterName   string `json:"clusterName,omitempty"`
 	AgentDeployed bool   `json:"agentDeployed,omitempty"`
 }
 
+// ToUnstructured converts a Cluster to an unstructured object.
 func (r *Cluster) ToUnstructured() (*unstructured.Unstructured, error) {
 	rancherClusterUnstructured := &unstructured.Unstructured{}
+
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName:    "json",
 		Result:     &rancherClusterUnstructured.Object,
@@ -57,6 +61,7 @@ func (r *Cluster) ToUnstructured() (*unstructured.Unstructured, error) {
 	return rancherClusterUnstructured, nil
 }
 
+// FromUnstructured converts an unstructured object to a Cluster.
 func (r *Cluster) FromUnstructured(rancherClusterUnstructured *unstructured.Unstructured) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName:    "json",
@@ -74,11 +79,13 @@ func (r *Cluster) FromUnstructured(rancherClusterUnstructured *unstructured.Unst
 	return nil
 }
 
+// ClusterHandler is the struct handling the Rancher Cluster.
 type ClusterHandler struct {
 	cl  client.Client
 	ctx context.Context
 }
 
+// NewClusterHandler creates a new ClusterHandler.
 func NewClusterHandler(ctx context.Context, cl client.Client) *ClusterHandler {
 	return &ClusterHandler{
 		cl:  cl,
@@ -86,9 +93,11 @@ func NewClusterHandler(ctx context.Context, cl client.Client) *ClusterHandler {
 	}
 }
 
+// Get gets Rancher cluster and converts it to wrapper structure.
 func (h *ClusterHandler) Get(objKey client.ObjectKey) (*Cluster, error) {
 	rancherClusterUnstructured := &unstructured.Unstructured{}
 	rancherClusterUnstructured.SetGroupVersionKind(gvkRancherCluster)
+
 	if err := h.cl.Get(h.ctx, objKey, rancherClusterUnstructured); err != nil {
 		return nil, fmt.Errorf("failed to get rancher cluster: %w", err)
 	}
@@ -101,6 +110,7 @@ func (h *ClusterHandler) Get(objKey client.ObjectKey) (*Cluster, error) {
 	return rancherCluster, nil
 }
 
+// Create creates Rancher cluster.
 func (h *ClusterHandler) Create(rancherCluster *Cluster) error {
 	rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
 	if err != nil {
@@ -114,6 +124,7 @@ func (h *ClusterHandler) Create(rancherCluster *Cluster) error {
 	return nil
 }
 
+// Delete deletes Rancher cluster.
 func (h *ClusterHandler) Delete(rancherCluster *Cluster) error {
 	rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
 	if err != nil {
@@ -127,6 +138,7 @@ func (h *ClusterHandler) Delete(rancherCluster *Cluster) error {
 	return nil
 }
 
+// UpdateStatus updates Rancher cluster status.
 func (h *ClusterHandler) UpdateStatus(rancherCluster *Cluster) error {
 	rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
 	if err != nil {
