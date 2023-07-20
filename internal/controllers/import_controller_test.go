@@ -24,13 +24,15 @@ import (
 )
 
 var _ = Describe("reconcile CAPI Cluster", func() {
-	var r *CAPIImportReconciler
-	var clusterRegistrationTokenHandler *rancher.ClusterRegistrationTokenHandler
-	var rancherClusterHandler *rancher.ClusterHandler
-	var capiCluster *clusterv1.Cluster
-	var rancherCluster *rancher.Cluster
-	var clusterRegistrationToken *rancher.ClusterRegistrationToken
-	var capiKubeconfigSecret *corev1.Secret
+	var (
+		r                               *CAPIImportReconciler
+		clusterRegistrationTokenHandler *rancher.ClusterRegistrationTokenHandler
+		rancherClusterHandler           *rancher.ClusterHandler
+		capiCluster                     *clusterv1.Cluster
+		rancherCluster                  *rancher.Cluster
+		clusterRegistrationToken        *rancher.ClusterRegistrationToken
+		capiKubeconfigSecret            *corev1.Secret
+	)
 
 	BeforeEach(func() {
 		r = &CAPIImportReconciler{

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,14 +13,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
-	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/cluster-api/util/predicates"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,10 +21,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
+	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/util/predicates"
+
+	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
 )
 
 const (
@@ -40,6 +42,7 @@ const (
 	clusterRegistrationTokenName = "default-token"
 )
 
+// CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportReconciler struct {
 	client.Client
 	recorder         record.EventRecorder
@@ -51,6 +54,7 @@ type CAPIImportReconciler struct {
 	remoteClientGetter remote.ClusterClientGetter
 }
 
+// SetupWithManager sets up reconciler with manager.
 func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := log.FromContext(ctx)
 
@@ -58,8 +62,8 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		r.remoteClientGetter = remote.NewClusterClient
 	}
 
-	//TODO: we want the control plane initialized but removing for the time being
-	//capiPredicates := predicates.All(log, predicates.ClusterControlPlaneInitialized(log), predicates.ResourceHasFilterLabel(log, r.WatchFilterValue))
+	// TODO: we want the control plane initialized but removing for the time being
+	// capiPredicates := predicates.All(log, predicates.ClusterControlPlaneInitialized(log), predicates.ResourceHasFilterLabel(log, r.WatchFilterValue))
 	capiPredicates := predicates.All(log, predicates.ResourceHasFilterLabel(log, r.WatchFilterValue))
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -91,6 +95,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		&source.Kind{Type: ns},
 		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx)),
 	)
+
 	if err != nil {
 		return fmt.Errorf("adding watch for namespaces: %w", err)
 	}
@@ -109,6 +114,8 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=provisioning.cattle.io,resources=clusters;clusters/status,verbs=get;list;watch;create;update;delete;patch
+
+// Reconcile reconciles a CAPI cluster, creating a Rancher cluster if needed and applying the import manifests.
 func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, reterr error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling CAPI cluster")
@@ -118,8 +125,10 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{Requeue: true}, nil
 		}
+
 		return ctrl.Result{Requeue: true}, err
 	}
+
 	log = log.WithValues("cluster", capiCluster.Name)
 
 	// Wait for controlplane to be ready
@@ -131,6 +140,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// fetch the rancher clusters
 	rancherClusterHandler := rancher.NewClusterHandler(ctx, r.Client)
 	rancherClusterName := rancherClusterNameFromCAPICluster(capiCluster.Name)
+
 	rancherCluster, err := rancherClusterHandler.Get(client.ObjectKey{Namespace: capiCluster.Namespace, Name: rancherClusterName})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -145,7 +155,9 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return r.reconcileNormal(ctx, capiCluster, rancherClusterHandler, rancherCluster)
 }
 
-func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster *clusterv1.Cluster, rancherClusterHandler *rancher.ClusterHandler, rancherCluster *rancher.Cluster) (ctrl.Result, error) {
+func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster *clusterv1.Cluster, rancherClusterHandler *rancher.ClusterHandler,
+	rancherCluster *rancher.Cluster,
+) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling CAPI Cluster")
 
@@ -154,8 +166,9 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+
 		if !shouldImport {
-			log.Info("not auto importing cluster as namespace or cluster isn't marked auto import", "clustername", capiCluster.Name, "namespace", capiCluster.Namespace)
+			log.Info("not auto importing cluster as namespace or cluster isn't marked auto import")
 			return ctrl.Result{}, nil
 		}
 
@@ -183,6 +196,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
 	if manifest == "" {
 		log.Info("Import manifest URL not set yet, requeue")
 		return ctrl.Result{Requeue: true}, nil
@@ -206,6 +220,7 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 
 		return true, nil
 	}
+
 	if hasLabel && !autoImport {
 		log.V(2).Info("cluster contains annotation to not import")
 
@@ -215,6 +230,7 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 	// Check namespace wide
 	ns := &corev1.Namespace{}
 	key := client.ObjectKey{Name: capiCluster.Namespace}
+
 	if err := r.Client.Get(ctx, key, ns); err != nil {
 		log.Error(err, "getting namespace")
 		return false, err
@@ -225,11 +241,11 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 	return autoImport, nil
 }
 
-func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, _ *clusterv1.Cluster) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling CAPI Cluster Delete")
 
-	//TODO: add implementation
+	// TODO: add implementation
 
 	return ctrl.Result{}, nil
 }
@@ -239,11 +255,13 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 
 	key := client.ObjectKey{Name: clusterRegistrationTokenName, Namespace: clusterName}
 	tokenHandler := rancher.NewClusterRegistrationTokenHandler(ctx, r.Client)
+
 	token, err := tokenHandler.Get(key)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return "", nil
 		}
+
 		return "", fmt.Errorf("error getting registration token for cluster %s: %w", clusterName, err)
 	}
 
@@ -284,6 +302,7 @@ func (r *CAPIImportReconciler) applyImportManifest(ctx context.Context, capiClus
 		if err != nil {
 			return err
 		}
+
 		unstructuredObj := &unstructured.Unstructured{}
 		unstructuredObj.SetUnstructuredContent(u)
 
@@ -300,10 +319,12 @@ func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
 	if !ok {
 		return false, false
 	}
+
 	autoImport, err := strconv.ParseBool(labelVal)
 	if err != nil {
 		return true, false
 	}
+
 	return true, autoImport
 }
 
@@ -320,7 +341,7 @@ func createObject(ctx context.Context, c client.Client, obj client.Object, log *
 	if err == nil {
 		// Already exists
 		log.V(4).Info("object already exists in remote cluster", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
-		//TODO: should we patch?
+		// TODO: should we patch?
 		return nil
 	}
 
@@ -346,6 +367,7 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) 
 			if !apierrors.IsNotFound(err) {
 				log.Error(err, "getting capi cluster")
 			}
+
 			return nil
 		}
 
@@ -399,7 +421,7 @@ func rancherClusterNameFromCAPICluster(capiClusterName string) string {
 }
 
 func (r *CAPIImportReconciler) downloadManifest(url string) (string, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec,noctx
 	if err != nil {
 		return "", fmt.Errorf("downloading manifest: %w", err)
 	}
@@ -415,12 +437,15 @@ func (r *CAPIImportReconciler) downloadManifest(url string) (string, error) {
 
 func manifestToObjects(in io.Reader) ([]runtime.Object, error) {
 	var result []runtime.Object
+
 	reader := yamlDecoder.NewYAMLReader(bufio.NewReaderSize(in, 4096))
+
 	for {
 		raw, err := reader.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -454,10 +479,11 @@ func toObjects(bytes []byte) ([]runtime.Object, error) {
 
 	if l, ok := obj.(*unstructured.UnstructuredList); ok {
 		var result []runtime.Object
-		for _, obj := range l.Items {
-			copy := obj
-			result = append(result, &copy)
+
+		for i := range l.Items {
+			result = append(result, &l.Items[i])
 		}
+
 		return result, nil
 	}
 
