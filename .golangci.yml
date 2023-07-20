@@ -1,0 +1,78 @@
+# Options for analysis running.
+run:
+  go: "1.20"
+  skip-files:
+    - ".*_test\\.go$"
+  allow-parallel-runners: true
+issues:
+  include:
+    - EXC0012
+    - EXC0014
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - testpackage
+        - gochecknoglobals
+    - text: var-naming
+      linters:
+        - revive
+    - text: ST1003
+      linters: 
+        - stylecheck
+linters-settings:
+  funlen:
+    lines: 110
+    statements: 60
+  lll:
+    line-length: 150
+  goimports:
+    local-prefixes: github.com/rancher-sandbox/rancher-turtles
+  gci:
+    custom-order: true
+    sections:
+      - "standard"
+      - "blank"
+      - "dot"
+      - "default"
+      - "prefix(sigs.k8s.io/cluster-api)"
+      - "prefix(github.com/rancher-sandbox/rancher-turtles)"
+    wsl:
+      force-err-cuddling: false
+linters:
+  enable-all: true
+  disable:
+    - nolintlint
+    - tagliatelle
+    - exhaustruct
+    - exhaustive
+    - exhaustivestruct
+    - maligned
+    - funlen
+    - wrapcheck
+    - goerr113  
+    - paralleltest
+    - varnamelen
+    - cyclop
+    - gochecknoglobals
+    - gochecknoinits
+    - nonamedreturns
+    - gocritic
+    - nlreturn
+    - gomnd
+    - ireturn
+    - depguard
+    - containedctx 
+    - godox
+    # The following are all deprecated linters
+    - deadcode
+    - ifshort
+    - varcheck
+    - scopelint
+    - interfacer
+    - structcheck
+    - golint
+    - nosnakecase
+    # Disabled because of generics
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
