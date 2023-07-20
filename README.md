@@ -42,7 +42,7 @@ To create a local development environment:
 make dev-denv
 
 # Or if you want to use a custom hostname for Rancher
-RANCHER_HOSTNAME=my.customhost.dev make dev-denv
+RANCHER_HOSTNAME=my.customhost.dev make dev-env
 ```
 
 4. When tilt has started then start ngrok or inlets
