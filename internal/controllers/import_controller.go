@@ -21,7 +21,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -43,7 +42,6 @@ const (
 
 var (
 	gvkRancherCluster        = schema.GroupVersionKind{Group: "provisioning.cattle.io", Version: "v1", Kind: "Cluster"}
-	gvkRancherClusterList    = schema.GroupVersionKind{Group: "provisioning.cattle.io", Version: "v1", Kind: "ClusterList"}
 	gvkRancherClusterRegToke = schema.GroupVersionKind{Group: "management.cattle.io", Version: "v3", Kind: "ClusterRegistrationToken"}
 )
 
@@ -368,7 +366,7 @@ func createObject(ctx context.Context, c client.Client, obj client.Object, log *
 		return nil
 	}
 
-	if !errors.IsNotFound(err) {
+	if !apierrors.IsNotFound(err) {
 		return fmt.Errorf("getting object from remote cluster: %w", err)
 	}
 
@@ -386,7 +384,7 @@ func (r *CAPIImportReconciler) getClusterRegistrationToken(ctx context.Context, 
 	key := client.ObjectKey{Name: "default-token", Namespace: clusterName}
 
 	if err := r.Client.Get(ctx, key, token); err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("getting registration token for cluster %s: %w", clusterName, err)

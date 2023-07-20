@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
@@ -107,14 +108,15 @@ func main() {
 	ctrl.SetLogger(klogr.New())
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsBindAddr,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "controller-leader-election-capi-operator",
-		LeaseDuration:      &leaderElectionLeaseDuration,
-		RenewDeadline:      &leaderElectionRenewDeadline,
-		RetryPeriod:        &leaderElectionRetryPeriod,
-		SyncPeriod:         &syncPeriod,
+		Scheme:                     scheme,
+		MetricsBindAddress:         metricsBindAddr,
+		LeaderElection:             enableLeaderElection,
+		LeaderElectionID:           "controller-leader-election-rancher-turtles",
+		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
+		LeaseDuration:              &leaderElectionLeaseDuration,
+		RenewDeadline:              &leaderElectionRenewDeadline,
+		RetryPeriod:                &leaderElectionRetryPeriod,
+		SyncPeriod:                 &syncPeriod,
 		ClientDisableCacheFor: []client.Object{
 			&corev1.ConfigMap{},
 			&corev1.Secret{},
