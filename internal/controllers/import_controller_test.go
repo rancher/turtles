@@ -205,6 +205,22 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}
 	})
 
+	It("should reconcile a CAPI cluster when rancher cluster exists but cluster name not set", func() {
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
+
+		res, err := r.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: capiCluster.Namespace,
+				Name:      capiCluster.Name,
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.Requeue).To(BeTrue())
+	})
+
 	It("should reconcile a CAPI cluster when rancher cluster exists and agent is deployed", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
