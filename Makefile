@@ -358,6 +358,15 @@ $(GH): # Download GitHub cli into the tools bin folder
 		-b $(TOOLS_BIN_DIR) \
 		$(GH_VERSION)
 
+$(HELM): ## Put helm into tools folder.
+	mkdir -p $(TOOLS_BIN_DIR)
+	rm -f "$(TOOLS_BIN_DIR)/$(HELM_BIN)*"
+	curl --retry $(CURL_RETRIES) -fsSL -o $(TOOLS_BIN_DIR)/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+	chmod 700 $(TOOLS_BIN_DIR)/get_helm.sh
+	USE_SUDO=false HELM_INSTALL_DIR=$(TOOLS_BIN_DIR) DESIRED_VERSION=$(HELM_VER) BINARY_NAME=$(HELM_BIN)-$(HELM_VER) $(TOOLS_BIN_DIR)/get_helm.sh
+	ln -sf $(HELM) $(TOOLS_BIN_DIR)/$(HELM_BIN)
+	rm -f $(TOOLS_BIN_DIR)/get_helm.sh
+
 ## --------------------------------------
 ## Release
 ## --------------------------------------
@@ -409,7 +418,7 @@ release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publis
 .PHONY: release-chart
 release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	cp -rf $(ROOT)/hack/chart/. $(CHART_DIR)
+	cp -rf $(ROOT_DIR)/hack/chart/. $(CHART_DIR)
 	$(HELM) package $(CHART_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: update-helm-repo
