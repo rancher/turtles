@@ -38,28 +38,26 @@ jobs:
     - name: Push docker image
       run: make docker-push-all TAG=${{ env.TAG }} PROD_REGISTRY=${{ env.REGISTRY }}
   release:
-    name: Create draft release
+    name: Create helm release
     runs-on: ubuntu-latest
     steps:
-      - name: Set env
-        run:  echo "RELEASE_TAG=${GITHUB_REF:10}" >> $GITHUB_ENV
-      - name: checkout code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-      - name: Generate release artifacts
+
+      - name: Configure Git
         run: |
-          make release
-      - name: Create draft GH release
-        uses: softprops/action-gh-release@v1
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Package operator chart
+        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=.cr-release-packages make release-chart
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.5.0
         with:
-          draft: true
-          generate_release_notes: true
-          files: |
-            out/rancher-turtles-components.yaml
-            out/package/*
-          body: "TODO: Add release notes here."
+          skip_packaging: true
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_SKIP_EXISTING: true

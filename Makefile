@@ -97,9 +97,9 @@ MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
-RELEASE_DIR := out
+RELEASE_DIR ?= out
 CHART_DIR := $(RELEASE_DIR)/charts/rancher-turtles
-CHART_PACKAGE_DIR := $(RELEASE_DIR)/package
+CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
 
 # Repo
 GH_ORG_NAME ?= $ORG
@@ -413,7 +413,7 @@ release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publis
 	$(KUSTOMIZE) build ./config/default > $(RELEASE_DIR)/rancher-turtles-components.yaml
 	$(MAKE) set-manifest-image \
 		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml
+		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml"
 
 	# # Add metadata to the release artifacts
 	# cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
