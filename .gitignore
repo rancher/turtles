@@ -20,3 +20,5 @@
 bin/
 tilt-settings.json
 tilt-settings.yaml
+
+out/
