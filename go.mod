@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/go-logr/logr v1.2.4
 	github.com/gobuffalo/flect v1.0.2
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.9
 	github.com/pkg/errors v0.9.1

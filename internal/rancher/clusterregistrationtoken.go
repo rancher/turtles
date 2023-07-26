@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mitchellh/mapstructure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -26,43 +26,21 @@ type ClusterRegistrationTokenStatus struct {
 
 // ToUnstructured converts a ClusterRegistrationToken to an unstructured object.
 func (r *ClusterRegistrationToken) ToUnstructured() (*unstructured.Unstructured, error) {
-	clusterRegistrationToken := &unstructured.Unstructured{}
-
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName:    "json",
-		Result:     &clusterRegistrationToken.Object,
-		DecodeHook: stringToTimeHook,
-	})
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create decoder: %w", err)
+		return nil, fmt.Errorf("failed to convert token: %w", err)
 	}
 
-	if err := decoder.Decode(r); err != nil {
-		return nil, fmt.Errorf("failed to decode cluster registration token: %w", err)
-	}
-
+	clusterRegistrationToken := &unstructured.Unstructured{}
+	clusterRegistrationToken.SetUnstructuredContent(obj)
 	clusterRegistrationToken.SetGroupVersionKind(gvkRancherClusterRegToken)
-	clusterRegistrationToken.SetCreationTimestamp(metav1.Now())
 
 	return clusterRegistrationToken, nil
 }
 
 // FromUnstructured converts an unstructured object to a ClusterRegistrationToken.
 func (r *ClusterRegistrationToken) FromUnstructured(clusterRegistrationToken *unstructured.Unstructured) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName:    "json",
-		Result:     &r,
-		DecodeHook: stringToTimeHook,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create decoder: %w", err)
-	}
-
-	if err := decoder.Decode(clusterRegistrationToken.Object); err != nil {
-		return fmt.Errorf("failed to decode cluster registration token: %w", err)
-	}
-
-	return nil
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(clusterRegistrationToken.Object, r)
 }
 
 // ClusterRegistrationTokenHandler is the struct allowing to interact with Rancher ClusterRegistrationToken.
