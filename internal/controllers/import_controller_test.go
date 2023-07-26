@@ -1,7 +1,11 @@
 package controllers
 
 import (
+	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -276,3 +281,43 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(res.Requeue).To(BeTrue())
 	})
 })
+
+func manifestToObjects(in io.Reader) ([]runtime.Object, error) {
+	var result []runtime.Object
+
+	reader := yamlDecoder.NewYAMLReader(bufio.NewReaderSize(in, 4096))
+
+	for {
+		raw, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		bytes, err := yamlDecoder.ToJSON(raw)
+		if err != nil {
+			return nil, err
+		}
+
+		check := map[string]interface{}{}
+		if err := json.Unmarshal(bytes, &check); err != nil {
+			return nil, err
+		}
+
+		if len(check) == 0 {
+			continue
+		}
+
+		obj, _, err := unstructured.UnstructuredJSONScheme.Decode(bytes, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, obj)
+	}
+
+	return result, nil
+}
