@@ -1,0 +1,54 @@
+name: Lint and Test Charts
+
+on: pull_request
+
+env:
+  TAG: dev
+  IMAGE: controller
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          check-latest: true
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.4.0
+
+      - name: setupGo
+        uses: actions/setup-go@v4
+        with:
+          go-version: '=1.20.6'
+
+      - name: Build docker image
+        run: MANIFEST_IMG=${{ env.IMAGE }} TAG=${{ env.TAG }} PULL_POLICY=Never make docker-build
+
+      - name: Package operator chart
+        run: make release-chart
+
+      - name: Run chart-testing (lint)
+        run: ct lint --validate-maintainers=false --charts out/charts/rancher-turtles/
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.7.0
+        with:
+          cluster_name: kind
+
+      - name: Add local docker image
+        run: kind load docker-image ${{ env.IMAGE }}:${{ env.TAG }}
+
+      - name: Run chart-testing (install)
+        run: ct install --charts out/charts/rancher-turtles/

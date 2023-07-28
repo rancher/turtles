@@ -91,6 +91,7 @@ REGISTRY ?= ghcr.io
 ORG ?= rancher-sandbox
 CONTROLLER_IMAGE_NAME := rancher-turtles
 CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
+MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 
 # Relase
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
@@ -205,7 +206,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-push
 docker-push: ## Push the docker images
-	docker push $(CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker push $(MANIFEST_IMG):$(TAG)
 
 .PHONY: docker-push-all
 docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))  ## Push all the architecture docker images
@@ -220,7 +221,7 @@ docker-push-manifest-rancher-turtles: ## Push the multiarch manifest for the ran
 	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
 	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
 	docker manifest push --purge $(CONTROLLER_IMG):$(TAG)
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(MANIFEST_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-pull-prerequisites
@@ -237,9 +238,11 @@ docker-build-%:
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ## Run docker-build-* targets for all providers
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=. --build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG)-$(ARCH):$(TAG)
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=. --build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(MANIFEST_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(MANIFEST_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/chart/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
+	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/chart/manager_pull_policy.yaml"
 
 
 .PHONY: set-manifest-pull-policy
