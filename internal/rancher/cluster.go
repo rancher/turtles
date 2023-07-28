@@ -3,28 +3,15 @@ package rancher
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"time"
 
-	"github.com/mitchellh/mapstructure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	gvkRancherCluster = schema.GroupVersionKind{Group: "provisioning.cattle.io", Version: "v1", Kind: "Cluster"}
-
-	// stringToTimeHook is a hook for the mapstructure library to proprely decode into metav1.Time.
-	stringToTimeHook = func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		if f.Kind() == reflect.String && t == reflect.TypeOf(metav1.Time{}) {
-			time, err := time.Parse(time.RFC3339, data.(string))
-			return metav1.Time{Time: time}, err
-		}
-		return data, nil
-	}
-)
+var gvkRancherCluster = schema.GroupVersionKind{Group: "provisioning.cattle.io", Version: "v1", Kind: "Cluster"}
 
 // Cluster is the struct representing a Rancher Cluster.
 type Cluster struct {
@@ -40,43 +27,21 @@ type ClusterStatus struct {
 
 // ToUnstructured converts a Cluster to an unstructured object.
 func (r *Cluster) ToUnstructured() (*unstructured.Unstructured, error) {
-	rancherClusterUnstructured := &unstructured.Unstructured{}
-
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName:    "json",
-		Result:     &rancherClusterUnstructured.Object,
-		DecodeHook: stringToTimeHook,
-	})
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create decoder: %w", err)
+		return nil, fmt.Errorf("failed to decode cluster: %w", err)
 	}
 
-	if err := decoder.Decode(r); err != nil {
-		return nil, fmt.Errorf("failed to decode rancher cluster: %w", err)
-	}
-
+	rancherClusterUnstructured := &unstructured.Unstructured{}
+	rancherClusterUnstructured.SetUnstructuredContent(obj)
 	rancherClusterUnstructured.SetGroupVersionKind(gvkRancherCluster)
-	rancherClusterUnstructured.SetCreationTimestamp(metav1.Now())
 
 	return rancherClusterUnstructured, nil
 }
 
 // FromUnstructured converts an unstructured object to a Cluster.
 func (r *Cluster) FromUnstructured(rancherClusterUnstructured *unstructured.Unstructured) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName:    "json",
-		Result:     &r,
-		DecodeHook: stringToTimeHook,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create decoder: %w", err)
-	}
-
-	if err := decoder.Decode(rancherClusterUnstructured.Object); err != nil {
-		return fmt.Errorf("failed to decode rancher cluster: %w", err)
-	}
-
-	return nil
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(rancherClusterUnstructured.Object, r)
 }
 
 // ClusterHandler is the struct handling the Rancher Cluster.
