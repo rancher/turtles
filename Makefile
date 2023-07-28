@@ -8,6 +8,7 @@ SHELL = /usr/bin/env bash -o pipefail
 #
 GO_VERSION ?= 1.20.4
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
+REPO ?= rancher-sandbox/rancher-turtles
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -83,6 +84,9 @@ GOLANGCI_LINT_VER := v1.53.3
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
 
+NOTES_BIN := notes
+NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
+
 # Registry / images
 TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
@@ -95,6 +99,7 @@ MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 
 # Relase
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
+PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 RELEASE_DIR ?= out
@@ -326,6 +331,9 @@ $(ENVSUBST_BIN): $(ENVSUBST) ## Build a local copy of envsubst.
 .PHONY: $(KUSTOMIZE_BIN)
 $(KUSTOMIZE_BIN): $(KUSTOMIZE) ## Build a local copy of kustomize.
 
+.PHONY: $(NOTES_BIN)
+$(NOTES_BIN): $(NOTES) ## Build a local copy of kustomize.
+
 .PHONY: $(SETUP_ENVTEST_BIN)
 $(SETUP_ENVTEST_BIN): $(SETUP_ENVTEST) ## Build a local copy of setup-envtest.
 
@@ -355,6 +363,9 @@ $(GOLANGCI_LINT): # Download and install golangci-lint
 	hack/ensure-golangci-lint.sh \
 		-b $(TOOLS_BIN_DIR) \
 		$(GOLANGCI_LINT_VER)
+
+$(NOTES): # Download and install note generator from cluster-api commit
+	hack/make-release-notes.sh $(TOOLS_BIN_DIR)
 
 $(GH): # Download GitHub cli into the tools bin folder
 	hack/ensure-gh.sh \
@@ -419,9 +430,10 @@ release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publis
 	# cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
 
 .PHONY: release-chart
-release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
+release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
 	cp -rf $(ROOT_DIR)/hack/chart/. $(CHART_DIR)
+	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: update-helm-repo

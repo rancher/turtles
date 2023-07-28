@@ -8,6 +8,7 @@ on:
 env:
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
+  CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
 permissions:
   contents: write # Allow to create a release.
@@ -54,10 +55,20 @@ jobs:
       - name: Package operator chart
         run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=.cr-release-packages make release-chart
 
-      - name: Run chart-releaser
+      - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
         with:
-          skip_packaging: true
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          CR_SKIP_EXISTING: true
+          install_only: true
+
+      - name: Prepare environment for the chart releaser
+        run: |
+          echo "CR_OWNER=$(cut -d '/' -f 1 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+          echo "CR_GIT_REPO=$(cut -d '/' -f 2 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+          rm -rf .cr-index
+          mkdir -p .cr-index
+  
+      - name: Run chart-releaser upload
+        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes
+
+      - name: Run chart-releaser index
+        run: cr index --push
