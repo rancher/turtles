@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -207,8 +206,20 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if applyErr := r.applyImportManifest(ctx, capiCluster, manifest); applyErr != nil {
-		return ctrl.Result{}, err
+	log.Info("Creating import manifest")
+
+	clusterKey := client.ObjectKey{
+		Name:      capiCluster.Name,
+		Namespace: capiCluster.Namespace,
+	}
+
+	remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, clusterKey)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
+	}
+
+	if err := r.createImportManifest(ctx, remoteClient, strings.NewReader(manifest)); err != nil {
+		return ctrl.Result{}, fmt.Errorf("creating import manifest: %w", err)
 	}
 
 	return ctrl.Result{}, nil
@@ -283,42 +294,6 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 	return manifestData, nil
 }
 
-func (r *CAPIImportReconciler) applyImportManifest(ctx context.Context, capiCluster *clusterv1.Cluster, manifest string) error {
-	log := log.FromContext(ctx)
-	log.Info("Applying import manifest")
-
-	clusterKey := client.ObjectKey{
-		Name:      capiCluster.Name,
-		Namespace: capiCluster.Namespace,
-	}
-
-	client, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, clusterKey)
-	if err != nil {
-		return fmt.Errorf("getting remote cluster client: %w", err)
-	}
-
-	objs, err := manifestToObjects(strings.NewReader(manifest))
-	if err != nil {
-		return fmt.Errorf("getting objects from manifest: %w", err)
-	}
-
-	for _, obj := range objs {
-		u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
-		if err != nil {
-			return err
-		}
-
-		unstructuredObj := &unstructured.Unstructured{}
-		unstructuredObj.SetUnstructuredContent(u)
-
-		if createErr := createObject(ctx, client, unstructuredObj, &log); createErr != nil {
-			return createErr
-		}
-	}
-
-	return nil
-}
-
 func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
 	labelVal, ok := obj.GetAnnotations()[importAnnotationName]
 	if !ok {
@@ -331,34 +306,6 @@ func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
 	}
 
 	return true, autoImport
-}
-
-func createObject(ctx context.Context, c client.Client, obj client.Object, log *logr.Logger) error {
-	gvk := obj.GetObjectKind().GroupVersionKind()
-
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(gvk)
-	err := c.Get(ctx, client.ObjectKey{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}, u)
-
-	if err == nil {
-		// Already exists
-		log.V(4).Info("object already exists in remote cluster", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
-		// TODO: should we patch?
-		return nil
-	}
-
-	if !apierrors.IsNotFound(err) {
-		return fmt.Errorf("getting object from remote cluster: %w", err)
-	}
-
-	if err := c.Create(ctx, obj); err != nil {
-		return fmt.Errorf("creating object in remote cluster: %w", err)
-	}
-
-	return nil
 }
 
 func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) handler.MapFunc {
@@ -440,9 +387,7 @@ func (r *CAPIImportReconciler) downloadManifest(url string) (string, error) {
 	return string(data), err
 }
 
-func manifestToObjects(in io.Reader) ([]runtime.Object, error) {
-	var result []runtime.Object
-
+func (r *CAPIImportReconciler) createImportManifest(ctx context.Context, remoteClient client.Client, in io.Reader) error {
 	reader := yamlDecoder.NewYAMLReader(bufio.NewReaderSize(in, 4096))
 
 	for {
@@ -452,45 +397,81 @@ func manifestToObjects(in io.Reader) ([]runtime.Object, error) {
 		}
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		obj, err := toObjects(raw)
-		if err != nil {
-			return nil, err
+		if err := r.createRawManifest(ctx, remoteClient, raw); err != nil {
+			return err
 		}
-
-		result = append(result, obj...)
 	}
 
-	return result, nil
+	return nil
 }
 
-func toObjects(bytes []byte) ([]runtime.Object, error) {
+func (r *CAPIImportReconciler) createRawManifest(ctx context.Context, remoteClient client.Client, bytes []byte) error {
 	bytes, err := yamlDecoder.ToJSON(bytes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	check := map[string]interface{}{}
-	if err := json.Unmarshal(bytes, &check); err != nil || len(check) == 0 {
-		return nil, err
+	if err := json.Unmarshal(bytes, &check); err != nil {
+		return fmt.Errorf("error unmarshalling bytes or empty object passed: %w", err)
+	}
+
+	// return if object is empty
+	if len(check) == 0 {
+		return nil
 	}
 
 	obj, _, err := unstructured.UnstructuredJSONScheme.Decode(bytes, nil, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if l, ok := obj.(*unstructured.UnstructuredList); ok {
-		var result []runtime.Object
-
-		for i := range l.Items {
-			result = append(result, &l.Items[i])
+	switch obj := obj.(type) {
+	case *unstructured.Unstructured:
+		if err := r.createObject(ctx, remoteClient, obj); err != nil {
+			return err
 		}
 
-		return result, nil
+		return nil
+	case *unstructured.UnstructuredList:
+		for i := range obj.Items {
+			if err := r.createObject(ctx, remoteClient, &obj.Items[i]); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	default:
+		return fmt.Errorf("unknown object type: %T", obj)
+	}
+}
+
+func (r *CAPIImportReconciler) createObject(ctx context.Context, c client.Client, obj client.Object) error {
+	log := log.FromContext(ctx)
+	gvk := obj.GetObjectKind().GroupVersionKind()
+
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(gvk)
+	err := c.Get(ctx, client.ObjectKey{
+		Namespace: obj.GetNamespace(),
+		Name:      obj.GetName(),
+	}, u)
+
+	if err == nil {
+		log.V(4).Info("object already exists in remote cluster", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
+		return nil
 	}
 
-	return []runtime.Object{obj}, nil
+	if !apierrors.IsNotFound(err) {
+		return fmt.Errorf("getting object from remote cluster: %w", err)
+	}
+
+	if err := c.Create(ctx, obj); err != nil {
+		return fmt.Errorf("creating object in remote cluster: %w", err)
+	}
+
+	return nil
 }
