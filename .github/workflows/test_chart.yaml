@@ -3,8 +3,11 @@ name: Lint and Test Charts
 on: pull_request
 
 env:
-  TAG: dev
-  IMAGE: controller
+  TAG: v0.0.1
+  RELEASE_TAG: v0.0.1
+  MANIFEST_IMG: controller
+  CONTROLLER_IMG: controller
+  PULL_POLICY: Never
 
 jobs:
   lint-test:
@@ -34,7 +37,7 @@ jobs:
           go-version: '=1.20.6'
 
       - name: Build docker image
-        run: MANIFEST_IMG=${{ env.IMAGE }} TAG=${{ env.TAG }} PULL_POLICY=Never make docker-build
+        run: make docker-build
 
       - name: Package operator chart
         run: make release-chart
@@ -48,7 +51,7 @@ jobs:
           cluster_name: kind
 
       - name: Add local docker image
-        run: kind load docker-image ${{ env.IMAGE }}:${{ env.TAG }}
+        run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
 
       - name: Run chart-testing (install)
         run: ct install --charts out/charts/rancher-turtles/
