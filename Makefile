@@ -103,9 +103,10 @@ RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
+CHART_DIR := charts/rancher-turtles
 RELEASE_DIR ?= out
-CHART_DIR := $(RELEASE_DIR)/charts/rancher-turtles
 CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
+CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
 
 # Repo
 GH_ORG_NAME ?= $ORG
@@ -113,7 +114,7 @@ GH_REPO_NAME ?= rancher-turtles
 GH_REPO ?= $(GH_ORG_NAME)/$(GH_REPO_NAME)
 
 # Allow overriding the imagePullPolicy
-PULL_POLICY ?= Always
+PULL_POLICY ?= IfNotPresent
 
 # Development config
 RANCHER_HOSTNAME ?= my.hostname.dev
@@ -227,8 +228,6 @@ docker-push-manifest-rancher-turtles: ## Push the multiarch manifest for the ran
 	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
 	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
 	docker manifest push --purge $(CONTROLLER_IMG):$(TAG)
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(MANIFEST_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
@@ -245,19 +244,6 @@ docker-build-%:
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ## Run docker-build-* targets for all providers
 	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=. --build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(MANIFEST_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
-
-
-.PHONY: set-manifest-pull-policy
-set-manifest-pull-policy:
-	$(info Updating kustomize pull policy file for manager resources)
-	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(TARGET_RESOURCE)
-
-.PHONY: set-manifest-image
-set-manifest-image:
-	$(info Updating kustomize image patch file for manager resource)
-	sed -i'' -e 's@image: .*@image: '"${MANIFEST_IMG}:$(MANIFEST_TAG)"'@' $(TARGET_RESOURCE)
 
 ##@ Deployment
 
@@ -387,61 +373,33 @@ $(HELM): ## Put helm into tools folder.
 $(RELEASE_DIR):
 	mkdir -p $(RELEASE_DIR)/
 
-$(CHART_DIR):
-	mkdir -p $(CHART_DIR)/templates
+$(CHART_RELEASE_DIR):
+	mkdir -p $(CHART_RELEASE_DIR)/templates
 
 $(CHART_PACKAGE_DIR):
 	mkdir -p $(CHART_PACKAGE_DIR)
 
 .PHONY: release
 release: clean-release $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
-	@if [ -z "${RELEASE_TAG}" ]; then echo "RELEASE_TAG is not set"; exit 1; fi
-	@if ! [ -z "$$(git status --porcelain)" ]; then echo "Your local git repository contains uncommitted changes, use git clean before proceeding."; exit 1; fi
-	git checkout "${RELEASE_TAG}"
-	# Set the manifest image to the production bucket.
-	$(MAKE) manifest-modification REGISTRY=$(PROD_REGISTRY)
-	$(MAKE) chart-manifest-modification REGISTRY=$(PROD_REGISTRY)
-	$(MAKE) release-manifests
 	$(MAKE) release-chart
 
-.PHONY: manifest-modification
-manifest-modification:
-	$(MAKE) set-manifest-image \
-		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
-
-.PHONY: chart-manifest-modification
-chart-manifest-modification:
-	$(MAKE) set-manifest-image \
-		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="./config/chart/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent TARGET_RESOURCE="./config/chart/manager_pull_policy.yaml"
-
-.PHONY: release-manifests
-release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
-	$(KUSTOMIZE) build ./config/default > $(RELEASE_DIR)/rancher-turtles-components.yaml
-	$(MAKE) set-manifest-image \
-		MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(RELEASE_TAG) \
-		TARGET_RESOURCE="$(RELEASE_DIR)/rancher-turtles-components.yaml"
-
-	# # Add metadata to the release artifacts
-	# cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
+.PHONY: release-chart
+release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
+	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
+	$(MAKE) verify-release-chart-generate
+	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
+	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
+	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: release-chart
-release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
-	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	cp -rf $(ROOT_DIR)/hack/chart/. $(CHART_DIR)
-	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_DIR)/values.yaml
-	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_DIR)/values.yaml
-	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_DIR)/values.yaml
-	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_DIR)/RELEASE_NOTES.md
-	$(HELM) package $(CHART_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
-
-.PHONY: update-helm-repo
-update-helm-repo:
-	./hack/update-helm-repo.sh $(RELEASE_TAG)
-
+verify-release-chart-generate:
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "generated chart files are out of date, please update charts"; exit 1; \
+	fi
 ## --------------------------------------
 ## Cleanup / Verification
 ## --------------------------------------
