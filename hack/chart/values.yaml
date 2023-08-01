@@ -1,0 +1,5 @@
+rancherTurtles:
+  image: controller
+  tag: v0.0.0
+  imagePullPolicy: Never
+  namespace: rancher-turtles-system
