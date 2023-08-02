@@ -41,6 +41,30 @@ else
 	export GOPATH := $(shell go env GOPATH)
 endif
 
+
+#
+# Ginkgo configuration.
+#
+GINKGO_FOCUS ?=
+GINKGO_SKIP ?=
+GINKGO_NODES ?= 1
+GINKGO_TIMEOUT ?= 2h
+GINKGO_POLL_PROGRESS_AFTER ?= 60m
+GINKGO_POLL_PROGRESS_INTERVAL ?= 5m
+E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/operator.yaml
+GINKGO_ARGS ?=
+SKIP_RESOURCE_CLEANUP ?= false
+USE_EXISTING_CLUSTER ?= false
+GINKGO_NOCOLOR ?= false
+
+# to set multiple ginkgo skip flags, if any
+ifneq ($(strip $(GINKGO_SKIP)),)
+_SKIP_ARGS := $(foreach arg,$(strip $(GINKGO_SKIP)),-skip="$(arg)")
+endif
+
+# Helper function to get dependency version from go.mod
+get_go_version = $(shell go list -m $1 | awk '{print $$2}')
+
 GO_INSTALL := ./scripts/go-install.sh
 
 # Binaries
@@ -76,9 +100,18 @@ GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(abspath $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER))
 GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
 
+GINKGO_BIN := ginkgo
+GINGKO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
+GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
+GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
+
 HELM_VER := v3.8.1
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
+
+CAPI_OPERATOR_VER := 0.5.0
+CAPI_OPERATOR := $(abspath $(TOOLS_BIN_DIR)/capi-operator.tgz)
+CAPI_OPERATOR_URL := https://github.com/kubernetes-sigs/cluster-api-operator/releases/download/v$(CAPI_OPERATOR_VER)/cluster-api-operator-$(CAPI_OPERATOR_VER).tgz
 
 GOLANGCI_LINT_VER := v1.53.3
 GOLANGCI_LINT_BIN := golangci-lint
@@ -332,6 +365,9 @@ $(CONTROLLER_GEN): # Build controller-gen from tools folder.
 $(CONVERSION_GEN): # Build conversion-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(CONVERSION_GEN_PKG) $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
 
+.PHONY: $(GINKGO_BIN)
+$(GINKGO_BIN): $(GINKGO) ## Build a local copy of ginkgo.
+
 $(GO_APIDIFF): # Build go-apidiff from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
@@ -343,6 +379,12 @@ $(KUSTOMIZE): # Build kustomize from tools folder.
 
 $(SETUP_ENVTEST): # Build setup-envtest from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(SETUP_ENVTEST_PKG) $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
+
+$(GINKGO): # Build ginkgo from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINGKO_VER)
+
+$(CAPI_OPERATOR):
+	wget $(CAPI_OPERATOR_URL) -O $(CAPI_OPERATOR)
 
 $(GOLANGCI_LINT): # Download and install golangci-lint
 	hack/ensure-golangci-lint.sh \
@@ -402,6 +444,21 @@ verify-release-chart-generate:
 		git diff; \
 		echo "generated chart files are out of date, please update charts"; exit 1; \
 	fi
+
+.PHONY: test-e2e
+test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) release-chart ## Run the end-to-end tests
+	CAPI_OPERATOR=$(CAPI_OPERATOR) $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
+		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
+		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
+	    -e2e.artifacts-folder="$(ARTIFACTS)" \
+	    -e2e.config="$(E2E_CONF_FILE)" \
+		-e2e.helm-binary-path=$(HELM) \
+		-e2e.chart-path=$(ROOT_DIR)/$(CHART_PACKAGE_DIR)/rancher-turtles-$(HELM_CHART_TAG).tgz \
+	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
+		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
+
+
 ## --------------------------------------
 ## Cleanup / Verification
 ## --------------------------------------

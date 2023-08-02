@@ -1,0 +1,9 @@
+managementClusterName: capi-operator-e2e
+
+images:
+# Use local dev images built source tree;
+- name: ghcr.io/rancher-turtles:dev # This should be substituted with operator image
+  loadBehavior: tryLoad
+
+intervals:
+  default/wait-controllers: ["3m", "10s"]
