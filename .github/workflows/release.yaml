@@ -8,6 +8,11 @@ on:
 env:
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
+  PROD_REGISTRY: ghcr.io
+  CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  RELEASE_DIR: .cr-release-packages
+  REPO: ${{ github.repository }}
 
 permissions:
   contents: write # Allow to create a release.
@@ -38,28 +43,36 @@ jobs:
     - name: Push docker image
       run: make docker-push-all TAG=${{ env.TAG }} PROD_REGISTRY=${{ env.REGISTRY }}
   release:
-    name: Create draft release
+    name: Create helm release
     runs-on: ubuntu-latest
     steps:
-      - name: Set env
-        run:  echo "RELEASE_TAG=${GITHUB_REF:10}" >> $GITHUB_ENV
-      - name: checkout code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-      - name: Generate release artifacts
+
+      - name: Configure Git
         run: |
-          make release
-      - name: Create draft GH release
-        uses: softprops/action-gh-release@v1
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Package operator chart
+        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} make release
+
+      - name: Install chart-releaser
+        uses: helm/chart-releaser-action@v1.5.0
         with:
-          draft: true
-          generate_release_notes: true
-          files: |
-            out/rancher-turtles-components.yaml
-            out/package/*
-          body: "TODO: Add release notes here."
+          install_only: true
+
+      - name: Prepare environment for the chart releaser
+        run: |
+          echo "CR_OWNER=$(cut -d '/' -f 1 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+          echo "CR_GIT_REPO=$(cut -d '/' -f 2 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+          rm -rf .cr-index
+          mkdir -p .cr-index
+  
+      - name: Run chart-releaser upload
+        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --release-notes-file=RELEASE_NOTES.md
+
+      - name: Run chart-releaser index
+        run: cr index --push
