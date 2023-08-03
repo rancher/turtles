@@ -74,7 +74,7 @@ var _ = BeforeSuite(func() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testNamespace,
 			Annotations: map[string]string{
-				importAnnotationName: "true",
+				importAnnotation: "true",
 			},
 		},
 	})).To(Succeed())

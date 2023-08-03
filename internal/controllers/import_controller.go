@@ -33,10 +33,12 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
+	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
+	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
 )
 
 const (
-	importAnnotationName         = "rancher-auto-import"
+	importAnnotation             = "rancher-auto-import"
 	defaultRequeueDuration       = 1 * time.Minute
 	clusterRegistrationTokenName = "default-token"
 )
@@ -63,7 +65,8 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	// TODO: we want the control plane initialized but removing for the time being
 	// capiPredicates := predicates.All(log, predicates.ClusterControlPlaneInitialized(log), predicates.ResourceHasFilterLabel(log, r.WatchFilterValue))
-	capiPredicates := predicates.All(log, predicates.ResourceHasFilterLabel(log, r.WatchFilterValue))
+	capiPredicates := predicates.All(log, predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+		turtlespredicates.ClusterWithoutImportedAnnotation(log))
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&clusterv1.Cluster{}).
@@ -147,8 +150,10 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
-	if !capiCluster.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, capiCluster)
+	if rancherCluster != nil {
+		if !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
+			return r.reconcileDelete(ctx, capiCluster, rancherCluster)
+		}
 	}
 
 	return r.reconcileNormal(ctx, capiCluster, rancherClusterHandler, rancherCluster)
@@ -175,6 +180,14 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      rancherClusterNameFromCAPICluster(capiCluster.Name),
 				Namespace: capiCluster.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: clusterv1.GroupVersion.String(),
+						Kind:       "Cluster",
+						Name:       capiCluster.Name,
+						UID:        capiCluster.UID,
+					},
+				},
 			},
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
@@ -257,11 +270,26 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 	return autoImport, nil
 }
 
-func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, _ *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster,
+	rancherCluster *rancher.Cluster,
+) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling CAPI Cluster Delete")
 
-	// TODO: add implementation
+	// If the Rancher Cluster has ClusterImportedAnnotation annotation that said we imported it,
+	// then annotate the CAPI cluster so that we don't auto-import again.
+	if turtlesannotations.HasClusterImportAnnotation(rancherCluster) {
+		log.Info(fmt.Sprintf("rancher cluster %s has %s annotation, so annotating CAPI cluster %s",
+			rancherCluster.Name, turtlesannotations.ClusterImportedAnnotation, capiCluster.Name))
+
+		annotations := capiCluster.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+
+		annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
+		capiCluster.SetAnnotations(annotations)
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -295,7 +323,7 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 }
 
 func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
-	labelVal, ok := obj.GetAnnotations()[importAnnotationName]
+	labelVal, ok := obj.GetAnnotations()[importAnnotation]
 	if !ok {
 		return false, false
 	}
