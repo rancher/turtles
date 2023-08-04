@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/predicates"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
 	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
@@ -53,6 +54,7 @@ type CAPIImportReconciler struct {
 	controller         controller.Controller
 	externalTracker    external.ObjectTracker
 	remoteClientGetter remote.ClusterClientGetter
+	cache              cache.Cache
 }
 
 // SetupWithManager sets up reconciler with manager.
@@ -84,7 +86,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	u.SetGroupVersionKind(gvk)
 
 	err = c.Watch(
-		&source.Kind{Type: u},
+		source.Kind(r.cache, u),
 		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx)),
 		//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
 	)
@@ -94,7 +96,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	ns := &corev1.Namespace{}
 	err = c.Watch(
-		&source.Kind{Type: ns},
+		source.Kind(r.cache, ns),
 		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx)),
 	)
 
@@ -340,7 +342,7 @@ func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
 func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) handler.MapFunc {
 	log := log.FromContext(ctx)
 
-	return func(o client.Object) []ctrl.Request {
+	return func(_ context.Context, o client.Object) []ctrl.Request {
 		key := client.ObjectKey{Name: o.GetName(), Namespace: o.GetNamespace()}
 
 		capiCluster := &clusterv1.Cluster{}
@@ -359,7 +361,7 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) 
 func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) handler.MapFunc {
 	log := log.FromContext(ctx)
 
-	return func(o client.Object) []ctrl.Request {
+	return func(_ context.Context, o client.Object) []ctrl.Request {
 		ns, ok := o.(*corev1.Namespace)
 		if !ok {
 			log.Error(nil, fmt.Sprintf("Expected a Namespace but got a %T", o))
