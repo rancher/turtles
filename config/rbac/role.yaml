@@ -1,9 +1,7 @@
-# NOTE: created manually as controller-gen not working
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
@@ -12,6 +10,17 @@ rules:
   - configmaps
   - events
   - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - namespaces
   verbs:
   - create
@@ -26,10 +35,66 @@ rules:
   resources:
   - clusters
   - clusters/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
   - machinepools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machinepools/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
   - machinepools/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
   - machines
   - machines/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
   - machinesets
   verbs:
   - create
@@ -40,6 +105,38 @@ rules:
   - update
   - watch
 - apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machinesets/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machinesets/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
   - '*'
@@ -49,20 +146,8 @@ rules:
   - get
   - list
   - patch
-  - watch
-- apiGroups:
-  - provisioning.cattle.io
-  resources:
-  - clusters
-  - clusters/status
-  verbs:
-  - get
-  - list
-  - watch
-  - create
   - update
-  - delete
-  - patch
+  - watch
 - apiGroups:
   - management.cattle.io
   resources:
@@ -73,10 +158,15 @@ rules:
   - list
   - watch
 - apiGroups:
-  - coordination.k8s.io
+  - provisioning.cattle.io
   resources:
-  - leases
+  - clusters
+  - clusters/status
   verbs:
-  - get
   - create
+  - delete
+  - get
+  - list
+  - patch
   - update
+  - watch
