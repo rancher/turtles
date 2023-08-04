@@ -31,7 +31,7 @@ jobs:
       - name: setupGo
         uses: actions/setup-go@v4
         with:
-          go-version: '=1.20.6'
+          go-version: '=1.20.7'
 
       - name: Build docker image
         run: MANIFEST_IMG=${{ env.IMAGE }} TAG=${{ env.TAG }} PULL_POLICY=Never make docker-build
