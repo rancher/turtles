@@ -280,6 +280,31 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res.Requeue).To(BeTrue())
 	})
+
+	It("should reconcile a CAPI cluster when rancher cluster exists and registration manifests url is empty", func() {
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
+
+		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
+		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: rancherCluster.Namespace, Name: rancherCluster.Name})
+		Expect(err).ToNot(HaveOccurred())
+		cluster.Status.ClusterName = testNamespace
+		Expect(rancherClusterHandler.UpdateStatus(cluster)).To(Succeed())
+
+		Expect(clusterRegistrationTokenHandler.Create(clusterRegistrationToken)).To(Succeed())
+
+		res, err := r.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: capiCluster.Namespace,
+				Name:      capiCluster.Name,
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.Requeue).To(BeTrue())
+	})
 })
 
 func manifestToObjects(in io.Reader) ([]runtime.Object, error) {

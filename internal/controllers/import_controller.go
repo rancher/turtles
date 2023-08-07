@@ -135,7 +135,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Wait for controlplane to be ready
 	if !capiCluster.Status.ControlPlaneReady {
-		log.Info("clusters control plane is not ready, requeue")
+		log.Info("Clusters control plane is not ready, requeue")
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
@@ -163,7 +163,6 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	rancherCluster *rancher.Cluster,
 ) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	log.Info("Reconciling CAPI Cluster")
 
 	if rancherCluster == nil {
 		shouldImport, err := r.shouldAutoImport(ctx, capiCluster)
@@ -234,6 +233,8 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	if err := r.createImportManifest(ctx, remoteClient, strings.NewReader(manifest)); err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating import manifest: %w", err)
 	}
+
+	log.Info("Successfully applied import manifest")
 
 	return ctrl.Result{}, nil
 }
@@ -309,7 +310,7 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 		return "", fmt.Errorf("error getting registration token for cluster %s: %w", clusterName, err)
 	}
 
-	if token == nil {
+	if token == nil || token.Status.ManifestURL == "" {
 		return "", nil
 	}
 
