@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	importAnnotation             = "rancher-auto-import"
+	importLabelName              = "cluster-api.cattle.io/rancher-auto-import"
 	defaultRequeueDuration       = 1 * time.Minute
 	clusterRegistrationTokenName = "default-token"
 )
@@ -257,13 +257,13 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 	// Check CAPI cluster for label first
 	hasLabel, autoImport := shouldImport(capiCluster)
 	if hasLabel && autoImport {
-		log.V(2).Info("cluster contains import annotation")
+		log.V(2).Info("Cluster contains import annotation")
 
 		return true, nil
 	}
 
 	if hasLabel && !autoImport {
-		log.V(2).Info("cluster contains annotation to not import")
+		log.V(2).Info("Cluster contains annotation to not import")
 
 		return false, nil
 	}
@@ -335,7 +335,7 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 }
 
 func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
-	labelVal, ok := obj.GetAnnotations()[importAnnotation]
+	labelVal, ok := obj.GetLabels()[importLabelName]
 	if !ok {
 		return false, false
 	}

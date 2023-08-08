@@ -115,8 +115,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist", func() {
-		capiCluster.Annotations = map[string]string{
-			importAnnotation: "true",
+		capiCluster.Labels = map[string]string{
+			importLabelName: "true",
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true

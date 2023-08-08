@@ -73,8 +73,8 @@ var _ = BeforeSuite(func() {
 	Expect(cl.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testNamespace,
-			Annotations: map[string]string{
-				importAnnotation: "true",
+			Labels: map[string]string{
+				importLabelName: "true",
 			},
 		},
 	})).To(Succeed())
