@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	errorutils "k8s.io/apimachinery/pkg/util/errors"
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -142,14 +143,36 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{Requeue: true}, err
 	}
 
+	patchBase := client.MergeFromWithOptions(capiCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
 	log = log.WithValues("cluster", capiCluster.Name)
 
 	// Wait for controlplane to be ready
 	if !capiCluster.Status.ControlPlaneReady {
-		log.Info("Clusters control plane is not ready, requeue")
+		log.Info("clusters control plane is not ready, requeue")
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
+	// Collect errors as an aggregate to return together after all patches have been performed.
+	var errs []error
+
+	result, err := r.reconcile(ctx, capiCluster)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("error reconciling cluster: %w", err))
+	}
+
+	if err := r.Patch(ctx, capiCluster, patchBase); err != nil {
+		errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
+	}
+
+	if len(errs) > 0 {
+		return ctrl.Result{}, errorutils.NewAggregate(errs)
+	}
+
+	return result, nil
+}
+
+func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	// fetch the rancher clusters
 	rancherClusterHandler := rancher.NewClusterHandler(ctx, r.Client)
 	rancherClusterName := rancherClusterNameFromCAPICluster(capiCluster.Name)
