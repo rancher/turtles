@@ -34,7 +34,9 @@ import (
 	"k8s.io/klog/v2"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha1"
 
-	operatorframework "sigs.k8s.io/cluster-api-operator/test/framework"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	. "sigs.k8s.io/cluster-api-operator/test/framework"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -43,7 +45,15 @@ import (
 )
 
 const (
-	operaratorPackage = "CAPI_OPERATOR"
+	operatorPackage    = "CAPI_OPERATOR"
+	kubernetesVersion  = "KUBERNETES_VERSION"
+	rancherFeatures    = "RANCHER_FEATURES"
+	rancherHostname    = "RANCHER_HOSTNAME"
+	rancherVersion     = "RANCHER_VERSION"
+	rancherPath        = "RANCHER_PATH"
+	rancherUrl         = "RANCHER_URL"
+	rancherRepoName    = "RANCHER_REPO_NAME"
+	capiInfrastructure = "CAPI_INFRASTRUCTURE"
 )
 
 // Test suite flags.
@@ -83,35 +93,19 @@ var (
 	// bootstrapClusterProxy allows to interact with the bootstrap cluster to be used for the e2e tests.
 	bootstrapClusterProxy framework.ClusterProxy
 
-	// helmClusterProvider manages provisioning of the bootstrap cluster to be used for the helm tests.
-	// Please note that provisioning will be skipped if e2e.use-existing-cluster is provided.
-	helmClusterProvider bootstrap.ClusterProvider
-
-	// kubetestConfigFilePath is the path to the kubetest configuration file.
-	kubetestConfigFilePath string
-
-	// kubetestRepoListPath.
-	kubetestRepoListPath string
-
-	// useCIArtifacts specifies whether or not to use the latest build from the main branch of the Kubernetes repository.
-	useCIArtifacts bool
-
 	// usePRArtifacts specifies whether or not to use the build from a PR of the Kubernetes repository.
 	usePRArtifacts bool
 
 	// helmChart is the helm chart helper to be used for the e2e tests.
-	helmChart *operatorframework.HelmChart
+	helmChart *HelmChart
 )
 
 func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
-	flag.BoolVar(&useCIArtifacts, "kubetest.use-ci-artifacts", false, "use the latest build from the main branch of the Kubernetes repository. Set KUBERNETES_VERSION environment variable to latest-1.xx to use the build from 1.xx release branch.")
 	flag.BoolVar(&usePRArtifacts, "kubetest.use-pr-artifacts", false, "use the build from a PR of the Kubernetes repository")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
-	flag.StringVar(&kubetestConfigFilePath, "kubetest.config-file", "", "path to the kubetest configuration file")
-	flag.StringVar(&kubetestRepoListPath, "kubetest.repo-list-path", "", "path to the kubetest repo-list path")
 	flag.StringVar(&helmBinaryPath, "e2e.helm-binary-path", "", "path to the helm binary")
 	flag.StringVar(&chartPath, "e2e.chart-path", "", "path to the operator chart")
 }
@@ -147,7 +141,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	bootstrapClusterProvider, bootstrapClusterProxy = setupCluster(e2eConfig, scheme, useExistingCluster, "bootstrap")
 
 	By("Initializing the bootstrap cluster")
-	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, clusterctlConfigPath, artifactFolder)
+	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, artifactFolder, useExistingCluster)
 
 	return []byte(
 		strings.Join([]string{
@@ -187,12 +181,11 @@ func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	Expect(configData).ToNot(BeEmpty(), "The e2e test config file should not be empty")
 
 	config := &clusterctl.E2EConfig{}
-	Expect(yaml.Unmarshal(configData, config)).To(Succeed(), "Failed to convert the e2e test config file to yaml")
+	Expect(yaml.UnmarshalStrict(configData, config)).To(Succeed(), "Failed to convert the e2e test config file to yaml")
 
 	config.Defaults()
 	config.AbsPaths(filepath.Dir(configPath))
 
-	// TODO: Add config validation
 	return config
 }
 
@@ -213,7 +206,8 @@ func setupCluster(config *clusterctl.E2EConfig, scheme *runtime.Scheme, useExist
 	if !useExistingCluster {
 		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 			Name:               config.ManagementClusterName,
-			RequiresDockerSock: config.HasDockerProvider(),
+			KubernetesVersion:  config.GetVariable(kubernetesVersion),
+			RequiresDockerSock: true,
 			Images:             config.Images,
 		})
 		Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
@@ -227,39 +221,126 @@ func setupCluster(config *clusterctl.E2EConfig, scheme *runtime.Scheme, useExist
 	return clusterProvider, proxy
 }
 
-func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig, clusterctlConfigPath, artifactFolder string) {
-	operatorPackagePath := os.Getenv(operaratorPackage)
+func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig, artifactFolder string, useExistingCluster bool) {
+	if useExistingCluster {
+		return
+	}
+
 	Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling initBootstrapCluster")
 	Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling initBootstrapCluster")
-	Expect(operatorPackagePath).To(BeAnExistingFile(), "Invalid path to operator package. Please specify a valid one")
+	Expect(e2eConfig.GetVariable(operatorPackage)).To(BeAnExistingFile(), "Invalid path to operator package. Please specify a valid one")
 	logFolder := filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(logFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created for initBootstrapCluster")
 
+	By("Adding docker variables secret")
+	bootstrapCluster := bootstrapClusterProxy.GetClient()
+	secret := &corev1.Secret{}
+	secretData, err := os.ReadFile(customManifestsFolder + dockerVariablesSecret)
+	Expect(err).ToNot(HaveOccurred(), "Failed to read the docker provider secret from file")
+	Expect(yaml.Unmarshal(secretData, &secret)).To(Succeed())
+	Expect(bootstrapCluster.Create(ctx, secret)).To(Succeed())
+
 	By("Installing CAPI operator chart")
-	chart := &operatorframework.HelmChart{
+	chart := &HelmChart{
 		BinaryPath:      helmBinaryPath,
-		Path:            operatorPackagePath,
+		Path:            e2eConfig.GetVariable(operatorPackage),
 		Name:            "capi-operator",
 		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
-		Output:          operatorframework.Full,
-		AdditionalFlags: []string{"-n", operatorNamespace, "--create-namespace", "--wait"},
+		Output:          Full,
+		AdditionalFlags: Flags("-n", operatorNamespace, "--create-namespace", "--wait"),
 	}
-	_, err := chart.InstallChart(map[string]string{
+	_, err := chart.Run(map[string]string{
 		"cert-manager.enabled": "true",
+		"infrastructure":       e2eConfig.GetVariable(capiInfrastructure),
+		"secretName":           "variables",
+		"secretNamespace":      "default",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Installing rancher-turtles chart")
-	chart = &operatorframework.HelmChart{
+	chart = &HelmChart{
 		BinaryPath:      helmBinaryPath,
 		Path:            chartPath,
 		Name:            "rancher-turtles",
 		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
-		Output:          operatorframework.Full,
-		AdditionalFlags: []string{"-n", rancherTurtlesNamespace, "--create-namespace", "--wait"},
+		AdditionalFlags: Flags("-n", rancherTurtlesNamespace, "--create-namespace", "--wait"),
 	}
-	_, err = chart.InstallChart(nil)
+	_, err = chart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
+
+	By("Installing rancher chart")
+	addChart := &HelmChart{
+		BinaryPath:      helmBinaryPath,
+		Name:            e2eConfig.GetVariable(rancherRepoName),
+		Path:            e2eConfig.GetVariable(rancherUrl),
+		Commands:        Commands(Repo, Add),
+		AdditionalFlags: Flags("--force-update"),
+		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
+	}
+	_, err = addChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	updateChart := &HelmChart{
+		BinaryPath: helmBinaryPath,
+		Commands:   Commands(Repo, Update),
+		Kubeconfig: bootstrapClusterProxy.GetKubeconfigPath(),
+	}
+	_, err = updateChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	chart = &HelmChart{
+		BinaryPath: helmBinaryPath,
+		Path:       e2eConfig.GetVariable(rancherPath),
+		Name:       "rancher",
+		Kubeconfig: bootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: Flags(
+			"--version", e2eConfig.GetVariable(rancherVersion),
+			"--namespace", rancherNamespace,
+			"--create-namespace",
+			"--wait",
+		),
+	}
+	_, err = chart.Run(map[string]string{
+		"bootstrapPassword":         "admin",
+		"features":                  e2eConfig.GetVariable(rancherFeatures),
+		"global.cattle.psp.enabled": "false",
+		"replicas":                  "1",
+		"hostname":                  e2eConfig.GetVariable(rancherHostname),
+	})
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func dumpBootstrapClusterLogs(bootstrapClusterProxy framework.ClusterProxy) {
+	if bootstrapClusterProxy == nil {
+		return
+	}
+
+	clusterLogCollector := bootstrapClusterProxy.GetLogCollector()
+	if clusterLogCollector == nil {
+		return
+	}
+
+	nodes, err := bootstrapClusterProxy.GetClientSet().CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		fmt.Printf("Failed to get nodes for the bootstrap cluster: %v\n", err)
+		return
+	}
+
+	for i := range nodes.Items {
+		nodeName := nodes.Items[i].GetName()
+		err = clusterLogCollector.CollectMachineLog(
+			ctx,
+			bootstrapClusterProxy.GetClient(),
+			&clusterv1.Machine{
+				Spec:       clusterv1.MachineSpec{ClusterName: nodeName},
+				ObjectMeta: metav1.ObjectMeta{Name: nodeName},
+			},
+			filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName(), "machines", nodeName),
+		)
+		if err != nil {
+			fmt.Printf("Failed to get logs for the bootstrap cluster node %s: %v\n", nodeName, err)
+		}
+	}
 }
 
 // Using a SynchronizedAfterSuite for controlling how to delete resources shared across ParallelNodes (~ginkgo threads).
@@ -268,6 +349,9 @@ var _ = SynchronizedAfterSuite(func() {
 	// After each ParallelNode.
 }, func() {
 	// After all ParallelNodes.
+
+	By("Dumping logs from the bootstrap cluster")
+	dumpBootstrapClusterLogs(bootstrapClusterProxy)
 
 	By("Tearing down the management clusters")
 	if !skipCleanup {

@@ -30,4 +30,9 @@ var (
 const (
 	operatorNamespace       = "capi-operator-system"
 	rancherTurtlesNamespace = "rancher-turtles-system"
+	rancherNamespace        = "cattle-system"
+	customManifestsFolder   = "resources/"
+
+	dockerVariablesSecret   = "docker-infra-secret.yaml"
+	fleetCapiTestdata   = "fleet-capi-test.yaml"
 )

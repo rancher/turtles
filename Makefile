@@ -447,7 +447,8 @@ verify-release-chart-generate:
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) release-chart ## Run the end-to-end tests
-	CAPI_OPERATOR=$(CAPI_OPERATOR) $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) CAPI_OPERATOR=$(CAPI_OPERATOR) \
+	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
 		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
 		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \

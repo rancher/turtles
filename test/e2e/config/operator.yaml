@@ -1,4 +1,4 @@
-managementClusterName: capi-operator-e2e
+managementClusterName: rancher-turtles-e2e
 
 images:
 # Use local dev images built source tree;
@@ -7,3 +7,14 @@ images:
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
+  default/wait-consistently: ["30s", "5s"]
+
+variables:
+  RANCHER_VERSION: "v2.7.5"
+  RANCHER_HOSTNAME: "localhost"
+  RANCHER_FEATURES: "embedded-cluster-api=false"
+  RANCHER_PATH: "rancher-stable/rancher"
+  KUBERNETES_VERSION: "v1.26.3"
+  CAPI_INFRASTRUCTURE: "docker"
+  RANCHER_REPO_NAME: "rancher-stable"
+  RANCHER_URL: "https://releases.rancher.com/server-charts/stable"
