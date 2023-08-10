@@ -6,7 +6,7 @@ SHELL = /usr/bin/env bash -o pipefail
 #
 # Go.
 #
-GO_VERSION ?= 1.20.7
+GO_VERSION ?= 1.20.4
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher-sandbox/rancher-turtles
 
