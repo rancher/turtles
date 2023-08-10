@@ -2,11 +2,12 @@ managementClusterName: rancher-turtles-e2e
 
 images:
 # Use local dev images built source tree;
-- name: ghcr.io/rancher-turtles:dev # This should be substituted with operator image
+- name: ghcr.io/rancher-sandbox/rancher-turtles-{ARCH}:dev # This should be substituted with operator image
   loadBehavior: tryLoad
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
+  default/wait-rancher: ["10m", "30s"]
   default/wait-consistently: ["30s", "5s"]
 
 variables:
@@ -18,3 +19,9 @@ variables:
   CAPI_INFRASTRUCTURE: "docker"
   RANCHER_REPO_NAME: "rancher-stable"
   RANCHER_URL: "https://releases.rancher.com/server-charts/stable"
+  # Additional setup for establishing rancher ingress
+  NGROK_REPO_NAME: "ngrok-ingress-controller"
+  NGROK_URL: "https://ngrok.github.io/kubernetes-ingress-controller"
+  NGROK_PATH: "ngrok/kubernetes-ingress-controller"
+  NGROK_API_KEY: ""
+  NGROK_AUTHTOKEN: ""

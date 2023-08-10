@@ -399,6 +399,11 @@ $(GH): # Download GitHub cli into the tools bin folder
 		-b $(TOOLS_BIN_DIR) \
 		$(GH_VERSION)
 
+kubectl: # Download kubectl cli into tools bin folder
+	hack/ensure-kubectl.sh \
+		-b $(TOOLS_BIN_DIR) \
+		$(KUBECTL_VERSION)
+
 $(HELM): ## Put helm into tools folder.
 	mkdir -p $(TOOLS_BIN_DIR)
 	rm -f "$(TOOLS_BIN_DIR)/$(HELM_BIN)*"
@@ -446,7 +451,7 @@ verify-release-chart-generate:
 	fi
 
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) release-chart ## Run the end-to-end tests
+test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl docker-build release-chart ## Run the end-to-end tests
 	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) CAPI_OPERATOR=$(CAPI_OPERATOR) \
 	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \

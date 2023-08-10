@@ -2,7 +2,7 @@
 // +build e2e
 
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 SUSE.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,18 +21,35 @@ package e2e
 
 import (
 	"context"
+	_ "embed"
 )
 
 var (
 	ctx = context.Background()
+
+	//go:embed resources/testdata/fleet-capi-test.yaml
+	fleetCAPITestdata []byte
+
+	//go:embed resources/config/docker-infra-secret.yaml
+	dockerVariablesSecret []byte
+
+	//go:embed resources/config/ingress.yaml
+	ingressConfig []byte
+
+	//go:embed resources/config/rancher-service-patch.yaml
+	rancherServicePatch []byte
+
+	//go:embed resources/config/ingress-class-patch.yaml
+	ingressClassPatch []byte
+
+	//go:embed resources/config/rancher-setting-patch.yaml
+	rancherSettingPatch []byte
 )
 
 const (
 	operatorNamespace       = "capi-operator-system"
 	rancherTurtlesNamespace = "rancher-turtles-system"
 	rancherNamespace        = "cattle-system"
-	customManifestsFolder   = "resources/"
-
-	dockerVariablesSecret   = "docker-infra-secret.yaml"
-	fleetCapiTestdata   = "fleet-capi-test.yaml"
+	capiClusterName         = "test2"
+	capiClusterNamespace    = "fleet-default"
 )

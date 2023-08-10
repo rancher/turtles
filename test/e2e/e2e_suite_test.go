@@ -2,7 +2,7 @@
 // +build e2e
 
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 SUSE.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -54,6 +55,12 @@ const (
 	rancherUrl         = "RANCHER_URL"
 	rancherRepoName    = "RANCHER_REPO_NAME"
 	capiInfrastructure = "CAPI_INFRASTRUCTURE"
+
+	ngrokRepoName  = "NGROK_REPO_NAME"
+	ngrokUrl       = "NGROK_URL"
+	ngrokPath      = "NGROK_PATH"
+	ngrokApiKey    = "NGROK_API_KEY"
+	ngrokAuthToken = "NGROK_AUTHTOKEN"
 )
 
 // Test suite flags.
@@ -93,20 +100,16 @@ var (
 	// bootstrapClusterProxy allows to interact with the bootstrap cluster to be used for the e2e tests.
 	bootstrapClusterProxy framework.ClusterProxy
 
-	// usePRArtifacts specifies whether or not to use the build from a PR of the Kubernetes repository.
-	usePRArtifacts bool
-
 	// helmChart is the helm chart helper to be used for the e2e tests.
 	helmChart *HelmChart
 )
 
 func init() {
-	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
-	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
-	flag.BoolVar(&usePRArtifacts, "kubetest.use-pr-artifacts", false, "use the build from a PR of the Kubernetes repository")
+	flag.StringVar(&configPath, "e2e.config", "config/operator.yaml", "path to the e2e config file")
+	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "_artifacts", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
-	flag.StringVar(&helmBinaryPath, "e2e.helm-binary-path", "", "path to the helm binary")
+	flag.StringVar(&helmBinaryPath, "e2e.helm-binary-path", "helm", "path to the helm binary")
 	flag.StringVar(&chartPath, "e2e.chart-path", "", "path to the operator chart")
 }
 
@@ -227,57 +230,120 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 	}
 
 	Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling initBootstrapCluster")
-	Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling initBootstrapCluster")
-	Expect(e2eConfig.GetVariable(operatorPackage)).To(BeAnExistingFile(), "Invalid path to operator package. Please specify a valid one")
+	Expect(config.GetVariable(operatorPackage)).To(BeAnExistingFile(), "Invalid path to operator package. Please specify a valid one")
 	logFolder := filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(logFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created for initBootstrapCluster")
 
+	initCAPIOperator(bootstrapClusterProxy, config)
+	initRancherTurtles(bootstrapClusterProxy, config)
+	initRancher(bootstrapClusterProxy, config)
+}
+
+func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
+	By("Installing rancher-turtles chart")
+	chart := &HelmChart{
+		BinaryPath:      helmBinaryPath,
+		Path:            chartPath,
+		Name:            "rancher-turtles",
+		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: Flags("-n", rancherTurtlesNamespace, "--create-namespace", "--wait"),
+	}
+	_, err := chart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func initCAPIOperator(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
 	By("Adding docker variables secret")
-	bootstrapCluster := bootstrapClusterProxy.GetClient()
-	secret := &corev1.Secret{}
-	secretData, err := os.ReadFile(customManifestsFolder + dockerVariablesSecret)
-	Expect(err).ToNot(HaveOccurred(), "Failed to read the docker provider secret from file")
-	Expect(yaml.Unmarshal(secretData, &secret)).To(Succeed())
-	Expect(bootstrapCluster.Create(ctx, secret)).To(Succeed())
+	Expect(clusterProxy.Apply(ctx, dockerVariablesSecret)).To(Succeed())
 
 	By("Installing CAPI operator chart")
 	chart := &HelmChart{
 		BinaryPath:      helmBinaryPath,
-		Path:            e2eConfig.GetVariable(operatorPackage),
+		Path:            config.GetVariable(operatorPackage),
 		Name:            "capi-operator",
-		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
+		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
 		Output:          Full,
 		AdditionalFlags: Flags("-n", operatorNamespace, "--create-namespace", "--wait"),
 	}
 	_, err := chart.Run(map[string]string{
 		"cert-manager.enabled": "true",
-		"infrastructure":       e2eConfig.GetVariable(capiInfrastructure),
+		"infrastructure":       config.GetVariable(capiInfrastructure),
 		"secretName":           "variables",
 		"secretNamespace":      "default",
 	})
 	Expect(err).ToNot(HaveOccurred())
+}
 
-	By("Installing rancher-turtles chart")
-	chart = &HelmChart{
-		BinaryPath:      helmBinaryPath,
-		Path:            chartPath,
-		Name:            "rancher-turtles",
-		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
-		AdditionalFlags: Flags("-n", rancherTurtlesNamespace, "--create-namespace", "--wait"),
-	}
-	_, err = chart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
-
+func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
 	By("Installing rancher chart")
 	addChart := &HelmChart{
 		BinaryPath:      helmBinaryPath,
-		Name:            e2eConfig.GetVariable(rancherRepoName),
-		Path:            e2eConfig.GetVariable(rancherUrl),
+		Name:            config.GetVariable(rancherRepoName),
+		Path:            config.GetVariable(rancherUrl),
+		Commands:        Commands(Repo, Add),
+		AdditionalFlags: Flags("--force-update"),
+		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
+	}
+	_, err := addChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	updateChart := &HelmChart{
+		BinaryPath: helmBinaryPath,
+		Commands:   Commands(Repo, Update),
+		Kubeconfig: clusterProxy.GetKubeconfigPath(),
+	}
+	_, err = updateChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	chart := &HelmChart{
+		BinaryPath: helmBinaryPath,
+		Path:       config.GetVariable(rancherPath),
+		Name:       "rancher",
+		Kubeconfig: clusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: Flags(
+			"--version", config.GetVariable(rancherVersion),
+			"--namespace", rancherNamespace,
+			"--create-namespace",
+			"--wait",
+		),
+	}
+	_, err = chart.Run(map[string]string{
+		"bootstrapPassword":         "rancheradmin",
+		"features":                  config.GetVariable(rancherFeatures),
+		"global.cattle.psp.enabled": "false",
+		"hostname":                  config.GetVariable(rancherHostname),
+		"replicas":                  "1",
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Updating rancher settings")
+	settingPatch, err := envsubst.Eval(string(rancherSettingPatch), os.Getenv)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(clusterProxy.Apply(ctx, []byte(settingPatch))).To(Succeed())
+
+	initNgrokIngress(clusterProxy, config)
+
+	By("Setting up ingress")
+	ingress, err := envsubst.Eval(string(ingressConfig), os.Getenv)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(clusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
+}
+
+func initNgrokIngress(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
+	if config.GetVariable(ngrokRepoName) == "" || config.GetVariable(ngrokUrl) == "" {
+		return
+	}
+
+	By("Setting up ngrok-ingress-controller")
+	addChart := &HelmChart{
+		BinaryPath:      helmBinaryPath,
+		Name:            config.GetVariable(ngrokRepoName),
+		Path:            config.GetVariable(ngrokUrl),
 		Commands:        Commands(Repo, Add),
 		AdditionalFlags: Flags("--force-update"),
 		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
 	}
-	_, err = addChart.Run(nil)
+	_, err := addChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	updateChart := &HelmChart{
@@ -288,26 +354,24 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 	_, err = updateChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
-	chart = &HelmChart{
+	installChart := &HelmChart{
 		BinaryPath: helmBinaryPath,
-		Path:       e2eConfig.GetVariable(rancherPath),
-		Name:       "rancher",
+		Path:       config.GetVariable(ngrokPath),
+		Name:       "ngrok",
 		Kubeconfig: bootstrapClusterProxy.GetKubeconfigPath(),
-		AdditionalFlags: Flags(
-			"--version", e2eConfig.GetVariable(rancherVersion),
-			"--namespace", rancherNamespace,
-			"--create-namespace",
-			"--wait",
-		),
+		Wait:       true,
 	}
-	_, err = chart.Run(map[string]string{
-		"bootstrapPassword":         "admin",
-		"features":                  e2eConfig.GetVariable(rancherFeatures),
-		"global.cattle.psp.enabled": "false",
-		"replicas":                  "1",
-		"hostname":                  e2eConfig.GetVariable(rancherHostname),
+	_, err = installChart.Run(map[string]string{
+		"credentials.apiKey":    config.GetVariable(ngrokApiKey),
+		"credentials.authtoken": config.GetVariable(ngrokAuthToken),
 	})
 	Expect(err).ToNot(HaveOccurred())
+
+	By("Updating rancher svc")
+	Expect(bootstrapClusterProxy.Apply(ctx, rancherServicePatch, "--server-side")).To(Succeed())
+
+	By("Setting up default ingress class")
+	Expect(bootstrapClusterProxy.Apply(ctx, ingressClassPatch, "--server-side")).To(Succeed())
 }
 
 func dumpBootstrapClusterLogs(bootstrapClusterProxy framework.ClusterProxy) {
@@ -348,8 +412,6 @@ func dumpBootstrapClusterLogs(bootstrapClusterProxy framework.ClusterProxy) {
 var _ = SynchronizedAfterSuite(func() {
 	// After each ParallelNode.
 }, func() {
-	// After all ParallelNodes.
-
 	By("Dumping logs from the bootstrap cluster")
 	dumpBootstrapClusterLogs(bootstrapClusterProxy)
 

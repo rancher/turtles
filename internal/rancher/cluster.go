@@ -23,6 +23,7 @@ type Cluster struct {
 type ClusterStatus struct {
 	ClusterName   string `json:"clusterName,omitempty"`
 	AgentDeployed bool   `json:"agentDeployed,omitempty"`
+	Ready         bool   `json:"ready,omitempty"`
 }
 
 // ToUnstructured converts a Cluster to an unstructured object.
