@@ -3,7 +3,6 @@ package controllers
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -32,6 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/predicates"
+	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
 	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
@@ -470,69 +470,35 @@ func (r *CAPIImportReconciler) createImportManifest(ctx context.Context, remoteC
 }
 
 func (r *CAPIImportReconciler) createRawManifest(ctx context.Context, remoteClient client.Client, bytes []byte) error {
-	bytes, err := yamlDecoder.ToJSON(bytes)
+	items, err := utilyaml.ToUnstructured(bytes)
 	if err != nil {
-		return err
-	}
-
-	check := map[string]interface{}{}
-	if err := json.Unmarshal(bytes, &check); err != nil {
 		return fmt.Errorf("error unmarshalling bytes or empty object passed: %w", err)
 	}
 
-	// return if object is empty
-	if len(check) == 0 {
-		return nil
-	}
-
-	obj, _, err := unstructured.UnstructuredJSONScheme.Decode(bytes, nil, nil)
-	if err != nil {
-		return err
-	}
-
-	switch obj := obj.(type) {
-	case *unstructured.Unstructured:
-		if err := r.createObject(ctx, remoteClient, obj); err != nil {
+	for _, obj := range items {
+		if err := r.createObject(ctx, remoteClient, obj.DeepCopy()); err != nil {
 			return err
 		}
-
-		return nil
-	case *unstructured.UnstructuredList:
-		for i := range obj.Items {
-			if err := r.createObject(ctx, remoteClient, &obj.Items[i]); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	default:
-		return fmt.Errorf("unknown object type: %T", obj)
 	}
+
+	return nil
 }
 
 func (r *CAPIImportReconciler) createObject(ctx context.Context, c client.Client, obj client.Object) error {
 	log := log.FromContext(ctx)
 	gvk := obj.GetObjectKind().GroupVersionKind()
 
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(gvk)
-	err := c.Get(ctx, client.ObjectKey{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}, u)
-
-	if err == nil {
+	err := c.Create(ctx, obj)
+	if apierrors.IsAlreadyExists(err) {
 		log.V(4).Info("object already exists in remote cluster", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		return nil
 	}
 
-	if !apierrors.IsNotFound(err) {
-		return fmt.Errorf("getting object from remote cluster: %w", err)
-	}
-
-	if err := c.Create(ctx, obj); err != nil {
+	if err != nil {
 		return fmt.Errorf("creating object in remote cluster: %w", err)
 	}
+
+	log.V(4).Info("object was created", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
 	return nil
 }
