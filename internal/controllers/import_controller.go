@@ -22,7 +22,6 @@ import (
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -55,7 +54,6 @@ type CAPIImportReconciler struct {
 	controller         controller.Controller
 	externalTracker    external.ObjectTracker
 	remoteClientGetter remote.ClusterClientGetter
-	cache              cache.Cache
 }
 
 // SetupWithManager sets up reconciler with manager.
@@ -87,7 +85,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	u.SetGroupVersionKind(gvk)
 
 	err = c.Watch(
-		source.Kind(r.cache, u),
+		source.Kind(mgr.GetCache(), u),
 		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx)),
 		//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
 	)
@@ -97,7 +95,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	ns := &corev1.Namespace{}
 	err = c.Watch(
-		source.Kind(r.cache, ns),
+		source.Kind(mgr.GetCache(), ns),
 		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx)),
 	)
 
