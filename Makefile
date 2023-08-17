@@ -451,7 +451,9 @@ verify-release-chart-generate:
 	fi
 
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl docker-build release-chart ## Run the end-to-end tests
+test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl ## Run the end-to-end tests
+	RELEASE_TAG=v0.0.1 $(MAKE) docker-build
+	RELEASE_TAG=v0.0.1 $(MAKE) release-chart
 	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) CAPI_OPERATOR=$(CAPI_OPERATOR) \
 	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \

@@ -5,6 +5,7 @@ go 1.20
 replace github.com/rancher-sandbox/rancher-turtles => ../
 
 require (
+	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.10
 	github.com/rancher-sandbox/rancher-turtles v0.0.0-00010101000000-000000000000
@@ -40,7 +41,6 @@ require (
 	github.com/docker/docker v24.0.5+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
