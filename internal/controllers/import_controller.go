@@ -65,7 +65,8 @@ const (
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportReconciler struct {
-	client.Client
+	Client           client.Client
+	RancherClient    client.Client
 	recorder         record.EventRecorder
 	WatchFilterValue string
 	Scheme           *runtime.Scheme
@@ -178,7 +179,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		errs = append(errs, fmt.Errorf("error reconciling cluster: %w", err))
 	}
 
-	if err := r.Patch(ctx, capiCluster, patchBase); err != nil {
+	if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
 		errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
 	}
 
@@ -191,7 +192,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	// fetch the rancher clusters
-	rancherClusterHandler := rancher.NewClusterHandler(ctx, r.Client)
+	rancherClusterHandler := rancher.NewClusterHandler(ctx, r.RancherClient)
 	rancherClusterName := turtelesnaming.Name(capiCluster.Name).ToRancherName()
 
 	rancherCluster, err := rancherClusterHandler.Get(client.ObjectKey{Namespace: capiCluster.Namespace, Name: rancherClusterName})
@@ -346,7 +347,7 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 	log := log.FromContext(ctx)
 
 	key := client.ObjectKey{Name: clusterRegistrationTokenName, Namespace: clusterName}
-	tokenHandler := rancher.NewClusterRegistrationTokenHandler(ctx, r.Client)
+	tokenHandler := rancher.NewClusterRegistrationTokenHandler(ctx, r.RancherClient)
 
 	token, err := tokenHandler.Get(key)
 	if err != nil {

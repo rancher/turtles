@@ -59,6 +59,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	BeforeEach(func() {
 		r = &CAPIImportReconciler{
 			Client:             cl,
+			RancherClient:      cl, // rancher and rancher-turtles deployed in the same cluster
 			remoteClientGetter: remote.NewClusterClient,
 		}
 
