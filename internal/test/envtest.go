@@ -19,7 +19,6 @@ package test
 import (
 	"errors"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -28,6 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 )
 
 var scheme = runtime.NewScheme()
@@ -35,16 +37,12 @@ var scheme = runtime.NewScheme()
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
+	utilruntime.Must(provisioningv1.AddToScheme(scheme))
+	utilruntime.Must(managementv3.AddToScheme(scheme))
 }
 
 // StartEnvTest starts a new test environment.
 func StartEnvTest(testEnv *envtest.Environment) (*rest.Config, client.Client, error) {
-	testEnv.CRDs = []*apiextensionsv1.CustomResourceDefinition{
-		fakeRancherClusterCRD,
-		fakeRegistrationTokenCRD,
-		fakeCAPIClusterCRD,
-	}
-
 	cfg, err := testEnv.Start()
 	if err != nil {
 		return nil, nil, err

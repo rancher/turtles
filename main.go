@@ -43,6 +43,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers"
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 )
 
 var (
@@ -69,6 +71,8 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
+	utilruntime.Must(provisioningv1.AddToScheme(scheme))
+	utilruntime.Must(managementv3.AddToScheme(scheme))
 }
 
 // initFlags initializes the flags.

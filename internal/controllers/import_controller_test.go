@@ -29,7 +29,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers/testdata"
-	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher-sandbox/rancher-turtles/internal/test"
 	turtelesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"
@@ -47,13 +48,11 @@ import (
 
 var _ = Describe("reconcile CAPI Cluster", func() {
 	var (
-		r                               *CAPIImportReconciler
-		clusterRegistrationTokenHandler *rancher.ClusterRegistrationTokenHandler
-		rancherClusterHandler           *rancher.ClusterHandler
-		capiCluster                     *clusterv1.Cluster
-		rancherCluster                  *rancher.Cluster
-		clusterRegistrationToken        *rancher.ClusterRegistrationToken
-		capiKubeconfigSecret            *corev1.Secret
+		r                        *CAPIImportReconciler
+		capiCluster              *clusterv1.Cluster
+		rancherCluster           *provisioningv1.Cluster
+		clusterRegistrationToken *managementv3.ClusterRegistrationToken
+		capiKubeconfigSecret     *corev1.Secret
 	)
 
 	BeforeEach(func() {
@@ -63,9 +62,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			remoteClientGetter: remote.NewClusterClient,
 		}
 
-		rancherClusterHandler = rancher.NewClusterHandler(ctx, cl)
-		clusterRegistrationTokenHandler = rancher.NewClusterRegistrationTokenHandler(ctx, cl)
-
 		capiCluster = &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-cluster",
@@ -73,14 +69,14 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			},
 		}
 
-		rancherCluster = &rancher.Cluster{
+		rancherCluster = &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      turtelesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: testNamespace,
 			},
 		}
 
-		clusterRegistrationToken = &rancher.ClusterRegistrationToken{
+		clusterRegistrationToken = &managementv3.ClusterRegistrationToken{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      clusterRegistrationTokenName,
 				Namespace: testNamespace,
@@ -99,15 +95,11 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	})
 
 	AfterEach(func() {
-		rancherClusterUnstructured, err := rancherCluster.ToUnstructured()
-		Expect(err).NotTo(HaveOccurred())
-		clusterRegistrationTokenUnstructured, err := clusterRegistrationToken.ToUnstructured()
-		Expect(err).NotTo(HaveOccurred())
 		objs, err := manifestToObjects(strings.NewReader(testdata.ImportManifest))
 		clientObjs := []client.Object{
 			capiCluster,
-			rancherClusterUnstructured,
-			clusterRegistrationTokenUnstructured,
+			rancherCluster,
+			clusterRegistrationToken,
 			capiKubeconfigSecret,
 		}
 		for _, obj := range objs {
@@ -149,11 +141,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res.Requeue).To(BeTrue())
 
-		_, err = rancherClusterHandler.Get(types.NamespacedName{
-			Namespace: rancherCluster.Namespace,
-			Name:      rancherCluster.Name,
-		})
-		Expect(err).ToNot(HaveOccurred())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist and annotation is set on the namespace", func() {
@@ -170,11 +159,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res.Requeue).To(BeTrue())
 
-		_, err = rancherClusterHandler.Get(types.NamespacedName{
-			Namespace: rancherCluster.Namespace,
-			Name:      rancherCluster.Name,
-		})
-		Expect(err).ToNot(HaveOccurred())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists", func() {
@@ -190,19 +176,19 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
-		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
-		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: rancherCluster.Namespace, Name: rancherCluster.Name})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).To(Succeed())
 		cluster.Status.ClusterName = testNamespace
-		Expect(rancherClusterHandler.UpdateStatus(cluster)).To(Succeed())
+		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
-		Expect(clusterRegistrationTokenHandler.Create(clusterRegistrationToken)).To(Succeed())
-		token, err := clusterRegistrationTokenHandler.Get(types.NamespacedName{Namespace: clusterRegistrationToken.Namespace, Name: clusterRegistrationToken.Name})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
+		token := &managementv3.ClusterRegistrationToken{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(clusterRegistrationToken), token)).To(Succeed())
 		token.Status.ManifestURL = server.URL
-		Expect(clusterRegistrationTokenHandler.UpdateStatus(token)).To(Succeed())
+		Expect(cl.Status().Update(ctx, token)).To(Succeed())
 
-		_, err = r.Reconcile(ctx, reconcile.Request{
+		_, err := r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Namespace: capiCluster.Namespace,
 				Name:      capiCluster.Name,
@@ -232,7 +218,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
-		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
 		res, err := r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -249,13 +235,13 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
-		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
-		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: rancherCluster.Namespace, Name: rancherCluster.Name})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
 		cluster.Status.AgentDeployed = true
-		Expect(rancherClusterHandler.UpdateStatus(cluster)).To(Succeed())
+		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
-		_, err = r.Reconcile(ctx, reconcile.Request{
+		_, err := r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Namespace: capiCluster.Namespace,
 				Name:      capiCluster.Name,
@@ -277,17 +263,17 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
-		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
-		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: rancherCluster.Namespace, Name: rancherCluster.Name})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
 		cluster.Status.ClusterName = testNamespace
-		Expect(rancherClusterHandler.UpdateStatus(cluster)).To(Succeed())
+		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
-		Expect(clusterRegistrationTokenHandler.Create(clusterRegistrationToken)).To(Succeed())
-		token, err := clusterRegistrationTokenHandler.Get(types.NamespacedName{Namespace: clusterRegistrationToken.Namespace, Name: clusterRegistrationToken.Name})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
+		token := &managementv3.ClusterRegistrationToken{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(clusterRegistrationToken), token)).To(Succeed())
 		token.Status.ManifestURL = server.URL
-		Expect(clusterRegistrationTokenHandler.UpdateStatus(token)).To(Succeed())
+		Expect(cl.Status().Update(ctx, token)).To(Succeed())
 
 		res, err := r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -306,13 +292,13 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
-		Expect(rancherClusterHandler.Create(rancherCluster)).To(Succeed())
-		cluster, err := rancherClusterHandler.Get(types.NamespacedName{Namespace: rancherCluster.Namespace, Name: rancherCluster.Name})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
 		cluster.Status.ClusterName = testNamespace
-		Expect(rancherClusterHandler.UpdateStatus(cluster)).To(Succeed())
+		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
-		Expect(clusterRegistrationTokenHandler.Create(clusterRegistrationToken)).To(Succeed())
+		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
 
 		res, err := r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
