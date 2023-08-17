@@ -7,7 +7,7 @@ images:
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
-  default/wait-rancher: ["10m", "30s"]
+  default/wait-rancher: ["15m", "30s"]
   default/wait-consistently: ["30s", "5s"]
 
 variables:
@@ -20,7 +20,7 @@ variables:
   RANCHER_REPO_NAME: "rancher-stable"
   RANCHER_URL: "https://releases.rancher.com/server-charts/stable"
   # Additional setup for establishing rancher ingress
-  NGROK_REPO_NAME: "ngrok-ingress-controller"
+  NGROK_REPO_NAME: "ngrok"
   NGROK_URL: "https://ngrok.github.io/kubernetes-ingress-controller"
   NGROK_PATH: "ngrok/kubernetes-ingress-controller"
   NGROK_API_KEY: ""

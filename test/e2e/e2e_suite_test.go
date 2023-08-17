@@ -330,7 +330,7 @@ func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConf
 }
 
 func initNgrokIngress(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
-	if config.GetVariable(ngrokRepoName) == "" || config.GetVariable(ngrokUrl) == "" {
+	if config.GetVariable(ngrokApiKey) == "" || config.GetVariable(ngrokAuthToken) == "" {
 		return
 	}
 
@@ -355,11 +355,12 @@ func initNgrokIngress(bootstrapClusterProxy framework.ClusterProxy, config *clus
 	Expect(err).ToNot(HaveOccurred())
 
 	installChart := &HelmChart{
-		BinaryPath: helmBinaryPath,
-		Path:       config.GetVariable(ngrokPath),
-		Name:       "ngrok",
-		Kubeconfig: bootstrapClusterProxy.GetKubeconfigPath(),
-		Wait:       true,
+		BinaryPath:      helmBinaryPath,
+		Name:            config.GetVariable(ngrokRepoName),
+		Path:            config.GetVariable(ngrokPath),
+		Kubeconfig:      bootstrapClusterProxy.GetKubeconfigPath(),
+		Wait:            true,
+		AdditionalFlags: Flags("--timeout", "5m"),
 	}
 	_, err = installChart.Run(map[string]string{
 		"credentials.apiKey":    config.GetVariable(ngrokApiKey),
