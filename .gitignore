@@ -16,7 +16,7 @@ go.work
 go.work.sum
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
 .idea/
 .vscode/
@@ -28,3 +28,4 @@ tilt-settings.yaml
 
 out/
 _artifacts
+hack/crd/bases/*

@@ -52,7 +52,7 @@ import (
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher-sandbox/rancher-turtles/util"
 	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
-	turtelesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
+	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
 )
 
@@ -193,7 +193,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 	// fetch the rancher cluster
 	rancherCluster := &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
 		Namespace: capiCluster.Namespace,
-		Name:      turtelesnaming.Name(capiCluster.Name).ToRancherName(),
+		Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 	}}
 
 	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
@@ -228,7 +228,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 		if err := r.Client.Create(ctx, &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      turtelesnaming.Name(capiCluster.Name).ToRancherName(),
+				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: capiCluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: clusterv1.GroupVersion.String(),
@@ -340,7 +340,7 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context, 
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
 		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Name:      turtelesnaming.Name(o.GetName()).ToCapiName(),
+			Name:      turtlesnaming.Name(o.GetName()).ToCapiName(),
 			Namespace: o.GetNamespace(),
 		}}
 		if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
