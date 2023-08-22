@@ -24,8 +24,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -87,7 +89,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	err = c.Watch(
 		source.Kind(mgr.GetCache(), u),
-		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx)),
+		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
 		//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
 	)
 	if err != nil {
@@ -97,7 +99,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	ns := &corev1.Namespace{}
 	err = c.Watch(
 		source.Kind(mgr.GetCache(), ns),
-		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx)),
+		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx, capiPredicates)),
 	)
 
 	if err != nil {
@@ -366,7 +368,7 @@ func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
 	return true, autoImport
 }
 
-func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) handler.MapFunc {
+func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
@@ -381,11 +383,15 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) 
 			return nil
 		}
 
+		if !clusterPredicate.Generic(event.GenericEvent{Object: capiCluster}) {
+			return nil
+		}
+
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: capiCluster.Namespace, Name: capiCluster.Name}}}
 	}
 }
 
-func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) handler.MapFunc {
+func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
@@ -413,7 +419,13 @@ func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) hand
 		}
 
 		reqs := []ctrl.Request{}
+
 		for _, cluster := range capiClusters.Items {
+			cluster := cluster
+			if !clusterPredicate.Generic(event.GenericEvent{Object: &cluster}) {
+				continue
+			}
+
 			reqs = append(reqs, ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: cluster.Namespace,
