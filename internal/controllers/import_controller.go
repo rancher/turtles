@@ -35,6 +35,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
 	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
+	turtelesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
 )
 
@@ -173,7 +174,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	// fetch the rancher clusters
 	rancherClusterHandler := rancher.NewClusterHandler(ctx, r.Client)
-	rancherClusterName := rancherClusterNameFromCAPICluster(capiCluster.Name)
+	rancherClusterName := turtelesnaming.Name(capiCluster.Name).ToRancherName()
 
 	rancherCluster, err := rancherClusterHandler.Get(client.ObjectKey{Namespace: capiCluster.Namespace, Name: rancherClusterName})
 	if err != nil {
@@ -209,7 +210,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 		if err := rancherClusterHandler.Create(&rancher.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      rancherClusterNameFromCAPICluster(capiCluster.Name),
+				Name:      turtelesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: capiCluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -373,7 +374,7 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) 
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
-		key := client.ObjectKey{Name: o.GetName(), Namespace: o.GetNamespace()}
+		key := client.ObjectKey{Name: turtelesnaming.Name(o.GetName()).ToCapiName(), Namespace: o.GetNamespace()}
 
 		capiCluster := &clusterv1.Cluster{}
 		if err := r.Client.Get(ctx, key, capiCluster); err != nil {
@@ -427,10 +428,6 @@ func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) hand
 
 		return reqs
 	}
-}
-
-func rancherClusterNameFromCAPICluster(capiClusterName string) string {
-	return fmt.Sprintf("%s-capi", capiClusterName)
 }
 
 func (r *CAPIImportReconciler) downloadManifest(url string) (string, error) {
