@@ -185,7 +185,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 
 	if rancherCluster != nil {
 		if !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
-			return r.reconcileDelete(ctx, capiCluster, rancherCluster)
+			return r.reconcileDelete(ctx, capiCluster)
 		}
 	}
 
@@ -304,26 +304,22 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 	return autoImport, nil
 }
 
-func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster,
-	rancherCluster *rancher.Cluster,
-) (ctrl.Result, error) {
+func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	log.Info("Reconciling CAPI Cluster Delete")
+	log.Info("Reconciling rancher cluster deletion")
 
-	// If the Rancher Cluster has ClusterImportedAnnotation annotation that said we imported it,
-	// then annotate the CAPI cluster so that we don't auto-import again.
-	if turtlesannotations.HasClusterImportAnnotation(rancherCluster) {
-		log.Info(fmt.Sprintf("rancher cluster %s has %s annotation, so annotating CAPI cluster %s",
-			rancherCluster.Name, turtlesannotations.ClusterImportedAnnotation, capiCluster.Name))
+	// If the Rancher Cluster was already imported, then annotate the CAPI cluster so that we don't auto-import again.
+	log.Info(fmt.Sprintf("Rancher cluster is being removed, annotating CAPI cluster %s with %s",
+		capiCluster.Name,
+		turtlesannotations.ClusterImportedAnnotation))
 
-		annotations := capiCluster.GetAnnotations()
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-
-		annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
-		capiCluster.SetAnnotations(annotations)
+	annotations := capiCluster.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
 	}
+
+	annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
+	capiCluster.SetAnnotations(annotations)
 
 	return ctrl.Result{}, nil
 }
