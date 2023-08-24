@@ -383,10 +383,9 @@ $(CHART_PACKAGE_DIR):
 release: clean-release $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
 	$(MAKE) release-chart
 
-.PHONY: release-chart
-release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
+.PHONY: build-chart
+build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	$(MAKE) verify-release-chart-generate
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
@@ -395,6 +394,9 @@ release-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: release-chart
+release-chart: build-chart verify-release-chart-generate
+
+.PHONY: verify-release-chart-generate
 verify-release-chart-generate:
 	@if !(git diff --quiet HEAD); then \
 		git diff; \
