@@ -1,5 +1,10 @@
 # Adds namespace to all resources.
-namespace: "{{ .Release.Namespace }}"
+namespace: "{{ .Values.rancherTurtles.namespace }}"
+
+images:
+- name: controller
+  newName: "{{ .Values.rancherTurtles.image }}"
+  newTag: "{{ .Values.rancherTurtles.tag }}"
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
@@ -18,6 +23,7 @@ bases:
 #- ../crd
 - ../rbac
 - ../manager
+- ../namespace
 #- ../certmanager
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
@@ -31,9 +37,4 @@ patchesStrategicMerge:
 # Protect the /metrics endpoint by putting it behind auth.
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
-- manager_image_patch.yaml
 - manager_pull_policy.yaml
-- manager_role_aggregation_patch.yaml
-
-configurations:
-  - kustomizeconfig.yaml

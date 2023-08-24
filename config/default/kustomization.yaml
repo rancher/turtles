@@ -34,7 +34,3 @@ patchesStrategicMerge:
 # endpoint w/o any authn/z, please comment the following line.
 - manager_image_patch.yaml
 - manager_pull_policy.yaml
-- manager_role_aggregation_patch.yaml
-
-configurations:
-  - kustomizeconfig.yaml
