@@ -57,6 +57,7 @@ const (
 	rancherPath        = "RANCHER_PATH"
 	rancherUrl         = "RANCHER_URL"
 	rancherRepoName    = "RANCHER_REPO_NAME"
+	rancherPassword    = "RANCHER_PASSWORD"
 	capiInfrastructure = "CAPI_INFRASTRUCTURE"
 
 	ngrokRepoName  = "NGROK_REPO_NAME"
@@ -311,7 +312,7 @@ func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConf
 		),
 	}
 	_, err = chart.Run(map[string]string{
-		"bootstrapPassword":         "rancheradmin",
+		"bootstrapPassword":         config.GetVariable(rancherPassword),
 		"features":                  config.GetVariable(rancherFeatures),
 		"global.cattle.psp.enabled": "false",
 		"hostname":                  config.GetVariable(rancherHostname),
@@ -331,12 +332,18 @@ func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConf
 	Expect(err).ToNot(HaveOccurred())
 	Expect(clusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
 
+	By("Waiting for rancher webhook rollout")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter:     bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "rancher-webhook", Namespace: rancherNamespace}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...)
+
+	// hack: fleet controller needs to be restarted first to pickup config change with a valid API url.
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
 		Getter:     bootstrapClusterProxy.GetClient(),
 		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "fleet-controller", Namespace: "cattle-fleet-system"}},
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-	// hack: fleet controller needs to be restarted first to pickup config change with a valid API url.
 	By("Bouncing the fleet")
 	Eventually(func() error {
 		return bootstrapClusterProxy.GetClient().DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace("cattle-fleet-system"), client.MatchingLabels{"app": "fleet-controller"})
