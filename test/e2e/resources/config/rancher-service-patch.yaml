@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    k8s.ngrok.com/app-protocols: '{"https-internal":"HTTPS","http":"HTTP"}'
+  name: rancher
+  namespace: cattle-system
