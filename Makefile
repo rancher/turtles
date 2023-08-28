@@ -188,6 +188,7 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
+	cd $(TEST_DIR); go mod tidy
 
 .PHOHY: dev-env
 dev-env: ## Create a local development environment
@@ -440,16 +441,9 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: release-chart
-release-chart: $(HELM) $(NOTES) build-chart verify-release-chart-generate
+release-chart: $(HELM) $(NOTES) build-chart verify-gen
 	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
-
-.PHONY: verify-release-chart-generate
-verify-release-chart-generate:
-	@if !(git diff --quiet HEAD); then \
-		git diff; \
-		echo "generated chart files are out of date, please update charts"; exit 1; \
-	fi
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl ## Run the end-to-end tests
