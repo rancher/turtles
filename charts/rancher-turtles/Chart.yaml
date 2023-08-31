@@ -4,3 +4,8 @@ description: Rancher Turtles
 type: application
 version: 0.0.0
 appVersion: "0.0.0"
+dependencies:
+  - name: cluster-api-operator
+    version: v0.5.1
+    repository: https://kubernetes-sigs.github.io/cluster-api-operator
+    condition: cluster-api-operator.enabled
