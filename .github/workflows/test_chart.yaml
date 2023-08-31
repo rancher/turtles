@@ -54,4 +54,7 @@ jobs:
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
 
       - name: Run chart-testing (install)
-        run: ct install --charts out/charts/rancher-turtles/
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait
+
+      - name: Run chart-testing (un-install)
+        run: helm uninstall rancher-turtles -n rancher-turtles-system --wait

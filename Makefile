@@ -188,6 +188,7 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
+	cd $(TEST_DIR); go mod tidy
 
 .PHOHY: dev-env
 dev-env: ## Create a local development environment
@@ -431,24 +432,18 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 	$(MAKE) release-chart
 
 .PHONY: build-chart
-build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) $(NOTES) ## Builds the chart to publish with a release
+build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: release-chart
-release-chart: build-chart verify-release-chart-generate
-
-.PHONY: verify-release-chart-generate
-verify-release-chart-generate:
-	@if !(git diff --quiet HEAD); then \
-		git diff; \
-		echo "generated chart files are out of date, please update charts"; exit 1; \
-	fi
+release-chart: $(HELM) $(NOTES) build-chart verify-gen
+	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
+	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl ## Run the end-to-end tests
@@ -462,7 +457,7 @@ test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl ## Run the end-to-end tests
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \
 	    -e2e.config="$(E2E_CONF_FILE)" \
 		-e2e.helm-binary-path=$(HELM) \
-		-e2e.chart-path=$(ROOT_DIR)/$(CHART_PACKAGE_DIR)/rancher-turtles-$(HELM_CHART_TAG).tgz \
+		-e2e.chart-path=$(ROOT_DIR)/$(CHART_RELEASE_DIR) \
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
 
