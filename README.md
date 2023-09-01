@@ -6,7 +6,7 @@ A project looking at various aspects of making Rancher :heart: Cluster API.
 
 Currently this project has the following functionality:
 
-- Automatically import CAPI created cluster into Rancher
+- Automatically import CAPI-created cluster into Rancher
 
 ## How to use this?
 
