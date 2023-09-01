@@ -23,8 +23,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -35,6 +37,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
 	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
+	turtelesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
 )
 
@@ -86,7 +89,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	err = c.Watch(
 		source.Kind(mgr.GetCache(), u),
-		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx)),
+		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
 		//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
 	)
 	if err != nil {
@@ -96,7 +99,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	ns := &corev1.Namespace{}
 	err = c.Watch(
 		source.Kind(mgr.GetCache(), ns),
-		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx)),
+		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx, capiPredicates)),
 	)
 
 	if err != nil {
@@ -173,7 +176,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	// fetch the rancher clusters
 	rancherClusterHandler := rancher.NewClusterHandler(ctx, r.Client)
-	rancherClusterName := rancherClusterNameFromCAPICluster(capiCluster.Name)
+	rancherClusterName := turtelesnaming.Name(capiCluster.Name).ToRancherName()
 
 	rancherCluster, err := rancherClusterHandler.Get(client.ObjectKey{Namespace: capiCluster.Namespace, Name: rancherClusterName})
 	if err != nil {
@@ -184,7 +187,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 
 	if rancherCluster != nil {
 		if !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
-			return r.reconcileDelete(ctx, capiCluster, rancherCluster)
+			return r.reconcileDelete(ctx, capiCluster)
 		}
 	}
 
@@ -209,7 +212,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 		if err := rancherClusterHandler.Create(&rancher.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      rancherClusterNameFromCAPICluster(capiCluster.Name),
+				Name:      turtelesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: capiCluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -303,26 +306,22 @@ func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster
 	return autoImport, nil
 }
 
-func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster,
-	rancherCluster *rancher.Cluster,
-) (ctrl.Result, error) {
+func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	log.Info("Reconciling CAPI Cluster Delete")
+	log.Info("Reconciling rancher cluster deletion")
 
-	// If the Rancher Cluster has ClusterImportedAnnotation annotation that said we imported it,
-	// then annotate the CAPI cluster so that we don't auto-import again.
-	if turtlesannotations.HasClusterImportAnnotation(rancherCluster) {
-		log.Info(fmt.Sprintf("rancher cluster %s has %s annotation, so annotating CAPI cluster %s",
-			rancherCluster.Name, turtlesannotations.ClusterImportedAnnotation, capiCluster.Name))
+	// If the Rancher Cluster was already imported, then annotate the CAPI cluster so that we don't auto-import again.
+	log.Info(fmt.Sprintf("Rancher cluster is being removed, annotating CAPI cluster %s with %s",
+		capiCluster.Name,
+		turtlesannotations.ClusterImportedAnnotation))
 
-		annotations := capiCluster.GetAnnotations()
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-
-		annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
-		capiCluster.SetAnnotations(annotations)
+	annotations := capiCluster.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
 	}
+
+	annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
+	capiCluster.SetAnnotations(annotations)
 
 	return ctrl.Result{}, nil
 }
@@ -369,11 +368,11 @@ func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
 	return true, autoImport
 }
 
-func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) handler.MapFunc {
+func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
-		key := client.ObjectKey{Name: o.GetName(), Namespace: o.GetNamespace()}
+		key := client.ObjectKey{Name: turtelesnaming.Name(o.GetName()).ToCapiName(), Namespace: o.GetNamespace()}
 
 		capiCluster := &clusterv1.Cluster{}
 		if err := r.Client.Get(ctx, key, capiCluster); err != nil {
@@ -384,11 +383,15 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context) 
 			return nil
 		}
 
+		if !clusterPredicate.Generic(event.GenericEvent{Object: capiCluster}) {
+			return nil
+		}
+
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: capiCluster.Namespace, Name: capiCluster.Name}}}
 	}
 }
 
-func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) handler.MapFunc {
+func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
@@ -416,7 +419,13 @@ func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) hand
 		}
 
 		reqs := []ctrl.Request{}
+
 		for _, cluster := range capiClusters.Items {
+			cluster := cluster
+			if !clusterPredicate.Generic(event.GenericEvent{Object: &cluster}) {
+				continue
+			}
+
 			reqs = append(reqs, ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: cluster.Namespace,
@@ -427,10 +436,6 @@ func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context) hand
 
 		return reqs
 	}
-}
-
-func rancherClusterNameFromCAPICluster(capiClusterName string) string {
-	return fmt.Sprintf("%s-capi", capiClusterName)
 }
 
 func (r *CAPIImportReconciler) downloadManifest(url string) (string, error) {

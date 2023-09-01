@@ -15,6 +15,7 @@ import (
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers/testdata"
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
 	"github.com/rancher-sandbox/rancher-turtles/internal/test"
+	turtelesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -57,7 +58,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		rancherCluster = &rancher.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      rancherClusterNameFromCAPICluster(capiCluster.Name),
+				Name:      turtelesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: testNamespace,
 			},
 		}
