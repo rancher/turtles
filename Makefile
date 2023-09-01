@@ -461,6 +461,20 @@ test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl ## Run the end-to-end tests
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
 
+## --------------------------------------
+## Documentation
+## --------------------------------------
+
+.PHONY: generate-doctoc
+generate-doctoc:
+	TRACE=$(TRACE) ./hack/generate-doctoc.sh
+
+.PHONY: verify-doctoc
+verify-doctoc: generate-doctoc
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "doctoc is out of date, run make generate-doctoc"; exit 1; \
+	fi
 
 ## --------------------------------------
 ## Cleanup / Verification
