@@ -27,15 +27,17 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 
 	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
 )
 
 type CAPIOperatorDeployProviderInput struct {
+	E2EConfig                    *clusterctl.E2EConfig
 	BootstrapClusterProxy        framework.ClusterProxy
-	CAPIProvidersSecretYAML      []byte
+	CAPIProvidersSecretsYAML     [][]byte
 	CAPIProvidersYAML            []byte
-	Data                         map[string]string
+	TemplateData                 map[string]string
 	WaitDeploymentsReadyInterval []interface{}
 	WaitForDeployments           []NamespaceName
 }
@@ -51,11 +53,16 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for CAPIOperatorDeployProvider")
 
-	if input.CAPIProvidersSecretYAML != nil {
+	for _, secret := range input.CAPIProvidersSecretsYAML {
+		secret := secret
 		By("Adding CAPI Operator variables secret")
 
-		providerVars := getFullProviderVariables(string(input.CAPIProvidersSecretYAML), input.Data)
-		Expect(input.BootstrapClusterProxy.Apply(ctx, providerVars)).To(Succeed(), "Failed to apply secret for capi providers")
+		providerVars := getFullProviderVariables(string(secret), input.TemplateData)
+		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Proxy:    input.BootstrapClusterProxy,
+			Template: providerVars,
+			Getter:   input.E2EConfig.GetVariable,
+		})).To(Succeed(), "Failed to apply secret for capi providers")
 	}
 
 	By("Adding CAPI Operaytor providers")

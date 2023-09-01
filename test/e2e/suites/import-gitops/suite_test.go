@@ -122,10 +122,14 @@ var _ = BeforeSuite(func() {
 		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
-			CAPIProvidersSecretYAML: e2e.FullProvidersSecret,
-			CAPIProvidersYAML:       e2e.FullProviders,
-			Data: map[string]string{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AWSProviderSecret,
+				e2e.AzureProviderSecret,
+				e2e.AzureIdentitySecret,
+			},
+			CAPIProvidersYAML: e2e.FullProviders,
+			TemplateData: map[string]string{
 				"AWSEncodedCredentials": e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar),
 			},
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
@@ -133,6 +137,10 @@ var _ = BeforeSuite(func() {
 				{
 					Name:      "capa-controller-manager",
 					Namespace: "capa-system",
+				},
+				{
+					Name:      "capz-controller-manager",
+					Namespace: "capz-system",
 				},
 			},
 		})

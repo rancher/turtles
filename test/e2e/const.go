@@ -30,11 +30,17 @@ var (
 	//go:embed data/capi-operator/capi-providers.yaml
 	CapiProviders []byte
 
-	//go:embed data/capi-operator/full-variables.yaml
-	FullProvidersSecret []byte
-
 	//go:embed data/capi-operator/full-providers.yaml
 	FullProviders []byte
+
+	//go:embed data/capi-operator/capa-variables.yaml
+	AWSProviderSecret []byte
+
+	//go:embed data/capi-operator/capz-variables.yaml
+	AzureProviderSecret []byte
+
+	//go:embed data/capi-operator/capz-identity-secret.yaml
+	AzureIdentitySecret []byte
 
 	//go:embed data/rancher/ingress.yaml
 	IngressConfig []byte
