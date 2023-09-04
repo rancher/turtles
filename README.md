@@ -13,6 +13,7 @@ Currently this project has the following functionality:
 Instructions coming soon :)
 
 ## How to contribute?
+See our [contributor guide](CONTRIBUTING.md) for more details on how to get involved.
 
 ### Development setup
 
