@@ -28,4 +28,4 @@ if [[ -z "$(command -v doctoc)" ]]; then
   exit 0
 fi
 
-doctoc ./CONTRIBUTING.md
+doctoc ./CONTRIBUTING.md docs/adr
