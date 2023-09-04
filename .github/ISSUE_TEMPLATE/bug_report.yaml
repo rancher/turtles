@@ -16,7 +16,7 @@ body:
     validations:
       required: true
 
-   - type: textarea
+  - type: textarea
     id: repro
     attributes:
       label: How to reproduce it?
