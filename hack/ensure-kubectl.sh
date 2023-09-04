@@ -22,7 +22,6 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
-
 # shellcheck source=./hack/utils.sh
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
