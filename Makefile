@@ -109,10 +109,6 @@ HELM_VER := v3.8.1
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-CAPI_OPERATOR_VER := 0.5.0
-CAPI_OPERATOR := $(abspath $(TOOLS_BIN_DIR)/capi-operator.tgz)
-CAPI_OPERATOR_URL := https://github.com/kubernetes-sigs/cluster-api-operator/releases/download/v$(CAPI_OPERATOR_VER)/cluster-api-operator-$(CAPI_OPERATOR_VER).tgz
-
 GOLANGCI_LINT_VER := v1.53.3
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
@@ -384,9 +380,6 @@ $(SETUP_ENVTEST): # Build setup-envtest from tools folder.
 $(GINKGO): # Build ginkgo from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINGKO_VER)
 
-$(CAPI_OPERATOR):
-	wget $(CAPI_OPERATOR_URL) -O $(CAPI_OPERATOR)
-
 $(GOLANGCI_LINT): # Download and install golangci-lint
 	hack/ensure-golangci-lint.sh \
 		-b $(TOOLS_BIN_DIR) \
@@ -438,7 +431,7 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	$(HELM) dependency update
+	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update 
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: release-chart
@@ -447,10 +440,10 @@ release-chart: $(HELM) $(NOTES) build-chart verify-gen
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(HELM) $(CAPI_OPERATOR) kubectl ## Run the end-to-end tests
+test-e2e: $(GINKGO) $(HELM) kubectl ## Run the end-to-end tests
 	TAG=v0.0.1 $(MAKE) docker-build
 	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(MANIFEST_IMG) $(MAKE) build-chart
-	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) CAPI_OPERATOR=$(CAPI_OPERATOR) \
+	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) \
 	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
 		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
