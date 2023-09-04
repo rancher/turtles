@@ -45,7 +45,7 @@ If you’re a new to the project and want to help, but don’t know where to sta
    (See also [Choosing something to work on](#choosing-something-to-work-on) below.)
 1. Open an [issue](#opening-issues). :interrobang:
 
-    We have 2 forms of issue: [bug reports](#bug-report-guide), [feature requests](#feature-request-guide). If you are not sure which category you need, just make the best guess and provide as much information as possible.
+    We have 2 forms of issue: [bug reports](https://github.com/rancher-sandbox/rancher-turtles/issues/new?assignees=&labels=&projects=&template=bug_report.yaml) and [feature requests](https://github.com/rancher-sandbox/rancher-turtles/issues/new?assignees=&labels=&projects=&template=feature_request.yaml). If you are not sure which category you need, just make the best guess and provide as much information as possible.
 
 1. Interested in helping to improve Rancher CAPI extension? Chime in on [bugs](https://github.com/rancher-sandbox/rancher-turtles/issues?q=is%3Aopen+is%3Aissue+label%3Akind%2Fbug+) or [`help wanted` issues](https://github.com/rancher-sandbox/rancher-turtles/labels/help-wanted). 
 If you are seeking to take on a bigger challenge or a more experienced contributor, check out [feature requests](https://github.com/rancher-sandbox/rancher-turtles/issues?q=is%3Aopen+is%3Aissue+label%3Akind%2Ffeature).
@@ -198,7 +198,7 @@ Contributors are also welcome to backfill ADRs if they are found to be missing.
 
 1. Start a new [discussion](https://github.com/rancher-sandbox/rancher-turtles/discussions/new?category=adr) using the `ADR` category.
 
-1. Choose an appropriate clear and concise title (eg `ADR: Implement X in Go`).
+1. Choose an appropriate clear and concise title (e.g. `ADR: Implement X in Go`).
 
 1. Provide a context of the decision to be made. Describe
   the various options, if more than one, and explain the pros and cons. Highlight
@@ -209,7 +209,7 @@ Contributors are also welcome to backfill ADRs if they are found to be missing.
   participate and weigh in on the decision and its consequences.
 
 1. Once a decision has been made, open a PR adding a new ADR to the [directory](docs/adr).
-  Copy and complete the [template][adr-template];
+  Copy and complete the [template][adr-template]:
     - Increment the file number by one
     - Set the status as "Accepted"
     - Set the deciders as those who approved the discussion outcome
