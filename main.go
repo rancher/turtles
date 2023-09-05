@@ -28,6 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
@@ -57,6 +60,7 @@ var (
 	syncPeriod                  time.Duration
 	healthAddr                  string
 	concurrencyNumber           int
+	rancherKubeconfig           string
 )
 
 func init() {
@@ -97,6 +101,9 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.IntVar(&concurrencyNumber, "concurrency", 1,
 		"Number of resources to process simultaneously")
+
+	fs.StringVar(&rancherKubeconfig, "rancher-kubeconfig", "",
+		"Path to the Rancher kubeconfig file. Only required if running out-of-cluster.")
 }
 
 func main() {
@@ -155,11 +162,55 @@ func setupChecks(mgr ctrl.Manager) {
 }
 
 func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
+	rancherClient, err := setupRancherClient(mgr)
+	if err != nil {
+		setupLog.Error(err, "failed to create client")
+		os.Exit(1)
+	}
+
 	if err := (&controllers.CAPIImportReconciler{
 		Client:           mgr.GetClient(),
+		RancherClient:    rancherClient,
 		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)
 	}
+}
+
+// setupRancherClient can either create a client for an in-cluster installation (rancher and rancher-turtles in the same cluster)
+// or create a client for an out-of-cluster installation (rancher and rancher-turtles in different clusters) based on the
+// existence of Rancher kubeconfig file.
+func setupRancherClient(mgr ctrl.Manager) (client.Client, error) {
+	if len(rancherKubeconfig) > 0 {
+		setupLog.Info("out-of-cluster installation of rancher-turtles", "using kubeconfig from path", rancherKubeconfig)
+
+		restConfig, err := loadConfigWithContext("", &clientcmd.ClientConfigLoadingRules{ExplicitPath: rancherKubeconfig}, "")
+		if err != nil {
+			return nil, fmt.Errorf("unable to load kubeconfig from file: %w", err)
+		}
+
+		rancherClient, err := client.New(restConfig, client.Options{Scheme: mgr.GetClient().Scheme()})
+		if err != nil {
+			return nil, err
+		}
+
+		return rancherClient, nil
+	}
+
+	setupLog.Info("in-cluster installation of rancher-turtles")
+
+	return mgr.GetClient(), nil
+}
+
+// loadConfigWithContext loads a REST Config from a path using a logic similar to the one used in controller-runtime.
+func loadConfigWithContext(apiServerURL string, loader clientcmd.ClientConfigLoader, context string) (*rest.Config, error) {
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		loader,
+		&clientcmd.ConfigOverrides{
+			ClusterInfo: clientcmdapi.Cluster{
+				Server: apiServerURL,
+			},
+			CurrentContext: context,
+		}).ClientConfig()
 }
