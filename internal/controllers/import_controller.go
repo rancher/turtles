@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -52,6 +51,7 @@ import (
 	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
+	"github.com/rancher-sandbox/rancher-turtles/util"
 	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
 	turtelesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
@@ -84,10 +84,12 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		r.remoteClientGetter = remote.NewClusterClient
 	}
 
-	// TODO: we want the control plane initialized but removing for the time being
-	// capiPredicates := predicates.All(log, predicates.ClusterControlPlaneInitialized(log), predicates.ResourceHasFilterLabel(log, r.WatchFilterValue))
-	capiPredicates := predicates.All(log, predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
-		turtlespredicates.ClusterWithoutImportedAnnotation(log))
+	capiPredicates := predicates.All(log,
+		predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+		turtlespredicates.ClusterWithoutImportedAnnotation(log),
+		turtlespredicates.ClusterWithReadyControlPlane(log),
+		turtlespredicates.ClusterOrNamespaceWithImportLabel(ctx, log, r.Client, importLabelName),
+	)
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&clusterv1.Cluster{}).
@@ -217,7 +219,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	log := log.FromContext(ctx)
 
 	if rancherCluster == nil {
-		shouldImport, err := r.shouldAutoImport(ctx, capiCluster)
+		shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -291,38 +293,6 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	return ctrl.Result{}, nil
 }
 
-func (r *CAPIImportReconciler) shouldAutoImport(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
-	log := log.FromContext(ctx)
-	log.V(2).Info("should we auto import the capi cluster", "name", capiCluster.Name, "namespace", capiCluster.Namespace)
-
-	// Check CAPI cluster for label first
-	hasLabel, autoImport := shouldImport(capiCluster)
-	if hasLabel && autoImport {
-		log.V(2).Info("Cluster contains import annotation")
-
-		return true, nil
-	}
-
-	if hasLabel && !autoImport {
-		log.V(2).Info("Cluster contains annotation to not import")
-
-		return false, nil
-	}
-
-	// Check namespace wide
-	ns := &corev1.Namespace{}
-	key := client.ObjectKey{Name: capiCluster.Namespace}
-
-	if err := r.Client.Get(ctx, key, ns); err != nil {
-		log.Error(err, "getting namespace")
-		return false, err
-	}
-
-	_, autoImport = shouldImport(ns)
-
-	return autoImport, nil
-}
-
 func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling rancher cluster deletion")
@@ -371,20 +341,6 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 	return manifestData, nil
 }
 
-func shouldImport(obj metav1.Object) (hasLabel bool, labelValue bool) {
-	labelVal, ok := obj.GetLabels()[importLabelName]
-	if !ok {
-		return false, false
-	}
-
-	autoImport, err := strconv.ParseBool(labelVal)
-	if err != nil {
-		return true, false
-	}
-
-	return true, autoImport
-}
-
 func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
@@ -418,7 +374,7 @@ func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context, clus
 			return nil
 		}
 
-		_, autoImport := shouldImport(ns)
+		_, autoImport := util.ShouldImport(ns, importLabelName)
 		if !autoImport {
 			log.V(2).Info("Namespace doesn't have import annotation label with a true value, skipping")
 			return nil

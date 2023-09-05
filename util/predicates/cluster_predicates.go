@@ -17,6 +17,7 @@ limitations under the License.
 package predicates
 
 import (
+	"context"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -24,6 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	"github.com/rancher-sandbox/rancher-turtles/util"
 	"github.com/rancher-sandbox/rancher-turtles/util/annotations"
 )
 
@@ -46,6 +50,7 @@ func ClusterWithoutImportedAnnotation(logger logr.Logger) predicate.Funcs {
 	}
 }
 
+// processIfClusterNotImported returns true if the provided object is a cluster and does not have the imported annotation.
 func processIfClusterNotImported(logger logr.Logger, obj client.Object) bool {
 	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 	log := logger.WithValues("namespace", obj.GetNamespace(), kind, obj.GetName())
@@ -58,4 +63,88 @@ func processIfClusterNotImported(logger logr.Logger, obj client.Object) bool {
 	log.V(6).Info("Cluster does not have an import annotation, will attempt to map resource")
 
 	return true
+}
+
+// ClusterWithReadyControlPlane returns a predicate that returns true only if the provided resource is a cluster with a
+// ready control plane.
+func ClusterWithReadyControlPlane(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfClusterReadyControlPlane(logger.WithValues("predicate", "ClusterWithReadyControlPlane", "eventType", "update"), e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfClusterReadyControlPlane(logger.WithValues("predicate", "ClusterWithReadyControlPlane", "eventType", "create"), e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfClusterReadyControlPlane(logger.WithValues("predicate", "ClusterWithReadyControlPlane", "eventType", "delete"), e.Object)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfClusterReadyControlPlane(logger.WithValues("predicate", "ClusterWithReadyControlPlane", "eventType", "generic"), e.Object)
+		},
+	}
+}
+
+// processIfClusterReadyControlPlane returns true if the provided object is a cluster and has a ready control plane.
+func processIfClusterReadyControlPlane(logger logr.Logger, obj client.Object) bool {
+	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+	log := logger.WithValues("namespace", obj.GetNamespace(), kind, obj.GetName())
+
+	cluster, ok := obj.(*clusterv1.Cluster)
+	if !ok {
+		log.V(4).Info("Expected a Cluster but got a different object, will not attempt to map resource", "object", obj)
+		return false
+	}
+
+	if !cluster.Status.ControlPlaneReady {
+		log.V(4).Info("Cluster does not have a ready control plane, will not attempt to map resource")
+		return false
+	}
+
+	log.V(6).Info("Cluster has a ready control plane, will attempt to map resource")
+
+	return true
+}
+
+// ClusterOrNamespaceWithImportLabel returns a predicate that returns true only if the provided resource is a cluster and
+// has an import label set on it or on its namespace.
+func ClusterOrNamespaceWithImportLabel(ctx context.Context, logger logr.Logger, cl client.Client, label string) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfClusterOrNamespaceWithImportLabel(ctx,
+				logger.WithValues("predicate", "ClusterOrNamespaceWithImportLabel", "eventType", "update"), cl, e.ObjectNew, label)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfClusterOrNamespaceWithImportLabel(ctx,
+				logger.WithValues("predicate", "ClusterOrNamespaceWithImportLabel", "eventType", "create"), cl, e.Object, label)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfClusterOrNamespaceWithImportLabel(ctx,
+				logger.WithValues("predicate", "ClusterOrNamespaceWithImportLabel", "eventType", "delete"), cl, e.Object, label)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfClusterOrNamespaceWithImportLabel(ctx,
+				logger.WithValues("predicate", "ClusterOrNamespaceWithImportLabel", "eventType", "generic"), cl, e.Object, label)
+		},
+	}
+}
+
+// processIfClusterOrNamespaceWithImportLabel returns true if the provided object is a cluster and has an import label. If the
+// label is not set on the cluster, it will check if it is set on the cluster's namespace.
+func processIfClusterOrNamespaceWithImportLabel(ctx context.Context, logger logr.Logger, cl client.Client, obj client.Object, label string) bool {
+	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+	log := logger.WithValues("namespace", obj.GetNamespace(), kind, obj.GetName())
+
+	cluster, ok := obj.(*clusterv1.Cluster)
+	if !ok {
+		log.V(4).Info("Expected a Cluster but got a different object, will not attempt to map resource", "object", obj)
+		return false
+	}
+
+	shouldImport, err := util.ShouldAutoImport(ctx, log, cl, cluster, label)
+	if err != nil {
+		log.Error(err, "namespace or cluster has already import annotation set, ignoring it")
+		return true
+	}
+
+	return shouldImport
 }
