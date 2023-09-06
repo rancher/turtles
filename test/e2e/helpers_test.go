@@ -30,8 +30,11 @@ var (
 	//go:embed resources/testdata/fleet-capi-test.yaml
 	fleetCAPITestdata []byte
 
-	//go:embed resources/config/docker-infra-secret.yaml
-	dockerVariablesSecret []byte
+	//go:embed resources/config/capi-providers-secret.yaml
+	capiProvidersSecret []byte
+
+	//go:embed resources/config/capi-providers.yaml
+	capiProviders []byte
 
 	//go:embed resources/config/ingress.yaml
 	ingressConfig []byte

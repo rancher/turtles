@@ -246,8 +246,8 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 }
 
 func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
-	By("Adding docker variables secret")
-	Expect(clusterProxy.Apply(ctx, dockerVariablesSecret)).To(Succeed())
+	By("Adding CAPI variables secret")
+	Expect(clusterProxy.Apply(ctx, capiProvidersSecret)).To(Succeed())
 
 	By("Installing rancher-turtles chart")
 	chart := &HelmChart{
@@ -259,11 +259,50 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 	}
 	_, err := chart.Run(map[string]string{
 		"cluster-api-operator.cert-manager.enabled": "true",
-		"cluster-api-operator.infrastructure":       config.GetVariable(capiInfrastructure),
-		"cluster-api-operator.secretName":           "variables",
-		"cluster-api-operator.secretNamespace":      "default",
+		"clusterAPI.configSecret.namespace":         "default",
+		"clusterAPI.configSecret.name":              "variables",
 	})
 	Expect(err).ToNot(HaveOccurred())
+
+	By("Adding CAPI infrastructure providers")
+	Expect(clusterProxy.Apply(ctx, capiProviders)).To(Succeed())
+
+	By("Waiting for CAPI deployment to be available")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter: bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-controller-manager",
+				Namespace: "capi-system",
+			}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	By("Waiting for CAPI kubeadm bootstrap deployment to be available")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter: bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      "capi-kubeadm-bootstrap-controller-manager",
+			Namespace: "capi-kubeadm-bootstrap-system",
+		}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	By("Waiting for CAPI kubeadm control plane deployment to be available")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter: bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      "capi-kubeadm-control-plane-controller-manager",
+			Namespace: "capi-kubeadm-control-plane-system",
+		}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	By("Waiting for CAPI docker provider deployment to be available")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter: bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      "capd-controller-manager",
+			Namespace: "capd-system",
+		}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 }
 
 func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
