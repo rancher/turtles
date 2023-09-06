@@ -3,3 +3,5 @@ rancherTurtles:
   tag: v0.0.0
   imagePullPolicy: Never
   namespace: rancher-turtles-system
+cluster-api-operator:
+  enabled: true

@@ -49,7 +49,6 @@ import (
 )
 
 const (
-	operatorPackage    = "CAPI_OPERATOR"
 	kubernetesVersion  = "KUBERNETES_VERSION"
 	rancherFeatures    = "RANCHER_FEATURES"
 	rancherHostname    = "RANCHER_HOSTNAME"
@@ -234,16 +233,17 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 	}
 
 	Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling initBootstrapCluster")
-	Expect(config.GetVariable(operatorPackage)).To(BeAnExistingFile(), "Invalid path to operator package. Please specify a valid one")
 	logFolder := filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(logFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created for initBootstrapCluster")
 
-	initCAPIOperator(bootstrapClusterProxy, config)
 	initRancherTurtles(bootstrapClusterProxy, config)
 	initRancher(bootstrapClusterProxy, config)
 }
 
 func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
+	By("Adding docker variables secret")
+	Expect(clusterProxy.Apply(ctx, dockerVariablesSecret)).To(Succeed())
+
 	By("Installing rancher-turtles chart")
 	chart := &HelmChart{
 		BinaryPath:      helmBinaryPath,
@@ -252,28 +252,11 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
 		AdditionalFlags: Flags("-n", rancherTurtlesNamespace, "--create-namespace", "--wait"),
 	}
-	_, err := chart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
-}
-
-func initCAPIOperator(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
-	By("Adding docker variables secret")
-	Expect(clusterProxy.Apply(ctx, dockerVariablesSecret)).To(Succeed())
-
-	By("Installing CAPI operator chart")
-	chart := &HelmChart{
-		BinaryPath:      helmBinaryPath,
-		Path:            config.GetVariable(operatorPackage),
-		Name:            "capi-operator",
-		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
-		Output:          Full,
-		AdditionalFlags: Flags("-n", operatorNamespace, "--create-namespace", "--wait"),
-	}
 	_, err := chart.Run(map[string]string{
-		"cert-manager.enabled": "true",
-		"infrastructure":       config.GetVariable(capiInfrastructure),
-		"secretName":           "variables",
-		"secretNamespace":      "default",
+		"cluster-api-operator.cert-manager.enabled": "true",
+		"cluster-api-operator.infrastructure":       config.GetVariable(capiInfrastructure),
+		"cluster-api-operator.secretName":           "variables",
+		"cluster-api-operator.secretNamespace":      "default",
 	})
 	Expect(err).ToNot(HaveOccurred())
 }
