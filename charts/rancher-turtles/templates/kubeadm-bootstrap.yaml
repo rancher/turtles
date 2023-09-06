@@ -1,0 +1,36 @@
+{{- if .Values.clusterAPI.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "1"
+  name: {{ .Values.clusterAPI.kubeadmBootstrap.namespace }}
+---
+apiVersion: operator.cluster.x-k8s.io/v1alpha1
+kind: BootstrapProvider
+metadata:
+  name: kubeadm
+  namespace: {{ .Values.clusterAPI.kubeadmBootstrap.namespace }}
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "2"
+spec:
+  version: {{ $.Values.clusterAPI.version }}
+{{- if $.Values.clusterAPI.configSecret.name }}
+  secretName: {{ $.Values.clusterAPI.configSecret.name }}
+{{- if $.Values.clusterAPI.configSecret.namespace }}
+  secretNamespace: {{ $.Values.clusterAPI.configSecret.namespace }}
+{{- end }}
+{{- end }}
+{{- if or $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.url $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.selector }}
+  fetchConfig:
+    {{- if $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.url }}
+    url: {{ $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.url }}
+    {{- end }}
+    {{- if $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.selector }}
+    selector: {{ $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.selector }}
+    {{- end }}
+{{- end }}
+{{- end }}
