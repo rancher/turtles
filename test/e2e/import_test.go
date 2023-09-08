@@ -28,7 +28,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher-sandbox/rancher-turtles/internal/rancher"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
@@ -100,11 +99,8 @@ var _ = Describe("Create and delete CAPI cluster functionality should work", fun
 	It("should successfully create a rancher cluster from a CAPI cluster", func() {
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
-			remoteClient, err := remote.NewClusterClient(ctx, capiCluster.Name, bootstrapClusterProxy.GetClient(), client.ObjectKeyFromObject(capiCluster))
-			if err != nil {
-				return err
-			}
 			namespaces := &corev1.NamespaceList{}
+			remoteClient := bootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Name, capiCluster.Namespace).GetClient()
 			return remoteClient.List(ctx, namespaces)
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
