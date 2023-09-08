@@ -1,14 +1,14 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [5. Cluster Import Strategy](#5-cluster-import-strategy)
+- [6. Cluster Import Strategy](#6-cluster-import-strategy)
   - [Context](#context)
   - [Decision](#decision)
   - [Consequences](#consequences)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# 5. Cluster Import Strategy
+# 6. Cluster Import Strategy
 
 - Status: accepted
 - Date: 2023-06-01
