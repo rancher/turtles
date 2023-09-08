@@ -50,7 +50,7 @@ Most notable ones:
 variables:
   RANCHER_VERSION: "v2.7.5" # Default rancher version to install
   RANCHER_HOSTNAME: "localhost" # Your ngrok domain
-  CAPI_INFRASTRUCTURE: "docker" # Default list of capi providers installed in the cluster. Using docker:latest by default. Could be expanded with `docker,azure` to include lates azure provider for example.
+  CAPI_INFRASTRUCTURE: "docker" # Default list of capi providers installed in the cluster. Using docker:latest by default. Could be expanded with `docker,azure` to include latest azure provider for example.
   NGROK_API_KEY: "" # Key and token values for establishing ingress
   NGROK_AUTHTOKEN: ""
 ```
