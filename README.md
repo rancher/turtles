@@ -133,6 +133,17 @@ What happens when you run `make dev-env`?
 4. `Rancher manager` is installed using helm.
 5. Run `tilt up` to start the development environment.
 
+# Testing
+
+We are using a combination of unit tests and e2e tests both using ginkgo and gomega frameworks.
+
+To run unit tests, execute:
+```sh
+make test
+```
+
+Detailed documentation on e2e tests architecture and usage could be found [here](./test/e2e/README.md#e2e-tests).
+
 ## Code of Conduct
 
 Participation in the project is governed by [Code of Conduct](code-of-conduct.md).
