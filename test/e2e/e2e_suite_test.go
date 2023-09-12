@@ -38,6 +38,8 @@ import (
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	. "sigs.k8s.io/cluster-api-operator/test/framework"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -178,6 +180,9 @@ func initScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(operatorv1.AddToScheme(scheme)).To(Succeed())
+	Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
+	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
+	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 

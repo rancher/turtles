@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -53,7 +54,12 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	var err error
-	testEnv = &envtest.Environment{}
+	testEnv = &envtest.Environment{
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "hack", "crd", "bases"),
+		},
+		ErrorIfCRDPathMissing: true,
+	}
 	cfg, cl, err = test.StartEnvTest(testEnv)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())

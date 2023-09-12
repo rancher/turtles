@@ -170,12 +170,23 @@ help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
-
 .PHONY: manifests
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) \
-		paths=./internal/controllers \
-		rbac:roleName=manager-role
+manifests: vendor controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=hack/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
+	# Vendor is only required for pulling latest CRDs from the dependencies
+	$(MAKE) vendor-clean
+
+# Run go mod
+.PHONY: vendor
+vendor:
+	go mod tidy
+	go mod vendor
+	go mod verify
+
+.PHONY: vendor-clean
+vendor-clean:
+	rm -rf vendor
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -224,7 +235,7 @@ ARTIFACTS ?= ${ROOT_DIR}/_artifacts
 KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 .PHONY: test
-test: $(SETUP_ENVTEST) ## Run tests.
+test: $(SETUP_ENVTEST) manifests ## Run tests.
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 ##@ Build
