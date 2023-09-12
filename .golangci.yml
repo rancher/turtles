@@ -54,7 +54,14 @@ linters-settings:
           alias: utilruntime
         - pkg: k8s.io/client-go/kubernetes/scheme
           alias: clientgoscheme
-        # Controller Runtime  
+       # Rancher Turtles
+        - pkg: github.com/rancher-sandbox/rancher-turtles/util/naming
+          alias: turtlesnaming
+        - pkg: github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1
+          alias: provisioningv1
+        - pkg: github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3
+          alias: managementv3
+        # Controller Runtime
         - pkg: sigs.k8s.io/controller-runtime
           alias: ctrl
         # CAPI
