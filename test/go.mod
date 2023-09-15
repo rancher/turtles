@@ -9,14 +9,14 @@ require (
 	github.com/onsi/ginkgo/v2 v2.12.0
 	github.com/onsi/gomega v1.27.10
 	github.com/rancher-sandbox/rancher-turtles v0.0.0-00010101000000-000000000000
-	k8s.io/api v0.27.4
-	k8s.io/apimachinery v0.27.4
+	k8s.io/api v0.27.5
+	k8s.io/apimachinery v0.27.5
 	k8s.io/klog/v2 v2.90.1
-	sigs.k8s.io/cluster-api v1.5.0
-	sigs.k8s.io/cluster-api-operator v0.5.0
-	sigs.k8s.io/cluster-api-operator/test v0.5.1-0.20230815124321-f8dfb34092d0
-	sigs.k8s.io/cluster-api/test v1.5.0
-	sigs.k8s.io/controller-runtime v0.15.0
+	sigs.k8s.io/cluster-api v1.5.1
+	sigs.k8s.io/cluster-api-operator v0.6.0
+	sigs.k8s.io/cluster-api-operator/test v0.6.0
+	sigs.k8s.io/cluster-api/test v1.5.1
+	sigs.k8s.io/controller-runtime v0.15.2
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -36,7 +36,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/coredns/caddy v1.1.1 // indirect
-	github.com/coredns/corefile-migration v1.0.20 // indirect
+	github.com/coredns/corefile-migration v1.0.21 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.5+incompatible // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/oauth2 v0.10.0 // indirect
+	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/term v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
@@ -115,11 +115,11 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.27.4 // indirect
-	k8s.io/apiserver v0.27.4 // indirect
-	k8s.io/client-go v0.27.4 // indirect
+	k8s.io/apiextensions-apiserver v0.27.5 // indirect
+	k8s.io/apiserver v0.27.5 // indirect
+	k8s.io/client-go v0.27.5 // indirect
 	k8s.io/cluster-bootstrap v0.27.2 // indirect
-	k8s.io/component-base v0.27.4 // indirect
+	k8s.io/component-base v0.27.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
