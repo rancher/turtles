@@ -258,9 +258,8 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 		AdditionalFlags: Flags("-n", rancherTurtlesNamespace, "--create-namespace", "--wait"),
 	}
 	_, err := chart.Run(map[string]string{
-		"cluster-api-operator.cert-manager.enabled": "true",
-		"clusterAPI.configSecret.namespace":         "default",
-		"clusterAPI.configSecret.name":              "variables",
+		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
+		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
