@@ -3,26 +3,28 @@ rancherTurtles:
   tag: v0.0.0
   imagePullPolicy: Never
   namespace: rancher-turtles-system
-clusterAPI:
-  enabled: true
-  version: v1.4.6
-  configSecret:
-    name: ""
-    namespace: ""
-  core:
-    namespace: capi-system
-    fetchConfig:
-      url: ""
-      selector: ""
-  kubeadmBootstrap:
-    namespace: capi-kubeadm-bootstrap-system
-    fetchConfig:
-      url: ""
-      selector: ""
-  kubeadmControlPlane:
-    namespace: capi-kubeadm-control-plane-system
-    fetchConfig:
-      url: ""
-      selector: ""
 cluster-api-operator:
   enabled: true
+  cert-manager:
+    enabled: true
+  cluster-api:
+    enabled: true
+    version: v1.4.6
+    configSecret:
+      name: ""
+      namespace: ""
+    core:
+      namespace: capi-system
+      fetchConfig:
+        url: ""
+        selector: ""
+    kubeadmBootstrap:
+      namespace: capi-kubeadm-bootstrap-system
+      fetchConfig:
+        url: ""
+        selector: ""
+    kubeadmControlPlane:
+      namespace: capi-kubeadm-control-plane-system
+      fetchConfig:
+        url: ""
+        selector: ""

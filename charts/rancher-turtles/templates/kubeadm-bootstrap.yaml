@@ -1,4 +1,4 @@
-{{- if .Values.clusterAPI.enabled }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "enabled" }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -6,31 +6,31 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "1"
-  name: {{ .Values.clusterAPI.kubeadmBootstrap.namespace }}
+  name: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "namespace" }}
 ---
 apiVersion: operator.cluster.x-k8s.io/v1alpha1
 kind: BootstrapProvider
 metadata:
   name: kubeadm
-  namespace: {{ .Values.clusterAPI.kubeadmBootstrap.namespace }}
+  namespace: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "namespace" }}
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
 spec:
-  version: {{ $.Values.clusterAPI.version }}
-{{- if $.Values.clusterAPI.configSecret.name }}
-  secretName: {{ $.Values.clusterAPI.configSecret.name }}
-{{- if $.Values.clusterAPI.configSecret.namespace }}
-  secretNamespace: {{ $.Values.clusterAPI.configSecret.namespace }}
+  version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+  secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
+  secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
 {{- end }}
 {{- end }}
-{{- if or $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.url $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.selector }}
+{{- if or (index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "selector") }}
   fetchConfig:
-    {{- if $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.url }}
-    url: {{ $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.url }}
+    {{- if index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "url" }}
+    url: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "url" }}
     {{- end }}
-    {{- if $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.selector }}
-    selector: {{ $.Values.clusterAPI.kubeadmBootstrap.fetchConfig.selector }}
+    {{- if index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "selector" }}
+    selector: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "selector" }}
     {{- end }}
 {{- end }}
 {{- end }}

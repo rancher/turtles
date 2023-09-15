@@ -8,4 +8,4 @@ dependencies:
   - name: cluster-api-operator
     version: v0.5.1
     repository: https://kubernetes-sigs.github.io/cluster-api-operator
-    condition: clusterAPIOperator.enabled
+    condition: cluster-api-operator.enabled
