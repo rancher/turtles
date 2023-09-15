@@ -41,29 +41,31 @@ rancherTurtles:
   tag: v0.0.0 # tag to use for the extension
   imagePullPolicy: Never # image pull policy to use for the extension
   namespace: rancher-turtles-system # namespace to deploy to (default: rancher-turtles-system)
-clusterAPI:
-  enabled: true # indicates if core CAPI controllers should be installed (default: true)
-  version: v1.4.6 # version of CAPI to install (default: v1.4.6)
-  configSecret:
-    name: "" # name of the config secret to use for core CAPI controllers, used by the CAPI operator. See [CAPI operator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/docs#installing-azure-infrastructure-provider) docs for more details.
-    namespace: "" # namespace of the config secret to use for core CAPI controllers, used by the CAPI operator.
-  core:
-    namespace: capi-system
-    fetchConfig: # (only required for airgapped environments)
-      url: ""  # url to fetch config from, used by the CAPI operator. See [CAPI operator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/docs#provider-spec) docs for more details.
-      selector: ""  # selector to use for fetching config, used by the CAPI operator.
-  kubeadmBootstrap:
-    namespace: capi-kubeadm-bootstrap-system
-    fetchConfig:
-      url: ""
-      selector: ""
-  kubeadmControlPlane:
-    namespace: capi-kubeadm-control-plane-system
-    fetchConfig:
-      url: ""
-      selector: ""
 cluster-api-operator: 
   enabled: true # indicates if CAPI operator should be installed (default: true)
+  cert-manager:
+    enabled: true # indicates if cert-manager should be installed (default: true)
+  cluster-api:
+    enabled: true # indicates if core CAPI controllers should be installed (default: true)
+    version: v1.4.6 # version of CAPI to install (default: v1.4.6)
+    configSecret:
+      name: "" # name of the config secret to use for core CAPI controllers, used by the CAPI operator. See [CAPI operator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/docs#installing-azure-infrastructure-provider) docs for more details.
+      namespace: "" # namespace of the config secret to use for core CAPI controllers, used by the CAPI operator.
+    core:
+      namespace: capi-system
+      fetchConfig: # (only required for airgapped environments)
+        url: ""  # url to fetch config from, used by the CAPI operator. See [CAPI operator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/docs#provider-spec) docs for more details.
+        selector: ""  # selector to use for fetching config, used by the CAPI operator.
+    kubeadmBootstrap:
+      namespace: capi-kubeadm-bootstrap-system
+      fetchConfig:
+        url: ""
+        selector: ""
+    kubeadmControlPlane:
+      namespace: capi-kubeadm-control-plane-system
+      fetchConfig:
+        url: ""
+        selector: ""
 
 ```
 ### Installing CAPI providers
