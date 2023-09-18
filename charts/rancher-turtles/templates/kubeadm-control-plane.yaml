@@ -1,0 +1,36 @@
+{{- if index .Values "cluster-api-operator" "cluster-api" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "1"
+  name: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "namespace" }}
+---
+apiVersion: operator.cluster.x-k8s.io/v1alpha1
+kind: ControlPlaneProvider
+metadata:
+  name: kubeadm
+  namespace: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "namespace" }}
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "2"
+spec:
+  version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+  secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
+  secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
+{{- end }}
+{{- end }}
+{{- if or (index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "selector") }}
+  fetchConfig:
+    {{- if index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "url" }}
+    url: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "selector" }}
+    selector: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "selector" }}
+    {{- end }}
+{{- end }}
+{{- end }}

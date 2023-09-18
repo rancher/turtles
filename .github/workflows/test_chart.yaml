@@ -59,7 +59,7 @@ jobs:
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
 
       - name: Run chart-testing (install)
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --set cluster-api-operator.cert-manager.enabled=true
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --set cluster-api-operator.cluster-api.enabled=false --set cluster-api-operator.enabled=false
 
       - name: Run chart-testing (un-install)
         run: helm uninstall rancher-turtles -n rancher-turtles-system --wait
