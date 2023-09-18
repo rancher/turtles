@@ -214,7 +214,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 ) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	err := r.Client.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
+	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
 	if apierrors.IsNotFound(err) {
 		shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName)
 		if err != nil {
@@ -226,7 +226,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			return ctrl.Result{}, nil
 		}
 
-		if err := r.Client.Create(ctx, &provisioningv1.Cluster{
+		if err := r.RancherClient.Create(ctx, &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: capiCluster.Namespace,
