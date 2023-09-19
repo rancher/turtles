@@ -53,6 +53,6 @@ const (
 	operatorNamespace       = "capi-operator-system"
 	rancherTurtlesNamespace = "rancher-turtles-system"
 	rancherNamespace        = "cattle-system"
-	capiClusterName         = "test2"
-	capiClusterNamespace    = "fleet-default"
+	capiClusterName         = "cluster1"
+	capiClusterNamespace    = "default"
 )
