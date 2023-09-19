@@ -9,3 +9,11 @@ spec:
   forceSyncGeneration: ${fleetGeneration}
   paths:
   - clusters
+---
+# Temporarily update namespace labels manually to ensure the cluster is imported
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  labels:
+    cluster-api.cattle.io/rancher-auto-import: "true"
