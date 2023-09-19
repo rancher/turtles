@@ -89,7 +89,7 @@ var _ = Describe("Create and delete CAPI cluster functionality should work", fun
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
 			namespaces := &corev1.NamespaceList{}
-			remoteClient := bootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Name, capiCluster.Namespace).GetClient()
+			remoteClient := bootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
 			return remoteClient.List(ctx, namespaces)
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 

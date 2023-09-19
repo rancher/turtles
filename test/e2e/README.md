@@ -23,6 +23,8 @@ export RANCHER_HOSTNAME=<YOUR_DOMAIN_NAME>
 
 Now you are ready to start your e2e test run.
 
+Additionally, you could reuse [`go.work.example`](../../go.work.example) and copy it into `rancher-turtles/../go.work` to allow linting in tests. Be aware that this may break vendoring process used for `make test` task due to incompatibility between the two. You will need to add `e2e` to build tags in your IDE of choice for the imports in the test suite to become resolvable.
+
 ### Running the tests
 
 From the project root directory:

@@ -60,6 +60,7 @@ const (
 	rancherRepoName    = "RANCHER_REPO_NAME"
 	rancherPassword    = "RANCHER_PASSWORD"
 	capiInfrastructure = "CAPI_INFRASTRUCTURE"
+	capiCore           = "CAPI_CORE"
 
 	ngrokRepoName  = "NGROK_REPO_NAME"
 	ngrokUrl       = "NGROK_URL"
@@ -255,7 +256,10 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 		Path:            chartPath,
 		Name:            "rancher-turtles",
 		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
-		AdditionalFlags: Flags("-n", rancherTurtlesNamespace, "--create-namespace", "--wait"),
+		AdditionalFlags: Flags(
+			"--dependency-update",
+			"-n", rancherTurtlesNamespace,
+			"--create-namespace", "--wait"),
 	}
 	_, err := chart.Run(map[string]string{
 		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
