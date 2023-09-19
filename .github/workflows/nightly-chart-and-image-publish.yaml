@@ -1,0 +1,70 @@
+name: Build and Publish nightly Helm chart and Docker images
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run every day at midnight (UTC)
+
+env:
+  TAG: ${{ github.ref_name }}
+  REGISTRY: ghcr.io
+  PROD_REGISTRY: ghcr.io
+
+permissions: {
+  packages: read|write
+}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Docker login
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build docker image
+      run: make docker-build-all TAG=${{ env.TAG }}
+    - name: Push docker image
+      run: make docker-push-all TAG=${{ env.TAG }} PROD_REGISTRY=${{ env.REGISTRY }}
+
+  release-helm:
+    name: Release Helm chart
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'rancher-turtles'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: 3.8.0
+
+      - name: Build Helm chart
+        run: make release-chart
+
+      - name: Login to ghcr.io using Helm
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io --username ${{ github.repository_owner }} --password-stdin
+
+      - name: Publish Helm chart to GHCR
+        env:
+          GHCR_REPOSITORY: ${{ github.repository_owner }}/rancher-turtles-chart
+        run: |
+          helm push out/package/rancher-turtles-0.0.0.tgz oci://ghcr.io/${GHCR_REPOSITORY}/rancher-turtles-chart
