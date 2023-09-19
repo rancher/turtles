@@ -22,33 +22,39 @@ package e2e
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"path/filepath"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
+
+	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
 )
 
 var (
 	ctx = context.Background()
 
-	//go:embed resources/testdata/fleet-capi-test.yaml
-	fleetCAPITestdata []byte
-
-	//go:embed resources/config/capi-providers-secret.yaml
+	//go:embed data/capi-operator/capi-providers-secret.yaml
 	capiProvidersSecret []byte
 
-	//go:embed resources/config/capi-providers.yaml
+	//go:embed data/capi-operator/capi-providers.yaml
 	capiProviders []byte
 
-	//go:embed resources/config/ingress.yaml
+	//go:embed data/rancher/ingress.yaml
 	ingressConfig []byte
 
-	//go:embed resources/config/rancher-service-patch.yaml
+	//go:embed data/rancher/rancher-service-patch.yaml
 	rancherServicePatch []byte
 
-	//go:embed resources/config/ingress-class-patch.yaml
+	//go:embed data/rancher/ingress-class-patch.yaml
 	ingressClassPatch []byte
 
-	//go:embed resources/config/rancher-setting-patch.yaml
+	//go:embed data/rancher/rancher-setting-patch.yaml
 	rancherSettingPatch []byte
 
-	//go:embed resources/config/nginx-ingress.yaml
+	//go:embed data/rancher/nginx-ingress.yaml
 	nginxIngress []byte
 )
 
@@ -60,3 +66,53 @@ const (
 	capiClusterNamespace    = "default"
 	nginxIngressNamespace   = "ingress-nginx"
 )
+
+func setupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
+	turtlesframework.Byf("Creating a namespace for hosting the %q test spec", specName)
+	namespace, cancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
+		Creator:   clusterProxy.GetClient(),
+		ClientSet: clusterProxy.GetClientSet(),
+		Name:      fmt.Sprintf("%s-%s", specName, util.RandomString(6)),
+		LogFolder: filepath.Join(artifactFolder, "clusters", clusterProxy.GetName()),
+	})
+
+	return namespace, cancelWatches
+}
+
+func createRepoName(specName string) string {
+	return fmt.Sprintf("repo-%s-%s", specName, util.RandomString(6))
+}
+
+func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
+	turtlesframework.Byf("Dumping logs from the %q workload cluster", capiCluster.Name)
+
+	// Dump all the logs from the workload cluster before deleting them.
+	clusterProxy.CollectWorkloadClusterLogs(ctx, capiCluster.Namespace, capiCluster.Name, filepath.Join(artifactFolder, "clusters", capiCluster.Name))
+
+	turtlesframework.Byf("Dumping all the Cluster API resources in the %q namespace", namespace.Name)
+
+	// Dump all Cluster API related resources to artifacts before deleting them.
+	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
+		Lister:    clusterProxy.GetClient(),
+		Namespace: namespace.Name,
+		LogPath:   filepath.Join(artifactFolder, "clusters", clusterProxy.GetName(), "resources"),
+	})
+
+	if !skipCleanup {
+		turtlesframework.Byf("Deleting cluster %s", capiCluster)
+		// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance
+		// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
+		// instead of DeleteClusterAndWait
+		framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
+			Client:    clusterProxy.GetClient(),
+			Namespace: namespace.Name,
+		}, intervalsGetter(specName, "wait-delete-cluster")...)
+
+		turtlesframework.Byf("Deleting namespace used for hosting the %q test spec", specName)
+		framework.DeleteNamespace(ctx, framework.DeleteNamespaceInput{
+			Deleter: clusterProxy.GetClient(),
+			Name:    namespace.Name,
+		})
+	}
+	cancelWatches()
+}

@@ -8,10 +8,12 @@ images:
 intervals:
   default/wait-controllers: ["3m", "10s"]
   default/wait-rancher: ["15m", "30s"]
+  default/wait-gitea: ["3m", "10s"]
   default/wait-consistently: ["30s", "5s"]
+  default/wait-getservice: ["60s", "5s"]
 
 variables:
-  RANCHER_VERSION: "v2.7.5"
+  RANCHER_VERSION: "v2.7.6"
   RANCHER_HOSTNAME: "localhost"
   RANCHER_FEATURES: "embedded-cluster-api=false"
   RANCHER_PATH: "rancher-stable/rancher"
@@ -27,3 +29,9 @@ variables:
   NGROK_PATH: "ngrok/kubernetes-ingress-controller"
   NGROK_API_KEY: ""
   NGROK_AUTHTOKEN: ""
+  GITEA_REPO_NAME: "gitea-charts"
+  GITEA_REPO_URL: "https://dl.gitea.com/charts/"
+  GITEA_CHART_NAME: "gitea"
+  GITEA_CHART_VERSION: "9.4.0"
+  GITEA_USER_NAME: "gitea_admin"
+  GITEA_USER_PWD: "password"
