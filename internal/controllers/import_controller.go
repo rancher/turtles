@@ -19,6 +19,7 @@ package controllers
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -64,11 +65,12 @@ const (
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportReconciler struct {
-	Client           client.Client
-	RancherClient    client.Client
-	recorder         record.EventRecorder
-	WatchFilterValue string
-	Scheme           *runtime.Scheme
+	Client             client.Client
+	RancherClient      client.Client
+	recorder           record.EventRecorder
+	WatchFilterValue   string
+	Scheme             *runtime.Scheme
+	InsecureSkipVerify bool
 
 	controller         controller.Controller
 	externalTracker    external.ObjectTracker
@@ -407,7 +409,13 @@ func (r *CAPIImportReconciler) namespaceToCapiClusters(ctx context.Context, clus
 }
 
 func (r *CAPIImportReconciler) downloadManifest(url string) (string, error) {
-	resp, err := http.Get(url) //nolint:gosec,noctx
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: r.InsecureSkipVerify, //nolint:gosec
+		},
+	}}
+
+	resp, err := client.Get(url) //nolint:gosec,noctx
 	if err != nil {
 		return "", fmt.Errorf("downloading manifest: %w", err)
 	}

@@ -63,6 +63,7 @@ var (
 	healthAddr                  string
 	concurrencyNumber           int
 	rancherKubeconfig           string
+	insecureSkipVerify          bool
 )
 
 func init() {
@@ -108,6 +109,9 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&rancherKubeconfig, "rancher-kubeconfig", "",
 		"Path to the Rancher kubeconfig file. Only required if running out-of-cluster.")
+
+	fs.BoolVar(&insecureSkipVerify, "insecure-skip-verify", false,
+		"Skip TLS certificate verification when connecting to Rancher. Only used for development and testing purposes. Use at your own risk.")
 }
 
 func main() {
@@ -173,9 +177,10 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 	}
 
 	if err := (&controllers.CAPIImportReconciler{
-		Client:           mgr.GetClient(),
-		RancherClient:    rancherClient,
-		WatchFilterValue: watchFilterValue,
+		Client:             mgr.GetClient(),
+		RancherClient:      rancherClient,
+		WatchFilterValue:   watchFilterValue,
+		InsecureSkipVerify: insecureSkipVerify,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)
