@@ -47,6 +47,9 @@ var (
 
 	//go:embed resources/config/rancher-setting-patch.yaml
 	rancherSettingPatch []byte
+
+	//go:embed resources/config/nginx-ingress.yaml
+	nginxIngress []byte
 )
 
 const (
@@ -55,4 +58,5 @@ const (
 	rancherNamespace        = "cattle-system"
 	capiClusterName         = "cluster1"
 	capiClusterNamespace    = "default"
+	nginxIngressNamespace   = "ingress-nginx"
 )

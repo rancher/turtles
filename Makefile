@@ -55,6 +55,7 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/operator.yaml
 GINKGO_ARGS ?=
 SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
+ISOLATED_MODE ?= false
 GINKGO_NOCOLOR ?= false
 
 # to set multiple ginkgo skip flags, if any
@@ -464,7 +465,8 @@ test-e2e: $(GINKGO) $(HELM) kubectl ## Run the end-to-end tests
 		-e2e.helm-binary-path=$(HELM) \
 		-e2e.chart-path=$(ROOT_DIR)/$(CHART_RELEASE_DIR) \
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
-		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
+		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER) \
+		-e2e.isolated-mode=$(ISOLATED_MODE)
 
 ## --------------------------------------
 ## Documentation

@@ -1,0 +1,32 @@
+name: Run nightly e2e tests
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+env:
+  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
+  RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
+  RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
+
+jobs:
+  e2e:
+    concurrency: test-e2e
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Run e2e tests
+      run: make test-e2e
+    - name: Collect run artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: _artifacts
