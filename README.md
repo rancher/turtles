@@ -48,9 +48,10 @@ cluster-api-operator:
   cluster-api:
     enabled: true # indicates if core CAPI controllers should be installed (default: true)
     version: v1.4.6 # version of CAPI to install (default: v1.4.6)
-    configSecret:
+    configSecret: # set the name/namespace of configuration secret. Leave empty unless you want to use your own secret.
       name: "" # name of the config secret to use for core CAPI controllers, used by the CAPI operator. See [CAPI operator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/docs#installing-azure-infrastructure-provider) docs for more details.
       namespace: "" # namespace of the config secret to use for core CAPI controllers, used by the CAPI operator.
+      defaultName: "capi-env-variables" # default name for the secret.
     core:
       namespace: capi-system
       fetchConfig: # (only required for airgapped environments)

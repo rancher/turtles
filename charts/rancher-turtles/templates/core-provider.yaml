@@ -21,11 +21,12 @@ spec:
   additionalManifests:
     name: capi-additional-rbac-roles
     namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+{{- if and (index .Values "cluster-api-operator" "cluster-api" "configSecret" "name") (index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace") }}
   secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
   secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
-{{- end }}
+{{ else }}
+  secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "defaultName" }}
+  secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
 {{- end }}
 {{- if or (index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector") }}
   fetchConfig:
@@ -68,4 +69,19 @@ data:
       - apiGroups: ["rke-machine.cattle.io"]
         resources: ["*"]
         verbs: ["*"]
+---
+{{- if not (and (index .Values "cluster-api-operator" "cluster-api" "configSecret" "name") (index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace")) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "defaultName" }}
+  namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "2"
+type: Opaque
+stringData:
+  CLUSTER_TOPOLOGY: "true"
+  EXP_CLUSTER_RESOURCE_SET: "true"
+{{- end }}
 {{- end }}

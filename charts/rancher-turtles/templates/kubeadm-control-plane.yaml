@@ -18,11 +18,12 @@ metadata:
     "helm.sh/hook-weight": "2"
 spec:
   version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+{{- if and (index .Values "cluster-api-operator" "cluster-api" "configSecret" "name") (index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace") }}
   secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
   secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
-{{- end }}
+{{ else }}
+  secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "defaultName" }}
+  secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
 {{- end }}
 {{- if or (index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "kubeadmControlPlane" "fetchConfig" "selector") }}
   fetchConfig:
