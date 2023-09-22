@@ -28,6 +28,7 @@ jobs:
     - name: Run e2e tests
       run: make test-e2e
     - name: Collect run artifacts
+      if: always()
       uses: actions/upload-artifact@v3
       with:
         name: artifacts

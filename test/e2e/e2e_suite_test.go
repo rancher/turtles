@@ -611,13 +611,6 @@ func configureIsolatedEnvironment(clusterProxy framework.ClusterProxy) {
 			break
 		}
 	}
-
-	if cpNode.GetLabels() == nil {
-		cpNode.Labels = map[string]string{}
-	}
-	cpNode.Labels["ingress-ready"] = "true"
-
-	Expect(clusterProxy.GetClient().Update(ctx, &cpNode)).To(Succeed())
 }
 
 // setupIngress sets up the ingress for the e2e test. If isolatedMode is true, it will install the nginx ingress controller configured for kind, see https://kind.sigs.k8s.io/docs/user/ingress/#ingress-nginx
