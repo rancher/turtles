@@ -67,6 +67,8 @@ const (
 	ngrokPath      = "NGROK_PATH"
 	ngrokApiKey    = "NGROK_API_KEY"
 	ngrokAuthToken = "NGROK_AUTHTOKEN"
+
+	magicDNS = "sslip.io"
 )
 
 // Test suite flags.
@@ -88,6 +90,10 @@ var (
 
 	// chartPath is the path to the operator chart.
 	chartPath string
+
+	// isolatedMode instructs the test to run without ngrok and exposing the cluster to the internet. This setup will only work with CAPD
+	// or other providers that run in the same network as the bootstrap cluster.
+	isolatedMode bool
 )
 
 // Test suite global vars.
@@ -108,6 +114,9 @@ var (
 
 	// helmChart is the helm chart helper to be used for the e2e tests.
 	helmChart *HelmChart
+
+	// isolatedHostName is the hostname to be used for the e2e tests when running in isolated mode. Overrides the hostname set in the config file.
+	isolatedHostName string
 )
 
 func init() {
@@ -117,6 +126,7 @@ func init() {
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.StringVar(&helmBinaryPath, "e2e.helm-binary-path", "helm", "path to the helm binary")
 	flag.StringVar(&chartPath, "e2e.chart-path", "", "path to the operator chart")
+	flag.BoolVar(&isolatedMode, "e2e.isolated-mode", false, "if true, the test will run without ngrok and exposing the cluster to the internet. This setup will only work with CAPD or other providers that run in the same network as the bootstrap cluster.")
 }
 
 func TestE2E(t *testing.T) {
@@ -242,6 +252,10 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 	logFolder := filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(logFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created for initBootstrapCluster")
 
+	if isolatedMode {
+		configureIsolatedEnvironment(bootstrapClusterProxy)
+	}
+
 	initRancherTurtles(bootstrapClusterProxy, config)
 	initRancher(bootstrapClusterProxy, config)
 }
@@ -252,16 +266,17 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 
 	By("Installing rancher-turtles chart")
 	chart := &HelmChart{
-		BinaryPath:      helmBinaryPath,
-		Path:            chartPath,
-		Name:            "rancher-turtles",
-		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
+		BinaryPath: helmBinaryPath,
+		Path:       chartPath,
+		Name:       "rancher-turtles",
+		Kubeconfig: clusterProxy.GetKubeconfigPath(),
 		AdditionalFlags: Flags(
 			"--dependency-update",
 			"-n", rancherTurtlesNamespace,
 			"--create-namespace", "--wait"),
 	}
 	_, err := chart.Run(map[string]string{
+		"managerArguments[0]": "--insecure-skip-verify=true",
 		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
 		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
 	})
@@ -341,26 +356,35 @@ func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConf
 			"--wait",
 		),
 	}
+
+	rancherHost := config.GetVariable(rancherHostname)
+	if isolatedMode {
+		rancherHost = isolatedHostName
+	}
+
 	_, err = chart.Run(map[string]string{
 		"bootstrapPassword":         config.GetVariable(rancherPassword),
 		"features":                  config.GetVariable(rancherFeatures),
 		"global.cattle.psp.enabled": "false",
-		"hostname":                  config.GetVariable(rancherHostname),
+		"hostname":                  rancherHost,
 		"replicas":                  "1",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Updating rancher settings")
-	settingPatch, err := envsubst.Eval(string(rancherSettingPatch), os.Getenv)
+	settingPatch, err := envsubst.Eval(string(rancherSettingPatch), func(s string) string {
+		switch s {
+		case rancherHostname:
+			return rancherHost
+		default:
+			return os.Getenv(s)
+		}
+	})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(clusterProxy.Apply(ctx, []byte(settingPatch))).To(Succeed())
 
-	initNgrokIngress(clusterProxy, config)
-
 	By("Setting up ingress")
-	ingress, err := envsubst.Eval(string(ingressConfig), os.Getenv)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(clusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
+	setupIngress(clusterProxy, config)
 
 	By("Waiting for rancher webhook rollout")
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
@@ -457,6 +481,51 @@ func dumpBootstrapClusterLogs(bootstrapClusterProxy framework.ClusterProxy) {
 			fmt.Printf("Failed to get logs for the bootstrap cluster node %s: %v\n", nodeName, err)
 		}
 	}
+}
+
+// configureIsolatedEnvironment sets the isolatedHostName variable to the IP of the first and only node in the boostrap cluster. Labels the node with
+// "ingress-ready" so that the nginx ingress controller can pick it up, required by kind. See: https://kind.sigs.k8s.io/docs/user/ingress/#create-cluster
+func configureIsolatedEnvironment(clusterProxy framework.ClusterProxy) {
+	cpNodeList := corev1.NodeList{}
+	Expect(clusterProxy.GetClient().List(ctx, &cpNodeList)).To(Succeed())
+	Expect(cpNodeList.Items).To(HaveLen(1))
+	Expect(cpNodeList.Items[0].Status.Addresses).ToNot(BeEmpty())
+
+	cpNode := cpNodeList.Items[0]
+	Expect(cpNode.Status.Addresses).ToNot(BeEmpty())
+
+	for _, address := range cpNode.Status.Addresses {
+		if address.Type == corev1.NodeInternalIP {
+			isolatedHostName = address.Address + "." + magicDNS
+			break
+		}
+	}
+
+	if cpNode.GetLabels() == nil {
+		cpNode.Labels = map[string]string{}
+	}
+	cpNode.Labels["ingress-ready"] = "true"
+
+	Expect(clusterProxy.GetClient().Update(ctx, &cpNode)).To(Succeed())
+}
+
+// setupIngress sets up the ingress for the e2e test. If isolatedMode is true, it will install the nginx ingress controller configured for kind, see https://kind.sigs.k8s.io/docs/user/ingress/#ingress-nginx
+// If isolatedMode is false, it will install the ngrok ingress controller.
+func setupIngress(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
+	if isolatedMode {
+		Expect(clusterProxy.Apply(ctx, []byte(nginxIngress))).To(Succeed())
+		By("Waiting for ingress-nginx-controller deployment to be available")
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter:     bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "ingress-nginx-controller", Namespace: nginxIngressNamespace}},
+		}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...)
+		return
+	}
+
+	initNgrokIngress(clusterProxy, config)
+	ingress, err := envsubst.Eval(string(ingressConfig), os.Getenv)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(clusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
 }
 
 // Using a SynchronizedAfterSuite for controlling how to delete resources shared across ParallelNodes (~ginkgo threads).

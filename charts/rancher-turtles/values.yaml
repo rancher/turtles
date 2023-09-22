@@ -3,6 +3,7 @@ rancherTurtles:
   tag: v0.0.0
   imagePullPolicy: Never
   namespace: rancher-turtles-system
+  managerArguments: {}
 cluster-api-operator:
   enabled: true
   cert-manager:
