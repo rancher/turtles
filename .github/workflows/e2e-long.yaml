@@ -3,6 +3,9 @@ name: Run nightly e2e tests
 on:
   schedule:
     - cron: "0 0 * * *"
+  push:
+    branches:
+      - main
 
 env:
   NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
@@ -12,7 +15,6 @@ env:
 
 jobs:
   e2e:
-    concurrency: test-e2e
     runs-on: ubuntu-latest
     steps:
     - name: Checkout

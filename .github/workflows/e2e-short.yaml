@@ -1,17 +1,10 @@
-name: Run e2e tests
+name: Run short e2e tests
 
 on:
-  push:
-    branches:
-      - "main"
   pull_request:
-
-env:
-  RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
 
 jobs:
   e2e:
-    concurrency: test-e2e
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
