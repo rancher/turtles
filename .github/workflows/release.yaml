@@ -8,7 +8,13 @@ on:
 env:
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
-  PROD_REGISTRY: ghcr.io
+  USERNAME: ${{ github.actor }}
+  PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  ORG: rancher-sandbox
+  PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
+  PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+  PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+  PROD_ORG: rancher-sandbox
   CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   RELEASE_DIR: .cr-release-packages
@@ -36,12 +42,23 @@ jobs:
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        username: ${{ env.USERNAME }}
+        password: ${{ env.PASSWORD }}
     - name: Build docker image
-      run: make docker-build-all TAG=${{ env.TAG }}
-    - name: Push docker image
-      run: make docker-push-all TAG=${{ env.TAG }} PROD_REGISTRY=${{ env.REGISTRY }}
+      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.REGISTRY }}
+    - name: Push docker image to gh registry
+      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.REGISTRY }}
+
+    - name: Docker login to prod registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.PROD_REGISTRY }}
+        username: ${{ env.PROD_USERNAME }}
+        password: ${{ env.PROD_PASSWORD }}
+    - name: Build prod docker image
+      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
+    - name: Push docker image to prod registry
+      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
   release:
     name: Create helm release
     runs-on: ubuntu-latest
@@ -57,7 +74,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Package operator chart
-        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} make release
+        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
@@ -70,7 +87,7 @@ jobs:
           echo "CR_GIT_REPO=$(cut -d '/' -f 2 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
           rm -rf .cr-index
           mkdir -p .cr-index
-  
+
       - name: Run chart-releaser upload
         run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --release-notes-file=RELEASE_NOTES.md
 

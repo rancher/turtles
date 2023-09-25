@@ -122,9 +122,8 @@ TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 REGISTRY ?= ghcr.io
-PROD_REGISTRY ?= $(REGISTRY)
 ORG ?= rancher-sandbox
-CONTROLLER_IMAGE_NAME := rancher-turtles
+CONTROLLER_IMAGE_NAME ?= rancher-turtles
 CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 
