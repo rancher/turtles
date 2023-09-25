@@ -37,3 +37,6 @@ cmd/clusterctl/clusterctl/**
 **/*.tmp
 **/.DS_Store
 **/*.swp
+
+# Ignore go.work files
+go.work*

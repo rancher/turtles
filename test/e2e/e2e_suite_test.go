@@ -33,21 +33,22 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	. "sigs.k8s.io/cluster-api-operator/test/framework"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
 )
 
 const (
@@ -69,6 +70,18 @@ const (
 	ngrokAuthToken = "NGROK_AUTHTOKEN"
 
 	magicDNS = "sslip.io"
+
+	giteaRepoName     = "GITEA_REPO_NAME"
+	giteaRepoURL      = "GITEA_REPO_URL"
+	giteaChartName    = "GITEA_CHART_NAME"
+	giteaChartVersion = "GITEA_CHART_VERSION"
+	giteaUserName     = "GITEA_USER_NAME"
+	giteaUserPassword = "GITEA_USER_PWD"
+
+	authSecretName = "basic-auth-secret"
+
+	shortTestLabel = "short"
+	fullTestLabel  = "full"
 )
 
 // Test suite flags.
@@ -94,6 +107,9 @@ var (
 	// isolatedMode instructs the test to run without ngrok and exposing the cluster to the internet. This setup will only work with CAPD
 	// or other providers that run in the same network as the bootstrap cluster.
 	isolatedMode bool
+
+	// clusterctlBinaryPath is the path to the clusterctl binary to use.
+	clusterctlBinaryPath string
 )
 
 // Test suite global vars.
@@ -117,6 +133,12 @@ var (
 
 	// isolatedHostName is the hostname to be used for the e2e tests when running in isolated mode. Overrides the hostname set in the config file.
 	isolatedHostName string
+
+	// gitAddress holds the address to the gitea git server
+	gitAddress string
+
+	// hostName is the host name for the Rancher Manager server.
+	hostName string
 )
 
 func init() {
@@ -125,6 +147,7 @@ func init() {
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.StringVar(&helmBinaryPath, "e2e.helm-binary-path", "helm", "path to the helm binary")
+	flag.StringVar(&clusterctlBinaryPath, "e2e.clusterctl-binary-path", "helm", "path to the clusterctl binary")
 	flag.StringVar(&chartPath, "e2e.chart-path", "", "path to the operator chart")
 	flag.BoolVar(&isolatedMode, "e2e.isolated-mode", false, "if true, the test will run without ngrok and exposing the cluster to the internet. This setup will only work with CAPD or other providers that run in the same network as the bootstrap cluster.")
 }
@@ -134,7 +157,7 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(klog.Background())
 
-	RunSpecs(t, "capi-operator-e2e")
+	RunSpecs(t, "rancher-turtles-e2e")
 }
 
 // Using a SynchronizedBeforeSuite for controlling how to create resources shared across ParallelNodes (~ginkgo threads).
@@ -162,24 +185,34 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	By("Initializing the bootstrap cluster")
 	initBootstrapCluster(bootstrapClusterProxy, e2eConfig, artifactFolder, useExistingCluster)
 
+	By("Setting Rancher hostname")
+	if isolatedMode {
+		hostName = isolatedHostName
+	} else {
+		hostName = e2eConfig.GetVariable(rancherHostname)
+	}
+	Expect(hostName).ToNot(BeEmpty(), "The Rancher hostname cannot be empty")
+
 	return []byte(
 		strings.Join([]string{
 			artifactFolder,
 			configPath,
 			clusterctlConfigPath,
 			bootstrapClusterProxy.GetKubeconfigPath(),
+			hostName,
 		}, ","),
 	)
 }, func(data []byte) {
 	// Before each ParallelNode.
 
 	parts := strings.Split(string(data), ",")
-	Expect(parts).To(HaveLen(4))
+	Expect(parts).To(HaveLen(5))
 
 	artifactFolder = parts[0]
 	configPath = parts[1]
 	clusterctlConfigPath = parts[2]
 	bootstrapKubeconfigPath := parts[3]
+	hostName = parts[4]
 
 	e2eConfig = loadE2EConfig(configPath)
 	bootstrapProxy := framework.NewClusterProxy("bootstrap", bootstrapKubeconfigPath, initScheme(), framework.WithMachineLogCollector(framework.DockerLogCollector{}))
@@ -258,6 +291,7 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 
 	initRancherTurtles(bootstrapClusterProxy, config)
 	initRancher(bootstrapClusterProxy, config)
+	initGitea(bootstrapClusterProxy, config)
 }
 
 func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
@@ -279,6 +313,8 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 		"managerArguments[0]": "--insecure-skip-verify=true",
 		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
 		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
+		"rancherTurtles.image":                                    "ghcr.io/rancher-sandbox/rancher-turtles-amd64",
+		"rancherTurtles.tag":                                      "v0.0.1",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -402,6 +438,81 @@ func initRancher(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConf
 	Eventually(func() error {
 		return bootstrapClusterProxy.GetClient().DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace("cattle-fleet-system"), client.MatchingLabels{"app": "fleet-controller"})
 	}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).ShouldNot(HaveOccurred())
+}
+
+func initGitea(clusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {
+	By("Installing gitea chart")
+	addChart := &HelmChart{
+		BinaryPath:      helmBinaryPath,
+		Name:            config.GetVariable(giteaRepoName),
+		Path:            config.GetVariable(giteaRepoURL),
+		Commands:        Commands(Repo, Add),
+		AdditionalFlags: Flags("--force-update"),
+		Kubeconfig:      clusterProxy.GetKubeconfigPath(),
+	}
+	_, err := addChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	updateChart := &HelmChart{
+		BinaryPath: helmBinaryPath,
+		Commands:   Commands(Repo, Update),
+		Kubeconfig: clusterProxy.GetKubeconfigPath(),
+	}
+	_, err = updateChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	chart := &HelmChart{
+		BinaryPath: helmBinaryPath,
+		Path:       fmt.Sprintf("%s/%s", config.GetVariable(giteaRepoName), config.GetVariable(giteaChartName)),
+		Name:       "gitea",
+		Kubeconfig: clusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: Flags(
+			"--version", config.GetVariable(giteaChartVersion),
+			"-f", "data/gitea/values.yaml",
+			"--create-namespace",
+			"--wait",
+		),
+	}
+
+	// Gitea values can be found gitea_values.yaml file as well. For a list of the values
+	// available look here: https://gitea.com/gitea/helm-chart/src/branch/main/values.yaml
+	_, err = chart.Run(map[string]string{
+		"gitea.admin.username": config.GetVariable(giteaUserName),
+		"gitea.admin.password": config.GetVariable(giteaUserPassword),
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Waiting for gitea rollout")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter:     bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gitea", Namespace: "default"}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-gitea")...)
+
+	By("Get Git server config")
+	addr := turtlesframework.GetNodeAddress(ctx, turtlesframework.GetNodeAddressInput{
+		Lister:       bootstrapClusterProxy.GetClient(),
+		NodeIndex:    0,
+		AddressIndex: 0,
+	})
+	port := turtlesframework.GetServicePortByName(ctx, turtlesframework.GetServicePortByNameInput{
+		GetLister:        bootstrapClusterProxy.GetClient(),
+		ServiceName:      "gitea-http",
+		ServiceNamespace: "default",
+		PortName:         "http",
+	}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-getservice")...)
+	Expect(port.NodePort).ToNot(Equal(0), "Node port for Gitea service is not set")
+	gitAddress = fmt.Sprintf("http://%s:%d", addr, port.NodePort)
+
+	turtlesframework.CreateSecret(ctx, turtlesframework.CreateSecretInput{
+		Creator:   bootstrapClusterProxy.GetClient(),
+		Name:      authSecretName,
+		Namespace: turtlesframework.FleetLocalNamespace,
+		Type:      corev1.SecretTypeBasicAuth,
+		Data: map[string]string{
+			"username": e2eConfig.GetVariable(giteaUserName),
+			"password": e2eConfig.GetVariable(giteaUserPassword),
+		},
+	})
 }
 
 func initNgrokIngress(bootstrapClusterProxy framework.ClusterProxy, config *clusterctl.E2EConfig) {

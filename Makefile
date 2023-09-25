@@ -32,6 +32,9 @@ TEST_DIR := test
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/$(BIN_DIR))
 
+$(TOOLS_BIN_DIR):
+	mkdir -p $@
+
 export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
 
 # Set --output-base for conversion-gen if we are not within GOPATH
@@ -109,6 +112,10 @@ GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 HELM_VER := v3.8.1
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
+
+CLUSTERCTL_VER := v1.4.6
+CLUSTERCTL_BIN := clusterctl
+CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 
 GOLANGCI_LINT_VER := v1.53.3
 GOLANGCI_LINT_BIN := golangci-lint
@@ -419,6 +426,10 @@ $(HELM): ## Put helm into tools folder.
 	ln -sf $(HELM) $(TOOLS_BIN_DIR)/$(HELM_BIN)
 	rm -f $(TOOLS_BIN_DIR)/get_helm.sh
 
+$(CLUSTERCTL): $(TOOLS_BIN_DIR) ## Download and install clusterctl
+	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.6/clusterctl-linux-amd64
+	chmod +x $(CLUSTERCTL)
+
 ## --------------------------------------
 ## Release
 ## --------------------------------------
@@ -452,9 +463,7 @@ release-chart: $(HELM) $(NOTES) build-chart verify-gen
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(HELM) kubectl ## Run the end-to-end tests
-	TAG=v0.0.1 $(MAKE) docker-build
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(MANIFEST_IMG) $(MAKE) build-chart
+test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-end tests
 	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) \
 	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
@@ -463,10 +472,20 @@ test-e2e: $(GINKGO) $(HELM) kubectl ## Run the end-to-end tests
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \
 	    -e2e.config="$(E2E_CONF_FILE)" \
 		-e2e.helm-binary-path=$(HELM) \
+		-e2e.clusterctl-binary-path=$(CLUSTERCTL) \
 		-e2e.chart-path=$(ROOT_DIR)/$(CHART_RELEASE_DIR) \
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER) \
 		-e2e.isolated-mode=$(ISOLATED_MODE)
+
+.PHONY: e2e-image
+e2e-image: ## Build the image for e2e tests
+	TAG=v0.0.1 $(MAKE) docker-build
+	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(MANIFEST_IMG) $(MAKE) build-chart
+
+.PHONY: compile-e2e
+e2e-compile: ## Test e2e compilation
+	go test -c -o /dev/null -tags=e2e ./test/e2e
 
 ## --------------------------------------
 ## Documentation
