@@ -3,15 +3,11 @@ name: Build and Publish nightly Helm chart and Docker images
 on:
   schedule:
     - cron: "0 0 * * *" # Run every day at midnight (UTC)
+  workflow_dispatch: # Allow running manually on demand
 
 env:
-  TAG: ${{ github.ref_name }}
+  TAG: ${{ github.sha }}
   REGISTRY: ghcr.io
-  PROD_REGISTRY: ghcr.io
-
-permissions: {
-  packages: read|write
-}
 
 jobs:
   build:
@@ -37,14 +33,18 @@ jobs:
     - name: Build docker image
       run: make docker-build-all TAG=${{ env.TAG }}
     - name: Push docker image
-      run: make docker-push-all TAG=${{ env.TAG }} PROD_REGISTRY=${{ env.REGISTRY }}
+      run: make docker-push-all TAG=${{ env.TAG }}
 
   release-helm:
     name: Release Helm chart
+    needs: 
+    - build
+    permissions:
+      contents: read
+      packages: write
     env:
       HELM_EXPERIMENTAL_OCI: 1
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'rancher-turtles'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -57,7 +57,7 @@ jobs:
           version: 3.8.0
 
       - name: Build Helm chart
-        run: make release-chart
+        run: make release-chart RELEASE_TAG=v0.0.0-${{ github.sha }}
 
       - name: Login to ghcr.io using Helm
         run: |
@@ -67,4 +67,4 @@ jobs:
         env:
           GHCR_REPOSITORY: ${{ github.repository_owner }}/rancher-turtles-chart
         run: |
-          helm push out/package/rancher-turtles-0.0.0.tgz oci://ghcr.io/${GHCR_REPOSITORY}/rancher-turtles-chart
+          helm push out/package/rancher-turtles-0.0.0-${{ github.sha }}.tgz oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart
