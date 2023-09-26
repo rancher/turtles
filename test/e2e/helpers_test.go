@@ -20,14 +20,19 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
 	"path/filepath"
+	"text/template"
+
+	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 
 	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
@@ -41,6 +46,12 @@ var (
 
 	//go:embed data/capi-operator/capi-providers.yaml
 	capiProviders []byte
+
+	//go:embed data/capi-operator/full-variables.yaml
+	fullProvidersSecret []byte
+
+	//go:embed data/capi-operator/full-providers.yaml
+	fullProviders []byte
 
 	//go:embed data/rancher/ingress.yaml
 	ingressConfig []byte
@@ -115,4 +126,25 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		})
 	}
 	cancelWatches()
+}
+
+func getFullProviderVariables(config *clusterctl.E2EConfig, varsTemplate string) []byte {
+	capaCreds := config.GetVariable(capaEncodedCredentials)
+	Expect(capaCreds).ToNot(BeEmpty(), "Invalid input. You must supply encoded CAPA credentials")
+
+	providerVars := struct {
+		AWSEncodedCredentials string
+	}{
+		AWSEncodedCredentials: capaCreds,
+	}
+
+	t := template.New("providers-variables")
+	t, err := t.Parse(varsTemplate)
+	Expect(err).ShouldNot(HaveOccurred(), "Failed to pass full infra variables")
+
+	var renderedTemplate bytes.Buffer
+	err = t.Execute(&renderedTemplate, providerVars)
+	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
+
+	return renderedTemplate.Bytes()
 }

@@ -12,6 +12,7 @@ env:
   NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
   RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
   RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
+  CAPA_ENCODED_CREDS: ${{ secrets.CAPA_ENCODED_CREDS }}
 
 jobs:
   e2e:

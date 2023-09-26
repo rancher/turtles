@@ -52,6 +52,9 @@ type CreateUsingGitOpsSpecInput struct {
 	ClusterTemplatePath  string
 	ClusterName          string
 
+	CAPIClusterCreateWaitName string
+	DeleteClusterWaitName     string
+
 	// ControlPlaneMachineCount defines the number of control plane machines to be added to the workload cluster.
 	// If not specified, 1 will be used.
 	ControlPlaneMachineCount *int
@@ -73,14 +76,16 @@ type CreateUsingGitOpsSpecInput struct {
 // automatically imports into Rancher Manager.
 func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGitOpsSpecInput) {
 	var (
-		specName          = "creategitops"
-		input             CreateUsingGitOpsSpecInput
-		namespace         *corev1.Namespace
-		repoName          string
-		cancelWatches     context.CancelFunc
-		capiCluster       *types.NamespacedName
-		rancherKubeconfig *turtlesframework.RancherGetClusterKubeconfigResult
-		rancherConnectRes *turtlesframework.RunCommandResult
+		specName              = "creategitops"
+		input                 CreateUsingGitOpsSpecInput
+		namespace             *corev1.Namespace
+		repoName              string
+		cancelWatches         context.CancelFunc
+		capiCluster           *types.NamespacedName
+		rancherKubeconfig     *turtlesframework.RancherGetClusterKubeconfigResult
+		rancherConnectRes     *turtlesframework.RunCommandResult
+		capiClusterCreateWait []interface{}
+		deleteClusterWait     []interface{}
 	)
 
 	BeforeEach(func() {
@@ -94,6 +99,12 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Expect(input.E2EConfig.Variables).To(HaveKey(kubernetesVersion))
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
 		repoName = createRepoName(specName)
+
+		capiClusterCreateWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.CAPIClusterCreateWaitName)
+		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
+
+		deleteClusterWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.DeleteClusterWaitName)
+		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
 
 		capiCluster = &types.NamespacedName{
 			Namespace: namespace.Name,
@@ -195,13 +206,16 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
 			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
 
+		By("Waiting for cluster control plane to be Ready")
+		Eventually(komega.Object(capiCluster), capiClusterCreateWait...).Should(HaveField("Status.ControlPlaneReady", BeTrue()))
+
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
 			remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
 			namespaces := &corev1.NamespaceList{}
 
 			return remoteClient.List(ctx, namespaces)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
+		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 		By("Waiting for the rancher cluster record to appear")
 		rancherCluster := &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
@@ -246,7 +260,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		})
 
 		By("Waiting for the rancher cluster record to be removed")
-		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers")...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+		Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
 
 	})
 
