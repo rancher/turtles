@@ -60,6 +60,7 @@ SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
 ISOLATED_MODE ?= false
 GINKGO_NOCOLOR ?= false
+GINKGO_LABEL_FILTER ?= "short || full"
 
 # to set multiple ginkgo skip flags, if any
 ifneq ($(strip $(GINKGO_SKIP)),)
@@ -465,7 +466,7 @@ release-chart: $(HELM) $(NOTES) build-chart verify-gen
 test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-end tests
 	RANCHER_HOSTNAME=$(RANCHER_HOSTNAME) \
 	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
-		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
+		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --label-filter="$(GINKGO_LABEL_FILTER)" \
 		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
 		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \

@@ -78,6 +78,8 @@ const (
 	giteaUserName     = "GITEA_USER_NAME"
 	giteaUserPassword = "GITEA_USER_PWD"
 
+	capaEncodedCredentials = "CAPA_ENCODED_CREDS"
+
 	authSecretName = "basic-auth-secret"
 
 	shortTestLabel = "short"
@@ -355,6 +357,25 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 			Name:      "capd-controller-manager",
 			Namespace: "capd-system",
+		}},
+	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	if !Label(fullTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
+		By("Running fast tests, skipping adding additional infrastructure providers")
+		return
+	}
+
+	By("Adding CAPI infrastructure providers for full test")
+	providerVars := getFullProviderVariables(config, string(fullProvidersSecret))
+	Expect(clusterProxy.Apply(ctx, providerVars)).To(Succeed(), "Failed to apply secret for infra providers")
+	Expect(clusterProxy.Apply(ctx, fullProviders)).To(Succeed(), "Failed to infra providers for full test run")
+
+	By("Waiting for CAPI aws provider deployment to be available")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter: bootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      "capa-controller-manager",
+			Namespace: "capa-system",
 		}},
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 }

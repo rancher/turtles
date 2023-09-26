@@ -25,7 +25,7 @@ import (
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
-var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(shortTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(shortTestLabel, fullTestLabel), func() {
 
 	BeforeEach(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
@@ -34,21 +34,53 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 
 	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
 		return CreateUsingGitOpsSpecInput{
-			E2EConfig:                e2eConfig,
-			BootstrapClusterProxy:    bootstrapClusterProxy,
-			ClusterctlConfigPath:     clusterctlConfigPath,
-			ClusterctlBinaryPath:     clusterctlBinaryPath,
-			ArtifactFolder:           artifactFolder,
-			ClusterTemplatePath:      "./data/cluster-templates/docker-kubeadm.yaml",
-			ClusterName:              "cluster1",
-			ControlPlaneMachineCount: ptr.To[int](1),
-			WorkerMachineCount:       ptr.To[int](1),
-			GitAddr:                  gitAddress,
-			GitAuthSecretName:        authSecretName,
-			SkipCleanup:              false,
-			SkipDeletionTest:         false,
-			LabelNamespace:           true,
-			RancherServerURL:         hostName,
+			E2EConfig:                 e2eConfig,
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterctlConfigPath:      clusterctlConfigPath,
+			ClusterctlBinaryPath:      clusterctlBinaryPath,
+			ArtifactFolder:            artifactFolder,
+			ClusterTemplatePath:       "./data/cluster-templates/docker-kubeadm.yaml",
+			ClusterName:               "cluster1",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   gitAddress,
+			GitAuthSecretName:         authSecretName,
+			SkipCleanup:               false,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-rancher",
+			DeleteClusterWaitName:     "wait-controllers",
+		}
+	})
+})
+
+var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(fullTestLabel), func() {
+
+	BeforeEach(func() {
+		SetClient(bootstrapClusterProxy.GetClient())
+		SetContext(ctx)
+	})
+
+	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
+		return CreateUsingGitOpsSpecInput{
+			E2EConfig:                 e2eConfig,
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterctlConfigPath:      clusterctlConfigPath,
+			ClusterctlBinaryPath:      clusterctlBinaryPath,
+			ArtifactFolder:            artifactFolder,
+			ClusterTemplatePath:       "./data/cluster-templates/aws-eks-mmp.yaml",
+			ClusterName:               "cluster2",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   gitAddress,
+			GitAuthSecretName:         authSecretName,
+			SkipCleanup:               false,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
+			DeleteClusterWaitName:     "wait-eks-delete",
 		}
 	})
 })
