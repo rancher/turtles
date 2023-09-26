@@ -58,7 +58,9 @@ import (
 )
 
 const (
-	importLabelName              = "cluster-api.cattle.io/rancher-auto-import"
+	importLabelName = "cluster-api.cattle.io/rancher-auto-import"
+	ownedLabelName  = "cluster-api.cattle.io/owned"
+
 	defaultRequeueDuration       = 1 * time.Minute
 	clusterRegistrationTokenName = "default-token"
 )
@@ -238,6 +240,9 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 					Name:       capiCluster.Name,
 					UID:        capiCluster.UID,
 				}},
+				Labels: map[string]string{
+					ownedLabelName: "",
+				},
 			},
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
