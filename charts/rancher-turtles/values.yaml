@@ -4,6 +4,7 @@ rancherTurtles:
   imagePullPolicy: Never
   namespace: rancher-turtles-system
   managerArguments: {}
+  imagePullSecrets: []
 cluster-api-operator:
   enabled: true
   cert-manager:

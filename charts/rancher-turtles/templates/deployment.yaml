@@ -17,10 +17,16 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      {{- if .Values.rancherTurtles.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.rancherTurtles.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}  
+      {{- end }}
       containers:
       - args:
         - --leader-elect
-        {{- range .Values.managerArguments }}
+        {{- range .Values.rancherTurtles.managerArguments }}
         - {{ . }}
         {{- end }}  
         command:
