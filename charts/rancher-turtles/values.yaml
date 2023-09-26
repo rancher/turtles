@@ -14,6 +14,7 @@ cluster-api-operator:
     configSecret:
       name: ""
       namespace: ""
+      defaultName: capi-env-variables
     core:
       namespace: capi-system
       fetchConfig:
