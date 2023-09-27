@@ -60,7 +60,7 @@ SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
 ISOLATED_MODE ?= false
 GINKGO_NOCOLOR ?= false
-GINKGO_LABEL_FILTER ?= "short || full"
+GINKGO_LABEL_FILTER ?= short || full
 
 # to set multiple ginkgo skip flags, if any
 ifneq ($(strip $(GINKGO_SKIP)),)
