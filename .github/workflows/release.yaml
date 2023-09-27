@@ -9,14 +9,11 @@ env:
   TAG: ${{ github.ref_name }}
   REGISTRY: ghcr.io
   USERNAME: ${{ github.actor }}
-  PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   ORG: rancher-sandbox
   PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
   PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
   PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
   PROD_ORG: rancher-sandbox
-  CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-  GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   RELEASE_DIR: .cr-release-packages
   REPO: ${{ github.repository }}
 
@@ -29,6 +26,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      multiarch_image: ${{ steps.ghcr-images.outputs.multiarch_image }}
+      multiarch_digest: ${{ steps.ghcr-images.outputs.multiarch_digest }}
+      amd64_image: ${{ steps.ghcr-images.outputs.amd64_image }}
+      amd64_digest: ${{ steps.ghcr-images.outputs.amd64_digest }}
+      arm64_digest: ${{ steps.ghcr-images.outputs.arm64_digest }}
+      arm64_image: ${{ steps.ghcr-images.outputs.arm64_image }}
+      s390x_image: ${{ steps.ghcr-images.outputs.s390x_image }}
+      s390x_digest: ${{ steps.ghcr-images.outputs.s390x_digest }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -38,31 +44,187 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '=1.20.7'
-    - name: Docker login
+    - name: Docker login to ghcr registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ env.USERNAME }}
-        password: ${{ env.PASSWORD }}
-    - name: Build docker image
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build docker image for gh registry
       run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.REGISTRY }}
     - name: Push docker image to gh registry
       run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.REGISTRY }}
-
+    - name: Store list of ghcr images and digests
+      id: ghcr-images
+      run: |
+        ./scripts/image-digest.sh ${{ env.REGISTRY }} ${{ env.ORG }} ${{ env.TAG }}
     - name: Prepare environment for prod registry
       run: |
         echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
-
     - name: Docker login to prod registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.PROD_REGISTRY }}
         username: ${{ env.PROD_USERNAME }}
         password: ${{ env.PROD_PASSWORD }}
-    - name: Build prod docker image
+    - name: Build docker image for prod registry
       run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
     - name: Push docker image to prod registry
       run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
+    - name: Store list of prod images and digests
+      id: prod-images
+      run: |
+        ./scripts/image-digest.sh ${{ env.PROD_REGISTRY }} ${{ env.PROD_ORG }} ${{ env.TAG }}
+  ghcr-sign:
+    runs-on: ubuntu-latest
+    needs: [build]
+    permissions:
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        images: [
+          {
+              "image":"${{ needs.build.outputs.multiarch_image }}",
+          },
+          {
+              "image":"${{ needs.build.outputs.amd64_image }}",
+          },
+          {
+              "image":"${{ needs.build.outputs.arm64_image }}",
+          },
+          {
+              "image":"${{ needs.build.outputs.s390x_image }}",
+          }
+        ]
+    steps:
+      - name: Docker login to ghcr registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@v3.1.2
+      - name: Sign manifests
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign sign --yes ${{ matrix.images.image }}
+      - name: Verify pushed ghcr images
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+  ghcr-provenance:
+    needs: [build, ghcr-sign]
+    permissions:
+      actions: read 
+      id-token: write
+      packages: write
+    strategy:
+      matrix:
+        images: [
+          {
+              "image":"${{ needs.build.outputs.multiarch_image }}",
+              "digest":"${{ needs.build.outputs.multiarch_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.amd64_image }}",
+              "digest":"${{ needs.build.outputs.amd64_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.arm64_image }}",
+              "digest":"${{ needs.build.outputs.arm64_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.s390x_image }}",
+              "digest":"${{ needs.build.outputs.s390x_digest }}"
+          }
+        ]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      image: ${{ matrix.images.image }}
+      digest: ${{ matrix.images.digest }}
+    secrets:
+      registry-username: ${{ github.actor }}
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+  prod-sign:
+    runs-on: ubuntu-latest
+    needs: [build]
+    strategy:
+      matrix:
+        images: [
+          {
+              "image":"${{ needs.build.outputs.multiarch_image }}",
+              "digest":"${{ needs.build.outputs.multiarch_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.amd64_image }}",
+              "digest":"${{ needs.build.outputs.amd64_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.arm64_image }}",
+              "digest":"${{ needs.build.outputs.arm64_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.s390x_image }}",
+              "digest":"${{ needs.build.outputs.s390x_digest }}"
+          }
+        ]
+    steps:
+      - name: Prepare environment for prod registry
+        run: |
+          echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
+      - name: Docker login to prod registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.PROD_REGISTRY }}
+          username: ${{ env.PROD_USERNAME }}
+          password: ${{ env.PROD_PASSWORD }}
+      - uses: sigstore/cosign-installer@v3.1.2
+      - name: Sign manifests
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign sign --yes ${{ matrix.images.image }}
+      - name: Verify pushed ghcr images
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+  prod-provenance:
+    needs: [build, prod-sign]
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    strategy:
+      matrix:
+        images: [
+          {
+              "image":"${{ needs.build.outputs.multiarch_image }}",
+              "digest":"${{ needs.build.outputs.multiarch_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.amd64_image }}",
+              "digest":"${{ needs.build.outputs.amd64_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.arm64_image }}",
+              "digest":"${{ needs.build.outputs.arm64_digest }}"
+          },
+          {
+              "image":"${{ needs.build.outputs.s390x_image }}",
+              "digest":"${{ needs.build.outputs.s390x_digest }}"
+          }
+        ]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      image: ${{ matrix.images.image }}
+      digest: ${{ matrix.images.digest }}
+    secrets:
+      registry-username: ${{ secrets.REGISTRY_USERNAME }}
+      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
   release:
     name: Create helm release
     runs-on: ubuntu-latest
