@@ -312,11 +312,11 @@ func initRancherTurtles(clusterProxy framework.ClusterProxy, config *clusterctl.
 			"--create-namespace", "--wait"),
 	}
 	_, err := chart.Run(map[string]string{
-		"managerArguments[0]": "--insecure-skip-verify=true",
-		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
-		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
 		"rancherTurtles.image":                                    "ghcr.io/rancher-sandbox/rancher-turtles-amd64",
 		"rancherTurtles.tag":                                      "v0.0.1",
+		"rancherTurtles.managerArguments[0]":                      "--insecure-skip-verify=true",
+		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
+		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
