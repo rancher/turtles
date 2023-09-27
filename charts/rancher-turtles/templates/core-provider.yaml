@@ -83,5 +83,6 @@ type: Opaque
 stringData:
   CLUSTER_TOPOLOGY: "true"
   EXP_CLUSTER_RESOURCE_SET: "true"
+  EXP_MACHINE_POOL: "true"
 {{- end }}
 {{- end }}
