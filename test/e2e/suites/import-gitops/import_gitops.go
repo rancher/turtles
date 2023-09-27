@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package import_gitops
 
 import (
 	"context"
@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
 	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
 	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 )
@@ -96,9 +97,9 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Expect(input.ClusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. input.ClusterctlConfigPath must be an existing file when calling %s spec", specName)
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
-		Expect(input.E2EConfig.Variables).To(HaveKey(kubernetesVersion))
-		namespace, cancelWatches = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
-		repoName = createRepoName(specName)
+		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesVersionVar))
+		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
+		repoName = e2e.CreateRepoName(specName)
 
 		capiClusterCreateWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.CAPIClusterCreateWaitName)
 		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
@@ -113,6 +114,9 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
 		rancherConnectRes = new(turtlesframework.RunCommandResult)
+
+		komega.SetClient(input.BootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
 	})
 
 	It("Should import a cluster using gitops", func() {
@@ -141,13 +145,13 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		repoCloneAddr := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
 			ServerAddr: input.GitAddr,
 			RepoName:   repoName,
-			Username:   input.E2EConfig.GetVariable(giteaUserName),
-			Password:   input.E2EConfig.GetVariable(giteaUserPassword),
+			Username:   input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
+			Password:   input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 		})
 		repoDir := turtlesframework.GitCloneRepo(ctx, turtlesframework.GitCloneRepoInput{
 			Address:  repoCloneAddr,
-			Username: input.E2EConfig.GetVariable(giteaUserName),
-			Password: input.E2EConfig.GetVariable(giteaUserPassword),
+			Username: input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
+			Password: input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 		})
 
 		By("Create fleet repository structure")
@@ -163,7 +167,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			ClusterCtlBinaryPath: input.ClusterctlBinaryPath,
 			EnvironmentVariables: map[string]string{
 				"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
-				"KUBERNETES_VERSION":          input.E2EConfig.GetVariable(kubernetesVersion),
+				"KUBERNETES_VERSION":          input.E2EConfig.GetVariable(e2e.KubernetesVersionVar),
 				"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
 			},
 		})
@@ -178,8 +182,8 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		turtlesframework.GitCommitAndPush(ctx, turtlesframework.GitCommitAndPushInput{
 			CloneLocation: repoDir,
-			Username:      input.E2EConfig.GetVariable(giteaUserName),
-			Password:      input.E2EConfig.GetVariable(giteaUserPassword),
+			Username:      input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
+			Password:      input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 			CommitMessage: "ci: add clusters bundle",
 		})
 
@@ -265,6 +269,6 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 	})
 
 	AfterEach(func() {
-		dumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }
