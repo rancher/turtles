@@ -51,7 +51,7 @@ jobs:
 
     - name: Prepare environment for prod registry
       run: |
-        echo "PROD_REGISTRY=(echo ${PROD_REGISTRY/https:\/\//})" >> $GITHUB_ENV
+        echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
 
     - name: Docker login to prod registry
       uses: docker/login-action@v3
@@ -79,7 +79,7 @@ jobs:
 
       - name: Prepare environment for prod registry
         run: |
-          echo "PROD_REGISTRY=(echo ${PROD_REGISTRY/https:\/\//})" >> $GITHUB_ENV
+          echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
 
       - name: Package operator chart
         run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
