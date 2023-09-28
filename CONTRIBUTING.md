@@ -1,3 +1,3 @@
 # Contributing Guidelines
 
-Please check our Contributing Guide [here](https://github.com/rancher-sandbox/rancher-turtles-docs/blob/main/CONTRIBUTING.md).
+Please check our Contributing Guide [here](https://docs.rancher-turtles.com/docs/contributing/intro).
