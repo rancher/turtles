@@ -397,8 +397,8 @@ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLA
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/onsi/ginkgo/v2 v2.12.0 h1:UIVDowFPwpg6yMUpPjGkYvf06K3RAiJXUhCxEwQVHRI=
 github.com/onsi/ginkgo/v2 v2.12.0/go.mod h1:ZNEzXISYlqpb8S36iN71ifqLi3vVD1rVJGvWRCJOUpQ=
-github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
-github.com/onsi/gomega v1.27.10/go.mod h1:RsS8tutOdbdgzbPtzzATp12yT7kM5I5aElG3evPbQ0M=
+github.com/onsi/gomega v1.28.0 h1:i2rg/p9n/UqIDAMFUJ6qIUUMcsqOuUHgbpbu235Vr1c=
+github.com/onsi/gomega v1.28.0/go.mod h1:A1H2JE76sI14WIP57LMKj7FVfCHx3g3BcZVjJG8bjX8=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0-rc2 h1:2zx/Stx4Wc5pIPDvIxHXvXtQFW/7XWJGmnM7r3wg034=
@@ -965,8 +965,8 @@ sigs.k8s.io/cluster-api-operator v0.6.0 h1:CNRW/rOVZxWgzRbZ5WmnB6S4riTerAXZwHWp5
 sigs.k8s.io/cluster-api-operator v0.6.0/go.mod h1:YqUBLFLftow7YP0Z/17m76Fkim6siXUcCIsjmE6aEbk=
 sigs.k8s.io/cluster-api-operator/test v0.6.0 h1:c7V9EZx1hMQOAvPHbsYJz2emIj38DsebFWchT2WKX8s=
 sigs.k8s.io/cluster-api-operator/test v0.6.0/go.mod h1:uuhJbD+I3i4FYfMJAVFGKH2TjR6dpATj3VFO7rB/mDs=
-sigs.k8s.io/cluster-api/test v1.5.1 h1:kYUfzE6RFsopXek+l/LDnh4gtfjTi2FUghEY8zx0Z9U=
-sigs.k8s.io/cluster-api/test v1.5.1/go.mod h1:mFlsY1y0lApBgQyXbmVprdzCK+9MQNp1C38K+aZdn5A=
+sigs.k8s.io/cluster-api/test v1.5.2 h1:Hlorgn4ebGdSxP4IZAT7eMweAowh4n0/vdhc4HAPNF8=
+sigs.k8s.io/cluster-api/test v1.5.2/go.mod h1:mFlsY1y0lApBgQyXbmVprdzCK+9MQNp1C38K+aZdn5A=
 sigs.k8s.io/controller-runtime v0.15.2 h1:9V7b7SDQSJ08IIsJ6CY1CE85Okhp87dyTMNDG0FS7f4=
 sigs.k8s.io/controller-runtime v0.15.2/go.mod h1:7ngYvp1MLT+9GeZ+6lH3LOlcHkp/+tzA/fmHa4iq9kk=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
