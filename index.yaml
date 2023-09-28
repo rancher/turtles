@@ -16,4 +16,19 @@ entries:
     urls:
     - https://github.com/rancher-sandbox/rancher-turtles/releases/download/rancher-turtles-0.1.0-rc1/rancher-turtles-0.1.0-rc1.tgz
     version: 0.1.0-rc1
-generated: "2023-09-28T14:19:28.181938171Z"
+  - apiVersion: v2
+    appVersion: 0.1.0-rc1
+    created: "2023-09-28T14:47:45.15968547Z"
+    dependencies:
+    - condition: cluster-api-operator.enabled
+      name: cluster-api-operator
+      repository: https://kubernetes-sigs.github.io/cluster-api-operator
+      version: v0.5.1
+    description: Rancher Turtles
+    digest: 736b63104aa522e71ca99ee6c96a4612d93e2bef391bae38caac8e2eb047fc84
+    name: rancher-turtles
+    type: application
+    urls:
+    - https://github.com/rancher-sandbox/rancher-turtles/releases/download/rancher-turtles-0.1.0-rc1/rancher-turtles-0.1.0-rc1.tgz
+    version: 0.1.0-rc1
+generated: "2023-09-28T14:47:45.159702471Z"
