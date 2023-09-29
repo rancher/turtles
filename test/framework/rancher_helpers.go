@@ -18,7 +18,6 @@ package framework
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"os"
 
@@ -26,6 +25,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -34,7 +35,7 @@ import (
 // RancherGetClusterKubeconfigInput is the input to RancherGetClusterKubeconfig.
 type RancherGetClusterKubeconfigInput struct {
 	Getter           framework.Getter
-	ClusterName      string
+	SecretName       string
 	Namespace        string
 	RancherServerURL string
 	WriteToTempFile  bool
@@ -50,7 +51,7 @@ type RancherGetClusterKubeconfigResult struct {
 func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput, result *RancherGetClusterKubeconfigResult) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherGetClusterKubeconfig")
 	Expect(input.Getter).ToNot(BeNil(), "Invalid argument. input.Getter can't be nil when calling RancherGetClusterKubeconfig")
-	Expect(input.ClusterName).ToNot(BeEmpty(), "Invalid argument. input.ClusterName can't be nil when calling RancherGetClusterKubeconfig")
+	Expect(input.SecretName).ToNot(BeEmpty(), "Invalid argument. input.SecretName can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.RancherServerURL).ToNot(BeEmpty(), "Invalid argument. input.RancherServerURL can't be nil when calling RancherGetClusterKubeconfig")
 
 	if input.Namespace == "" {
@@ -58,13 +59,10 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	}
 
 	By("Getting Rancher kubeconfig secret")
-
-	kubeConfigSecretName := fmt.Sprintf("%s-capi-kubeconfig", input.ClusterName)
-
 	secret := &corev1.Secret{}
 
-	err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: kubeConfigSecretName}, secret)
-	Expect(err).ShouldNot(HaveOccurred(), "Getting Rancher kubeconfig secret %s", kubeConfigSecretName)
+	err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret)
+	Expect(err).ShouldNot(HaveOccurred(), "Getting Rancher kubeconfig secret %s", input.SecretName)
 
 	content, ok := secret.Data["value"]
 	Expect(ok).To(BeTrue(), "Failed to find expected key in kubeconfig secret")
@@ -103,4 +101,54 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to write kubeconfig to file %s", tempFile.Name())
 
 	result.TempFilePath = tempFile.Name()
+}
+
+type RancherLookupUserInput struct {
+	ClusterProxy framework.ClusterProxy
+	Username     string
+}
+
+type RancherLookupUserResult struct {
+	User string
+}
+
+func RancherLookupUser(ctx context.Context, input RancherLookupUserInput, result *RancherLookupUserResult) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherLookupUser")
+	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling RancherLookupUser")
+	Expect(input.Username).ToNot(BeEmpty(), "Invalid argument. input.Username can't be nil when calling RancherLookupUser")
+
+	gvkUser := schema.GroupVersionKind{Group: "management.cattle.io", Version: "v3", Kind: "User"}
+
+	usersList := &unstructured.Unstructured{}
+	usersList.SetGroupVersionKind(gvkUser)
+	err := input.ClusterProxy.GetClient().List(ctx, usersList)
+	Expect(err).NotTo(HaveOccurred(), "Failed to list users")
+
+	field, ok := usersList.Object["items"]
+	Expect(ok).To(BeTrue(), "Returned content is not a list")
+
+	items, ok := field.([]interface{})
+	Expect(ok).To(BeTrue(), "Returned content is not a list")
+	foundUser := ""
+	for _, item := range items {
+		child, ok := item.(map[string]interface{})
+		Expect(ok).To(BeTrue(), "items member is not an object")
+
+		username, ok := child["username"].(string)
+		if !ok {
+			continue
+		}
+
+		if username != input.Username {
+			continue
+		}
+
+		obj := &unstructured.Unstructured{Object: child}
+		foundUser = obj.GetName()
+		break
+	}
+
+	Expect(foundUser).ToNot(BeEmpty(), "Failed to find user for %s", input.Username)
+
+	result.User = foundUser
 }

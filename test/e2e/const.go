@@ -50,6 +50,12 @@ var (
 
 	//go:embed data/rancher/nginx-ingress.yaml
 	NginxIngress []byte
+
+	//go:embed data/rancher/azure-rke-config.yaml
+	V2ProvAzureRkeConfig []byte
+
+	//go:embed data/rancher/azure-cluster.yaml
+	V2ProvAzureCluster []byte
 )
 
 const (
@@ -83,7 +89,12 @@ const (
 	GiteaUserNameVar     = "GITEA_USER_NAME"
 	GiteaUserPasswordVar = "GITEA_USER_PWD"
 
+	RKE2VersionVar = "RKE2_VERSION"
+
 	CapaEncodedCredentialsVar = "CAPA_ENCODED_CREDS"
+	AzureSubIDVar             = "AZURE_SUBSCRIPTION_ID"
+	AzureClientIDVar          = "AZURE_CLIENT_ID"
+	AzureClientSecretVar      = "AZURE_CLIENT_SECRET"
 
 	AuthSecretName = "basic-auth-secret"
 

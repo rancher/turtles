@@ -105,11 +105,13 @@ func GetServicePortByName(ctx context.Context, input GetServicePortByNameInput, 
 
 // CreateSecretInput is the input to CreateSecret.
 type CreateSecretInput struct {
-	Creator   framework.Creator
-	Name      string
-	Namespace string
-	Type      corev1.SecretType
-	Data      map[string]string
+	Creator     framework.Creator
+	Name        string
+	Namespace   string
+	Type        corev1.SecretType
+	Data        map[string]string
+	Labels      map[string]string
+	Annotations map[string]string
 }
 
 // CreateSecret will create a new Kubernetes secret.
@@ -129,6 +131,13 @@ func CreateSecret(ctx context.Context, input CreateSecretInput) {
 		},
 		StringData: input.Data,
 		Type:       input.Type,
+	}
+
+	if len(input.Annotations) > 0 {
+		secret.Annotations = input.Annotations
+	}
+	if len(input.Labels) > 0 {
+		secret.Labels = input.Labels
 	}
 
 	Eventually(func() error {

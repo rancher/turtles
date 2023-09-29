@@ -1,0 +1,101 @@
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  annotations:
+    field.cattle.io/creatorId: ${USER}
+  name: ${CLUSTER_NAME}
+  namespace: fleet-default
+spec:
+  cloudCredentialSecretName: ${CREDENTIAL_SECRET}
+  kubernetesVersion: ${KUBERNETES_VERSION}
+  localClusterAuthEndpoint: {}
+  rkeConfig:
+    chartValues:
+      rke2-calico: {}
+    etcd:
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+    machineGlobalConfig:
+      cni: calico
+      disable-kube-proxy: false
+      etcd-expose-metrics: false
+    machinePoolDefaults: {}
+    machinePools:
+    - controlPlaneRole: true
+      dynamicSchemaSpec: '{"resourceFields":{"acceleratedNetworking":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
+        if an Accelerated Networking NIC should be created for your VM"},"availabilitySet":{"type":"string","default":{"stringValue":"docker-machine","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Availability Set to place the virtual machine into"},"availabilityZone":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
+        the Availability Zones the Azure resources should be created in"},"clientId":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Service Principal Account ID (optional, browser auth is used if not specified)"},"clientSecret":{"type":"password","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Service Principal Account password (optional, browser auth is used if not
+        specified)"},"customData":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"File
+        contents for customData"},"diskSize":{"type":"string","default":{"stringValue":"30","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Disk
+        size if using managed disk"},"dns":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"A
+        unique DNS label for the public IP adddress"},"dockerPort":{"type":"string","default":{"stringValue":"2376","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Port
+        number for Docker engine"},"enablePublicIpStandardSku":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
+        if a Standard SKU should be used for the Public IP of the Azure VM"},"environment":{"type":"string","default":{"stringValue":"AzurePublicCloud","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        environment (e.g. AzurePublicCloud, AzureChinaCloud)"},"faultDomainCount":{"type":"string","default":{"stringValue":"3","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Fault
+        domain count to use for availability set"},"image":{"type":"string","default":{"stringValue":"canonical:UbuntuServer:18.04-LTS:latest","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        virtual machine OS image"},"location":{"type":"string","default":{"stringValue":"westus","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        region to create the virtual machine"},"managedDisks":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Configures
+        VM and availability set for managed disks"},"noPublicIp":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Do
+        not create a public IP address for the machine"},"nsg":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Network Security Group to assign this node to (accepts either a name or resource
+        ID, default is to create a new NSG for each machine)"},"openPort":{"type":"array[string]","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"nullable":true,"create":true,"update":true,"description":"Make
+        the specified port number accessible from the Internet"},"plan":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Purchase
+        plan for Azure Virtual Machine (in \u003cpublisher\u003e:\u003cproduct\u003e:\u003cplan\u003e
+        format)"},"privateIpAddress":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
+        a static private IP address for the machine"},"resourceGroup":{"type":"string","default":{"stringValue":"docker-machine","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Resource Group name (will be created if missing)"},"size":{"type":"string","default":{"stringValue":"Standard_D2_v2","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Size
+        for Azure Virtual Machine"},"sshUser":{"type":"string","default":{"stringValue":"docker-user","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Username
+        for SSH login"},"staticPublicIp":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Assign
+        a static public IP address to the machine"},"storageType":{"type":"string","default":{"stringValue":"Standard_LRS","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Type
+        of Storage Account to host the OS Disk for the machine"},"subnet":{"type":"string","default":{"stringValue":"docker-machine","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Subnet Name to be used within the Virtual Network"},"subnetPrefix":{"type":"string","default":{"stringValue":"192.168.0.0/16","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Private
+        CIDR block to be used for the new subnet, should comply RFC 1918"},"subscriptionId":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Subscription ID"},"tags":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Tags
+        to be applied to the Azure VM instance"},"tenantId":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Tenant ID"},"updateDomainCount":{"type":"string","default":{"stringValue":"5","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Update
+        domain count to use for availability set"},"usePrivateIp":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Use
+        private IP address of the machine to connect"},"vnet":{"type":"string","default":{"stringValue":"docker-machine-vnet","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        Virtual Network name to connect the virtual machine (in [resourcegroup:]name
+        format)"}}}'
+      etcdRole: true
+      machineConfigRef:
+        kind: AzureConfig
+        name: ${AZ_CONFIG_NAME}
+      name: pool1
+      quantity: 1
+      unhealthyNodeTimeout: 0s
+      workerRole: true
+    machineSelectorConfig:
+    - config:
+        protect-kernel-defaults: false
+    registries: {}
+    upgradeStrategy:
+      controlPlaneConcurrency: "1"
+      controlPlaneDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        ignoreErrors: false
+        postDrainHooks: null
+        preDrainHooks: null
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+      workerConcurrency: "1"
+      workerDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        ignoreErrors: false
+        postDrainHooks: null
+        preDrainHooks: null
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120

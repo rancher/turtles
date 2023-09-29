@@ -21,6 +21,7 @@ package import_gitops
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -237,7 +238,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			Getter:           input.BootstrapClusterProxy.GetClient(),
-			ClusterName:      capiCluster.Name,
+			SecretName:       fmt.Sprintf("%s-capi-kubeconfig", capiCluster.Name),
 			Namespace:        capiCluster.Namespace,
 			RancherServerURL: input.RancherServerURL,
 			WriteToTempFile:  true,
