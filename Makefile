@@ -128,7 +128,7 @@ NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 # Registry / images
 TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH = amd64 arm64 s390x
 REGISTRY ?= ghcr.io
 ORG ?= rancher-sandbox
 CONTROLLER_IMAGE_NAME ?= rancher-turtles
