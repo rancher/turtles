@@ -11,7 +11,7 @@ Currently, this project has the following functionality:
 - Automatically import CAPI-created clusters into `Rancher`.
 - Install and configure the `Cluster API Operator` project.
 
-> More features will be added in the near future. Get in contact if you would like to be part of the early adaopters programme.
+> More features will be added in the near future. Get in contact if you would like to be part of the early adopters programme.
 
 ## Installation & Usage
 
