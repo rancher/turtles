@@ -34,7 +34,7 @@ var (
 	//go:embed cluster-templates/docker-kubeadm.yaml
 	dockerKubeadm []byte
 
-	// go:embed cluster-templates/aws-eks-mmp.yaml
+	//go:embed cluster-templates/aws-eks-mmp.yaml
 	awsEKSMMP []byte
 
 	//go:embed cluster-templates/azure-aks-mmp.yaml
