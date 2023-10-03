@@ -17,34 +17,36 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package import_gitops
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+
+	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
 	"k8s.io/utils/ptr"
-	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
-var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(shortTestLabel, fullTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.FullTestLabel), func() {
 
 	BeforeEach(func() {
-		SetClient(bootstrapClusterProxy.GetClient())
-		SetContext(ctx)
+		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
 	})
 
 	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
 		return CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     bootstrapClusterProxy,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
 			ClusterctlConfigPath:      clusterctlConfigPath,
 			ClusterctlBinaryPath:      clusterctlBinaryPath,
 			ArtifactFolder:            artifactFolder,
-			ClusterTemplatePath:       "./data/cluster-templates/docker-kubeadm.yaml",
+			ClusterTemplatePath:       "../../data/cluster-templates/docker-kubeadm.yaml",
 			ClusterName:               "cluster1",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   gitAddress,
-			GitAuthSecretName:         authSecretName,
+			GitAddr:                   giteaResult.GitAddress,
+			GitAuthSecretName:         e2e.AuthSecretName,
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
@@ -55,26 +57,26 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 	})
 })
 
-var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(fullTestLabel), func() {
+var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 
 	BeforeEach(func() {
-		SetClient(bootstrapClusterProxy.GetClient())
-		SetContext(ctx)
+		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
 	})
 
 	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
 		return CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     bootstrapClusterProxy,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
 			ClusterctlConfigPath:      clusterctlConfigPath,
 			ClusterctlBinaryPath:      clusterctlBinaryPath,
 			ArtifactFolder:            artifactFolder,
-			ClusterTemplatePath:       "./data/cluster-templates/aws-eks-mmp.yaml",
+			ClusterTemplatePath:       "../../data/cluster-templates/aws-eks-mmp.yaml",
 			ClusterName:               "cluster2",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   gitAddress,
-			GitAuthSecretName:         authSecretName,
+			GitAddr:                   giteaResult.GitAddress,
+			GitAuthSecretName:         e2e.AuthSecretName,
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,

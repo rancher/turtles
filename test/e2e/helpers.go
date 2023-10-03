@@ -20,65 +20,30 @@ limitations under the License.
 package e2e
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"path/filepath"
-	"text/template"
 
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/yaml"
 
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
 )
 
-var (
-	ctx = context.Background()
-
-	//go:embed data/capi-operator/capi-providers-secret.yaml
-	capiProvidersSecret []byte
-
-	//go:embed data/capi-operator/capi-providers.yaml
-	capiProviders []byte
-
-	//go:embed data/capi-operator/full-variables.yaml
-	fullProvidersSecret []byte
-
-	//go:embed data/capi-operator/full-providers.yaml
-	fullProviders []byte
-
-	//go:embed data/rancher/ingress.yaml
-	ingressConfig []byte
-
-	//go:embed data/rancher/rancher-service-patch.yaml
-	rancherServicePatch []byte
-
-	//go:embed data/rancher/ingress-class-patch.yaml
-	ingressClassPatch []byte
-
-	//go:embed data/rancher/rancher-setting-patch.yaml
-	rancherSettingPatch []byte
-
-	//go:embed data/rancher/nginx-ingress.yaml
-	nginxIngress []byte
-)
-
-const (
-	operatorNamespace       = "capi-operator-system"
-	rancherTurtlesNamespace = "rancher-turtles-system"
-	rancherNamespace        = "cattle-system"
-	capiClusterName         = "cluster1"
-	capiClusterNamespace    = "default"
-	nginxIngressNamespace   = "ingress-nginx"
-)
-
-func setupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
+func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
 	turtlesframework.Byf("Creating a namespace for hosting the %q test spec", specName)
 	namespace, cancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
 		Creator:   clusterProxy.GetClient(),
@@ -90,11 +55,11 @@ func setupSpecNamespace(ctx context.Context, specName string, clusterProxy frame
 	return namespace, cancelWatches
 }
 
-func createRepoName(specName string) string {
+func CreateRepoName(specName string) string {
 	return fmt.Sprintf("repo-%s-%s", specName, util.RandomString(6))
 }
 
-func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
 	turtlesframework.Byf("Dumping logs from the %q workload cluster", capiCluster.Name)
 
 	// Dump all the logs from the workload cluster before deleting them.
@@ -128,23 +93,37 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 	cancelWatches()
 }
 
-func getFullProviderVariables(config *clusterctl.E2EConfig, varsTemplate string) []byte {
-	capaCreds := config.GetVariable(capaEncodedCredentials)
-	Expect(capaCreds).ToNot(BeEmpty(), "Invalid input. You must supply encoded CAPA credentials")
+func InitScheme() *runtime.Scheme {
+	scheme := runtime.NewScheme()
+	framework.TryAddDefaultSchemes(scheme)
+	Expect(operatorv1.AddToScheme(scheme)).To(Succeed())
+	Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
+	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
+	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
+	return scheme
+}
 
-	providerVars := struct {
-		AWSEncodedCredentials string
-	}{
-		AWSEncodedCredentials: capaCreds,
+func LoadE2EConfig(configPath string) *clusterctl.E2EConfig {
+	configData, err := os.ReadFile(configPath)
+	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test config file")
+	Expect(configData).ToNot(BeEmpty(), "The e2e test config file should not be empty")
+
+	config := &clusterctl.E2EConfig{}
+	Expect(yaml.UnmarshalStrict(configData, config)).To(Succeed(), "Failed to convert the e2e test config file to yaml")
+
+	config.Defaults()
+	config.AbsPaths(filepath.Dir(configPath))
+
+	return config
+}
+
+func CreateClusterctlLocalRepository(ctx context.Context, config *clusterctl.E2EConfig, repositoryFolder string) string {
+	createRepositoryInput := clusterctl.CreateRepositoryInput{
+		E2EConfig:        config,
+		RepositoryFolder: repositoryFolder,
 	}
 
-	t := template.New("providers-variables")
-	t, err := t.Parse(varsTemplate)
-	Expect(err).ShouldNot(HaveOccurred(), "Failed to pass full infra variables")
-
-	var renderedTemplate bytes.Buffer
-	err = t.Execute(&renderedTemplate, providerVars)
-	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
-
-	return renderedTemplate.Bytes()
+	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
+	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
+	return clusterctlConfig
 }
