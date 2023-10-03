@@ -40,6 +40,7 @@ type DeployRancherTurtlesInput struct {
 	Image                        string
 	Tag                          string
 	WaitDeploymentsReadyInterval []interface{}
+	AdditionalValues             map[string]string
 }
 
 func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) {
@@ -73,13 +74,20 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 			"-n", namespace,
 			"--create-namespace", "--wait"),
 	}
-	_, err := chart.Run(map[string]string{
+
+	values := map[string]string{
 		"rancherTurtles.image":                                    input.Image,
 		"rancherTurtles.tag":                                      input.Tag,
 		"rancherTurtles.managerArguments[0]":                      "--insecure-skip-verify=true",
 		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
 		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
-	})
+	}
+
+	for name, val := range input.AdditionalValues {
+		values[name] = val
+	}
+
+	_, err := chart.Run(values)
 	Expect(err).ToNot(HaveOccurred())
 
 	//TODO: this can probably be covered by the Operator helper
