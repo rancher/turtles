@@ -161,7 +161,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		os.MkdirAll(clustersDir, os.ModePerm)
 
 		clusterPath := filepath.Join(clustersDir, fmt.Sprintf("%s.yaml", input.ClusterName))
-		turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Getter:         input.E2EConfig.GetVariable,
 			Template:       input.ClusterTemplate,
 			OutputFilePath: clusterPath,
@@ -170,7 +170,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
 				"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
 			},
-		})
+		})).To(Succeed())
 
 		fleetPath := filepath.Join(clustersDir, "fleet.yaml")
 		turtlesframework.FleetCreateFleetFile(ctx, turtlesframework.FleetCreateFleetFileInput{
