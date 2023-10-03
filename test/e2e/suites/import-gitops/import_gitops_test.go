@@ -120,3 +120,37 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality sho
 		}
 	})
 })
+
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalvSphereTestLabel), func() {
+
+	BeforeEach(func() {
+		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetContext(ctx)
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                 e2eConfig,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			ClusterctlConfigPath:      flagVals.ConfigPath,
+			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
+			ArtifactFolder:            flagVals.ArtifactFolder,
+			ClusterTemplate:           e2e.CAPIvSphereKubeadm,
+			ClusterName:               "cluster-vsphere-kubeadm",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   giteaResult.GitAddress,
+			GitAuthSecretName:         e2e.AuthSecretName,
+			SkipCleanup:               false,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
+			DeleteClusterWaitName:     "wait-vsphere-delete",
+			AdditionalTemplateVariables: map[string]string{
+				"NAMESPACE":             "default",
+				"VIP_NETWORK_INTERFACE": "",
+			},
+		}
+	})
+})

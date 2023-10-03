@@ -74,7 +74,7 @@ SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
 ISOLATED_MODE ?= false
 GINKGO_NOCOLOR ?= false
-GINKGO_LABEL_FILTER ?= short || full
+GINKGO_LABEL_FILTER ?= short || full || local
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
 
 # to set multiple ginkgo skip flags, if any

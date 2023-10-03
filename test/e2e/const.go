@@ -27,6 +27,9 @@ var (
 	//go:embed data/capi-operator/capi-providers.yaml
 	CapiProviders []byte
 
+	//go:embed data/capi-operator/capv-provider.yaml
+	CapvProvider []byte
+
 	//go:embed data/capi-operator/full-providers.yaml
 	FullProviders []byte
 
@@ -35,6 +38,9 @@ var (
 
 	//go:embed data/capi-operator/capz-identity-secret.yaml
 	AzureIdentitySecret []byte
+
+	//go:embed data/capi-operator/capv-variables.yaml
+	VSphereProviderSecret []byte
 
 	//go:embed data/rancher/ingress.yaml
 	IngressConfig []byte
@@ -65,6 +71,9 @@ var (
 
 	//go:embed data/cluster-templates/azure-aks-mmp.yaml
 	CAPIAzureAKSMMP []byte
+
+	//go:embed data/cluster-templates/vsphere-kubeadm.yaml
+	CAPIvSphereKubeadm []byte
 )
 
 const (
@@ -110,7 +119,8 @@ const (
 
 	AuthSecretName = "basic-auth-secret"
 
-	ShortTestLabel = "short"
-	FullTestLabel  = "full"
-	DontRunLabel   = "dontrun"
+	ShortTestLabel        = "short"
+	FullTestLabel         = "full"
+	DontRunLabel          = "dontrun"
+	LocalvSphereTestLabel = "local"
 )

@@ -28,7 +28,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -155,7 +154,7 @@ var _ = BeforeSuite(func() {
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 	})
 
-	if !shortTestOnly() {
+	if !shortTestOnly() && !localvSphereTestOnly() {
 		By("Running full tests, deploying additional infrastructure providers")
 		awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
 		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
@@ -179,6 +178,23 @@ var _ = BeforeSuite(func() {
 				{
 					Name:      "capz-controller-manager",
 					Namespace: "capz-system",
+				},
+			},
+		})
+	} else if Label(e2e.LocalvSphereTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
+		By("Running local vSphere tests, deploying vSphere infrastructure provider")
+
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.VSphereProviderSecret,
+			},
+			CAPIProvidersYAML:            e2e.CapvProvider,
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capv-controller-manager",
+					Namespace: "capv-system",
 				},
 			},
 		})
@@ -214,4 +230,8 @@ var _ = AfterSuite(func() {
 
 func shortTestOnly() bool {
 	return GinkgoLabelFilter() == e2e.ShortTestLabel
+}
+
+func localvSphereTestOnly() bool {
+	return GinkgoLabelFilter() == e2e.LocalvSphereTestLabel
 }
