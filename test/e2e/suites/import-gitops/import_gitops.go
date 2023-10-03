@@ -51,7 +51,7 @@ type CreateUsingGitOpsSpecInput struct {
 	RancherServerURL      string
 
 	ClusterctlBinaryPath string
-	ClusterTemplatePath  string
+	ClusterTemplate      []byte
 	ClusterName          string
 
 	CAPIClusterCreateWaitName string
@@ -160,15 +160,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		clustersDir := filepath.Join(repoDir, "clusters")
 		os.MkdirAll(clustersDir, os.ModePerm)
 
-		clusterPath := filepath.Join(clustersDir, "cluster1.yaml")
-		turtlesframework.ClusterctlGenerateFromTemplate(ctx, turtlesframework.ClusterctlGenerateFromTemplateInput{
-			ClusterName:          input.ClusterName,
-			TemplatePath:         input.ClusterTemplatePath,
-			OutputFilePath:       clusterPath,
-			ClusterCtlBinaryPath: input.ClusterctlBinaryPath,
-			EnvironmentVariables: map[string]string{
+		clusterPath := filepath.Join(clustersDir, fmt.Sprintf("%s.yaml", input.ClusterName))
+		turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Getter:         input.E2EConfig.GetVariable,
+			Template:       input.ClusterTemplate,
+			OutputFilePath: clusterPath,
+			AddtionalEnvironmentVariables: map[string]string{
+				"CLUSTER_NAME":                input.ClusterName,
 				"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
-				"KUBERNETES_VERSION":          input.E2EConfig.GetVariable(e2e.KubernetesVersionVar),
 				"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
 			},
 		})

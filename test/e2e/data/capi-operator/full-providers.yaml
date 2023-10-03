@@ -4,6 +4,11 @@ kind: Namespace
 metadata:
   name: capa-system
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capz-system
+---
 apiVersion: operator.cluster.x-k8s.io/v1alpha1
 kind: InfrastructureProvider
 metadata:
@@ -11,4 +16,13 @@ metadata:
   namespace: capa-system
 spec:
   secretName: full-variables
+  secretNamespace: default
+---
+apiVersion: operator.cluster.x-k8s.io/v1alpha1
+kind: InfrastructureProvider
+metadata:
+  name: azure
+  namespace: capz-system
+spec:
+  secretName: azure-variables
   secretNamespace: default

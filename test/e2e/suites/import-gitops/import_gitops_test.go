@@ -25,23 +25,37 @@ import (
 	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+
+	_ "embed"
+)
+
+var (
+	//go:embed cluster-templates/docker-kubeadm.yaml
+	dockerKubeadm []byte
+
+	// go:embed cluster-templates/aws-eks-mmp.yaml
+	awsEKSMMP []byte
+
+	//go:embed cluster-templates/azure-aks-mmp.yaml
+	azureAKSMMP []byte
 )
 
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.FullTestLabel), func() {
 
 	BeforeEach(func() {
-		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
-		komega.SetContext(ctx)
+		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetContext(ctx)
 	})
 
 	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
 		return CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
-			ClusterctlConfigPath:      clusterctlConfigPath,
+			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplatePath:       "../../data/cluster-templates/docker-kubeadm.yaml",
+			ClusterTemplate:           dockerKubeadm,
 			ClusterName:               "cluster1",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
@@ -68,10 +82,10 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 		return CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
-			ClusterctlConfigPath:      clusterctlConfigPath,
+			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplatePath:       "../../data/cluster-templates/aws-eks-mmp.yaml",
+			ClusterTemplate:           awsEKSMMP,
 			ClusterName:               "cluster2",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
@@ -83,6 +97,35 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 			RancherServerURL:          hostName,
 			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
 			DeleteClusterWaitName:     "wait-eks-delete",
+		}
+	})
+})
+
+var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+
+	BeforeEach(func() {
+		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetContext(ctx)
+	})
+
+	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
+		return CreateUsingGitOpsSpecInput{
+			E2EConfig:                 e2eConfig,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			ClusterctlConfigPath:      flagVals.ConfigPath,
+			ArtifactFolder:            flagVals.ArtifactFolder,
+			ClusterTemplate:           azureAKSMMP,
+			ClusterName:               "cluster-azure-aks",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   giteaResult.GitAddress,
+			GitAuthSecretName:         e2e.AuthSecretName,
+			SkipCleanup:               false,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
+			DeleteClusterWaitName:     "wait-aks-delete",
 		}
 	})
 })
