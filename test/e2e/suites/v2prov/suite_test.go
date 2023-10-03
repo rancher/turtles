@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package import_gitops
+package v2prov
 
 import (
 	"context"
@@ -58,7 +58,6 @@ var (
 	ctx = context.Background()
 
 	setupClusterResult *testenv.SetupTestClusterResult
-	giteaResult        *testenv.DeployGiteaResult
 )
 
 func init() {
@@ -71,7 +70,7 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(klog.Background())
 
-	RunSpecs(t, "rancher-turtles-e2e-import-gitops")
+	RunSpecs(t, "rancher-turtles-e2e-v2prov")
 }
 
 var _ = BeforeSuite(func() {
@@ -116,28 +115,6 @@ var _ = BeforeSuite(func() {
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 	})
 
-	if Label(e2e.FullTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
-		By("Running full tests, deploying additional infrastructure providers")
-		awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
-		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
-
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
-			CAPIProvidersSecretYAML: e2e.FullProvidersSecret,
-			CAPIProvidersYAML:       e2e.FullProviders,
-			Data: map[string]string{
-				"AWSEncodedCredentials": e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar),
-			},
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capa-controller-manager",
-					Namespace: "capa-system",
-				},
-			},
-		})
-	}
-
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
@@ -154,12 +131,14 @@ var _ = BeforeSuite(func() {
 	})
 
 	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
-		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:         flagVals.HelmBinaryPath,
-		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
-		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherUrlVar),
-		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
-		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		RancherChartRepoName:  "rancher-latest",
+		RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
+		RancherChartPath:      "rancher-latest/rancher",
+		//RancherVersion:         "v2.7.7",
+		RancherImageTag:        "v2.7-head",
+		Development:            true,
 		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
 		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
@@ -170,25 +149,6 @@ var _ = BeforeSuite(func() {
 		IsolatedMode:           flagVals.IsolatedMode,
 		RancherIngressConfig:   e2e.IngressConfig,
 		RancherServicePatch:    e2e.RancherServicePatch,
-	})
-
-	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:        flagVals.HelmBinaryPath,
-		ChartRepoName:         e2eConfig.GetVariable(e2e.GiteaRepoNameVar),
-		ChartRepoURL:          e2eConfig.GetVariable(e2e.GiteaRepoURLVar),
-		ChartName:             e2eConfig.GetVariable(e2e.GiteaChartNameVar),
-		ChartVersion:          e2eConfig.GetVariable(e2e.GiteaChartVersionVar),
-		ValuesFilePath:        "../../data/gitea/values.yaml",
-		Values: map[string]string{
-			"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-			"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
-		},
-		RolloutWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
-		ServiceWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-getservice"),
-		AuthSecretName:      e2e.AuthSecretName,
-		Username:            e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-		Password:            e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
 	})
 })
 

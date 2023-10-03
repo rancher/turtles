@@ -1,0 +1,42 @@
+apiVersion: rke-machine-config.cattle.io/v1
+kind: AzureConfig
+metadata:
+  annotations:
+    field.cattle.io/creatorId: ${USER}
+  name: ${POOL_NAME}
+  namespace: fleet-default
+acceleratedNetworking: false
+availabilitySet: docker-machine
+availabilityZone: ""
+diskSize: "30"
+dockerPort: "2376"
+enablePublicIpStandardSku: false
+environment: AzurePublicCloud
+faultDomainCount: "3"
+image: canonical:UbuntuServer:18.04-LTS:latest
+location: westus
+managedDisks: false
+noPublicIp: false
+nsg: rancher-managed-wpepXjvf
+openPort:
+- 6443/tcp
+- 2379/tcp
+- 2380/tcp
+- 8472/udp
+- 4789/udp
+- 9796/tcp
+- 10256/tcp
+- 10250/tcp
+- 10251/tcp
+- 10252/tcp
+plan: ""
+resourceGroup: docker-machine
+size: Standard_D2_v2
+sshUser: docker-user
+staticPublicIp: false
+storageType: Standard_LRS
+subnet: docker-machine
+subnetPrefix: 192.168.0.0/16
+updateDomainCount: "5"
+usePrivateIp: false
+vnet: docker-machine-vnet

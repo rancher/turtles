@@ -485,7 +485,7 @@ e2e-image: ## Build the image for e2e tests
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation
-	go test -c -o /dev/null -tags=e2e ./test/e2e/suites/import-gitops
+	go test -c -o /dev/null -tags=e2e ./test/e2e/suites/***
 
 ## --------------------------------------
 ## Documentation

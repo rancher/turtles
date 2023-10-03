@@ -40,6 +40,7 @@ type DeployRancherInput struct {
 	RancherChartURL        string
 	RancherChartPath       string
 	RancherVersion         string
+	RancherImageTag        string
 	RancherNamespace       string
 	RancherHost            string
 	RancherPassword        string
@@ -50,6 +51,7 @@ type DeployRancherInput struct {
 	IsolatedMode           bool
 	RancherIngressConfig   []byte
 	RancherServicePatch    []byte
+	Development            bool
 }
 
 func DeployRancher(ctx context.Context, input DeployRancherInput) {
@@ -60,12 +62,18 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Expect(input.RancherChartRepoName).ToNot(BeEmpty(), "RancherChartRepoName is required for DeployRancher")
 	Expect(input.RancherChartURL).ToNot(BeEmpty(), "RancherChartURL is required for DeployRancher")
 	Expect(input.RancherChartPath).ToNot(BeEmpty(), "RancherChartPath is required for DeployRancher")
-	Expect(input.RancherVersion).ToNot(BeEmpty(), "RancherVersion is required for DeployRancher")
 	Expect(input.RancherNamespace).ToNot(BeEmpty(), "RancherNamespace is required for DeployRancher")
 	Expect(input.RancherHost).ToNot(BeEmpty(), "RancherHost is required for DeployRancher")
 	Expect(input.RancherPassword).ToNot(BeEmpty(), "RancherPassword is required for DeployRancher")
 	Expect(input.RancherWaitInterval).ToNot(BeNil(), "RancherWaitInterval is required for DeployRancher")
 	Expect(input.ControllerWaitInterval).ToNot(BeNil(), "ControllerWaitInterval is required for DeployRancher")
+
+	if input.RancherVersion == "" && input.RancherImageTag == "" {
+		Fail("RancherVersion or RancherImageTag is required")
+	}
+	if input.RancherVersion != "" && input.RancherImageTag != "" {
+		Fail("Only one of RancherVersion or RancherImageTag cen be used")
+	}
 
 	By("Adding Rancher chart repo")
 	addChart := &opframework.HelmChart{
@@ -88,17 +96,24 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Installing Rancher")
+	installFlags := opframework.Flags(
+		"--namespace", input.RancherNamespace,
+		"--create-namespace",
+		"--wait",
+	)
+	if input.RancherVersion != "" {
+		installFlags = append(installFlags, "--version", input.RancherVersion)
+	}
+	if input.Development {
+		installFlags = append(installFlags, "--devel")
+	}
+
 	chart := &opframework.HelmChart{
-		BinaryPath: input.HelmBinaryPath,
-		Path:       input.RancherChartPath,
-		Name:       "rancher",
-		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
-		AdditionalFlags: opframework.Flags(
-			"--version", input.RancherVersion,
-			"--namespace", input.RancherNamespace,
-			"--create-namespace",
-			"--wait",
-		),
+		BinaryPath:      input.HelmBinaryPath,
+		Path:            input.RancherChartPath,
+		Name:            "rancher",
+		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: installFlags,
 	}
 	values := map[string]string{
 		"bootstrapPassword":         input.RancherPassword,
@@ -108,6 +123,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	}
 	if input.RancherFeatures != "" {
 		values["features"] = input.RancherFeatures
+	}
+	if input.RancherImageTag != "" {
+		values["rancherImageTag"] = input.RancherImageTag
 	}
 
 	_, err = chart.Run(values)
