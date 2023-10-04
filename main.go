@@ -47,6 +47,8 @@ import (
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 )
 
+const maxDuration time.Duration = 1<<63 - 1
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -181,7 +183,10 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		RancherClient:      rancherClient,
 		WatchFilterValue:   watchFilterValue,
 		InsecureSkipVerify: insecureSkipVerify,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+	}).SetupWithManager(ctx, mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+		CacheSyncTimeout:        maxDuration,
+	}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)
 	}
