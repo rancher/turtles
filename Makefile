@@ -180,7 +180,7 @@ help: ## Display this help.
 ##@ Development
 .PHONY: manifests
 manifests: vendor controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=hack/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./internal/rancher/..." output:crd:artifacts:config=hack/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
@@ -198,7 +198,6 @@ vendor-clean:
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
@@ -249,11 +248,11 @@ test: $(SETUP_ENVTEST) manifests ## Run tests.
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
+build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 ## --------------------------------------
