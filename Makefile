@@ -294,6 +294,10 @@ docker-build-%:
 docker-build: docker-pull-prerequisites ## Run docker-build-* targets for all providers
 	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=. --build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
 
+docker-list-all:
+	@echo $(CONTROLLER_IMG):${TAG}
+	@for arch in $(ALL_ARCH); do echo $(CONTROLLER_IMG)-$${arch}:${TAG}; done
+
 ##@ Deployment
 
 ifndef ignore-not-found
