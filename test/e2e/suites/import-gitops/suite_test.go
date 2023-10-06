@@ -111,6 +111,7 @@ var _ = BeforeSuite(func() {
 
 	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+		UseExistingCluster:           flagVals.UseExistingCluster,
 		HelmBinaryPath:               flagVals.HelmBinaryPath,
 		ChartPath:                    flagVals.ChartPath,
 		CAPIProvidersSecretYAML:      e2e.CapiProvidersSecret,
@@ -160,6 +161,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
+		UseExistingCluster:       flagVals.UseExistingCluster,
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
 		IsolatedMode:             flagVals.IsolatedMode,
@@ -175,6 +177,7 @@ var _ = BeforeSuite(func() {
 	})
 
 	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+		UseExistingCluster:     flagVals.UseExistingCluster,
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:         flagVals.HelmBinaryPath,
 		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
@@ -194,6 +197,7 @@ var _ = BeforeSuite(func() {
 	})
 
 	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
+		UseExistingCluster:    flagVals.UseExistingCluster,
 		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:        flagVals.HelmBinaryPath,
 		ChartRepoName:         e2eConfig.GetVariable(e2e.GiteaRepoNameVar),

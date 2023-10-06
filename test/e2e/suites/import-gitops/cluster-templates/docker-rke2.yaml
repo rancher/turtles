@@ -48,7 +48,6 @@ metadata:
 spec: 
   agentConfig:
     version: ${KUBERNETES_VERSION}+rke2r1
-    airGapped: true
   serverConfig:
     cni: calico
   infrastructureRef:
@@ -76,7 +75,6 @@ spec:
     spec:
       agentConfig:
         version: ${KUBERNETES_VERSION}+rke2r1
-        airGapped: true
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment

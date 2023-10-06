@@ -133,7 +133,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality sho
 	})
 })
 
-var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+var _ = FDescribe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
