@@ -32,7 +32,9 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	var err error
-	testEnv = &envtest.Environment{}
+	testEnv = &envtest.Environment{
+		Scheme: test.FullScheme,
+	}
 	cfg, cl, err = test.StartEnvTest(testEnv)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())

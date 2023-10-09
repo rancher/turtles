@@ -14,8 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package rancher contains rancher provisioning.cattle.io/v1 and
-// management.cattle.io/v3 API proxy implementations and cluster connectivity
-// setup procedures.
-// +kubebuilder:object:generate=true
-package rancher
+// Package setup contains the rancher cluster setup procedurces
+package setup

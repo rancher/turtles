@@ -28,9 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
@@ -43,8 +40,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers"
-	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/rancher/setup"
 )
 
 var (
@@ -72,8 +68,6 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
-	utilruntime.Must(provisioningv1.AddToScheme(scheme))
-	utilruntime.Must(managementv3.AddToScheme(scheme))
 }
 
 // initFlags initializes the flags.
@@ -121,7 +115,7 @@ func main() {
 
 	ctrl.SetLogger(klogr.New())
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	options := ctrl.Options{
 		Scheme:                     scheme,
 		MetricsBindAddress:         metricsBindAddr,
 		LeaderElection:             enableLeaderElection,
@@ -136,7 +130,9 @@ func main() {
 			&corev1.Secret{},
 		},
 		HealthProbeBindAddress: healthAddr,
-	})
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -170,56 +166,13 @@ func setupChecks(mgr ctrl.Manager) {
 }
 
 func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
-	rancherClient, err := setupRancherClient(mgr)
-	if err != nil {
-		setupLog.Error(err, "failed to create client")
-		os.Exit(1)
-	}
-
 	if err := (&controllers.CAPIImportReconciler{
 		Client:             mgr.GetClient(),
-		RancherClient:      rancherClient,
+		RancherCluster:     setup.RancherClusterOrDie(mgr, rancherKubeconfig),
 		WatchFilterValue:   watchFilterValue,
 		InsecureSkipVerify: insecureSkipVerify,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)
 	}
-}
-
-// setupRancherClient can either create a client for an in-cluster installation (rancher and rancher-turtles in the same cluster)
-// or create a client for an out-of-cluster installation (rancher and rancher-turtles in different clusters) based on the
-// existence of Rancher kubeconfig file.
-func setupRancherClient(mgr ctrl.Manager) (client.Client, error) {
-	if len(rancherKubeconfig) > 0 {
-		setupLog.Info("out-of-cluster installation of rancher-turtles", "using kubeconfig from path", rancherKubeconfig)
-
-		restConfig, err := loadConfigWithContext("", &clientcmd.ClientConfigLoadingRules{ExplicitPath: rancherKubeconfig}, "")
-		if err != nil {
-			return nil, fmt.Errorf("unable to load kubeconfig from file: %w", err)
-		}
-
-		rancherClient, err := client.New(restConfig, client.Options{Scheme: mgr.GetClient().Scheme()})
-		if err != nil {
-			return nil, err
-		}
-
-		return rancherClient, nil
-	}
-
-	setupLog.Info("in-cluster installation of rancher-turtles")
-
-	return mgr.GetClient(), nil
-}
-
-// loadConfigWithContext loads a REST Config from a path using a logic similar to the one used in controller-runtime.
-func loadConfigWithContext(apiServerURL string, loader clientcmd.ClientConfigLoader, context string) (*rest.Config, error) {
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		loader,
-		&clientcmd.ConfigOverrides{
-			ClusterInfo: clientcmdapi.Cluster{
-				Server: apiServerURL,
-			},
-			CurrentContext: context,
-		}).ClientConfig()
 }

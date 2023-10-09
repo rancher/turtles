@@ -32,13 +32,29 @@ import (
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 )
 
-var scheme = runtime.NewScheme()
+var (
+	// FullScheme is a runtime scheme containing full set of used API GVKs.
+	FullScheme = runtime.NewScheme()
+
+	// PartialScheme is a runtime scheme containing only set of CAPI and external from API GVKs form Rancher.
+	PartialScheme = runtime.NewScheme()
+
+	// RancherScheme is a runtime scheme containing only set of used Rancher API GVKs.
+	RancherScheme = runtime.NewScheme()
+)
 
 func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(clusterv1.AddToScheme(scheme))
-	utilruntime.Must(provisioningv1.AddToScheme(scheme))
-	utilruntime.Must(managementv3.AddToScheme(scheme))
+	utilruntime.Must(clientgoscheme.AddToScheme(FullScheme))
+	utilruntime.Must(clusterv1.AddToScheme(FullScheme))
+	utilruntime.Must(provisioningv1.AddToScheme(FullScheme))
+	utilruntime.Must(managementv3.AddToScheme(FullScheme))
+
+	utilruntime.Must(clientgoscheme.AddToScheme(PartialScheme))
+	utilruntime.Must(clusterv1.AddToScheme(PartialScheme))
+
+	utilruntime.Must(clientgoscheme.AddToScheme(RancherScheme))
+	utilruntime.Must(provisioningv1.AddToScheme(RancherScheme))
+	utilruntime.Must(managementv3.AddToScheme(RancherScheme))
 }
 
 // StartEnvTest starts a new test environment.
@@ -52,7 +68,7 @@ func StartEnvTest(testEnv *envtest.Environment) (*rest.Config, client.Client, er
 		return nil, nil, errors.New("envtest.Environment.Start() returned nil config")
 	}
 
-	cl, err := client.New(cfg, client.Options{Scheme: scheme})
+	cl, err := client.New(cfg, client.Options{Scheme: testEnv.Scheme})
 	if err != nil {
 		return nil, nil, err
 	}

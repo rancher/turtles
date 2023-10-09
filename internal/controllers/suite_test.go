@@ -59,6 +59,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "hack", "crd", "bases"),
 		},
 		ErrorIfCRDPathMissing: true,
+		Scheme:                test.FullScheme,
 	}
 	cfg, cl, err = test.StartEnvTest(testEnv)
 	Expect(err).NotTo(HaveOccurred())

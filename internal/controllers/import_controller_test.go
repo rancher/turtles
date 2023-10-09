@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,6 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -53,12 +55,24 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		rancherCluster           *provisioningv1.Cluster
 		clusterRegistrationToken *managementv3.ClusterRegistrationToken
 		capiKubeconfigSecret     *corev1.Secret
+		cancel                   context.CancelFunc
+		clusterCtx               context.Context
 	)
 
 	BeforeEach(func() {
+		// rancher and rancher-turtles deployed in the same cluster
+		clusterCtx, cancel = context.WithCancel(ctx)
+		cluster, err := cluster.New(testEnv.Config, func(clusterOptions *cluster.Options) {
+			clusterOptions.Scheme = testEnv.Scheme
+		})
+		Expect(err).ToNot(HaveOccurred())
+		go func() {
+			Expect(cluster.Start(clusterCtx)).To(Succeed())
+		}()
+
 		r = &CAPIImportReconciler{
 			Client:             cl,
-			RancherClient:      cl, // rancher and rancher-turtles deployed in the same cluster
+			RancherCluster:     cluster,
 			remoteClientGetter: remote.NewClusterClient,
 		}
 
@@ -95,6 +109,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	})
 
 	AfterEach(func() {
+		defer cancel()
 		objs, err := manifestToObjects(strings.NewReader(testdata.ImportManifest))
 		clientObjs := []client.Object{
 			capiCluster,

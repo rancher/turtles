@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -68,7 +69,7 @@ const (
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportReconciler struct {
 	Client             client.Client
-	RancherClient      client.Client
+	RancherCluster     cluster.Cluster
 	recorder           record.EventRecorder
 	WatchFilterValue   string
 	Scheme             *runtime.Scheme
@@ -106,7 +107,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	// Watch Rancher provisioningv2 clusters
 	// NOTE: we will import the types from rancher in the future
 	err = c.Watch(
-		source.Kind(mgr.GetCache(), &provisioningv1.Cluster{}),
+		source.Kind(r.RancherCluster.GetCache(), &provisioningv1.Cluster{}),
 		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
 		//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
 	)
@@ -200,7 +201,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 		Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 	}}
 
-	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
+	err := r.RancherCluster.GetClient().Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
 	if client.IgnoreNotFound(err) != nil {
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
 		return ctrl.Result{Requeue: true}, err
@@ -218,7 +219,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 ) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
+	err := r.RancherCluster.GetClient().Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
 	if apierrors.IsNotFound(err) {
 		shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName)
 		if err != nil {
@@ -230,7 +231,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			return ctrl.Result{}, nil
 		}
 
-		if err := r.RancherClient.Create(ctx, &provisioningv1.Cluster{
+		if err := r.RancherCluster.GetClient().Create(ctx, &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: capiCluster.Namespace,
@@ -323,7 +324,7 @@ func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Contex
 		Name:      clusterRegistrationTokenName,
 		Namespace: clusterName,
 	}}
-	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(token), token)
+	err := r.RancherCluster.GetClient().Get(ctx, client.ObjectKeyFromObject(token), token)
 
 	if client.IgnoreNotFound(err) != nil {
 		return "", fmt.Errorf("error getting registration token for cluster %s: %w", clusterName, err)
