@@ -3,7 +3,7 @@ rancherTurtles:
   tag: v0.0.0
   imagePullPolicy: Never
   namespace: rancher-turtles-system
-  managerArguments: {}
+  managerArguments: []
   imagePullSecrets: []
   features:
     embedded-capi:
@@ -14,7 +14,7 @@ rancherTurtles:
 cluster-api-operator:
   enabled: true
   cert-manager:
-    enabled: true
+    enabled: false
   cluster-api:
     enabled: true
     version: v1.4.6

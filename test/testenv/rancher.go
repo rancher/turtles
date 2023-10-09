@@ -22,20 +22,27 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
 
 	"github.com/drone/envsubst/v2"
+	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
 type DeployRancherInput struct {
 	BootstrapClusterProxy  framework.ClusterProxy
+	E2EConfig              *clusterctl.E2EConfig
 	HelmBinaryPath         string
+	CertManagerChartPath   string
+	CertManagerUrl         string
+	CertManagerRepoName    string
 	RancherChartRepoName   string
 	RancherChartURL        string
 	RancherChartPath       string
@@ -45,7 +52,7 @@ type DeployRancherInput struct {
 	RancherHost            string
 	RancherPassword        string
 	RancherFeatures        string
-	RancherSettingsPatch   []byte
+	RancherPatches         [][]byte
 	RancherWaitInterval    []interface{}
 	ControllerWaitInterval []interface{}
 	IsolatedMode           bool
@@ -59,6 +66,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancher")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancher")
+	Expect(input.CertManagerRepoName).ToNot(BeEmpty(), "CertManagerRepoName is required for DeployRancher")
+	Expect(input.CertManagerUrl).ToNot(BeEmpty(), "CertManagerUrl is required for DeployRancher")
+	Expect(input.CertManagerChartPath).ToNot(BeEmpty(), "CertManagerChartPath is required for DeployRancher")
 	Expect(input.RancherChartRepoName).ToNot(BeEmpty(), "RancherChartRepoName is required for DeployRancher")
 	Expect(input.RancherChartURL).ToNot(BeEmpty(), "RancherChartURL is required for DeployRancher")
 	Expect(input.RancherChartPath).ToNot(BeEmpty(), "RancherChartPath is required for DeployRancher")
@@ -75,8 +85,20 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		Fail("Only one of RancherVersion or RancherImageTag cen be used")
 	}
 
-	By("Adding Rancher chart repo")
+	By("Add cert manager chart repo")
 	addChart := &opframework.HelmChart{
+		BinaryPath:      input.HelmBinaryPath,
+		Name:            input.CertManagerRepoName,
+		Path:            input.CertManagerUrl,
+		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
+		AdditionalFlags: opframework.Flags("--force-update"),
+		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+	}
+	_, err := addChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Adding Rancher chart repo")
+	addChart = &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Name:            input.RancherChartRepoName,
 		Path:            input.RancherChartURL,
@@ -84,7 +106,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		AdditionalFlags: opframework.Flags("--force-update"),
 		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 	}
-	_, err := addChart.Run(nil)
+	_, err = addChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	updateChart := &opframework.HelmChart{
@@ -95,11 +117,28 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	_, err = updateChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
+	By("Installing cert-manager")
+	chart := &opframework.HelmChart{
+		BinaryPath: input.HelmBinaryPath,
+		Path:       input.CertManagerChartPath,
+		Name:       "cert-manager",
+		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: opframework.Flags(
+			"--namespace", "cert-manager",
+			"--version", "v1.12.0",
+			"--create-namespace",
+		),
+		Wait: true,
+	}
+	_, err = chart.Run(map[string]string{
+		"installCRDs": "true",
+	})
+	Expect(err).ToNot(HaveOccurred())
+
 	By("Installing Rancher")
 	installFlags := opframework.Flags(
 		"--namespace", input.RancherNamespace,
 		"--create-namespace",
-		"--wait",
 	)
 	if input.RancherVersion != "" {
 		installFlags = append(installFlags, "--version", input.RancherVersion)
@@ -108,12 +147,13 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		installFlags = append(installFlags, "--devel")
 	}
 
-	chart := &opframework.HelmChart{
+	chart = &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Path:            input.RancherChartPath,
 		Name:            "rancher",
 		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 		AdditionalFlags: installFlags,
+		Wait:            true,
 	}
 	values := map[string]string{
 		"bootstrapPassword":         input.RancherPassword,
@@ -131,18 +171,16 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	_, err = chart.Run(values)
 	Expect(err).ToNot(HaveOccurred())
 
-	if len(input.RancherSettingsPatch) > 0 {
-		By("Updating rancher settings")
-		settingPatch, err := envsubst.Eval(string(input.RancherSettingsPatch), func(s string) string {
-			switch s {
-			case "RANCHER_HOSTNAME":
-				return input.RancherHost
-			default:
-				return os.Getenv(s)
-			}
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(settingPatch))).To(Succeed())
+	By("Updating rancher configuration")
+	for _, patch := range input.RancherPatches {
+		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Proxy:    input.BootstrapClusterProxy,
+			Template: patch,
+			Getter:   input.E2EConfig.GetVariable,
+			AddtionalEnvironmentVariables: map[string]string{
+				e2e.RancherHostnameVar: input.RancherHost,
+			},
+		})).To(Succeed())
 	}
 
 	if !input.IsolatedMode {

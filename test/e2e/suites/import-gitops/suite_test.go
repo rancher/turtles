@@ -104,6 +104,42 @@ var _ = BeforeSuite(func() {
 		hostName = setupClusterResult.IsolatedHostName
 	}
 
+	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
+		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:           flagVals.HelmBinaryPath,
+		IsolatedMode:             flagVals.IsolatedMode,
+		NginxIngress:             e2e.NginxIngress,
+		NginxIngressNamespace:    e2e.NginxIngressNamespace,
+		IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+		NgrokApiKey:              e2eConfig.GetVariable(e2e.NgrokApiKeyVar),
+		NgrokAuthToken:           e2eConfig.GetVariable(e2e.NgrokAuthTokenVar),
+		NgrokPath:                e2eConfig.GetVariable(e2e.NgrokPathVar),
+		NgrokRepoName:            e2eConfig.GetVariable(e2e.NgrokRepoNameVar),
+		NgrokRepoURL:             e2eConfig.GetVariable(e2e.NgrokUrlVar),
+		DefaultIngressClassPatch: e2e.IngressClassPatch,
+	})
+
+	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:         flagVals.HelmBinaryPath,
+		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
+		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
+		CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
+		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
+		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherUrlVar),
+		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
+		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
+		RancherHost:            hostName,
+		RancherNamespace:       e2e.RancherNamespace,
+		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
+		RancherPatches:         [][]byte{e2e.RancherSettingPatch},
+		RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		IsolatedMode:           flagVals.IsolatedMode,
+		RancherIngressConfig:   e2e.IngressConfig,
+		RancherServicePatch:    e2e.RancherServicePatch,
+	})
+
 	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:               flagVals.HelmBinaryPath,
@@ -145,40 +181,6 @@ var _ = BeforeSuite(func() {
 			},
 		})
 	}
-
-	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
-		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:           flagVals.HelmBinaryPath,
-		IsolatedMode:             flagVals.IsolatedMode,
-		NginxIngress:             e2e.NginxIngress,
-		NginxIngressNamespace:    e2e.NginxIngressNamespace,
-		IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		NgrokApiKey:              e2eConfig.GetVariable(e2e.NgrokApiKeyVar),
-		NgrokAuthToken:           e2eConfig.GetVariable(e2e.NgrokAuthTokenVar),
-		NgrokPath:                e2eConfig.GetVariable(e2e.NgrokPathVar),
-		NgrokRepoName:            e2eConfig.GetVariable(e2e.NgrokRepoNameVar),
-		NgrokRepoURL:             e2eConfig.GetVariable(e2e.NgrokUrlVar),
-		DefaultIngressClassPatch: e2e.IngressClassPatch,
-	})
-
-	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
-		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:         flagVals.HelmBinaryPath,
-		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
-		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherUrlVar),
-		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
-		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
-		RancherHost:            hostName,
-		RancherNamespace:       e2e.RancherNamespace,
-		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
-		RancherFeatures:        e2eConfig.GetVariable(e2e.RancherFeaturesVar),
-		RancherSettingsPatch:   e2e.RancherSettingPatch,
-		RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		IsolatedMode:           flagVals.IsolatedMode,
-		RancherIngressConfig:   e2e.IngressConfig,
-		RancherServicePatch:    e2e.RancherServicePatch,
-	})
 
 	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
