@@ -25,6 +25,10 @@ Configuration steps, the quickstart guide and the architecture for this project 
 
 See our [contributor guide](CONTRIBUTING.md) for more details on how to get involved.
 
+## Community
+
+Please check in with us in the [#cluster-api channel](https://rancher-users.slack.com/archives/C060L985ZGC) on the **Rancher Users** Slack.
+
 ## Code of Conduct
 
 Participation in the project is governed by [Code of Conduct](code-of-conduct.md).
