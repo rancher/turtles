@@ -303,13 +303,7 @@ jobs:
           mkdir -p .cr-index
 
       - name: Run chart-releaser upload
-        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ env.TAG }}" --make-release-latest false
+        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ env.TAG }}" --make-release-latest=false
 
       - name: Run chart-releaser index
         run: cr index --push --release-name-template "${{ env.TAG }}"
-
-      - name: Set release as draft # `--make-release-latest false` in cr does not seem to work
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run:
-          gh release edit ${{ env.TAG }} --draft
