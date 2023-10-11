@@ -90,18 +90,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
-  - secrets
-  verbs:
-  - create
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - namespaces
   verbs:
   - create
