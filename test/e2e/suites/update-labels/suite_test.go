@@ -146,7 +146,7 @@ var _ = BeforeSuite(func() {
 		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
 		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
-		RancherFeatures:        e2eConfig.GetVariable(e2e.RancherFeaturesVar),
+		RancherFeatures:        "embedded-cluster-api=false",
 		RancherPatches:         [][]byte{e2e.RancherSettingPatch},
 		RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
