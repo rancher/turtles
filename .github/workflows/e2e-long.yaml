@@ -38,3 +38,31 @@ jobs:
       with:
         name: artifacts
         path: _artifacts
+    - name: Send failed status to slack
+      if: failure() && github.event_name == 'schedule'
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        payload: |
+          {
+            "blocks": [
+              {
+                "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Rancher turtles E2E test run failed. Job trigger by ${{ github.event_name }} event(schedule means nightly run, push means push to main)."
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": ":github:",
+                        "emoji": true
+                      },
+                    "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
