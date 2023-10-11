@@ -96,8 +96,7 @@ func (r *RancherKubeconfigSecretReconciler) Reconcile(ctx context.Context, req c
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	_, ok := secret.Labels[clusterv1.ClusterNameLabel]
-	if ok {
+	if _, ok := secret.Labels[clusterv1.ClusterNameLabel]; ok {
 		log.V(4).Info("kubeconfig secret %s/%s already has the capi cluster label", secret.Name, secret.Name)
 
 		return ctrl.Result{}, nil
