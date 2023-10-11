@@ -11,7 +11,13 @@ type Cluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	Spec   ClusterSpec   `json:"spec"`
 	Status ClusterStatus `json:"status,omitempty"`
+}
+
+// ClusterSpec is the struct representing the specification of a Rancher Cluster.
+type ClusterSpec struct {
+	RKEConfig *RKEConfig `json:"rkeConfig,omitempty"`
 }
 
 // ClusterStatus is the struct representing the status of a Rancher Cluster.

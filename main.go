@@ -42,6 +42,7 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	"github.com/rancher-sandbox/rancher-turtles/feature"
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers"
 	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
@@ -114,6 +115,8 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.BoolVar(&insecureSkipVerify, "insecure-skip-verify", false,
 		"Skip TLS certificate verification when connecting to Rancher. Only used for development and testing purposes. Use at your own risk.")
+
+	feature.MutableGates.AddFlag(fs)
 }
 
 func main() {
@@ -189,6 +192,18 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 	}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)
+	}
+
+	if feature.Gates.Enabled(feature.RancherKubeSecretPatch) {
+		setupLog.Info("enabling Rancher kubeconfig secret patching")
+
+		if err := (&controllers.RancherKubeconfigSecretReconciler{
+			Client:           mgr.GetClient(),
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+			setupLog.Error(err, "unable to create Rancher kubeconfig secret controller")
+			os.Exit(1)
+		}
 	}
 }
 

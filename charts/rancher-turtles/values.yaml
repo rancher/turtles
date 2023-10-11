@@ -11,6 +11,8 @@ rancherTurtles:
     rancher-webhook:
       cleanup: true
       kubectlImage: rancher/kubectl
+    rancher-kubeconfigs:
+      label: true
 cluster-api-operator:
   enabled: true
   cert-manager:
