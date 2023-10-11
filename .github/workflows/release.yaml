@@ -5,23 +5,12 @@ on:
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
-env:
-  TAG: ${{ github.ref_name }}
-  REGISTRY: ghcr.io
-  USERNAME: ${{ github.actor }}
-  ORG: rancher-sandbox
-  PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
-  PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-  PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-  PROD_ORG: rancher-sandbox
-  RELEASE_DIR: .cr-release-packages
-  REPO: ${{ github.repository }}
-
 permissions:
   contents: write # Allow to create a release.
 
 jobs:
-  build:
+
+  build-ghcr:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,6 +24,11 @@ jobs:
       arm64_image: ${{ steps.ghcr-images.outputs.arm64_image }}
       s390x_image: ${{ steps.ghcr-images.outputs.s390x_image }}
       s390x_digest: ${{ steps.ghcr-images.outputs.s390x_digest }}
+    env:
+      TAG: ${{ github.ref_name }}
+      REGISTRY: ghcr.io
+      USERNAME: ${{ github.actor }}
+      ORG: rancher-sandbox
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -58,26 +52,10 @@ jobs:
       id: ghcr-images
       run: |
         ./scripts/image-digest.sh ${{ env.REGISTRY }} ${{ env.ORG }} ${{ env.TAG }}
-    - name: Prepare environment for prod registry
-      run: |
-        echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
-    - name: Docker login to prod registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.PROD_REGISTRY }}
-        username: ${{ env.PROD_USERNAME }}
-        password: ${{ env.PROD_PASSWORD }}
-    - name: Build docker image for prod registry
-      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
-    - name: Push docker image to prod registry
-      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
-    - name: Store list of prod images and digests
-      id: prod-images
-      run: |
-        ./scripts/image-digest.sh ${{ env.PROD_REGISTRY }} ${{ env.PROD_ORG }} ${{ env.TAG }}
+
   ghcr-sign:
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build-ghcr]
     permissions:
       packages: write
       id-token: write
@@ -85,18 +63,23 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build.outputs.multiarch_image }}",
+              "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
           },
           {
-              "image":"${{ needs.build.outputs.amd64_image }}",
+              "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
           },
           {
-              "image":"${{ needs.build.outputs.arm64_image }}",
+              "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
           },
           {
-              "image":"${{ needs.build.outputs.s390x_image }}",
+              "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
           }
         ]
+    env:
+      TAG: ${{ github.ref_name }}
+      REGISTRY: ghcr.io
+      USERNAME: ${{ github.actor }}
+      ORG: rancher-sandbox
     steps:
       - name: Docker login to ghcr registry
         uses: docker/login-action@v3
@@ -115,8 +98,9 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         run: |
           cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+
   ghcr-provenance:
-    needs: [build, ghcr-sign]
+    needs: [build-ghcr, ghcr-sign]
     permissions:
       actions: read 
       id-token: write
@@ -125,20 +109,20 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build.outputs.multiarch_image }}",
-              "digest":"${{ needs.build.outputs.multiarch_digest }}"
+              "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.amd64_image }}",
-              "digest":"${{ needs.build.outputs.amd64_digest }}"
+              "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.arm64_image }}",
-              "digest":"${{ needs.build.outputs.arm64_digest }}"
+              "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.s390x_image }}",
-              "digest":"${{ needs.build.outputs.s390x_digest }}"
+              "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
+              "digest":"${{ needs.build-ghcr.outputs.s390x_digest }}"
           }
         ]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
@@ -148,29 +132,82 @@ jobs:
     secrets:
       registry-username: ${{ github.actor }}
       registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  build-prod:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      multiarch_image: ${{ steps.prod-images.outputs.multiarch_image }}
+      multiarch_digest: ${{ steps.prod-images.outputs.multiarch_digest }}
+      amd64_image: ${{ steps.prod-images.outputs.amd64_image }}
+      amd64_digest: ${{ steps.prod-images.outputs.amd64_digest }}
+      arm64_digest: ${{ steps.prod-images.outputs.arm64_digest }}
+      arm64_image: ${{ steps.prod-images.outputs.arm64_image }}
+      s390x_image: ${{ steps.prod-images.outputs.s390x_image }}
+      s390x_digest: ${{ steps.prod-images.outputs.s390x_digest }}
+    env:
+      TAG: ${{ github.ref_name }}
+      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
+      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+      PROD_ORG: rancher-sandbox
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Prepare environment for prod registry
+      run: |
+        echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
+    - name: Docker login to prod registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.PROD_REGISTRY }}
+        username: ${{ env.PROD_USERNAME }}
+        password: ${{ env.PROD_PASSWORD }}
+    - name: Build docker image for prod registry
+      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
+    - name: Push docker image to prod registry
+      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
+    - name: Store list of prod images and digests
+      id: prod-images
+      run: |
+        ./scripts/image-digest.sh ${{ env.PROD_REGISTRY }} ${{ env.PROD_ORG }} ${{ env.TAG }}
+
   prod-sign:
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build-prod]
     strategy:
       matrix:
         images: [
           {
-              "image":"${{ needs.build.outputs.multiarch_image }}",
-              "digest":"${{ needs.build.outputs.multiarch_digest }}"
+              "image":"${{ needs.build-prod.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.amd64_image }}",
-              "digest":"${{ needs.build.outputs.amd64_digest }}"
+              "image":"${{ needs.build-prod.outputs.amd64_image }}",
+              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.arm64_image }}",
-              "digest":"${{ needs.build.outputs.arm64_digest }}"
+              "image":"${{ needs.build-prod.outputs.arm64_image }}",
+              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.s390x_image }}",
-              "digest":"${{ needs.build.outputs.s390x_digest }}"
+              "image":"${{ needs.build-prod.outputs.s390x_image }}",
+              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
+    env:
+      TAG: ${{ github.ref_name }}
+      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
+      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
       - name: Prepare environment for prod registry
         run: |
@@ -192,8 +229,9 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         run: |
           cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+
   prod-provenance:
-    needs: [build, prod-sign]
+    needs: [build-prod, prod-sign]
     permissions:
       actions: read
       id-token: write
@@ -202,20 +240,20 @@ jobs:
       matrix:
         images: [
           {
-              "image":"${{ needs.build.outputs.multiarch_image }}",
-              "digest":"${{ needs.build.outputs.multiarch_digest }}"
+              "image":"${{ needs.build-prod.outputs.multiarch_image }}",
+              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.amd64_image }}",
-              "digest":"${{ needs.build.outputs.amd64_digest }}"
+              "image":"${{ needs.build-prod.outputs.amd64_image }}",
+              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.arm64_image }}",
-              "digest":"${{ needs.build.outputs.arm64_digest }}"
+              "image":"${{ needs.build-prod.outputs.arm64_image }}",
+              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
-              "image":"${{ needs.build.outputs.s390x_image }}",
-              "digest":"${{ needs.build.outputs.s390x_digest }}"
+              "image":"${{ needs.build-prod.outputs.s390x_image }}",
+              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
@@ -225,9 +263,15 @@ jobs:
     secrets:
       registry-username: ${{ secrets.REGISTRY_USERNAME }}
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+
   release:
     name: Create helm release
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
+      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
+      PROD_ORG: rancher-sandbox
+      RELEASE_DIR: .cr-release-packages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -268,4 +312,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run:
-          gh release edit ${{ env.TAG}} --draft
+          gh release edit ${{ env.TAG }} --draft
