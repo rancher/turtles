@@ -39,7 +39,7 @@ jobs:
         name: artifacts
         path: _artifacts
     - name: Send failed status to slack
-      if: failure() && github.event_name == 'schedule'
+      if: failure()
       uses: slackapi/slack-github-action@v1.23.0
       with:
         payload: |
