@@ -102,6 +102,7 @@ var _ = BeforeSuite(func() {
 	if flagVals.IsolatedMode {
 		hostName = setupClusterResult.IsolatedHostName
 	}
+	turtlesframework.Byf("Rancher hostname is %s", hostName)
 
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
@@ -119,16 +120,16 @@ var _ = BeforeSuite(func() {
 	})
 
 	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:        flagVals.HelmBinaryPath,
-		CertManagerChartPath:  e2eConfig.GetVariable(e2e.CertManagerPathVar),
-		CertManagerUrl:        e2eConfig.GetVariable(e2e.CertManagerUrlVar),
-		CertManagerRepoName:   e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
-		RancherChartRepoName:  "rancher-latest",
-		RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
-		RancherChartPath:      "rancher-latest/rancher",
-		//RancherVersion:         "v2.7.7",
-		RancherImageTag:        "v2.7-head",
+		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:         flagVals.HelmBinaryPath,
+		InstallCertManager:     true,
+		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
+		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
+		CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
+		RancherChartRepoName:   "rancher-latest",
+		RancherChartURL:        "https://releases.rancher.com/server-charts/latest",
+		RancherChartPath:       "rancher-latest/rancher",
+		RancherVersion:         "v2.7.7",
 		Development:            true,
 		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
@@ -140,6 +141,7 @@ var _ = BeforeSuite(func() {
 		IsolatedMode:           flagVals.IsolatedMode,
 		RancherIngressConfig:   e2e.IngressConfig,
 		RancherServicePatch:    e2e.RancherServicePatch,
+		Variables:              e2eConfig.Variables,
 	})
 
 	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{

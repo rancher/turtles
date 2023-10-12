@@ -31,15 +31,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
 type DeployRancherInput struct {
 	BootstrapClusterProxy  framework.ClusterProxy
-	E2EConfig              *clusterctl.E2EConfig
 	HelmBinaryPath         string
+	InstallCertManager     bool
 	CertManagerChartPath   string
 	CertManagerUrl         string
 	CertManagerRepoName    string
@@ -59,6 +58,7 @@ type DeployRancherInput struct {
 	RancherIngressConfig   []byte
 	RancherServicePatch    []byte
 	Development            bool
+	Variables              turtlesframework.VariableCollection
 }
 
 func DeployRancher(ctx context.Context, input DeployRancherInput) {
@@ -66,9 +66,6 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancher")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancher")
-	Expect(input.CertManagerRepoName).ToNot(BeEmpty(), "CertManagerRepoName is required for DeployRancher")
-	Expect(input.CertManagerUrl).ToNot(BeEmpty(), "CertManagerUrl is required for DeployRancher")
-	Expect(input.CertManagerChartPath).ToNot(BeEmpty(), "CertManagerChartPath is required for DeployRancher")
 	Expect(input.RancherChartRepoName).ToNot(BeEmpty(), "RancherChartRepoName is required for DeployRancher")
 	Expect(input.RancherChartURL).ToNot(BeEmpty(), "RancherChartURL is required for DeployRancher")
 	Expect(input.RancherChartPath).ToNot(BeEmpty(), "RancherChartPath is required for DeployRancher")
@@ -85,20 +82,26 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		Fail("Only one of RancherVersion or RancherImageTag cen be used")
 	}
 
-	By("Add cert manager chart repo")
-	addChart := &opframework.HelmChart{
-		BinaryPath:      input.HelmBinaryPath,
-		Name:            input.CertManagerRepoName,
-		Path:            input.CertManagerUrl,
-		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
-		AdditionalFlags: opframework.Flags("--force-update"),
-		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+	if input.InstallCertManager {
+		Expect(input.CertManagerRepoName).ToNot(BeEmpty(), "CertManagerRepoName is required for DeployRancher")
+		Expect(input.CertManagerUrl).ToNot(BeEmpty(), "CertManagerUrl is required for DeployRancher")
+		Expect(input.CertManagerChartPath).ToNot(BeEmpty(), "CertManagerChartPath is required for DeployRancher")
+
+		By("Add cert manager chart repo")
+		certChart := &opframework.HelmChart{
+			BinaryPath:      input.HelmBinaryPath,
+			Name:            input.CertManagerRepoName,
+			Path:            input.CertManagerUrl,
+			Commands:        opframework.Commands(opframework.Repo, opframework.Add),
+			AdditionalFlags: opframework.Flags("--force-update"),
+			Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+		}
+		_, certErr := certChart.Run(nil)
+		Expect(certErr).ToNot(HaveOccurred())
 	}
-	_, err := addChart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
 
 	By("Adding Rancher chart repo")
-	addChart = &opframework.HelmChart{
+	addChart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Name:            input.RancherChartRepoName,
 		Path:            input.RancherChartURL,
@@ -106,7 +109,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		AdditionalFlags: opframework.Flags("--force-update"),
 		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 	}
-	_, err = addChart.Run(nil)
+	_, err := addChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	updateChart := &opframework.HelmChart{
@@ -117,23 +120,25 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	_, err = updateChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
-	By("Installing cert-manager")
-	chart := &opframework.HelmChart{
-		BinaryPath: input.HelmBinaryPath,
-		Path:       input.CertManagerChartPath,
-		Name:       "cert-manager",
-		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
-		AdditionalFlags: opframework.Flags(
-			"--namespace", "cert-manager",
-			"--version", "v1.12.0",
-			"--create-namespace",
-		),
-		Wait: true,
+	if input.InstallCertManager {
+		By("Installing cert-manager")
+		certManagerChart := &opframework.HelmChart{
+			BinaryPath: input.HelmBinaryPath,
+			Path:       input.CertManagerChartPath,
+			Name:       "cert-manager",
+			Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
+			AdditionalFlags: opframework.Flags(
+				"--namespace", "cert-manager",
+				"--version", "v1.12.0",
+				"--create-namespace",
+			),
+			Wait: true,
+		}
+		_, err = certManagerChart.Run(map[string]string{
+			"installCRDs": "true",
+		})
+		Expect(err).ToNot(HaveOccurred())
 	}
-	_, err = chart.Run(map[string]string{
-		"installCRDs": "true",
-	})
-	Expect(err).ToNot(HaveOccurred())
 
 	By("Installing Rancher")
 	installFlags := opframework.Flags(
@@ -147,7 +152,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		installFlags = append(installFlags, "--devel")
 	}
 
-	chart = &opframework.HelmChart{
+	chart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Path:            input.RancherChartPath,
 		Name:            "rancher",
@@ -172,11 +177,12 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Updating rancher configuration")
+	variableGetter := turtlesframework.GetVariable(input.Variables)
 	for _, patch := range input.RancherPatches {
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Proxy:    input.BootstrapClusterProxy,
 			Template: patch,
-			Getter:   input.E2EConfig.GetVariable,
+			Getter:   variableGetter,
 			AddtionalEnvironmentVariables: map[string]string{
 				e2e.RancherHostnameVar: input.RancherHost,
 			},

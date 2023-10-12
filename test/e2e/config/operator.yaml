@@ -10,7 +10,7 @@ intervals:
   default/wait-rancher: ["15m", "30s"]
   default/wait-v2prov-create: ["25m", "30s"]
   default/wait-capa-create-cluster: ["30m", "30s"]
-  default/wait-capz-create-cluster: ["30m", "30s"]
+  default/wait-capz-create-cluster: ["35m", "30s"]
   default/wait-gitea: ["3m", "10s"]
   default/wait-consistently: ["30s", "5s"]
   default/wait-getservice: ["60s", "5s"]
