@@ -188,19 +188,15 @@ jobs:
         images: [
           {
               "image":"${{ needs.build-prod.outputs.multiarch_image }}",
-              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.amd64_image }}",
-              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.arm64_image }}",
-              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
           },
           {
               "image":"${{ needs.build-prod.outputs.s390x_image }}",
-              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
           }
         ]
     env:
@@ -266,12 +262,14 @@ jobs:
 
   release:
     name: Create helm release
+    needs: [prod-provenance]
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
       PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_ORG: rancher-sandbox
       RELEASE_DIR: .cr-release-packages
+      CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
