@@ -85,7 +85,7 @@ jobs:
         with:
           image: ${{ format('{0}-{1}', vars[inputs.image], inputs.arch) }}
           digest: ${{ needs.build.outputs.digest }}
-          identity: https://github.com/${{ inputs.org }}/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ inputs.tag }}
+          identity: https://github.com/${{ inputs.org }}/rancher-turtles/.github/workflows/release-workflow.yml@refs/tags/${{ inputs.tag }}
           oids-issuer: https://token.actions.githubusercontent.com
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
           username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
