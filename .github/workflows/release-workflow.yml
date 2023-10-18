@@ -1,0 +1,106 @@
+on:
+  workflow_call:
+    inputs:
+      secret_registry:
+        type: boolean
+        description: All registry related inputs should be treated as secret values
+        required: true
+
+      image:
+        type: string
+        description: Static image value for the build
+
+      password:
+        type: string
+        description: Registry password key to lookup in secrets
+        required: true
+
+      username:
+        type: string
+        description: Username for the registry login
+        required: true
+
+      registry:
+        type: string
+        description: Destination registry for image push
+        required: true
+
+
+      tag:
+        type: string
+        description: Tag for the built image
+        required: true
+
+      arch:
+        type: string
+        description: Architecture for the image
+        required: true
+
+      org:
+        type: string
+        description: Organization part of the image name
+        required: false
+        default: "rancher-sandbox"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build the image
+        id: image
+        uses: ./.github/workflows/release_build
+        with:
+          arch: ${{ inputs.arch }}
+          tag: ${{ inputs.tag }}
+          org: ${{ inputs.org }}
+          registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
+          password: ${{ secrets[inputs.password] }}
+
+  sign:
+    runs-on: ubuntu-latest
+    needs: [build]
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sign image with cosign
+        uses: ./.github/workflows/release_sign
+        with:
+          image: ${{ needs.build.outputs.image || format('{0}-{1}', vars[inputs.image], inputs.arch) }}
+          digest: ${{ needs.build.outputs.digest }}
+          identity: https://github.com/${{ inputs.org }}/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ inputs.tag }}
+          oids-issuer: https://token.actions.githubusercontent.com
+          registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
+          password: ${{ secrets[inputs.password] }}
+
+  provenance:
+    needs: [sign, build]
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      digest: ${{ needs.build.outputs.digest }}
+      image: ${{ needs.build.outputs.image || format('{0}-{1}', vars[inputs.image], inputs.arch) }}
+    secrets:
+      registry-username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
+      registry-password: ${{ secrets[inputs.password] }}

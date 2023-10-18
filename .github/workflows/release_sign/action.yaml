@@ -1,0 +1,58 @@
+name: "Cosign sign"
+description: "Signs the image using digest, and pushes the metadata to the registry"
+inputs:
+  image:
+    description: "The OCI image name. This must not include a tag or digest."
+    required: true
+    type: string
+  digest:
+    description: "The OCI image digest. The image digest of the form '<algorithm>:<digest>' (e.g. 'sha256:abcdef...')"
+    required: true
+    type: string
+  identity:
+    description: "Full oauth identity for signature verification"
+    required: true
+    type: string
+  oidc-provider:
+    description: "Specify the provider to get the OIDC token from (Optional). If unset, github-actions will be used. Options include: [spiffe, google, github-actions, filesystem, buildkite-agent]"
+    type: string
+    default: "github-actions"
+  oids-issuer:
+    description: "Full OIDS issuer URL for signature verification"
+    required: true
+    type: string
+  registry:
+    description: "The registry to login"
+    required: true
+    type: string
+  username:
+    description: "The username to registry"
+    required: true
+    type: string
+  password:
+    required: true
+    description: "The password key to fetch from secret store for registry login"
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Docker login to registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+    - uses: sigstore/cosign-installer@v3.1.2
+    - name: Sign manifests
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }} --oidc-provider=${{ inputs.oidc-provider }}
+    - name: Verify pushed ghcr images
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: 1
+      run: |
+        cosign verify ${{ inputs.image }}@${{ inputs.digest }} --certificate-identity={{ inputs.identity }} --certificate-oidc-issuer=${{ inputs.oids-issuer }}
