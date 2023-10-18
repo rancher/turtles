@@ -201,13 +201,10 @@ jobs:
         ]
     env:
       TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
+      PROD_REGISTRY: registry.rancher.com/rancher
       PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
-      - name: Prepare environment for prod registry
-        run: |
-          echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
       - name: Docker login to prod registry
         uses: docker/login-action@v3
         with:
