@@ -6,7 +6,7 @@ metadata:
   name: ${POOL_NAME}
   namespace: fleet-default
 acceleratedNetworking: false
-availabilitySet: docker-machine
+availabilitySet: highlander-e2e
 availabilityZone: ""
 diskSize: "30"
 dockerPort: "2376"
@@ -30,13 +30,13 @@ openPort:
 - 10251/tcp
 - 10252/tcp
 plan: ""
-resourceGroup: docker-machine
+resourceGroup: highlander-e2e
 size: Standard_D2_v2
 sshUser: docker-user
 staticPublicIp: false
 storageType: Standard_LRS
-subnet: docker-machine
+subnet: highlander-e2e
 subnetPrefix: 192.168.0.0/16
 updateDomainCount: "5"
 usePrivateIp: false
-vnet: docker-machine-vnet
+vnet: highlander-e2e-vnet

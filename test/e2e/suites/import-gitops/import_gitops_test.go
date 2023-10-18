@@ -20,25 +20,16 @@ limitations under the License.
 package import_gitops
 
 import (
-	. "github.com/onsi/ginkgo/v2"
+	_ "embed"
 
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
-	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	. "github.com/onsi/ginkgo/v2"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-	_ "embed"
-)
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-var (
-	//go:embed cluster-templates/docker-kubeadm.yaml
-	dockerKubeadm []byte
-
-	//go:embed cluster-templates/aws-eks-mmp.yaml
-	awsEKSMMP []byte
-
-	//go:embed cluster-templates/azure-aks-mmp.yaml
-	azureAKSMMP []byte
+	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
+	"github.com/rancher-sandbox/rancher-turtles/test/e2e/specs"
 )
 
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.FullTestLabel), func() {
@@ -48,15 +39,15 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 		SetContext(ctx)
 	})
 
-	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
-		return CreateUsingGitOpsSpecInput{
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplate:           dockerKubeadm,
-			ClusterName:               "hl-e2e-cluster1",
+			ClusterTemplate:           e2e.CAPIDockerKubeadm,
+			ClusterName:               "highlander-e2e-cluster1",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   giteaResult.GitAddress,
@@ -78,15 +69,15 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 		komega.SetContext(ctx)
 	})
 
-	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
-		return CreateUsingGitOpsSpecInput{
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplate:           awsEKSMMP,
-			ClusterName:               "hl-e2e-cluster2",
+			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
+			ClusterName:               "highlander-e2e-cluster2",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   giteaResult.GitAddress,
@@ -108,14 +99,14 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality sho
 		SetContext(ctx)
 	})
 
-	CreateUsingGitOpsSpec(ctx, func() CreateUsingGitOpsSpecInput {
-		return CreateUsingGitOpsSpecInput{
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplate:           azureAKSMMP,
-			ClusterName:               "hl-e2e-cluster3",
+			ClusterTemplate:           e2e.CAPIAzureAKSMMP,
+			ClusterName:               "highlander-e2e-cluster3",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   giteaResult.GitAddress,

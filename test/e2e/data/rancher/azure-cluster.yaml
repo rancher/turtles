@@ -23,7 +23,7 @@ spec:
     machinePools:
     - controlPlaneRole: true
       dynamicSchemaSpec: '{"resourceFields":{"acceleratedNetworking":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
-        if an Accelerated Networking NIC should be created for your VM"},"availabilitySet":{"type":"string","default":{"stringValue":"docker-machine","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        if an Accelerated Networking NIC should be created for your VM"},"availabilitySet":{"type":"string","default":{"stringValue":"highlander-e2e","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Availability Set to place the virtual machine into"},"availabilityZone":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
         the Availability Zones the Azure resources should be created in"},"clientId":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Service Principal Account ID (optional, browser auth is used if not specified)"},"clientSecret":{"type":"password","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
@@ -45,19 +45,19 @@ spec:
         the specified port number accessible from the Internet"},"plan":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Purchase
         plan for Azure Virtual Machine (in \u003cpublisher\u003e:\u003cproduct\u003e:\u003cplan\u003e
         format)"},"privateIpAddress":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
-        a static private IP address for the machine"},"resourceGroup":{"type":"string","default":{"stringValue":"docker-machine","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        a static private IP address for the machine"},"resourceGroup":{"type":"string","default":{"stringValue":"highlander-e2e","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Resource Group name (will be created if missing)"},"size":{"type":"string","default":{"stringValue":"Standard_D2_v2","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Size
         for Azure Virtual Machine"},"sshUser":{"type":"string","default":{"stringValue":"docker-user","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Username
         for SSH login"},"staticPublicIp":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Assign
         a static public IP address to the machine"},"storageType":{"type":"string","default":{"stringValue":"Standard_LRS","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Type
-        of Storage Account to host the OS Disk for the machine"},"subnet":{"type":"string","default":{"stringValue":"docker-machine","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        of Storage Account to host the OS Disk for the machine"},"subnet":{"type":"string","default":{"stringValue":"highlander-e2e","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Subnet Name to be used within the Virtual Network"},"subnetPrefix":{"type":"string","default":{"stringValue":"192.168.0.0/16","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Private
         CIDR block to be used for the new subnet, should comply RFC 1918"},"subscriptionId":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Subscription ID"},"tags":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Tags
         to be applied to the Azure VM instance"},"tenantId":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Tenant ID"},"updateDomainCount":{"type":"string","default":{"stringValue":"5","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Update
         domain count to use for availability set"},"usePrivateIp":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Use
-        private IP address of the machine to connect"},"vnet":{"type":"string","default":{"stringValue":"docker-machine-vnet","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
+        private IP address of the machine to connect"},"vnet":{"type":"string","default":{"stringValue":"highlander-e2e-vnet","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Virtual Network name to connect the virtual machine (in [resourcegroup:]name
         format)"}}}'
       etcdRole: true

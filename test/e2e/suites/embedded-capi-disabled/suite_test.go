@@ -58,6 +58,7 @@ var (
 	ctx = context.Background()
 
 	setupClusterResult *testenv.SetupTestClusterResult
+	giteaResult        *testenv.DeployGiteaResult
 )
 
 func init() {
@@ -119,6 +120,8 @@ var _ = BeforeSuite(func() {
 		DefaultIngressClassPatch: e2e.IngressClassPatch,
 	})
 
+	// NOTE: deploy Rancher first with the embedded-cluster-api feature disabled.
+	// and the deploy Rancher Turtles.
 	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:         flagVals.HelmBinaryPath,
@@ -157,6 +160,25 @@ var _ = BeforeSuite(func() {
 			"cluster-api-operator.cert-manager.enabled":      "false",
 			"rancherTurtles.features.embedded-capi.disabled": "false",
 		},
+	})
+
+	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		ChartRepoName:         e2eConfig.GetVariable(e2e.GiteaRepoNameVar),
+		ChartRepoURL:          e2eConfig.GetVariable(e2e.GiteaRepoURLVar),
+		ChartName:             e2eConfig.GetVariable(e2e.GiteaChartNameVar),
+		ChartVersion:          e2eConfig.GetVariable(e2e.GiteaChartVersionVar),
+		ValuesFilePath:        "../../data/gitea/values.yaml",
+		Values: map[string]string{
+			"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
+			"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
+		},
+		RolloutWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
+		ServiceWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-getservice"),
+		AuthSecretName:      e2e.AuthSecretName,
+		Username:            e2eConfig.GetVariable(e2e.GiteaUserNameVar),
+		Password:            e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
 	})
 })
 
