@@ -4,6 +4,8 @@ on:
   push:
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+env:
+  PROD_REGISTRY: registry.rancher.com/rancher
 
 permissions:
   contents: write # Allow to create a release.
@@ -149,7 +151,6 @@ jobs:
       s390x_digest: ${{ steps.prod-images.outputs.s390x_digest }}
     env:
       TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
       PROD_ORG: rancher-sandbox
@@ -162,9 +163,6 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '=1.20.7'
-    - name: Prepare environment for prod registry
-      run: |
-        echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
     - name: Docker login to prod registry
       uses: docker/login-action@v3
       with:
@@ -183,6 +181,9 @@ jobs:
   prod-sign:
     runs-on: ubuntu-latest
     needs: [build-prod]
+    permissions:
+      packages: write
+      id-token: write
     strategy:
       matrix:
         images: [
@@ -201,7 +202,6 @@ jobs:
         ]
     env:
       TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: registry.rancher.com/rancher
       PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
@@ -263,7 +263,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_ORG: rancher-sandbox
       RELEASE_DIR: .cr-release-packages
       CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
@@ -277,10 +276,6 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Prepare environment for prod registry
-        run: |
-          echo "PROD_REGISTRY=${PROD_REGISTRY/https:\/\//}" >> $GITHUB_ENV
 
       - name: Package operator chart
         run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
