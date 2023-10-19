@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package import_gitops
+package specs
 
 import (
 	"context"
