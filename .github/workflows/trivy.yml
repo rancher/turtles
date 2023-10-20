@@ -1,0 +1,37 @@
+name: trivy
+
+on:
+  push:
+    branches: [ "main", "release-*" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '37 1 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    permissions:
+      contents: read
+      security-events: write
+    name: Scan
+    runs-on: "ubuntu-20.04"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build an image
+        run: |
+          TAG=${{ github.sha }} ARCH=amd64 make docker-build
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
+        with:
+          image-ref: 'ghcr.io/rancher-sandbox/rancher-turtles-amd64:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
