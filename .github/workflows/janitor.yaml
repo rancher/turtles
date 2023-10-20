@@ -1,0 +1,21 @@
+name: Janitor
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  janitor:
+    name: azure-janitor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup
+        uses: rancher-sandbox/azure-janitor@v0.1.1
+        with:
+            resource-groups: highlander-e2e*
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+            client-id: ${{ secrets.AZURE_CLIENT_ID}}
+            client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID}}
+            commit: false
