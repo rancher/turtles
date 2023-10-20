@@ -94,12 +94,18 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          # Loop through the ghcr images and sign them by digest
+          for image in "${{ matrix.images.digest }}"; do
+            cosign sign --yes $image
+          done
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          # Loop through the ghcr images and verify them by digest
+          for image in "${{ matrix.images.digest }}"; do
+            cosign verify $image --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          done
 
   ghcr-provenance:
     needs: [build-ghcr, ghcr-sign]
@@ -216,12 +222,18 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          # Loop through the prod images and sign them by digest
+          for image in "${{ matrix.images.digest }}"; do
+            cosign sign --yes $image
+          done
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          # Loop through the prod images and verify them by digest
+          for image in "${{ matrix.images.digest }}"; do
+            cosign verify $image --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          done
 
   prod-provenance:
     needs: [build-prod, prod-sign]
