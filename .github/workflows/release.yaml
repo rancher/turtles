@@ -101,40 +101,6 @@ jobs:
           image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
           cosign verify ${image} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
-  ghcr-provenance:
-    needs: [ghcr-sign]
-    permissions:
-      actions: read 
-      id-token: write
-      packages: write
-    strategy:
-      matrix:
-        images: [
-          {
-              "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
-              "digest":"${{ needs.build-ghcr.outputs.multiarch_digest }}"
-          },
-          {
-              "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
-              "digest":"${{ needs.build-ghcr.outputs.amd64_digest }}"
-          },
-          {
-              "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
-              "digest":"${{ needs.build-ghcr.outputs.arm64_digest }}"
-          },
-          {
-              "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
-              "digest":"${{ needs.build-ghcr.outputs.s390x_digest }}"
-          }
-        ]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
-    with:
-      image: $(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
-      digest: $(echo ${{ matrix.images.digest }} | base64 -d | base64 -d)
-    secrets:
-      registry-username: ${{ github.actor }}
-      registry-password: ${{ secrets.GITHUB_TOKEN }}
-
   build-prod:
     runs-on: ubuntu-latest
     permissions:
@@ -227,43 +193,9 @@ jobs:
           image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
           cosign verify ${image} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
-  prod-provenance:
-    needs: [prod-sign]
-    permissions:
-      actions: read
-      id-token: write
-      packages: write
-    strategy:
-      matrix:
-        images: [
-          {
-              "image":"${{ needs.build-prod.outputs.multiarch_image }}",
-              "digest":"${{ needs.build-prod.outputs.multiarch_digest }}"
-          },
-          {
-              "image":"${{ needs.build-prod.outputs.amd64_image }}",
-              "digest":"${{ needs.build-prod.outputs.amd64_digest }}"
-          },
-          {
-              "image":"${{ needs.build-prod.outputs.arm64_image }}",
-              "digest":"${{ needs.build-prod.outputs.arm64_digest }}"
-          },
-          {
-              "image":"${{ needs.build-prod.outputs.s390x_image }}",
-              "digest":"${{ needs.build-prod.outputs.s390x_digest }}"
-          }
-        ]
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
-    with:
-      image: $(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
-      digest: $(echo ${{ matrix.images.digest }} | base64 -d | base64 -d)
-    secrets:
-      registry-username: ${{ secrets.REGISTRY_USERNAME }}
-      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-
   release:
     name: Create helm release
-    needs: [prod-provenance]
+    needs: [prod-sign]
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
