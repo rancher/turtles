@@ -14,9 +14,12 @@ for line in $output; do
   # Run the Docker command and get the digest
   digest=$(docker buildx imagetools inspect "$line" --format '{{json .}}' | jq -r .manifest.digest)
 
-  # Add image name and digest to the output
-  echo "${githubimageoutput[$line_count]}=$line" >> "$GITHUB_OUTPUT"
-  echo "${githubdigestoutput[$line_count]}=$digest" >> "$GITHUB_OUTPUT"
+  # Add encoded image name to the output
+  image_output=$(echo -n "$line" | base64 -w0 | base64 -w0)
+  echo "${githubimageoutput[$line_count]}=${image_output}" >> "$GITHUB_OUTPUT"
+  # Add encoded digest to the output
+  digest_output=$(echo -n "$digest" | base64 -w0 | base64 -w0)
+  echo "${githubdigestoutput[$line_count]}=${digest_output}" >> "$GITHUB_OUTPUT"
 
   # Increment the line counter
   line_count=$((line_count + 1))

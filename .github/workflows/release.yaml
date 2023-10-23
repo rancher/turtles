@@ -4,8 +4,6 @@ on:
   push:
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-env:
-  PROD_REGISTRY: registry.rancher.com/rancher
 
 permissions:
   contents: write # Allow to create a release.
@@ -94,15 +92,17 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
+          cosign sign --yes ${image}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
+          cosign verify ${image} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   ghcr-provenance:
-    needs: [build-ghcr, ghcr-sign]
+    needs: [ghcr-sign]
     permissions:
       actions: read 
       id-token: write
@@ -129,8 +129,8 @@ jobs:
         ]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
     with:
-      image: ${{ matrix.images.image }}
-      digest: ${{ matrix.images.digest }}
+      image: $(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
+      digest: $(echo ${{ matrix.images.digest }} | base64 -d | base64 -d)
     secrets:
       registry-username: ${{ github.actor }}
       registry-password: ${{ secrets.GITHUB_TOKEN }}
@@ -151,6 +151,7 @@ jobs:
       s390x_digest: ${{ steps.prod-images.outputs.s390x_digest }}
     env:
       TAG: ${{ github.ref_name }}
+      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
       PROD_ORG: rancher-sandbox
@@ -202,6 +203,7 @@ jobs:
         ]
     env:
       TAG: ${{ github.ref_name }}
+      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
@@ -216,15 +218,17 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ matrix.images.image }}
+          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
+          cosign sign --yes ${image}
       - name: Verify pushed ghcr images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign verify ${{ matrix.images.image }} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
+          cosign verify ${image} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   prod-provenance:
-    needs: [build-prod, prod-sign]
+    needs: [prod-sign]
     permissions:
       actions: read
       id-token: write
@@ -251,8 +255,8 @@ jobs:
         ]
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
     with:
-      image: ${{ matrix.images.image }}
-      digest: ${{ matrix.images.digest }}
+      image: $(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
+      digest: $(echo ${{ matrix.images.digest }} | base64 -d | base64 -d)
     secrets:
       registry-username: ${{ secrets.REGISTRY_USERNAME }}
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
@@ -263,6 +267,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
+      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
       PROD_ORG: rancher-sandbox
       RELEASE_DIR: .cr-release-packages
       CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
