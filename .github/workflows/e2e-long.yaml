@@ -8,6 +8,8 @@ on:
       - main
   workflow_dispatch:
 
+concurrency: ci_e2e_tests
+
 env:
   NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
   NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
@@ -48,7 +50,7 @@ jobs:
         client-id: ${{ secrets.AZURE_CLIENT_ID}}
         client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
         tenant-id: ${{ secrets.AZURE_TENANT_ID}}
-        commit: false
+        commit: true
     - name: Send failed status to slack
       if: failure()
       uses: slackapi/slack-github-action@v1.24.0
