@@ -1,4 +1,4 @@
-<img src="./cupid.png" width="50%" height="50%">
+<img src="./logos/cupid.png" width="50%" height="50%">
 
 # Rancher Turtles
 
