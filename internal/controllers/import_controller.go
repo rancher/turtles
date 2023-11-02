@@ -46,6 +46,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
 
@@ -166,8 +167,9 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	log = log.WithValues("cluster", capiCluster.Name)
 
-	// Wait for controlplane to be ready
-	if !capiCluster.Status.ControlPlaneReady {
+	// Wait for controlplane to be ready. This should never be false as the predicates
+	// do the filtering.
+	if !capiCluster.Status.ControlPlaneReady && !conditions.IsTrue(capiCluster, clusterv1.ControlPlaneReadyCondition) {
 		log.Info("clusters control plane is not ready, requeue")
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}

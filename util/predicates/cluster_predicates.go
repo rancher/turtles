@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/rancher-sandbox/rancher-turtles/util"
 	"github.com/rancher-sandbox/rancher-turtles/util/annotations"
@@ -95,14 +96,19 @@ func processIfClusterReadyControlPlane(logger logr.Logger, obj client.Object) bo
 		return false
 	}
 
-	if !cluster.Status.ControlPlaneReady {
-		log.V(4).Info("Cluster does not have a ready control plane, will not attempt to map resource")
-		return false
+	if cluster.Status.ControlPlaneReady {
+		log.V(6).Info("Cluster has a ready control plane, will attempt to map resource")
+		return true
 	}
 
-	log.V(6).Info("Cluster has a ready control plane, will attempt to map resource")
+	if conditions.IsTrue(cluster, clusterv1.ControlPlaneReadyCondition) {
+		log.V(6).Info("Cluster has a ready control plane condition, will attempt to map resource")
+		return true
+	}
 
-	return true
+	log.V(4).Info("Cluster does not have a ready control plane, will not attempt to map resource")
+
+	return false
 }
 
 // ClusterOrNamespaceWithImportLabel returns a predicate that returns true only if the provided resource is a cluster and
