@@ -32,3 +32,4 @@ Please check in with us in the [#cluster-api channel](https://rancher-users.slac
 ## Code of Conduct
 
 Participation in the project is governed by [Code of Conduct](code-of-conduct.md).
+
