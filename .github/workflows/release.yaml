@@ -1,201 +1,50 @@
+
 name: release
 
 on:
+  workflow_dispatch:
   push:
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
-permissions:
-  contents: write # Allow to create a release.
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-
-  build-ghcr:
-    runs-on: ubuntu-latest
+  build-push-services:
     permissions:
-      contents: read
-      packages: write
-    outputs:
-      multiarch_image: ${{ steps.ghcr-images.outputs.multiarch_image }}
-      multiarch_digest: ${{ steps.ghcr-images.outputs.multiarch_digest }}
-      amd64_image: ${{ steps.ghcr-images.outputs.amd64_image }}
-      amd64_digest: ${{ steps.ghcr-images.outputs.amd64_digest }}
-      arm64_digest: ${{ steps.ghcr-images.outputs.arm64_digest }}
-      arm64_image: ${{ steps.ghcr-images.outputs.arm64_image }}
-      s390x_image: ${{ steps.ghcr-images.outputs.s390x_image }}
-      s390x_digest: ${{ steps.ghcr-images.outputs.s390x_digest }}
-    env:
-      TAG: ${{ github.ref_name }}
-      REGISTRY: ghcr.io
-      USERNAME: ${{ github.actor }}
-      ORG: rancher-sandbox
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: setupGo
-      uses: actions/setup-go@v4
-      with:
-        go-version: '=1.20.7'
-    - name: Docker login to ghcr registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ env.USERNAME }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build docker image for gh registry
-      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.REGISTRY }}
-    - name: Push docker image to gh registry
-      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.REGISTRY }}
-    - name: Store list of ghcr images and digests
-      id: ghcr-images
-      run: |
-        ./scripts/image-digest.sh ${{ env.REGISTRY }} ${{ env.ORG }} ${{ env.TAG }}
-
-  ghcr-sign:
-    runs-on: ubuntu-latest
-    needs: [build-ghcr]
-    permissions:
+      actions: read
+      contents: write
       packages: write
       id-token: write
     strategy:
       matrix:
-        images: [
-          {
-              "image":"${{ needs.build-ghcr.outputs.multiarch_image }}",
-          },
-          {
-              "image":"${{ needs.build-ghcr.outputs.amd64_image }}",
-          },
-          {
-              "image":"${{ needs.build-ghcr.outputs.arm64_image }}",
-          },
-          {
-              "image":"${{ needs.build-ghcr.outputs.s390x_image }}",
-          }
-        ]
-    env:
-      TAG: ${{ github.ref_name }}
-      REGISTRY: ghcr.io
-      USERNAME: ${{ github.actor }}
-      ORG: rancher-sandbox
-    steps:
-      - name: Docker login to ghcr registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ env.USERNAME }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: sigstore/cosign-installer@v3.1.2
-      - name: Sign manifests
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
-          cosign sign --yes ${image}
-      - name: Verify pushed ghcr images
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
-          cosign verify ${image} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
-
-  build-prod:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      multiarch_image: ${{ steps.prod-images.outputs.multiarch_image }}
-      multiarch_digest: ${{ steps.prod-images.outputs.multiarch_digest }}
-      amd64_image: ${{ steps.prod-images.outputs.amd64_image }}
-      amd64_digest: ${{ steps.prod-images.outputs.amd64_digest }}
-      arm64_digest: ${{ steps.prod-images.outputs.arm64_digest }}
-      arm64_image: ${{ steps.prod-images.outputs.arm64_image }}
-      s390x_image: ${{ steps.prod-images.outputs.s390x_image }}
-      s390x_digest: ${{ steps.prod-images.outputs.s390x_digest }}
-    env:
-      TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
-      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-      PROD_ORG: rancher-sandbox
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: setupGo
-      uses: actions/setup-go@v4
-      with:
-        go-version: '=1.20.7'
-    - name: Docker login to prod registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.PROD_REGISTRY }}
-        username: ${{ env.PROD_USERNAME }}
-        password: ${{ env.PROD_PASSWORD }}
-    - name: Build docker image for prod registry
-      run: make docker-build-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
-    - name: Push docker image to prod registry
-      run: make docker-push-all TAG=${{ env.TAG }} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }}
-    - name: Store list of prod images and digests
-      id: prod-images
-      run: |
-        ./scripts/image-digest.sh ${{ env.PROD_REGISTRY }} ${{ env.PROD_ORG }} ${{ env.TAG }}
-
-  prod-sign:
-    runs-on: ubuntu-latest
-    needs: [build-prod]
-    permissions:
-      packages: write
-      id-token: write
-    strategy:
-      matrix:
-        images: [
-          {
-              "image":"${{ needs.build-prod.outputs.multiarch_image }}",
-          },
-          {
-              "image":"${{ needs.build-prod.outputs.amd64_image }}",
-          },
-          {
-              "image":"${{ needs.build-prod.outputs.arm64_image }}",
-          },
-          {
-              "image":"${{ needs.build-prod.outputs.s390x_image }}",
-          }
-        ]
-    env:
-      TAG: ${{ github.ref_name }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
-      PROD_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      PROD_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-    steps:
-      - name: Docker login to prod registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.PROD_REGISTRY }}
-          username: ${{ env.PROD_USERNAME }}
-          password: ${{ env.PROD_PASSWORD }}
-      - uses: sigstore/cosign-installer@v3.1.2
-      - name: Sign manifests
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
-          cosign sign --yes ${image}
-      - name: Verify pushed ghcr images
-        env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
-          image=$(echo ${{ matrix.images.image }} | base64 -d | base64 -d)
-          cosign verify ${image} --certificate-identity=https://github.com/rancher-sandbox/rancher-turtles/.github/workflows/release.yaml@refs/tags/${{ env.TAG }} --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+        destination: [ghcr, prod]
+        arch: [amd64, arm64, s390x]
+        image: [REGISTRY_IMAGE]
+        include:
+        - destination: ghcr
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: GITHUB_TOKEN
+          secret_registry: false
+        - destination: prod
+          registry: REGISTRY_ENDPOINT
+          username: REGISTRY_USERNAME
+          password: REGISTRY_PASSWORD
+          secret_registry: true
+    name: Release
+    uses: ./.github/workflows/release-workflow.yml
+    with:
+      password: ${{ matrix.password }}
+      username: ${{ matrix.username }}
+      registry: ${{ matrix.registry }}
+      tag: ${{ github.ref_name }}
+      arch: ${{ matrix.arch }}
+      image: ${{ matrix.image }}
+      secret_registry: ${{ matrix.secret_registry }}
+    secrets: inherit
 
   release:
     name: Create helm release
-    needs: [prod-sign]
+    needs: [build-push-services]
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
@@ -208,12 +57,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
       - name: Package operator chart
         run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
 
