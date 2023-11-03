@@ -23,7 +23,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: GITHUB_TOKEN
-          image: GITHUB_IMAGE
+          image: GHCR_IMAGE
           secret_registry: false
         - destination: prod
           registry: REGISTRY_ENDPOINT
