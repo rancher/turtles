@@ -18,17 +18,18 @@ jobs:
       matrix:
         destination: [ghcr, prod]
         arch: [amd64, arm64, s390x]
-        image: [REGISTRY_IMAGE]
         include:
         - destination: ghcr
           registry: ghcr.io
           username: ${{ github.actor }}
           password: GITHUB_TOKEN
+          image: GITHUB_IMAGE
           secret_registry: false
         - destination: prod
           registry: REGISTRY_ENDPOINT
           username: REGISTRY_USERNAME
           password: REGISTRY_PASSWORD
+          image: REGISTRY_IMAGE
           secret_registry: true
     name: Release
     uses: ./.github/workflows/release-workflow.yml
