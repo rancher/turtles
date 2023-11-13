@@ -81,8 +81,6 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	serverURL.Host = input.RancherServerURL
 	cluster.Server = serverURL.String()
 
-	Byf("Updated kubeconfig with new server-url of %s", cluster.Server)
-
 	content, err = clientcmd.Write(*cfg)
 	Expect(err).NotTo(HaveOccurred(), "Failed to save updated kubeconfig")
 

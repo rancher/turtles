@@ -37,6 +37,9 @@ type FlagValues struct {
 	// HelmBinaryPath is the path to the helm binary.
 	HelmBinaryPath string
 
+	// HelmExtraValuesDir is the location where extra values files will be stored.
+	HelmExtraValuesDir string
+
 	// ChartPath is the path to the operator chart.
 	ChartPath string
 
@@ -55,6 +58,7 @@ func InitFlags(values *FlagValues) {
 	flag.BoolVar(&values.SkipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.BoolVar(&values.UseExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.StringVar(&values.HelmBinaryPath, "e2e.helm-binary-path", "helm", "path to the helm binary")
+	flag.StringVar(&values.HelmExtraValuesDir, "e2e.helm-extra-values-path", "/tmp", "path to the extra values file")
 	flag.StringVar(&values.ClusterctlBinaryPath, "e2e.clusterctl-binary-path", "helm", "path to the clusterctl binary")
 	flag.StringVar(&values.ChartPath, "e2e.chart-path", "", "path to the operator chart")
 	flag.BoolVar(&values.IsolatedMode, "e2e.isolated-mode", false, "if true, the test will run without ngrok and exposing the cluster to the internet. This setup will only work with CAPD or other providers that run in the same network as the bootstrap cluster.")
