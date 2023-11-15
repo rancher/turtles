@@ -118,4 +118,5 @@ const (
 
 	ShortTestLabel = "short"
 	FullTestLabel  = "full"
+	DontRunLabel   = "dontrun"
 )
