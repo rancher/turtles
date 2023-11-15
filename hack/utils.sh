@@ -38,3 +38,24 @@ EOF
         return 2
     fi
 }
+
+turtles::utils::ensure_ngrok_envs() {
+    : "${NGROK_AUTHTOKEN:?Environment variable empty or not defined.}"
+    : "${NGROK_API_KEY:?Environment variable empty or not defined.}"
+}
+
+turtles::utils::ensure_rancher_envs() {
+    : "${RANCHER_HOSTNAME:?Environment variable empty or not defined.}"
+    : "${RANCHER_PASSWORD:?Environment variable empty or not defined.}"
+}
+
+turtles::utils::ensure_azure_envs() {
+    : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+    : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+    : "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+    : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
+}
+
+turtles::utils::ensure_aws_envs() {
+    : "${CAPA_ENCODED_CREDS:?Environment variable empty or not defined.}"
+}
