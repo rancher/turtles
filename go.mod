@@ -3,7 +3,7 @@ module github.com/rancher-sandbox/rancher-turtles
 go 1.20
 
 require (
-	github.com/go-logr/logr v1.2.4
+	github.com/go-logr/logr v1.3.0
 	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.27.10
 	github.com/pkg/errors v0.9.1
