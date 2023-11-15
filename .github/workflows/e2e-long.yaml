@@ -1,11 +1,11 @@
 name: Run nightly e2e tests
 
 on:
-  schedule:
-    - cron: "0 0 * * *"
-  push:
-    branches:
-      - main
+  #schedule:
+  #  - cron: "0 0 * * *"
+  #push:
+  #  branches:
+  #    - main
   workflow_dispatch:
 
 concurrency: ci_e2e_tests
