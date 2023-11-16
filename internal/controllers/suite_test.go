@@ -26,6 +26,13 @@ import (
 	"github.com/rancher-sandbox/rancher-turtles/internal/test"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -59,7 +66,13 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "hack", "crd", "bases"),
 		},
 		ErrorIfCRDPathMissing: true,
+		Scheme:                runtime.NewScheme(),
 	}
+
+	utilruntime.Must(clusterv1.AddToScheme(testEnv.Scheme))
+	utilruntime.Must(provisioningv1.AddToScheme(testEnv.Scheme))
+	utilruntime.Must(managementv3.AddToScheme(testEnv.Scheme))
+
 	cfg, cl, err = test.StartEnvTest(testEnv)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
