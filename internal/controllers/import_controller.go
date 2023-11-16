@@ -62,8 +62,7 @@ const (
 	importLabelName = "cluster-api.cattle.io/rancher-auto-import"
 	ownedLabelName  = "cluster-api.cattle.io/owned"
 
-	defaultRequeueDuration       = 1 * time.Minute
-	clusterRegistrationTokenName = "default-token"
+	defaultRequeueDuration = 1 * time.Minute
 )
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
@@ -272,7 +271,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	}
 
 	// get the registration manifest
-	manifest, err := r.getClusterRegistrationManifest(ctx, rancherCluster.Status.ClusterName)
+	manifest, err := r.getClusterRegistrationManifest(ctx, rancherCluster.Status.ClusterName, capiCluster.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -318,17 +317,26 @@ func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster 
 	return ctrl.Result{}, nil
 }
 
-func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Context, clusterName string) (string, error) {
+func (r *CAPIImportReconciler) getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string) (string, error) {
 	log := log.FromContext(ctx)
 
-	token := &managementv3.ClusterRegistrationToken{ObjectMeta: metav1.ObjectMeta{
-		Name:      clusterRegistrationTokenName,
-		Namespace: clusterName,
-	}}
+	token := &managementv3.ClusterRegistrationToken{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName,
+			Namespace: namespace,
+		},
+		Spec: managementv3.ClusterRegistrationTokenSpec{
+			ClusterName: clusterName,
+		},
+	}
 	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(token), token)
 
 	if client.IgnoreNotFound(err) != nil {
 		return "", fmt.Errorf("error getting registration token for cluster %s: %w", clusterName, err)
+	} else if err != nil {
+		if err := r.RancherClient.Create(ctx, token); err != nil {
+			return "", fmt.Errorf("failed to create cluster registration token for cluster %s: %w", clusterName, err)
+		}
 	}
 
 	if token.Status.ManifestURL == "" {
