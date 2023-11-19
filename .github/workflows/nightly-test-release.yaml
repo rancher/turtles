@@ -110,7 +110,7 @@ jobs:
   notify-failure:
     name: Notify failure in Slack
     needs: [release]
-    if: failure()
+    if: ${{ failure() || cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: slackapi/slack-github-action@v1.24.0
