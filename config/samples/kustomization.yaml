@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- turtles.cattle.io_v1alpha1_capiprovider.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

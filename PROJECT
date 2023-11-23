@@ -4,7 +4,21 @@
 # More info: https://book.kubebuilder.io/reference/project-config.html
 domain: capi.cattle.io
 layout:
-- go.kubebuilder.io/v4-alpha
+- go.kubebuilder.io/v4
 projectName: rancher-turtles
 repo: github.com/rancher-sandbox/rancher-turtles
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: capi.cattle.io
+  group: turtles.cattle.io
+  kind: CAPIProvider
+  path: github.com/rancher-sandbox/rancher-turtles/api/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"

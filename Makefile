@@ -178,12 +178,40 @@ help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
-.PHONY: manifests
-manifests: vendor controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+.PHONY: generate
+generate: vendor ## Run all generators
+	$(MAKE) vendor
+	$(MAKE) generate-modules
+	$(MAKE) generate-manifests-api
+	$(MAKE) generate-manifests-external
+	$(MAKE) generate-go-deepcopy
+	$(MAKE) vendor-clean
+
+.PHONY: generate-manifests-external
+generate-manifests-external: vendor controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./internal/rancher/..." output:crd:artifacts:config=hack/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
+
+.PHONY: generate-manifests-api
+generate-manifests-api: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/..." \
+			output:crd:artifacts:config=./config/crd/bases \
+			output:rbac:dir=./config/rbac \
+			output:webhook:dir=./config/webhook \
+			webhook
+
+.PHONY: generate-modules
+generate-modules: ## Run go mod tidy to ensure modules are up to date
+	go mod tidy
+	cd $(TEST_DIR); go mod tidy
+
+.PHONY: generate-go-deepcopy
+generate-go-deepcopy:  ## Run deepcopy generation
+	$(CONTROLLER_GEN) \
+		object:headerFile=./hack/boilerplate.go.txt \
+		paths=./api/...
 
 # Run go mod
 .PHONY: vendor
@@ -195,14 +223,6 @@ vendor:
 .PHONY: vendor-clean
 vendor-clean:
 	rm -rf vendor
-
-.PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-
-.PHONY: generate-modules
-generate-modules: ## Run go mod tidy to ensure modules are up to date
-	go mod tidy
-	cd $(TEST_DIR); go mod tidy
 
 .PHOHY: dev-env
 dev-env: ## Create a local development environment
