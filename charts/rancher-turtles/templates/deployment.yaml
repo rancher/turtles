@@ -45,7 +45,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
-        image: '{{ .Values.rancherTurtles.image }}:{{ .Values.rancherTurtles.tag }}'
+        {{- if (contains "sha256:" .Values.rancherTurtles.imageVersion) }}
+        image: '{{ .Values.rancherTurtles.image }}@{{ .Values.rancherTurtles.imageVersion }}'
+        {{- else }}
+        image: '{{ .Values.rancherTurtles.image }}:{{ .Values.rancherTurtles.imageVersion }}'
+        {{- end}}
         imagePullPolicy: '{{ .Values.rancherTurtles.imagePullPolicy }}'
         livenessProbe:
           httpGet:

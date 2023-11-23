@@ -2,7 +2,7 @@ namespace: "{{ .Values.rancherTurtles.namespace }}"
 images:
 - name: controller
   newName: "{{ .Values.rancherTurtles.image }}"
-  newTag: "{{ .Values.rancherTurtles.tag }}"
+  newTag: "{{ .Values.rancherTurtles.imageVersion }}"
 namePrefix: rancher-turtles-
 bases:
 - ../rbac
