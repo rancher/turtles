@@ -26,3 +26,4 @@ metadata:
 spec:
   secretName: azure-variables
   secretNamespace: default
+  version: v1.11.5
