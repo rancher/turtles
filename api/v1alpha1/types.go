@@ -31,3 +31,17 @@ const (
 	// AddonProvider is the name for the addon CAPI Provider.
 	AddonProvider ProviderType = "addon"
 )
+
+// ProviderState defines the current state of the CAPI Provider resource.
+type ProviderState string
+
+const (
+	// Pending status identifies a provder which has not yet started provisioning.
+	Pending ProviderState = "Pending"
+	// Provisioning status defines provider in a provisioning state.
+	Provisioning ProviderState = "Provisioning"
+	// Ready status identifies that the provider is ready to be used.
+	Ready ProviderState = "Ready"
+	// Failed status defines a failed state of provider provisioning.
+	Failed ProviderState = "Failed"
+)

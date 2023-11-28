@@ -47,6 +47,7 @@ type CAPIProviderSpec struct {
 	Credentials *ProviderCredentials `json:"credentials,omitempty"`
 
 	// Features is a collection of features to enable.
+	// +optional
 	Features *Features `json:"features,omitempty"`
 
 	// Variables is a map of environment variables to add to the content of the ConfigSecret
@@ -72,6 +73,9 @@ type Features struct {
 // ProviderCredentials defines the external credentials information for the provider.
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
+// +structType=atomic
+//
+//nolint:godot
 type ProviderCredentials struct {
 	// RancherCloudCredential is the Rancher Cloud Credential name
 	RancherCloudCredential string `json:"rancherCloudCredential,omitempty"`
@@ -93,17 +97,15 @@ type WorkloadIdentityRef struct {
 
 // CAPIProviderStatus defines the observed state of CAPIProvider.
 type CAPIProviderStatus struct {
-	// Ready indicates if the provider is ready to be used
-	// +kubebuilder:default=false
-	Ready bool `json:"ready,omitempty"`
-
-	// Version indicates the version of the provider installed.
-	// +kubebuilder:default="latest"
-	Version string `json:"version,omitempty"`
+	// Indicates the provider status
+	// +kubebuilder:default=Pending
+	State ProviderState `json:"state,omitempty"`
 
 	// Variables is a map of environment variables added to the content of the ConfigSecret
 	// +kubebuilder:default={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
+
+	ProviderStatus *operatorv1.ProviderStatus `json:",inline"`
 }
 
 //+kubebuilder:object:root=true
