@@ -187,20 +187,21 @@ generate: vendor ## Run all generators
 	$(MAKE) generate-go-deepcopy
 	$(MAKE) vendor-clean
 
+.PHONY: manifests
+manifests: generate
+
 .PHONY: generate-manifests-external
-generate-manifests-external: vendor controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+generate-manifests-external: vendor controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./internal/rancher/..." output:crd:artifacts:config=hack/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
 
 .PHONY: generate-manifests-api
-generate-manifests-api: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+generate-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/..." \
 			output:crd:artifacts:config=./config/crd/bases \
 			output:rbac:dir=./config/rbac \
-			output:webhook:dir=./config/webhook \
-			webhook
 
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
@@ -333,7 +334,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(CONTROLLER_IMG)
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 .PHONY: undeploy

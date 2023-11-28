@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.0
-  name: capiproviders.turtles.cattle.io.capi.cattle.io
+  name: capiproviders.turtles-capi.cattle.io
 spec:
-  group: turtles.cattle.io.capi.cattle.io
+  group: turtles-capi.cattle.io
   names:
     kind: CAPIProvider
     listKind: CAPIProviderList
@@ -1550,10 +1550,6 @@ spec:
                 default: latest
                 description: Version indicates the version of the provider to be installed
                 type: string
-            required:
-            - ready
-            - variables
-            - version
             type: object
         type: object
     served: true

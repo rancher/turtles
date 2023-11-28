@@ -2,13 +2,18 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/turtles.cattle.io.capi.cattle.io_capiproviders.yaml
+- bases/turtles-capi.cattle.io_capiproviders.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
-- path: patches/webhook_in_capiproviders.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: capiproviders.turtles-capi.cattle.io
+  path: patches/turtles-capi.cattle.io_capiproviders.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.

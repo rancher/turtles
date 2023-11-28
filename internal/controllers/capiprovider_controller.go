@@ -27,15 +27,15 @@ import (
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 )
 
-// CAPIProviderReconciler reconciles a CAPIProvider object
+// CAPIProviderReconciler reconciles a CAPIProvider object.
 type CAPIProviderReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=turtles.cattle.io.capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=turtles.cattle.io.capi.cattle.io,resources=capiproviders/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=turtles.cattle.io.capi.cattle.io,resources=capiproviders/finalizers,verbs=update
+//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -48,6 +48,7 @@ type CAPIProviderReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	_ = req
 
 	// TODO(user): your logic here
 

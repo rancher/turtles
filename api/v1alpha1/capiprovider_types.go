@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 )
 
@@ -79,7 +80,7 @@ type ProviderCredentials struct {
 	// WorkloadIdentityRef *WorkloadIdentityRef `json:"workloadIdentityRef,omitempty"`
 }
 
-// WorkloadIdentity is a reference to an identity to be used when reconciling the cluster.
+// WorkloadIdentityRef is a reference to an identity to be used when reconciling the cluster.
 type WorkloadIdentityRef struct {
 	// Name of the identity
 	// +kubebuilder:validation:MinLength=1
@@ -93,15 +94,15 @@ type WorkloadIdentityRef struct {
 type CAPIProviderStatus struct {
 	// Ready indicates if the provider is ready to be used
 	// +kubebuilder:default=false
-	Ready bool `json:"ready"`
+	Ready bool `json:"ready,omitempty"`
 
 	// Version indicates the version of the provider to be installed
 	// +kubebuilder:default="latest"
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 
 	// Variables is a map of environment variables added to the content of the ConfigSecret
 	// +kubebuilder:default={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
-	Variables map[string]string `json:"variables"`
+	Variables map[string]string `json:"variables,omitempty"`
 }
 
 //+kubebuilder:object:root=true
