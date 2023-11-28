@@ -18,43 +18,109 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 )
 
 const (
+	// ProviderFinalizer is the finalizer apply on the CAPI Provider resource.
 	ProviderFinalizer = "capiprovider.turtles.cattle.io"
 )
 
-// CAPIProviderSpec defines the desired state of CAPIProvider
+// CAPIProviderSpec defines the desired state of CAPIProvider.
+// +kubebuilder:validation:XValidation:message="CAPI Provider version should be in the semver format",rule="!has(self.version) || self.version.matches(r\"\"\"^([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?$\"\"\")"
+//
+//nolint:lll
 type CAPIProviderSpec struct {
-	// Name is the name of the provider to enable.
+	// Name is the name of the provider to enable
+	// +required
+	// +kubebuilder:validation:Enum=aws;azure;gcp;docker;rke2
 	Name string `json:"name"`
 
-	// Version indicates the provider version.
+	// Type is the type of the provider to enable
+	// +required
+	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon
+	Type string `json:"type"`
+
+	// Credentials is the structure holding rancher credentials reference
 	// +optional
-	Version string `json:"version,omitempty"`
+	Credentials *ProviderCredentials `json:"credentials,omitempty"`
+
+	// Features is a collection of features to use by this provider
+	Features *Features `json:"features,omitempty"`
+
+	// Variables is a map of environment variables to add to the content of the ConfigSecret
+	// +optional
+	Variables map[string]string `json:"variables"`
+
+	// ProviderSpec is the spec
+	ProviderSpec *operatorv1.ProviderSpec `json:",inline"`
 }
 
-// CAPIProviderStatus defines the observed state of CAPIProvider
+// Features defines a collection of features for the CAPI Provider to apply.
+type Features struct {
+	// MachinePool is an abbreviation to EXP_MACHINE_POOL: "true" feature
+	MachinePool bool `json:"machinePool,omitempty"`
+
+	// ClusterResourceSet is an abbreviation to EXP_CLUSTER_RESOURCE_SET: "true" feature
+	ClusterResourceSet bool `json:"clusterResourceSet,omitempty"`
+
+	// ClusterTopology is an abbreviation to CLUSTER_TOPOLOGY: "true" feature
+	ClusterTopology bool `json:"clusterTopology,omitempty"`
+}
+
+// ProviderCredentials defines the external credentials information for the provider.
+type ProviderCredentials struct {
+	// RancherCloudCredential is the Rancher Cloud Credential name
+	// +required
+	RancherCloudCredential string `json:"rancherCloudCredential"`
+
+	// +optional
+	// TODO: decide how to handle workload identity
+	// WorkloadIdentityRef *WorkloadIdentityRef `json:"workloadIdentityRef,omitempty"`
+}
+
+// WorkloadIdentity is a reference to an identity to be used when reconciling the cluster.
+type WorkloadIdentityRef struct {
+	// Name of the identity
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Kind of the identity
+	Kind string `json:"kind"`
+}
+
+// CAPIProviderStatus defines the observed state of CAPIProvider.
 type CAPIProviderStatus struct {
-	// Ready indicates if the provider is ready to be used.
-	Ready bool `json:"ready,omitempty"`
+	// Ready indicates if the provider is ready to be used
+	// +kubebuilder:default=false
+	Ready bool `json:"ready"`
+
+	// Version indicates the version of the provider to be installed
+	// +kubebuilder:default="latest"
+	Version string `json:"version"`
+
+	// Variables is a map of environment variables added to the content of the ConfigSecret
+	// +kubebuilder:default={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
+	Variables map[string]string `json:"variables"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// CAPIProvider is the Schema for the capiproviders API
+// CAPIProvider is the Schema for the CAPI Providers API.
 type CAPIProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CAPIProviderSpec   `json:"spec,omitempty"`
+	Spec CAPIProviderSpec `json:"spec,omitempty"`
+
+	// +kubebuilder:default={}
 	Status CAPIProviderStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// CAPIProviderList contains a list of CAPIProvider
+// CAPIProviderList contains a list of CAPIProviders.
 type CAPIProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
