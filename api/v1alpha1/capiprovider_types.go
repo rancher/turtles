@@ -42,11 +42,11 @@ type CAPIProviderSpec struct {
 	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon
 	Type string `json:"type"`
 
-	// Credentials is the structure holding rancher credentials reference
+	// Credentials is the structure holding the credentials to use for the provider.
 	// +optional
 	Credentials *ProviderCredentials `json:"credentials,omitempty"`
 
-	// Features is a collection of features to use by this provider
+	// Features is a collection of features to enable.
 	Features *Features `json:"features,omitempty"`
 
 	// Variables is a map of environment variables to add to the content of the ConfigSecret
@@ -59,13 +59,13 @@ type CAPIProviderSpec struct {
 
 // Features defines a collection of features for the CAPI Provider to apply.
 type Features struct {
-	// MachinePool is an abbreviation to EXP_MACHINE_POOL: "true" feature
+	// MachinePool if set to true will enable the machine pool. feature
 	MachinePool bool `json:"machinePool,omitempty"`
 
-	// ClusterResourceSet is an abbreviation to EXP_CLUSTER_RESOURCE_SET: "true" feature
+	// ClusterResourceSet if set to true will enable the cluster resource set feature
 	ClusterResourceSet bool `json:"clusterResourceSet,omitempty"`
 
-	// ClusterTopology is an abbreviation to CLUSTER_TOPOLOGY: "true" feature
+	// ClusterTopology if set to true will enable the clusterclass feature.
 	ClusterTopology bool `json:"clusterTopology,omitempty"`
 }
 
@@ -96,7 +96,7 @@ type CAPIProviderStatus struct {
 	// +kubebuilder:default=false
 	Ready bool `json:"ready,omitempty"`
 
-	// Version indicates the version of the provider to be installed
+	// Version indicates the version of the provider installed.
 	// +kubebuilder:default="latest"
 	Version string `json:"version,omitempty"`
 
