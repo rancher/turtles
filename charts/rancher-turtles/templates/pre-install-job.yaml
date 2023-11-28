@@ -67,7 +67,7 @@ spec:
       serviceAccountName: pre-install-job
       containers:
         - name: rancher-mutatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}:{{ .Capabilities.KubeVersion }}
+          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}:{{ template "strippedKubeVersion" . }}
           args:
           - delete
           - mutatingwebhookconfigurations.admissionregistration.k8s.io
@@ -89,7 +89,7 @@ spec:
       serviceAccountName: pre-install-job
       containers:
         - name: rancher-validatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}:{{ .Capabilities.KubeVersion }}
+          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}:{{ template "strippedKubeVersion" . }}
           args:
           - delete
           - validatingwebhookconfigurations.admissionregistration.k8s.io
