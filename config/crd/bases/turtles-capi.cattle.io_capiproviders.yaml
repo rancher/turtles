@@ -71,15 +71,15 @@ spec:
                 - name
                 type: object
               credentials:
-                description: Credentials is the structure holding rancher credentials
-                  reference
+                description: Credentials is the structure holding the credentials
+                  to use for the provider.
+                maxProperties: 1
+                minProperties: 1
                 properties:
                   rancherCloudCredential:
                     description: RancherCloudCredential is the Rancher Cloud Credential
                       name
                     type: string
-                required:
-                - rancherCloudCredential
                 type: object
               deployment:
                 description: Deployment defines the properties that can be enabled
@@ -1229,19 +1229,19 @@ spec:
                     type: array
                 type: object
               features:
-                description: Features is a collection of features to use by this provider
+                description: Features is a collection of features to enable.
                 properties:
                   clusterResourceSet:
-                    description: 'ClusterResourceSet is an abbreviation to EXP_CLUSTER_RESOURCE_SET:
-                      "true" feature'
+                    description: ClusterResourceSet if set to true will enable the
+                      cluster resource set feature
                     type: boolean
                   clusterTopology:
-                    description: 'ClusterTopology is an abbreviation to CLUSTER_TOPOLOGY:
-                      "true" feature'
+                    description: ClusterTopology if set to true will enable the clusterclass
+                      feature.
                     type: boolean
                   machinePool:
-                    description: 'MachinePool is an abbreviation to EXP_MACHINE_POOL:
-                      "true" feature'
+                    description: MachinePool if set to true will enable the machine
+                      pool. feature
                     type: boolean
                 type: object
               fetchConfig:
@@ -1548,7 +1548,7 @@ spec:
                 type: object
               version:
                 default: latest
-                description: Version indicates the version of the provider to be installed
+                description: Version indicates the version of the provider installed.
                 type: string
             type: object
         type: object

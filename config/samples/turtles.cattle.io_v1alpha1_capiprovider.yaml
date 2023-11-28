@@ -1,4 +1,4 @@
-apiVersion: turtles.cattle.io.capi.cattle.io/v1alpha1
+apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
 metadata:
   labels:
@@ -9,4 +9,5 @@ metadata:
     app.kubernetes.io/created-by: rancher-turtles
   name: capiprovider-sample
 spec:
-  # TODO(user): Add fields here
+  name: aws
+  type: infrastructure

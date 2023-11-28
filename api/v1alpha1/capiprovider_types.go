@@ -35,12 +35,12 @@ type CAPIProviderSpec struct {
 	// Name is the name of the provider to enable
 	// +required
 	// +kubebuilder:validation:Enum=aws;azure;gcp;docker;rke2
-	Name string `json:"name"`
+	Name ProviderName `json:"name"`
 
 	// Type is the type of the provider to enable
 	// +required
 	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon
-	Type string `json:"type"`
+	Type ProviderType `json:"type"`
 
 	// Credentials is the structure holding the credentials to use for the provider.
 	// +optional
@@ -70,10 +70,11 @@ type Features struct {
 }
 
 // ProviderCredentials defines the external credentials information for the provider.
+// +kubebuilder:validation:MaxProperties=1
+// +kubebuilder:validation:MinProperties=1
 type ProviderCredentials struct {
 	// RancherCloudCredential is the Rancher Cloud Credential name
-	// +required
-	RancherCloudCredential string `json:"rancherCloudCredential"`
+	RancherCloudCredential string `json:"rancherCloudCredential,omitempty"`
 
 	// +optional
 	// TODO: decide how to handle workload identity
