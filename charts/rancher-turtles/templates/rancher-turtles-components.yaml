@@ -226,6 +226,7 @@ rules:
   - get
   - list
   - watch
+  - create
 - apiGroups:
   - provisioning.cattle.io
   resources:

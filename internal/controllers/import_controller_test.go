@@ -53,6 +53,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		rancherCluster           *provisioningv1.Cluster
 		clusterRegistrationToken *managementv3.ClusterRegistrationToken
 		capiKubeconfigSecret     *corev1.Secret
+		clusterName              = "generated-rancher-cluster"
 	)
 
 	BeforeEach(func() {
@@ -60,6 +61,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			Client:             cl,
 			RancherClient:      cl, // rancher and rancher-turtles deployed in the same cluster
 			remoteClientGetter: remote.NewClusterClient,
+			Scheme:             testEnv.Scheme,
 		}
 
 		capiCluster = &clusterv1.Cluster{
@@ -78,7 +80,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		clusterRegistrationToken = &managementv3.ClusterRegistrationToken{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterRegistrationTokenName,
+				Name:      clusterName,
 				Namespace: testNamespace,
 			},
 		}
@@ -179,7 +181,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 		cluster := &provisioningv1.Cluster{}
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).To(Succeed())
-		cluster.Status.ClusterName = testNamespace
+		cluster.Status.ClusterName = clusterName
 		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
 		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
@@ -266,7 +268,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 		cluster := &provisioningv1.Cluster{}
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
-		cluster.Status.ClusterName = testNamespace
+		cluster.Status.ClusterName = clusterName
 		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
 		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
@@ -285,6 +287,37 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(res.Requeue).To(BeTrue())
 	})
 
+	It("should reconcile a CAPI cluster when rancher cluster exists and a cluster registration token does not exist", func() {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(""))
+		}))
+		defer server.Close()
+
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
+
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		cluster := &provisioningv1.Cluster{}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
+		cluster.Status.ClusterName = clusterName
+		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
+
+		res, err := r.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: capiCluster.Namespace,
+				Name:      capiCluster.Name,
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.Requeue).To(BeTrue())
+
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(clusterRegistrationToken), clusterRegistrationToken)).ToNot(HaveOccurred())
+	})
+
 	It("should reconcile a CAPI cluster when rancher cluster exists and registration manifests url is empty", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
@@ -295,7 +328,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 		cluster := &provisioningv1.Cluster{}
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
-		cluster.Status.ClusterName = testNamespace
+		cluster.Status.ClusterName = clusterName
 		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
 		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())

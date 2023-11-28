@@ -11,7 +11,14 @@ type ClusterRegistrationToken struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	Spec ClusterRegistrationTokenSpec `json:"spec"`
+
 	Status ClusterRegistrationTokenStatus `json:"status,omitempty"`
+}
+
+// ClusterRegistrationTokenSpec is the struct representing the spec of a Rancher ClusterRegistrationToken.
+type ClusterRegistrationTokenSpec struct {
+	ClusterName string `json:"clusterName"`
 }
 
 // ClusterRegistrationTokenStatus is the struct representing the status of a Rancher ClusterRegistrationToken.
