@@ -35,35 +35,40 @@ type CAPIProviderSpec struct {
 	// Name is the name of the provider to enable
 	// +required
 	// +kubebuilder:validation:Enum=aws;azure;gcp;docker;rke2
+	// +kubebuilder:example=aws
 	Name ProviderName `json:"name"`
 
 	// Type is the type of the provider to enable
 	// +required
 	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon
+	// +kubebuilder:example=infrastructure
 	Type ProviderType `json:"type"`
 
-	// Credentials is the structure holding the credentials to use for the provider.
+	// Credentials is the structure holding the credentials to use for the provider. Only one credential type could be set at a time.
+	// +kubebuilder:example={rancherCloudCredential: user-credential}
 	// +optional
 	Credentials *ProviderCredentials `json:"credentials,omitempty"`
 
 	// Features is a collection of features to enable.
 	// +optional
+	// +kubebuilder:example={machinePool: true, clusterResourceSet: true, clusterTopology: true}
 	Features *Features `json:"features,omitempty"`
 
 	// Variables is a map of environment variables to add to the content of the ConfigSecret
 	// +optional
+	// +kubebuilder:example={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables"`
 
-	// ProviderSpec is the spec
+	// ProviderSpec is the spec of the underlying CAPI Provider resource.
 	ProviderSpec *operatorv1.ProviderSpec `json:",inline"`
 }
 
 // Features defines a collection of features for the CAPI Provider to apply.
 type Features struct {
-	// MachinePool if set to true will enable the machine pool. feature
+	// MachinePool if set to true will enable the machine pool feature.
 	MachinePool bool `json:"machinePool,omitempty"`
 
-	// ClusterResourceSet if set to true will enable the cluster resource set feature
+	// ClusterResourceSet if set to true will enable the cluster resource set feature.
 	ClusterResourceSet bool `json:"clusterResourceSet,omitempty"`
 
 	// ClusterTopology if set to true will enable the clusterclass feature.
@@ -116,6 +121,7 @@ type CAPIProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	// +kubebuilder:example={name: aws, version: "v2.3.0", type: infrastructure, credentials: {rancherCloudCredential: user-credential}}
 	Spec CAPIProviderSpec `json:"spec,omitempty"`
 
 	// +kubebuilder:default={}

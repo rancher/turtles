@@ -33,6 +33,12 @@ spec:
             type: object
           spec:
             description: CAPIProviderSpec defines the desired state of CAPIProvider.
+            example:
+              credentials:
+                rancherCloudCredential: user-credential
+              name: aws
+              type: infrastructure
+              version: v2.3.0
             properties:
               additionalManifests:
                 description: AdditionalManifests is reference to configmap that contains
@@ -72,7 +78,10 @@ spec:
                 type: object
               credentials:
                 description: Credentials is the structure holding the credentials
-                  to use for the provider.
+                  to use for the provider. Only one credential type could be set at
+                  a time.
+                example:
+                  rancherCloudCredential: user-credential
                 maxProperties: 1
                 minProperties: 1
                 properties:
@@ -1231,10 +1240,14 @@ spec:
                 type: object
               features:
                 description: Features is a collection of features to enable.
+                example:
+                  clusterResourceSet: true
+                  clusterTopology: true
+                  machinePool: true
                 properties:
                   clusterResourceSet:
                     description: ClusterResourceSet if set to true will enable the
-                      cluster resource set feature
+                      cluster resource set feature.
                     type: boolean
                   clusterTopology:
                     description: ClusterTopology if set to true will enable the clusterclass
@@ -1242,7 +1255,7 @@ spec:
                     type: boolean
                   machinePool:
                     description: MachinePool if set to true will enable the machine
-                      pool. feature
+                      pool feature.
                     type: boolean
                 type: object
               fetchConfig:
@@ -1504,6 +1517,7 @@ spec:
                 - gcp
                 - docker
                 - rke2
+                example: aws
                 type: string
               type:
                 description: Type is the type of the provider to enable
@@ -1513,12 +1527,17 @@ spec:
                 - controlPlane
                 - bootstrap
                 - addon
+                example: infrastructure
                 type: string
               variables:
                 additionalProperties:
                   type: string
                 description: Variables is a map of environment variables to add to
                   the content of the ConfigSecret
+                example:
+                  CLUSTER_TOPOLOGY: "true"
+                  EXP_CLUSTER_RESOURCE_SET: "true"
+                  EXP_MACHINE_POOL: "true"
                 type: object
               version:
                 description: Version indicates the provider version.

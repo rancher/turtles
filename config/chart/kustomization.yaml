@@ -6,3 +6,4 @@ images:
 namePrefix: rancher-turtles-
 bases:
 - ../rbac
+- ../crd
