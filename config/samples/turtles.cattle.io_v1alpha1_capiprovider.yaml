@@ -1,0 +1,13 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  labels:
+    app.kubernetes.io/name: capiprovider
+    app.kubernetes.io/instance: capiprovider-sample
+    app.kubernetes.io/part-of: rancher-turtles
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: rancher-turtles
+  name: capiprovider-sample
+spec:
+  name: aws
+  type: infrastructure

@@ -2,9 +2,19 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: capi.cattle.io
+domain: cattle.io
 layout:
-- go.kubebuilder.io/v4-alpha
+- go.kubebuilder.io/v4
 projectName: rancher-turtles
 repo: github.com/rancher-sandbox/rancher-turtles
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: cattle.io
+  group: turtles-capi
+  kind: CAPIProvider
+  path: github.com/rancher-sandbox/rancher-turtles/api/v1alpha1
+  version: v1alpha1
 version: "3"
