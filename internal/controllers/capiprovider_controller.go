@@ -30,8 +30,6 @@ import (
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 
-	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
-
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 )
@@ -71,7 +69,10 @@ func (r *CAPIProviderReconciler) reconcileNormal(ctx context.Context, capiProvid
 }
 
 func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtlesv1.CAPIProvider) (_ ctrl.Result, err error) {
-	s := sync.List{}
+	s := sync.List{
+		sync.NewProviderSync(r.Client, capiProvider),
+		sync.NewSecretSync(r.Client, capiProvider),
+	}
 
 	if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, err
