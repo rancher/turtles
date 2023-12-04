@@ -18,6 +18,7 @@ package testenv
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,11 +34,13 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/yaml"
 )
 
 type DeployRancherInput struct {
 	BootstrapClusterProxy  framework.ClusterProxy
 	HelmBinaryPath         string
+	HelmExtraValuesPath    string
 	InstallCertManager     bool
 	CertManagerChartPath   string
 	CertManagerUrl         string
@@ -61,11 +64,25 @@ type DeployRancherInput struct {
 	Variables              turtlesframework.VariableCollection
 }
 
+type deployRancherValuesFile struct {
+	BootstrapPassword string `json:"bootstrapPassword"`
+	Hostname          string `json:"hostname"`
+}
+
+type ngrokCredentials struct {
+	NgrokAPIKey    string `json:"apiKey"`
+	NgrokAuthToken string `json:"authtoken"`
+}
+type deployRancherIngressValuesFile struct {
+	Credentials ngrokCredentials `json:"credentials"`
+}
+
 func DeployRancher(ctx context.Context, input DeployRancherInput) {
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancher")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancher")
+	Expect(input.HelmExtraValuesPath).ToNot(BeEmpty(), "HelmExtraValuesPath is required for DeployRancher")
 	Expect(input.RancherChartRepoName).ToNot(BeEmpty(), "RancherChartRepoName is required for DeployRancher")
 	Expect(input.RancherChartURL).ToNot(BeEmpty(), "RancherChartURL is required for DeployRancher")
 	Expect(input.RancherChartPath).ToNot(BeEmpty(), "RancherChartPath is required for DeployRancher")
@@ -140,10 +157,19 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+	yamlExtraValues, err := yaml.Marshal(deployRancherValuesFile{
+		BootstrapPassword: input.RancherPassword,
+		Hostname:          input.RancherHost,
+	})
+	Expect(err).ToNot(HaveOccurred())
+	err = ioutil.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
+	Expect(err).ToNot(HaveOccurred())
+
 	By("Installing Rancher")
 	installFlags := opframework.Flags(
 		"--namespace", input.RancherNamespace,
 		"--create-namespace",
+		"--values", input.HelmExtraValuesPath,
 	)
 	if input.RancherVersion != "" {
 		installFlags = append(installFlags, "--version", input.RancherVersion)
@@ -161,9 +187,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		Wait:            true,
 	}
 	values := map[string]string{
-		"bootstrapPassword":         input.RancherPassword,
 		"global.cattle.psp.enabled": "false",
-		"hostname":                  input.RancherHost,
 		"replicas":                  "1",
 	}
 	if input.RancherFeatures != "" {
@@ -221,6 +245,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 type RancherDeployIngressInput struct {
 	BootstrapClusterProxy    framework.ClusterProxy
 	HelmBinaryPath           string
+	HelmExtraValuesPath      string
 	IsolatedMode             bool
 	NginxIngress             []byte
 	NginxIngressNamespace    string
@@ -247,6 +272,7 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 		Expect(input.NgrokPath).ToNot(BeEmpty(), "NgrokPath is required when not running in isolated mode")
 		Expect(input.NgrokRepoName).ToNot(BeEmpty(), "NgrokRepoName is required when not running in isolated mode")
 		Expect(input.NgrokRepoURL).ToNot(BeEmpty(), "NgrokRepoURL is required when not running in isolated mode")
+		Expect(input.HelmExtraValuesPath).ToNot(BeNil(), "HelmExtraValuesPath is when not running in isolated mode")
 	}
 
 	komega.SetClient(input.BootstrapClusterProxy.GetClient())
@@ -289,18 +315,30 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 	_, err = updateChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
+	yamlExtraValues, err := yaml.Marshal(deployRancherIngressValuesFile{
+		Credentials: ngrokCredentials{
+			NgrokAPIKey:    input.NgrokApiKey,
+			NgrokAuthToken: input.NgrokAuthToken,
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
+	err = ioutil.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
+	Expect(err).ToNot(HaveOccurred())
+
+	installFlags := opframework.Flags(
+		"--timeout", "5m",
+		"--values", input.HelmExtraValuesPath,
+	)
+
 	installChart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Name:            input.NgrokRepoName,
 		Path:            input.NgrokPath,
 		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 		Wait:            true,
-		AdditionalFlags: opframework.Flags("--timeout", "5m"),
+		AdditionalFlags: installFlags,
 	}
-	_, err = installChart.Run(map[string]string{
-		"credentials.apiKey":    input.NgrokApiKey,
-		"credentials.authtoken": input.NgrokAuthToken,
-	})
+	_, err = installChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Setting up default ingress class")
