@@ -77,7 +77,7 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 
 	values := map[string]string{
 		"rancherTurtles.image":                                    input.Image,
-		"rancherTurtles.tag":                                      input.Tag,
+		"rancherTurtles.imageVersion":                             input.Tag,
 		"rancherTurtles.managerArguments[0]":                      "--insecure-skip-verify=true",
 		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
 		"cluster-api-operator.cluster-api.configSecret.name":      "variables",

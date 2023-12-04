@@ -134,8 +134,9 @@ ORG ?= rancher-sandbox
 CONTROLLER_IMAGE_NAME ?= rancher-turtles
 CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
+CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
 
-# Relase
+# Release
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
@@ -475,8 +476,8 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
-	sed -i'' -e 's@tag: .*@tag: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(CONTROLLER_IMAGE_VERSION)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
@@ -504,7 +505,7 @@ test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-en
 .PHONY: e2e-image
 e2e-image: ## Build the image for e2e tests
 	TAG=v0.0.1 $(MAKE) docker-build
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(MANIFEST_IMG) $(MAKE) build-chart
+	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(MANIFEST_IMG) CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation
