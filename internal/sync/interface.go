@@ -45,7 +45,6 @@ func (s List) Apply(ctx context.Context, reterr *error) {
 		}
 
 		var err error
-
 		syncer.Apply(ctx, &err)
 		errors = append(errors, err)
 	}
