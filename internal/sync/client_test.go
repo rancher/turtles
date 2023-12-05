@@ -1,9 +1,10 @@
-package sync
+package sync_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
@@ -29,7 +30,7 @@ var _ = Describe("Core provider", func() {
 			Name:      "test",
 			Namespace: ns.Name,
 		}, Spec: turtlesv1.CAPIProviderSpec{
-			Name: turtlesv1.Docker,
+			Name: "docker",
 			Type: turtlesv1.Core,
 		}}
 
@@ -41,20 +42,20 @@ var _ = Describe("Core provider", func() {
 	})
 
 	It("Status patch only updates the status of the resource", func() {
-		capiProvider.Spec.Name = turtlesv1.RKE2
+		capiProvider.Spec.Name = "rke2"
 		capiProvider.Status.Phase = turtlesv1.Ready
 
-		Expect(PatchStatus(ctx, testEnv, capiProvider)).To(Succeed())
+		Expect(sync.PatchStatus(ctx, testEnv, capiProvider)).To(Succeed())
 		Eventually(Object(capiProvider)).Should(HaveField("Status.Phase", Equal(turtlesv1.Ready)))
-		Eventually(Object(capiProvider)).Should(HaveField("Spec.Name", Equal(turtlesv1.Docker)))
+		Eventually(Object(capiProvider)).Should(HaveField("Spec.Name", Equal("docker")))
 	})
 
 	It("Regular patch only updates the spec of the resource", func() {
-		capiProvider.Spec.Name = turtlesv1.RKE2
+		capiProvider.Spec.Name = "rke2"
 		capiProvider.Status.Phase = turtlesv1.Ready
 
-		Expect(Patch(ctx, testEnv, capiProvider)).To(Succeed())
-		Eventually(Object(capiProvider)).Should(HaveField("Spec.Name", Equal(turtlesv1.RKE2)))
+		Expect(sync.Patch(ctx, testEnv, capiProvider)).To(Succeed())
+		Eventually(Object(capiProvider)).Should(HaveField("Spec.Name", Equal("rke2")))
 		Eventually(Object(capiProvider)).Should(HaveField("Status.Phase", BeEmpty()))
 	})
 })

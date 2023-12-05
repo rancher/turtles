@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,9 +31,7 @@ import (
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
-var (
-	root string
-)
+var root string
 
 func init() {
 	klog.InitFlags(nil)
@@ -44,9 +42,9 @@ func init() {
 	klog.SetOutput(ginkgo.GinkgoWriter)
 
 	// Calculate the scheme.
-	utilruntime.Must(apiextensionsv1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(admissionv1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(clientgoscheme.Scheme))
+	utilruntime.Must(admissionv1.AddToScheme(clientgoscheme.Scheme))
+	utilruntime.Must(clusterv1.AddToScheme(clientgoscheme.Scheme))
 
 	// Get the root of the current file to use in CRD paths.
 	_, filename, _, _ := goruntime.Caller(0) //nolint
@@ -130,7 +128,7 @@ func (t *TestEnvironmentConfiguration) Build() (*TestEnvironment, error) {
 	}
 
 	options := manager.Options{
-		Scheme:             scheme.Scheme,
+		Scheme:             clientgoscheme.Scheme,
 		MetricsBindAddress: "0",
 	}
 
@@ -169,6 +167,7 @@ func getFilePathToAPI(root, org, pkg, apis string) string {
 	}
 
 	var packageVersion string
+
 	packageVersionRegex := regexp.MustCompile(fmt.Sprintf(`^(.*)%s/%s *v(.+)`, org, pkg))
 
 	for _, line := range strings.Split(string(modBits), "\n") {

@@ -171,3 +171,25 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - capiproviders
+  - capiproviders/status
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - operator.cluster.x-k8s.io
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - create

@@ -1,4 +1,4 @@
-package sync
+package sync_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -37,21 +38,21 @@ var _ = Describe("resource Sync interface", func() {
 	It("should synchronize a list of manifests", func() {
 		testCases := []struct {
 			name     string
-			list     SyncerList
+			list     sync.List
 			expected bool
 			err      string
 		}{
 			{
-				name:     "Nil syncer is accepted",
-				list:     SyncerList{nil},
+				name:     "Nil syncronizer is accepted",
+				list:     sync.List{nil},
 				expected: false,
 			}, {
-				name:     "All syncers is executed",
-				list:     SyncerList{&MockSynchronizer{}, &MockSynchronizer{}},
+				name:     "All syncronizers is executed",
+				list:     sync.List{&MockSynchronizer{}, &MockSynchronizer{}},
 				expected: false,
 			}, {
-				name:     "Syncer errors are returned",
-				list:     SyncerList{&MockSynchronizer{getErr: errors.New("Fail first get"), syncronizerr: errors.New("Fail sync")}, &MockSynchronizer{getErr: errors.New("Fail second get")}},
+				name:     "Syncronizer errors are returned",
+				list:     sync.List{&MockSynchronizer{getErr: errors.New("Fail first get"), syncronizerr: errors.New("Fail sync")}, &MockSynchronizer{getErr: errors.New("Fail second get")}},
 				err:      "Fail first get, Fail sync, Fail second get",
 				expected: true,
 			},
@@ -69,21 +70,21 @@ var _ = Describe("resource Sync interface", func() {
 	It("should apply a list of manifests", func() {
 		testCases := []struct {
 			name     string
-			list     SyncerList
+			list     sync.List
 			expected bool
 			err      string
 		}{
 			{
-				name:     "Nil syncer is accepted",
-				list:     SyncerList{nil},
+				name:     "Nil syncronizer is accepted",
+				list:     sync.List{nil},
 				expected: false,
 			}, {
-				name:     "All syncers is executed",
-				list:     SyncerList{&MockSynchronizer{}, &MockSynchronizer{}},
+				name:     "All syncronizers is executed",
+				list:     sync.List{&MockSynchronizer{}, &MockSynchronizer{}},
 				expected: false,
 			}, {
-				name:     "Syncer errors are returned",
-				list:     SyncerList{&MockSynchronizer{applyErr: errors.New("Fail apply")}, &MockSynchronizer{applyErr: errors.New("Fail second apply")}},
+				name:     "Syncronizer errors are returned",
+				list:     sync.List{&MockSynchronizer{applyErr: errors.New("Fail apply")}, &MockSynchronizer{applyErr: errors.New("Fail second apply")}},
 				err:      "Fail apply, Fail second apply",
 				expected: true,
 			},

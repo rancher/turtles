@@ -1,9 +1,10 @@
-package sync
+package sync_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -28,7 +29,7 @@ var _ = Describe("Core provider", func() {
 			Name:      "test",
 			Namespace: ns.Name,
 		}, Spec: turtlesv1.CAPIProviderSpec{
-			Name: turtlesv1.Docker,
+			Name: "docker",
 			Type: turtlesv1.Core,
 		}}
 
@@ -44,7 +45,7 @@ var _ = Describe("Core provider", func() {
 			Name:      "test",
 			Namespace: ns.Name,
 		}}
-		s := NewDefaultSyncer(testEnv, capiProvider, secret)
+		s := sync.NewDefaultSynchronizer(testEnv, capiProvider, secret)
 		Expect(s.Get(ctx)).To(Succeed())
 
 		secret.StringData = map[string]string{

@@ -69,12 +69,12 @@ func (r *CAPIProviderReconciler) reconcileNormal(ctx context.Context, capiProvid
 }
 
 func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtlesv1.CAPIProvider) (_ ctrl.Result, err error) {
-	syncer := sync.SyncerList{}
+	s := sync.List{}
 
-	if err := syncer.Sync(ctx); client.IgnoreNotFound(err) != nil {
+	if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, err
 	}
-	defer syncer.Apply(ctx, &err)
+	defer s.Apply(ctx, &err)
 
 	return ctrl.Result{}, sync.PatchStatus(ctx, r.Client, capiProvider)
 }

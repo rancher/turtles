@@ -13,16 +13,16 @@ import (
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 )
 
-// DefaultSyncer is a structure mirroring state of the CAPI Operator Provider object.
-type DefaultSyncer struct {
+// DefaultSynchronizer is a structure mirroring state of the CAPI Operator Provider object.
+type DefaultSynchronizer struct {
 	client      client.Client
 	Source      *turtlesv1.CAPIProvider
 	Destination client.Object
 }
 
-// NewDefaultSyncer returns a new instance of DefaultSyncer.
-func NewDefaultSyncer(cl client.Client, capiProvider *turtlesv1.CAPIProvider, destination client.Object) *DefaultSyncer {
-	return &DefaultSyncer{
+// NewDefaultSynchronizer returns a new instance of DefaultSynchronizer.
+func NewDefaultSynchronizer(cl client.Client, capiProvider *turtlesv1.CAPIProvider, destination client.Object) *DefaultSynchronizer {
+	return &DefaultSynchronizer{
 		client:      cl,
 		Source:      capiProvider,
 		Destination: destination,
@@ -30,7 +30,7 @@ func NewDefaultSyncer(cl client.Client, capiProvider *turtlesv1.CAPIProvider, de
 }
 
 // Get updates the destination object from the cluster.
-func (s *DefaultSyncer) Get(ctx context.Context) error {
+func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	if err := s.client.Get(ctx, client.ObjectKeyFromObject(s.Destination), s.Destination); client.IgnoreNotFound(err) != nil {
@@ -43,7 +43,7 @@ func (s *DefaultSyncer) Get(ctx context.Context) error {
 }
 
 // Apply applies the destination object to the cluster.
-func (s *DefaultSyncer) Apply(ctx context.Context, reterr *error) {
+func (s *DefaultSynchronizer) Apply(ctx context.Context, reterr *error) {
 	log := log.FromContext(ctx)
 	uid := s.Destination.GetUID()
 

@@ -3,25 +3,27 @@ package sync
 import (
 	"context"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 )
 
-// Syncer is an inteface for mirroring state of the CAPI Operator Provider object on child objects.
-type Syncer interface {
+// Sync is an inteface for mirroring state of the CAPI Operator Provider object on child objects.
+type Sync interface {
 	Template(*turtlesv1.CAPIProvider) client.Object
 	Get(context.Context) error
 	Sync(context.Context) error
 	Apply(context.Context, *error)
 }
 
-// SyncerList contains a list of syncers to apply the syncing logic.
-type SyncerList []Syncer
+// List contains a list of syncers to apply the syncing logic.
+type List []Sync
 
 // Sync applies synchronization logic on all syncers in the list.
-func (s SyncerList) Sync(ctx context.Context) error {
+func (s List) Sync(ctx context.Context) error {
 	errors := []error{}
+
 	for _, syncer := range s {
 		if syncer == nil {
 			continue
@@ -34,14 +36,16 @@ func (s SyncerList) Sync(ctx context.Context) error {
 }
 
 // Apply updates all syncer objects in the cluster.
-func (s SyncerList) Apply(ctx context.Context, reterr *error) {
+func (s List) Apply(ctx context.Context, reterr *error) {
 	errors := []error{*reterr}
+
 	for _, syncer := range s {
 		if syncer == nil {
 			continue
 		}
 
 		var err error
+
 		syncer.Apply(ctx, &err)
 		errors = append(errors, err)
 	}
