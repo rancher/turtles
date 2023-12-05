@@ -56,7 +56,7 @@ jobs:
         with:
           version: 3.8.0
       - name: Build Helm chart
-        run: make release-chart RELEASE_TAG=v0.0.0-${{ github.sha }}
+        run: make release-chart RELEASE_TAG=${{ env.TAG }} CONTROLLER_IMAGE_VERSION=${{ env.TAG }} 
       - name: Login to ghcr.io using Helm
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io --username ${{ github.repository_owner }} --password-stdin
@@ -64,7 +64,11 @@ jobs:
         env:
           GHCR_REPOSITORY: ${{ github.repository_owner }}/rancher-turtles-chart
         run: |
-          helm push out/package/rancher-turtles-0.0.0-${{ github.sha }}.tgz oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart
+          helm push out/package/rancher-turtles-${{ env.TAG }}.tgz oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart
+      - name: Print helm install command
+        run: |
+          echo "Nightly build can be installed using the following command:"
+          echo "helm install rancher-turtles oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart --version 0.0.0-${{ github.sha }}  -n rancher-turtles-system --create-namespace --wait"
 
   build-and-publish-prod:
     runs-on: ubuntu-latest
@@ -111,10 +115,10 @@ jobs:
         with:
           version: 3.8.0
       - name: Build Helm chart
-        run: make release-chart RELEASE_TAG=${{ env.TAG }}
+        run: make release-chart RELEASE_TAG=${{ env.TAG }} CONTROLLER_IMAGE_VERSION=${{ env.TAG }} 
       - name: Login to prod registry using Helm
         run: |
           echo ${{ secrets.REGISTRY_PASSWORD }} | helm registry login ${{ secrets.REGISTRY_ENDPOINT }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
       - name: Publish Helm chart as OCI image to prod registry
         run: |
-          helm push out/package/rancher-turtles-0.0.0-${{ github.sha }}.tgz oci://${{ secrets.REGISTRY_ENDPOINT }}/${{ env.PROD_ORG }}/rancher-turtles-chart
+          helm push out/package/rancher-turtles-${{ env.TAG }}.tgz oci://${{ secrets.REGISTRY_ENDPOINT }}/${{ env.PROD_ORG }}/rancher-turtles-chart
