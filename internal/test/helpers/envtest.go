@@ -167,6 +167,7 @@ func getFilePathToAPI(root, org, pkg, apis string) string {
 	}
 
 	var packageVersion string
+
 	packageVersionRegex := regexp.MustCompile(fmt.Sprintf(`^(.*)%s/%s *v(.+)`, org, pkg))
 
 	for _, line := range strings.Split(string(modBits), "\n") {
