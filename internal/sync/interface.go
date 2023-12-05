@@ -23,6 +23,10 @@ type SyncerList []Syncer
 func (s SyncerList) Sync(ctx context.Context) error {
 	errors := []error{}
 	for _, syncer := range s {
+		if syncer == nil {
+			continue
+		}
+
 		errors = append(errors, syncer.Get(ctx), syncer.Sync(ctx))
 	}
 
@@ -31,7 +35,16 @@ func (s SyncerList) Sync(ctx context.Context) error {
 
 // Apply updates all syncer objects in the cluster.
 func (s SyncerList) Apply(ctx context.Context, reterr *error) {
+	errors := []error{*reterr}
 	for _, syncer := range s {
-		syncer.Apply(ctx, reterr)
+		if syncer == nil {
+			continue
+		}
+
+		var err error
+		syncer.Apply(ctx, &err)
+		errors = append(errors, err)
 	}
+
+	*reterr = kerrors.NewAggregate(errors)
 }

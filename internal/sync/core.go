@@ -63,7 +63,7 @@ func setOwnerReference(owner, obj client.Object) {
 	obj.SetFinalizers([]string{metav1.FinalizerDeleteDependents})
 	obj.SetOwnerReferences([]metav1.OwnerReference{{
 		APIVersion:         turtlesv1.GroupVersion.String(),
-		Kind:               turtlesv1.ProviderKind,
+		Kind:               turtlesv1.Kind,
 		Name:               owner.GetName(),
 		UID:                owner.GetUID(),
 		Controller:         pointer.Bool(true),
