@@ -81,9 +81,11 @@ func setFeatures(capiProvider *turtlesv1.CAPIProvider) {
 		if features.ClusterResourceSet {
 			variables["EXP_CLUSTER_RESOURCE_SET"] = value
 		}
+
 		if features.ClusterTopology {
 			variables["CLUSTER_TOPOLOGY"] = value
 		}
+
 		if features.MachinePool {
 			variables["EXP_MACHINE_POOL"] = value
 		}

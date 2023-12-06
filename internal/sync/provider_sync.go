@@ -3,11 +3,11 @@ package sync
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api/util/conditions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 )
@@ -27,8 +27,12 @@ func NewProviderSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider) Syn
 // Template returning the mirrored CAPI Operator manifest template.
 func (ProviderSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object {
 	meta := metav1.ObjectMeta{
-		Name:      string(capiProvider.Spec.Name),
+		Name:      capiProvider.Spec.Name,
 		Namespace: capiProvider.GetNamespace(),
+	}
+
+	if meta.Name == "" {
+		meta.Name = capiProvider.Name
 	}
 
 	switch capiProvider.Spec.Type {
