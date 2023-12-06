@@ -64,7 +64,7 @@ jobs:
         env:
           GHCR_REPOSITORY: ${{ github.repository_owner }}/rancher-turtles-chart
         run: |
-          helm push out/package/rancher-turtles-${{ env.TAG }}.tgz oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart
+          helm push out/package/rancher-turtles-0.0.0-${{ github.sha }}.tgz oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart
       - name: Print helm install command
         run: |
           echo "Nightly build can be installed using the following command:"
@@ -121,4 +121,4 @@ jobs:
           echo ${{ secrets.REGISTRY_PASSWORD }} | helm registry login ${{ secrets.REGISTRY_ENDPOINT }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
       - name: Publish Helm chart as OCI image to prod registry
         run: |
-          helm push out/package/rancher-turtles-${{ env.TAG }}.tgz oci://${{ secrets.REGISTRY_ENDPOINT }}/${{ env.PROD_ORG }}/rancher-turtles-chart
+          helm push out/package/rancher-turtles-0.0.0-${{ github.sha }}}.tgz oci://${{ secrets.REGISTRY_ENDPOINT }}/${{ env.PROD_ORG }}/rancher-turtles-chart
