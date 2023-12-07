@@ -8,14 +8,21 @@ updates:
     labels:
       - "kind/cleanup"
       - "area/dependency"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
     ignore:
       # Ignore Cluster-API as its upgraded manually.
       - dependency-name: "sigs.k8s.io/cluster-api"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       # Ignore controller-runtime as its upgraded manually.
       - dependency-name: "sigs.k8s.io/controller-runtime"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       # Ignore k8s and its transitives modules as they are upgraded manually
       # together with controller-runtime.
       - dependency-name: "k8s.io/*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
   # Test Go module
@@ -26,14 +33,21 @@ updates:
     labels:
       - "kind/cleanup"
       - "area/dependency"
+    groups:
+      test-dependencies:
+        patterns:
+          - "*"
     ignore:
       # Ignore Cluster-API as its upgraded manually.
       - dependency-name: "sigs.k8s.io/cluster-api"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       # Ignore controller-runtime as its upgraded manually.
       - dependency-name: "sigs.k8s.io/controller-runtime"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       # Ignore k8s and its transitives modules as they are upgraded manually
       # together with controller-runtime.
       - dependency-name: "k8s.io/*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
   - package-ecosystem: "docker"
