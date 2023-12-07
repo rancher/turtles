@@ -1,0 +1,12 @@
+{
+  "packages": [
+    "go@1.20.10",
+    "kind@0.20.0",
+    "tilt@0.33.6"
+  ],
+  "shell": {
+    "init_hook": [
+      "go mod download"
+    ]
+  }
+}
