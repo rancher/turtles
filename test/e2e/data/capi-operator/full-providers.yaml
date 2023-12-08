@@ -9,21 +9,34 @@ kind: Namespace
 metadata:
   name: capz-system
 ---
-apiVersion: operator.cluster.x-k8s.io/v1alpha1
-kind: InfrastructureProvider
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
 metadata:
   name: aws
   namespace: capa-system
 spec:
-  secretName: full-variables
-  secretNamespace: default
+  name: aws
+  type: infrastructure
+  configSecret:
+    name: full-variables
+  variables:
+    EXP_MACHINE_POOL: "true"
+    EXP_EXTERNAL_RESOURCE_GC: "true"
+    CAPA_LOGLEVEL: "4"
 ---
-apiVersion: operator.cluster.x-k8s.io/v1alpha1
-kind: InfrastructureProvider
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
 metadata:
   name: azure
   namespace: capz-system
 spec:
-  secretName: azure-variables
-  secretNamespace: default
+  type: infrastructure
+  name: azure
   version: v1.11.5
+  configSecret:
+    name: azure-variables
+  variables:
+    CLUSTER_TOPOLOGY: "true"
+    EXP_CLUSTER_RESOURCE_SET: "true"
+    EXP_MACHINE_POOL: "true"
+    EXP_AKS_RESOURCE_HEALTH: "true"

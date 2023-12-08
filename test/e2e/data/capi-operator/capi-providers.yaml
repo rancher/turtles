@@ -4,11 +4,13 @@ kind: Namespace
 metadata:
   name: capd-system
 ---
-apiVersion: operator.cluster.x-k8s.io/v1alpha1
-kind: InfrastructureProvider
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
 metadata:
   name: docker
   namespace: capd-system
 spec:
-  secretName: variables
-  secretNamespace: default
+  name: docker
+  type: infrastructure
+  configSecret:
+    name: variables

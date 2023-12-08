@@ -187,6 +187,7 @@ rules:
   resources:
   - '*'
   verbs:
+  - create
   - get
   - list
   - watch
