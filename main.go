@@ -40,8 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	"github.com/rancher-sandbox/rancher-turtles/feature"
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers"
 	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
@@ -77,6 +79,9 @@ func init() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(provisioningv1.AddToScheme(scheme))
 	utilruntime.Must(managementv3.AddToScheme(scheme))
+	utilruntime.Must(operatorv1.AddToScheme(scheme))
+	utilruntime.Must(turtlesv1.AddToScheme(scheme))
+	turtlesv1.AddKnownTypes(scheme)
 }
 
 // initFlags initializes the flags.
@@ -204,6 +209,16 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			setupLog.Error(err, "unable to create Rancher kubeconfig secret controller")
 			os.Exit(1)
 		}
+	}
+
+	setupLog.Info("enabling CAPI Operator synchronization controller")
+
+	if err := (&controllers.CAPIProviderReconciler{
+		Client: mgr.GetClient(),
+		Scheme: scheme,
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create CAPI Provider controller")
+		os.Exit(1)
 	}
 }
 
