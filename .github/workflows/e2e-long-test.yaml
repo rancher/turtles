@@ -17,7 +17,8 @@ env:
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
 jobs:
-  e2e:
+  e2e_import_gitops:
+    name: E2E Tests - Import Gitops
     runs-on: [self-hosted, linux]
     steps:
     - name: Checkout
@@ -29,7 +30,100 @@ jobs:
       with:
         go-version: '=1.20.7'
     - name: Run e2e tests
-      run: make test-e2e
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/import-gitops make test-e2e
+    - name: Collect run artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: _artifacts
+    - name: Cleanup Azure Resources
+      if: always()
+      uses: rancher-sandbox/azure-janitor@v0.1.1
+      with:
+        resource-groups: highlander-e2e*
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+        client-id: ${{ secrets.AZURE_CLIENT_ID}}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID}}
+        commit: true
+  e2e_v2prov:
+    name: E2E Tests - v2prov
+    runs-on: [self-hosted, linux]
+    needs: e2e_import_gitops
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Run e2e tests
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/v2prov make test-e2e
+    - name: Collect run artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: _artifacts
+    - name: Cleanup Azure Resources
+      if: always()
+      uses: rancher-sandbox/azure-janitor@v0.1.1
+      with:
+        resource-groups: highlander-e2e*
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+        client-id: ${{ secrets.AZURE_CLIENT_ID}}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID}}
+        commit: true
+  e2e_update_labels:
+    name: E2E Tests - Update labels
+    runs-on: [self-hosted, linux]
+    needs: e2e_v2prov
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Run e2e tests
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/update-labels make test-e2e
+    - name: Collect run artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: _artifacts
+    - name: Cleanup Azure Resources
+      if: always()
+      uses: rancher-sandbox/azure-janitor@v0.1.1
+      with:
+        resource-groups: highlander-e2e*
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+        client-id: ${{ secrets.AZURE_CLIENT_ID}}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID}}
+        commit: true
+  e2e_embedded_capi_disabled:
+    name: E2E Tests - Embedded CAPI Disabled
+    runs-on: [self-hosted, linux]
+    needs: e2e_update_labels
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: setupGo
+      uses: actions/setup-go@v4
+      with:
+        go-version: '=1.20.7'
+    - name: Run e2e tests
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/embedded-capi-disabled make test-e2e
     - name: Collect run artifacts
       if: always()
       uses: actions/upload-artifact@v3
