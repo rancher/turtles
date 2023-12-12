@@ -156,7 +156,7 @@ var _ = BeforeSuite(func() {
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 	})
 
-	if Label(e2e.FullTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
+	if !shortTestOnly() {
 		By("Running full tests, deploying additional infrastructure providers")
 		awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
 		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
@@ -213,3 +213,7 @@ var _ = AfterSuite(func() {
 		ArtifactFolder:         flagVals.ArtifactFolder,
 	})
 })
+
+func shortTestOnly() bool {
+	return GinkgoLabelFilter() == e2e.ShortTestLabel
+}
