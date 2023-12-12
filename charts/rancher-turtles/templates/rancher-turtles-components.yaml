@@ -13,7 +13,20 @@ spec:
     singular: capiprovider
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .spec.name
+      name: ProviderName
+      type: string
+    - jsonPath: .status.installedVersion
+      name: InstalledVersion
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: CAPIProvider is the Schema for the CAPI Providers API.
@@ -1510,12 +1523,6 @@ spec:
                 type: array
               name:
                 description: Name is the name of the provider to enable
-                enum:
-                - aws
-                - azure
-                - gcp
-                - docker
-                - rke2
                 example: aws
                 type: string
               type:
@@ -1542,12 +1549,17 @@ spec:
                 description: Version indicates the provider version.
                 type: string
             required:
-            - name
             - type
             type: object
             x-kubernetes-validations:
-            - message: CAPI Provider version should be in the semver format
-              rule: '!has(self.version) || self.version.matches(r"""^([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$""")'
+            - message: 'CAPI Provider version should be in the semver format prefixed
+                with ''v''. Example: v1.9.3'
+              rule: '!has(self.version) || self.version.matches(r"""^v([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$""")'
+            - message: Config secret namespace is always equal to the resource namespace
+                and should not be set.
+              rule: '!has(self.configSecret) || !has(self.configSecret.__namespace__)'
+            - message: Either fetchConfig or name should be set.
+              rule: has(self.fetchConfig.url) || has(self.fetchConfig.selector) ||  has(self.name)
           status:
             default: {}
             description: CAPIProviderStatus defines the observed state of CAPIProvider.
@@ -1610,7 +1622,7 @@ spec:
                   by the controller.
                 format: int64
                 type: integer
-              state:
+              phase:
                 default: Pending
                 description: Indicates the provider status
                 type: string

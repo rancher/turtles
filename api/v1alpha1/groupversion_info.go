@@ -20,8 +20,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 )
 
 var (
@@ -34,3 +38,17 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+// AddKnownTypes adds the list of known types to api.Scheme.
+func AddKnownTypes(scheme *runtime.Scheme) {
+	scheme.AddKnownTypes(GroupVersion, &CAPIProvider{}, &CAPIProviderList{})
+	scheme.AddKnownTypes(operatorv1.GroupVersion,
+		&operatorv1.CoreProvider{}, &operatorv1.CoreProviderList{},
+		&operatorv1.BootstrapProvider{}, &operatorv1.BootstrapProviderList{},
+		&operatorv1.ControlPlaneProvider{}, &operatorv1.ControlPlaneProviderList{},
+		&operatorv1.InfrastructureProvider{}, &operatorv1.InfrastructureProviderList{},
+		&operatorv1.AddonProvider{}, &operatorv1.AddonProviderList{},
+	)
+	metav1.AddToGroupVersion(scheme, GroupVersion)
+	metav1.AddToGroupVersion(scheme, operatorv1.GroupVersion)
+}
