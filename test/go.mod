@@ -8,7 +8,7 @@ require (
 	code.gitea.io/sdk/gitea v0.16.0
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-git/go-git/v5 v5.10.0
-	github.com/onsi/ginkgo/v2 v2.13.1
+	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
 	github.com/rancher-sandbox/rancher-turtles v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.27.7
