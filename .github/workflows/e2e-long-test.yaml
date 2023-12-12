@@ -2,6 +2,19 @@ name: Run nightly e2e tests (using runner)
 
 on:
   workflow_dispatch:
+    inputs:
+      labels:
+        description: the ginkgo labels of tests to include
+        required: true
+        default: 'short || full'
+        type: choice
+        options:
+        - 'short'
+        - 'full'
+        - 'dontrun'
+        - 'short || full'
+        - 'short || full || dontrun'
+
 
 concurrency: ci_e2e_tests
 
@@ -31,6 +44,8 @@ jobs:
         go-version: '=1.20.7'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/import-gitops make test-e2e
+      env:
+        GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
       if: always()
       uses: actions/upload-artifact@v3
@@ -62,6 +77,8 @@ jobs:
         go-version: '=1.20.7'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/v2prov make test-e2e
+      env:
+        GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
       if: always()
       uses: actions/upload-artifact@v3
@@ -93,6 +110,8 @@ jobs:
         go-version: '=1.20.7'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/update-labels make test-e2e
+      env:
+        GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
       if: always()
       uses: actions/upload-artifact@v3
@@ -124,6 +143,8 @@ jobs:
         go-version: '=1.20.7'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/embedded-capi-disabled make test-e2e
+      env:
+        GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
       if: always()
       uses: actions/upload-artifact@v3
