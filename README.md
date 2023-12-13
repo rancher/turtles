@@ -1,5 +1,7 @@
 <img src="./logos/cupid.png" width="50%" height="50%">
 
+[![Nightly e2e tests](https://github.com/rancher-sandbox/rancher-turtles/actions/workflows/e2e-long.yaml/badge.svg)](https://github.com/rancher-sandbox/rancher-turtles/actions/workflows/e2e-long.yaml)
+
 # Rancher Turtles
 
 `Rancher Turtles` is a Kubernetes operator that provides integration between Rancher Manager and Cluster API (CAPI) with the aim of bringing full CAPI support to Rancher.
