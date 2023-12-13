@@ -7,17 +7,6 @@ on:
 
 concurrency: ci_e2e_tests
 
-env:
-  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
-  RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
-  RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
-  CAPA_ENCODED_CREDS: ${{ secrets.CAPA_ENCODED_CREDS }}
-  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
 jobs:
   e2e_import_gitops:
       uses: ./.github/workflows/run-e2e-suite.yaml
