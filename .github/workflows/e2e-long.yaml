@@ -1,11 +1,8 @@
 name: Run nightly e2e tests
 
 on:
-  #schedule:
-  #  - cron: "0 0 * * *"
-  #push:
-  #  branches:
-  #    - main
+  schedule:
+   - cron: "0 0 * * *"
   workflow_dispatch:
 
 concurrency: ci_e2e_tests
@@ -22,60 +19,41 @@ env:
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
 jobs:
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+  e2e_import_gitops:
+      uses: ./.github/workflows/run-e2e-suite.yaml
       with:
-        fetch-depth: 0
-    - name: setupGo
-      uses: actions/setup-go@v5
+        test_suite: $(pwd)/test/e2e/suites/import-gitops
+        test_name: Import via GitOps
+        run_azure_janitor: false
+        artifact_name: artifacts_import_gitops
+      secrets: inherit
+  e2e_v2prov:
+      if: ${{ always() }}
+      needs: e2e_import_gitops
+      uses: ./.github/workflows/run-e2e-suite.yaml
       with:
-        go-version: '=1.20.7'
-    - name: Run e2e tests
-      run: make test-e2e
-    - name: Collect run artifacts
-      if: always()
-      uses: actions/upload-artifact@v3
+        test_suite: $(pwd)/test/e2e/suites/v2prov
+        test_name: v2 provisioning
+        run_azure_janitor: true
+        artifact_name: artifacts_v2prov
+      secrets: inherit
+  e2e_update_labels:
+      if: ${{ always() }}
+      needs: e2e_v2prov
+      uses: ./.github/workflows/run-e2e-suite.yaml
       with:
-        name: artifacts
-        path: _artifacts
-    - name: Cleanup Azure Resources
-      if: always()
-      uses: rancher-sandbox/azure-janitor@v0.1.1
+        test_suite: $(pwd)/test/e2e/suites/update-labels
+        test_name: Update labels
+        run_azure_janitor: true
+        artifact_name: artifacts_update_labels
+      secrets: inherit
+  e2e_embedded_capi_disabled:
+      if: ${{ always() }}
+      needs: e2e_update_labels
+      uses: ./.github/workflows/run-e2e-suite.yaml
       with:
-        resource-groups: highlander-e2e*
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
-        client-id: ${{ secrets.AZURE_CLIENT_ID}}
-        client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID}}
-        commit: true
-    - name: Send failed status to slack
-      if: failure()
-      uses: slackapi/slack-github-action@v1.24.0
-      with:
-        payload: |
-          {
-            "blocks": [
-              {
-                "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Rancher turtles E2E test run failed. Job trigger by ${{ github.event_name }} event(schedule means nightly run, push means push to main)."
-                  },
-                  "accessory": {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": ":github:",
-                        "emoji": true
-                      },
-                    "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        test_suite: $(pwd)/test/e2e/suites/embedded-capi-disabled
+        test_name: Update labels
+        run_azure_janitor: false
+        artifact_name: artifacts_embedded_capi
+      secrets: inherit
