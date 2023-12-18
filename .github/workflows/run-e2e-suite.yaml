@@ -47,7 +47,7 @@ jobs:
       run: GINKGO_TESTS=${{ inputs.test_suite }} make test-e2e
     - name: Collect run artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: artifacts_${{ inputs.artifact_name }}
         path: _artifacts
