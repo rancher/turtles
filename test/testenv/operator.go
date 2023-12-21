@@ -50,7 +50,6 @@ type NamespaceName struct {
 func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployProviderInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
-	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for CAPIOperatorDeployProvider")
 
 	for _, secret := range input.CAPIProvidersSecretsYAML {
@@ -65,7 +64,7 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 		})).To(Succeed(), "Failed to apply secret for capi providers")
 	}
 
-	By("Adding CAPI Operaytor providers")
+	By("Adding CAPI Operator providers")
 	Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersYAML)).To(Succeed(), "Failed to add CAPI operator providers")
 
 	if len(input.WaitForDeployments) == 0 {
