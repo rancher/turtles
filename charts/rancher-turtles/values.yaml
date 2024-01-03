@@ -22,7 +22,6 @@ cluster-api-operator:
     version: v1.4.6
     configSecret:
       name: ""
-      namespace: ""
       defaultName: capi-env-variables
     core:
       namespace: capi-system

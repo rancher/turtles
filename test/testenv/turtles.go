@@ -47,7 +47,6 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancherTurtles")
-	Expect(input.CAPIProvidersSecretYAML).ToNot(BeNil(), "CAPIProvidersSecretYAML is required for DeployRancherTurtles")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for DeployRancherTurtles")
 	Expect(input.ChartPath).ToNot(BeEmpty(), "ChartPath is required for DeployRancherTurtles")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancherTurtles")
@@ -60,8 +59,10 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		namespace = turtlesframework.DefaultRancherTurtlesNamespace
 	}
 
-	By("Adding CAPI variables secret")
-	Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersSecretYAML)).To(Succeed())
+	if input.CAPIProvidersSecretYAML != nil {
+		By("Adding CAPI variables secret")
+		Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersSecretYAML)).To(Succeed())
+	}
 
 	By("Installing rancher-turtles chart")
 	chart := &opframework.HelmChart{
@@ -76,11 +77,11 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	}
 
 	values := map[string]string{
-		"rancherTurtles.image":                                    input.Image,
-		"rancherTurtles.imageVersion":                             input.Tag,
-		"rancherTurtles.managerArguments[0]":                      "--insecure-skip-verify=true",
-		"cluster-api-operator.cluster-api.configSecret.namespace": "default",
-		"cluster-api-operator.cluster-api.configSecret.name":      "variables",
+		"rancherTurtles.image":                               input.Image,
+		"rancherTurtles.imageVersion":                        input.Tag,
+		"rancherTurtles.tag":                                 input.Tag,
+		"rancherTurtles.managerArguments[0]":                 "--insecure-skip-verify=true",
+		"cluster-api-operator.cluster-api.configSecret.name": "variables",
 	}
 
 	for name, val := range input.AdditionalValues {

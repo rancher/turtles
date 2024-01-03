@@ -151,7 +151,6 @@ var _ = BeforeSuite(func() {
 		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:               flagVals.HelmBinaryPath,
 		ChartPath:                    flagVals.ChartPath,
-		CAPIProvidersSecretYAML:      e2e.CapiProvidersSecret,
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 		Image:                        "ghcr.io/rancher-sandbox/rancher-turtles-amd64",

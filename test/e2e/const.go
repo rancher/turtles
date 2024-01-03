@@ -24,9 +24,6 @@ import (
 )
 
 var (
-	//go:embed data/capi-operator/capi-providers-secret.yaml
-	CapiProvidersSecret []byte
-
 	//go:embed data/capi-operator/capi-providers.yaml
 	CapiProviders []byte
 
@@ -35,9 +32,6 @@ var (
 
 	//go:embed data/capi-operator/capa-variables.yaml
 	AWSProviderSecret []byte
-
-	//go:embed data/capi-operator/capz-variables.yaml
-	AzureProviderSecret []byte
 
 	//go:embed data/capi-operator/capz-identity-secret.yaml
 	AzureIdentitySecret []byte

@@ -8,22 +8,23 @@ metadata:
     "helm.sh/hook-weight": "1"
   name: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "namespace" }}
 ---
-apiVersion: operator.cluster.x-k8s.io/v1alpha1
-kind: BootstrapProvider
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
 metadata:
-  name: kubeadm
+  name: kubeadm-bootstrap
   namespace: {{ index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "namespace" }}
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
 spec:
+  name: kubeadm
+  type: bootstrap
   version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
-{{- if and (index .Values "cluster-api-operator" "cluster-api" "configSecret" "name") (index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace") }}
-  secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
-  secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "namespace" }}
+  configSecret:
+{{- if index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
+    name: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "name" }}
 {{ else }}
-  secretName: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "defaultName" }}
-  secretNamespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+    name: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "defaultName" }}
 {{- end }}
 {{- if or (index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "kubeadmBootstrap" "fetchConfig" "selector") }}
   fetchConfig:
