@@ -17,15 +17,16 @@ limitations under the License.
 package testenv
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"path/filepath"
+	"os/exec"
+	"path"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -40,8 +41,8 @@ func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 	Expect(input.SetupTestClusterResult).ToNot(BeNil(), "SetupTestClusterResult is required for CleanupTestCluster")
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for CleanupTestCluster")
 
-	By("Dumping logs from the bootstrap cluster")
-	dumpBootstrapClusterLogs(ctx, input.BootstrapClusterProxy, input.ArtifactFolder)
+	By("Dumping artifacts from the bootstrap cluster")
+	dumpBootstrapCluster(ctx, input.BootstrapClusterProxy, input.ArtifactFolder)
 
 	if input.SkipCleanup {
 		return
@@ -56,35 +57,50 @@ func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 	}
 }
 
-func dumpBootstrapClusterLogs(ctx context.Context, bootstrapClusterProxy framework.ClusterProxy, artifactFolder string) {
+var secrets = []string{
+	"NGROK_AUTHTOKEN",
+	"NGROK_API_KEY",
+	"RANCHER_HOSTNAME",
+	"RANCHER_PASSWORD",
+	"CAPA_ENCODED_CREDS",
+	"AZURE_SUBSCRIPTION_ID",
+	"AZURE_CLIENT_ID",
+	"AZURE_CLIENT_SECRET",
+	"AZURE_TENANT_ID",
+}
+
+func CollectArtifacts(ctx context.Context, kubeconfigPath, name string, args ...string) error {
+	if kubeconfigPath == "" {
+		return fmt.Errorf("Unable to collect artifacts: kubeconfig path is empty")
+	}
+
+	aargs := append([]string{"crust-gather", "collect", "--kubeconfig", kubeconfigPath, "-f", name}, args...)
+	for _, secret := range secrets {
+		aargs = append(aargs, "-s", secret)
+	}
+
+	cmd := exec.Command("kubectl", aargs...)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	cmd.WaitDelay = time.Minute
+
+	fmt.Printf("Running kubectl %s\n", strings.Join(aargs, " "))
+	err := cmd.Run()
+	fmt.Printf("stderr:\n%s\n", string(stderr.Bytes()))
+	fmt.Printf("stdout:\n%s\n", string(stdout.Bytes()))
+	return err
+}
+
+func dumpBootstrapCluster(ctx context.Context, bootstrapClusterProxy framework.ClusterProxy, artifactFolder string) {
 	if bootstrapClusterProxy == nil {
 		return
 	}
 
-	clusterLogCollector := bootstrapClusterProxy.GetLogCollector()
-	if clusterLogCollector == nil {
-		return
-	}
-
-	nodes, err := bootstrapClusterProxy.GetClientSet().CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	err := CollectArtifacts(ctx, bootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactFolder, bootstrapClusterProxy.GetName(), "bootstrap"))
 	if err != nil {
-		fmt.Printf("Failed to get nodes for the bootstrap cluster: %v\n", err)
+		fmt.Printf("Failed to artifacts for the bootstrap cluster: %v\n", err)
 		return
-	}
-
-	for i := range nodes.Items {
-		nodeName := nodes.Items[i].GetName()
-		err = clusterLogCollector.CollectMachineLog(
-			ctx,
-			bootstrapClusterProxy.GetClient(),
-			&clusterv1.Machine{
-				Spec:       clusterv1.MachineSpec{ClusterName: nodeName},
-				ObjectMeta: metav1.ObjectMeta{Name: nodeName},
-			},
-			filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName(), "machines", nodeName),
-		)
-		if err != nil {
-			fmt.Printf("Failed to get logs for the bootstrap cluster node %s: %v\n", nodeName, err)
-		}
 	}
 }

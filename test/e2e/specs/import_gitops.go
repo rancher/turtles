@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -40,6 +41,7 @@ import (
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
 	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	"github.com/rancher-sandbox/rancher-turtles/test/testenv"
 	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 )
 
@@ -85,7 +87,9 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		cancelWatches         context.CancelFunc
 		capiCluster           *types.NamespacedName
 		rancherKubeconfig     *turtlesframework.RancherGetClusterKubeconfigResult
+		originalKubeconfig    *turtlesframework.RancherGetClusterKubeconfigResult
 		rancherConnectRes     *turtlesframework.RunCommandResult
+		rancherCluster        *provisioningv1.Cluster
 		capiClusterCreateWait []interface{}
 		deleteClusterWait     []interface{}
 	)
@@ -114,6 +118,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		}
 
 		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
+		originalKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
 		rancherConnectRes = new(turtlesframework.RunCommandResult)
 
 		komega.SetClient(input.BootstrapClusterProxy.GetClient())
@@ -221,8 +226,16 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			return remoteClient.List(ctx, namespaces)
 		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
+		By("Storing the original CAPI cluster kubeconfig")
+		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
+			Getter:          input.BootstrapClusterProxy.GetClient(),
+			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
+			Namespace:       capiCluster.Namespace,
+			WriteToTempFile: true,
+		}, originalKubeconfig)
+
 		By("Waiting for the rancher cluster record to appear")
-		rancherCluster := &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+		rancherCluster = &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace.Name,
 			Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 		}}
@@ -256,6 +269,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
 		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
 
+	})
+
+	AfterEach(func() {
+		err := testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName))
+		if err != nil {
+			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
+		}
+
 		By("Deleting GitRepo from Rancher")
 		turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
 			Name:         repoName,
@@ -266,9 +287,6 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		By("Waiting for the rancher cluster record to be removed")
 		Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
 
-	})
-
-	AfterEach(func() {
 		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }
