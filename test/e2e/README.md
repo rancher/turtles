@@ -23,6 +23,8 @@ export RANCHER_HOSTNAME=<YOUR_DOMAIN_NAME>
 
 Now you are ready to start your e2e test run.
 
+**Note:** If you want to run vSphere e2e tests locally, please refer to the instructions provided in the [Running vSphere e2e tests locally](#running-vsphere-e2e-tests-locally) section.
+
 Additionally, you could reuse [`go.work.example`](../../go.work.example) and copy it into `rancher-turtles/../go.work` to allow linting in tests. Be aware that this may break vendoring process used for `make test` task due to incompatibility between the two. You will need to add `e2e` to build tags in your IDE of choice for the imports in the test suite to become resolvable.
 
 ### Running the tests
@@ -38,6 +40,27 @@ This will consequently:
 3. Install all prerequisite dependencies, like `helm`, `kubectl>=v1.27.0`, download `cluster-api-operator` helm release file from pre-specified URL.
 4. Create the test cluster, run the test suite, cleanup all test resourses.
 5. Collect the [artifacts](#artifacts)
+
+### Running vSphere e2e tests locally
+
+#### Prerequisites
+
+1. Initiate a VPN connection using a client such as OpenVPN or Cisco AnyConnect Secure Mobility Client.
+1. Set up all the necessary environment variables. You can start with the [`.envrc.example`](../../.envrc.example) file. 
+  Use [direnv](https://direnv.net/) to load these variables into your shell. Rename the file and modify the values as required. 
+  You can obtain these values from a team common credentials shared location.
+
+#### Running the tests
+
+From the project root directory:
+
+```bash
+GINKGO_LABEL_FILTER=local make test-e2e
+```
+
+**Important note:** The vSphere e2e tests require a VPN connection, which makes their integration into the daily e2e CI job challenging. Therefore,
+team members should run these tests locally every two weeks. By this, it can ensured that the tests remain functional and up-to-date over the
+time.
 
 ## Architecture
 
