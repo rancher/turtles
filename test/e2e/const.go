@@ -119,8 +119,8 @@ const (
 
 	AuthSecretName = "basic-auth-secret"
 
-	ShortTestLabel        = "short"
-	FullTestLabel         = "full"
-	DontRunLabel          = "dontrun"
-	LocalvSphereTestLabel = "local"
+	ShortTestLabel = "short"
+	FullTestLabel  = "full"
+	DontRunLabel   = "dontrun"
+	LocalTestLabel = "local"
 )

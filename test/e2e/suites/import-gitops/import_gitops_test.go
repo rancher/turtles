@@ -121,7 +121,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality sho
 	})
 })
 
-var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalvSphereTestLabel), func() {
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())

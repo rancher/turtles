@@ -156,7 +156,7 @@ var _ = BeforeSuite(func() {
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 	})
 
-	if !shortTestOnly() && !localvSphereTestOnly() {
+	if !shortTestOnly() && !localTestOnly() {
 		By("Running full tests, deploying additional infrastructure providers")
 		awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
 		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
@@ -183,7 +183,7 @@ var _ = BeforeSuite(func() {
 				},
 			},
 		})
-	} else if Label(e2e.LocalvSphereTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
+	} else if Label(e2e.LocalTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
@@ -234,6 +234,6 @@ func shortTestOnly() bool {
 	return GinkgoLabelFilter() == e2e.ShortTestLabel
 }
 
-func localvSphereTestOnly() bool {
-	return GinkgoLabelFilter() == e2e.LocalvSphereTestLabel
+func localTestOnly() bool {
+	return GinkgoLabelFilter() == e2e.LocalTestLabel
 }

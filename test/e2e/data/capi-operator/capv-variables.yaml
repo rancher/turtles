@@ -1,11 +1,15 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capv-system
+---
 apiVersion: v1
 kind: Secret
 metadata:
   name: vsphere-variables
-  namespace: default
+  namespace: capv-system
 type: Opaque
 stringData:
   VSPHERE_USERNAME: "${VSPHERE_USERNAME}"
   VSPHERE_PASSWORD: "${VSPHERE_PASSWORD}"
-  CLUSTER_TOPOLOGY: "true"
-  EXP_CLUSTER_RESOURCE_SET: "true"

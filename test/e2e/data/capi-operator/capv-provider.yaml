@@ -1,15 +1,16 @@
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: capv-system
----
-apiVersion: operator.cluster.x-k8s.io/v1alpha1
-kind: InfrastructureProvider
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
 metadata:
   name: vsphere
   namespace: capv-system
 spec:
+  name: vsphere
+  type: infrastructure
   version: v1.8.5
-  secretName: vsphere-variables
-  secretNamespace: default
+  configSecret:
+    name: vsphere-variables
+  variables:
+    CLUSTER_TOPOLOGY: "true"
+    EXP_CLUSTER_RESOURCE_SET: "true"
+    EXP_MACHINE_POOL: "true"
