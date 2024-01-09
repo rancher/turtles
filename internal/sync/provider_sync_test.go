@@ -22,7 +22,7 @@ import (
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +83,7 @@ var _ = Describe("Provider sync", func() {
 		Eventually(UpdateStatus(infrastructure, func() {
 			infrastructure.Status = operatorv1.InfrastructureProviderStatus{
 				ProviderStatus: operatorv1.ProviderStatus{
-					InstalledVersion: pointer.String("v1.2.3"),
+					InstalledVersion: ptr.To("v1.2.3"),
 				},
 			}
 		})).Should(Succeed())

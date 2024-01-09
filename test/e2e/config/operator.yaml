@@ -11,6 +11,7 @@ intervals:
   default/wait-v2prov-create: ["25m", "30s"]
   default/wait-capa-create-cluster: ["30m", "30s"]
   default/wait-capz-create-cluster: ["35m", "30s"]
+  default/wait-capv-create-cluster: ["30m", "30s"]
   default/wait-gitea: ["3m", "10s"]
   default/wait-consistently: ["30s", "5s"]
   default/wait-getservice: ["60s", "5s"]
@@ -18,17 +19,19 @@ intervals:
   default/wait-aks-delete: ["20m", "30s"]
   default/wait-azure-delete: ["15m", "30s"]
   default/wait-azure: ["30m", "30s"]
+  default/wait-vsphere-delete: ["20m", "30s"]
 
 variables:
-  RANCHER_VERSION: "v2.7.6"
+  RANCHER_VERSION: "v2.8.0"
   RANCHER_HOSTNAME: "localhost"
   RANCHER_FEATURES: ""
-  RANCHER_PATH: "rancher-stable/rancher"
-  KUBERNETES_VERSION: "v1.26.3"
+  RANCHER_PATH: "rancher-latest/rancher"
+  KUBERNETES_VERSION: "v1.27.0"
+  CPI_IMAGE_K8S_VERSION: "v1.27.0"
   RKE2_VERSION: "v1.26.8+rke2r1"
   CAPI_CORE: "cluster-api:v1.4.6"
-  RANCHER_REPO_NAME: "rancher-stable"
-  RANCHER_URL: "https://releases.rancher.com/server-charts/stable"
+  RANCHER_REPO_NAME: "rancher-latest"
+  RANCHER_URL: "https://releases.rancher.com/server-charts/latest"
   CERT_MANAGER_URL: "https://charts.jetstack.io"
   CERT_MANAGER_REPO_NAME: "jetstack"
   CERT_MANAGER_PATH: "jetstack/cert-manager"

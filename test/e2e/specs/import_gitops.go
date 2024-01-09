@@ -50,9 +50,10 @@ type CreateUsingGitOpsSpecInput struct {
 	ArtifactFolder        string
 	RancherServerURL      string
 
-	ClusterctlBinaryPath string
-	ClusterTemplate      []byte
-	ClusterName          string
+	ClusterctlBinaryPath        string
+	ClusterTemplate             []byte
+	ClusterName                 string
+	AdditionalTemplateVariables map[string]string
 
 	CAPIClusterCreateWaitName string
 	DeleteClusterWaitName     string
@@ -160,16 +161,21 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		clustersDir := filepath.Join(repoDir, "clusters")
 		os.MkdirAll(clustersDir, os.ModePerm)
 
+		additionalVars := map[string]string{
+			"CLUSTER_NAME":                input.ClusterName,
+			"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
+			"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
+		}
+		for k, v := range input.AdditionalTemplateVariables {
+			additionalVars[k] = v
+		}
+
 		clusterPath := filepath.Join(clustersDir, fmt.Sprintf("%s.yaml", input.ClusterName))
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-			Getter:         input.E2EConfig.GetVariable,
-			Template:       input.ClusterTemplate,
-			OutputFilePath: clusterPath,
-			AddtionalEnvironmentVariables: map[string]string{
-				"CLUSTER_NAME":                input.ClusterName,
-				"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
-				"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
-			},
+			Getter:                        input.E2EConfig.GetVariable,
+			Template:                      input.ClusterTemplate,
+			OutputFilePath:                clusterPath,
+			AddtionalEnvironmentVariables: additionalVars,
 		})).To(Succeed())
 
 		fleetPath := filepath.Join(clustersDir, "fleet.yaml")

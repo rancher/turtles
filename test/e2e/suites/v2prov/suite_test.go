@@ -26,9 +26,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"runtime"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -151,7 +152,7 @@ var _ = BeforeSuite(func() {
 		ChartPath:                    flagVals.ChartPath,
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        "ghcr.io/rancher-sandbox/rancher-turtles-amd64",
+		Image:                        fmt.Sprintf("ghcr.io/rancher-sandbox/rancher-turtles-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 	})
