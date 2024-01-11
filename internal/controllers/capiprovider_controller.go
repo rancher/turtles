@@ -72,6 +72,7 @@ func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtles
 	s := sync.List{
 		sync.NewProviderSync(r.Client, capiProvider),
 		sync.NewSecretSync(r.Client, capiProvider),
+		sync.NewSecretMapperSync(r.Client, capiProvider),
 	}
 
 	if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
