@@ -23,8 +23,6 @@ import (
 
 var _ operatorv1.GenericProvider = &CAPIProvider{}
 
-// var _ Provider = &CAPIProvider{}
-
 // GetConditions returns the Conditions field from the CAPIProvider status.
 func (b *CAPIProvider) GetConditions() clusterv1.Conditions {
 	return b.Status.Conditions
@@ -45,7 +43,7 @@ func (b *CAPIProvider) SetSpec(in operatorv1.ProviderSpec) {
 	b.Spec.ProviderSpec = in
 }
 
-// GetSpec returns the Status.ProviderStatus field in the CAPIProvider status.
+// GetStatus returns the Status.ProviderStatus field in the CAPIProvider status.
 func (b *CAPIProvider) GetStatus() operatorv1.ProviderStatus {
 	return b.Status.ProviderStatus
 }
@@ -55,12 +53,12 @@ func (b *CAPIProvider) SetStatus(in operatorv1.ProviderStatus) {
 	b.Status.ProviderStatus = in
 }
 
-// GetType returns the type of the CAPIProvider
+// GetType returns the type of the CAPIProvider.
 func (b *CAPIProvider) GetType() string {
 	return "capiprovider"
 }
 
-// GetItems returns the list of GenericProviders for CAPIProviderList
+// GetItems returns the list of GenericProviders for CAPIProviderList.
 func (b *CAPIProviderList) GetItems() []operatorv1.GenericProvider {
 	providers := []operatorv1.GenericProvider{}
 

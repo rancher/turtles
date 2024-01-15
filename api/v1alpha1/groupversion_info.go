@@ -37,18 +37,44 @@ var (
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
+
+	// Providers is a list of registered CAPI Operator resources satisfying Provider interface.
+	Providers = []operatorv1.GenericProvider{
+		&operatorv1.CoreProvider{},
+		&operatorv1.BootstrapProvider{},
+		&operatorv1.ControlPlaneProvider{},
+		&operatorv1.InfrastructureProvider{},
+		&operatorv1.AddonProvider{},
+		&operatorv1.IPAMProvider{},
+	}
+
+	// ProviderLists is a list of registered CAPI Operator resources satisfying ProviderList interface.
+	ProviderLists = []operatorv1.GenericProviderList{
+		&operatorv1.CoreProviderList{},
+		&operatorv1.BootstrapProviderList{},
+		&operatorv1.ControlPlaneProviderList{},
+		&operatorv1.InfrastructureProviderList{},
+		&operatorv1.AddonProviderList{},
+		&operatorv1.IPAMProviderList{},
+	}
 )
 
 // AddKnownTypes adds the list of known types to api.Scheme.
 func AddKnownTypes(scheme *runtime.Scheme) {
 	scheme.AddKnownTypes(GroupVersion, &CAPIProvider{}, &CAPIProviderList{})
-	scheme.AddKnownTypes(operatorv1.GroupVersion,
-		&operatorv1.CoreProvider{}, &operatorv1.CoreProviderList{},
-		&operatorv1.BootstrapProvider{}, &operatorv1.BootstrapProviderList{},
-		&operatorv1.ControlPlaneProvider{}, &operatorv1.ControlPlaneProviderList{},
-		&operatorv1.InfrastructureProvider{}, &operatorv1.InfrastructureProviderList{},
-		&operatorv1.AddonProvider{}, &operatorv1.AddonProviderList{},
-	)
+
+	for _, provider := range Providers {
+		if provider, ok := provider.(runtime.Object); ok {
+			scheme.AddKnownTypes(operatorv1.GroupVersion, provider)
+		}
+	}
+
+	for _, providerList := range ProviderLists {
+		if providerList, ok := providerList.(runtime.Object); ok {
+			scheme.AddKnownTypes(operatorv1.GroupVersion, providerList)
+		}
+	}
+
 	metav1.AddToGroupVersion(scheme, GroupVersion)
 	metav1.AddToGroupVersion(scheme, operatorv1.GroupVersion)
 }

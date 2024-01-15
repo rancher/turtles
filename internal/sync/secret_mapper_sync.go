@@ -93,8 +93,8 @@ var (
 )
 
 type convert interface {
-	validate(map[string][]byte) error
-	convert(map[string][]byte) string
+	validate(data map[string][]byte) error
+	convert(data map[string][]byte) string
 }
 
 // Mapping defines a mapping between a source and destination secret keys.

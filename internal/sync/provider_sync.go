@@ -18,6 +18,7 @@ package sync
 
 import (
 	"context"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,17 +27,27 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/api"
 )
 
 // ProviderSync is a structure mirroring state of the CAPI Operator Provider object.
 type ProviderSync struct {
 	*DefaultSynchronizer
+	Destination api.Provider
 }
 
 // NewProviderSync creates a new mirror object.
 func NewProviderSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider) Sync {
+	template := ProviderSync{}.Template(capiProvider)
+
+	destination, ok := template.(api.Provider)
+	if !ok {
+		return nil
+	}
+
 	return &ProviderSync{
-		DefaultSynchronizer: NewDefaultSynchronizer(cl, capiProvider, ProviderSync{}.Template(capiProvider)),
+		DefaultSynchronizer: NewDefaultSynchronizer(cl, capiProvider, template),
+		Destination:         destination,
 	}
 }
 
@@ -51,21 +62,21 @@ func (ProviderSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object
 		meta.Name = capiProvider.Name
 	}
 
-	switch capiProvider.Spec.Type {
-	case turtlesv1.Infrastructure:
-		return &operatorv1.InfrastructureProvider{ObjectMeta: meta}
-	case turtlesv1.Core:
-		return &operatorv1.CoreProvider{ObjectMeta: meta}
-	case turtlesv1.ControlPlane:
-		return &operatorv1.ControlPlaneProvider{ObjectMeta: meta}
-	case turtlesv1.Bootstrap:
-		return &operatorv1.BootstrapProvider{ObjectMeta: meta}
-	case turtlesv1.Addon:
-		return &operatorv1.AddonProvider{ObjectMeta: meta}
-	default:
+	var template api.Provider
+
+	for _, provider := range turtlesv1.Providers {
+		if provider.GetType() == strings.ToLower(string(capiProvider.Spec.Type)) {
+			provider := provider
+			template = provider
+
+			template.SetName(meta.Name)
+			template.SetNamespace(meta.Namespace)
+
+			return template
+		}
 	}
 
-	return nil
+	return template
 }
 
 // Sync updates the mirror object state from the upstream source object
@@ -83,35 +94,18 @@ func (s *ProviderSync) Sync(_ context.Context) error {
 // Spec -> <Common>Provider
 // CAPIProvider <- Status.
 func (s *ProviderSync) SyncObjects() {
-	switch mirror := s.Destination.(type) {
-	case *operatorv1.InfrastructureProvider:
-		s.Source.Spec.ProviderSpec.DeepCopyInto(&mirror.Spec.ProviderSpec)
-		mirror.Status.ProviderStatus.DeepCopyInto(&s.Source.Status.ProviderStatus)
-	case *operatorv1.CoreProvider:
-		s.Source.Spec.ProviderSpec.DeepCopyInto(&mirror.Spec.ProviderSpec)
-		mirror.Status.ProviderStatus.DeepCopyInto(&s.Source.Status.ProviderStatus)
-	case *operatorv1.ControlPlaneProvider:
-		s.Source.Spec.ProviderSpec.DeepCopyInto(&mirror.Spec.ProviderSpec)
-		mirror.Status.ProviderStatus.DeepCopyInto(&s.Source.Status.ProviderStatus)
-	case *operatorv1.BootstrapProvider:
-		s.Source.Spec.ProviderSpec.DeepCopyInto(&mirror.Spec.ProviderSpec)
-		mirror.Status.ProviderStatus.DeepCopyInto(&s.Source.Status.ProviderStatus)
-	case *operatorv1.AddonProvider:
-		s.Source.Spec.ProviderSpec.DeepCopyInto(&mirror.Spec.ProviderSpec)
-		mirror.Status.ProviderStatus.DeepCopyInto(&s.Source.Status.ProviderStatus)
-	default:
-	}
-
+	s.Destination.SetSpec(s.Source.GetSpec())
+	s.Source.SetStatus(s.Destination.GetStatus())
 	s.syncStatus()
 }
 
 func (s *ProviderSync) syncStatus() {
 	switch {
 	case conditions.IsTrue(s.Source, operatorv1.ProviderInstalledCondition):
-		s.Source.Status.Phase = turtlesv1.Ready
+		s.Source.SetPhase(turtlesv1.Ready)
 	case conditions.IsFalse(s.Source, operatorv1.PreflightCheckCondition):
-		s.Source.Status.Phase = turtlesv1.Failed
+		s.Source.SetPhase(turtlesv1.Failed)
 	default:
-		s.Source.Status.Phase = turtlesv1.Provisioning
+		s.Source.SetPhase(turtlesv1.Provisioning)
 	}
 }

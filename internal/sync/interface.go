@@ -27,10 +27,10 @@ import (
 
 // Sync is an inteface for mirroring state of the CAPI Operator Provider object on child objects.
 type Sync interface {
-	Template(*turtlesv1.CAPIProvider) client.Object
-	Get(context.Context) error
-	Sync(context.Context) error
-	Apply(context.Context, *error)
+	Template(source *turtlesv1.CAPIProvider) client.Object
+	Get(ctx context.Context) error
+	Sync(ctx context.Context) error
+	Apply(ctx context.Context, reterr *error)
 }
 
 // List contains a list of syncers to apply the syncing logic.

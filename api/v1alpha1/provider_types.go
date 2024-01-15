@@ -38,6 +38,8 @@ const (
 	Bootstrap Type = "bootstrap"
 	// Addon is the name for the addon CAPI Provider.
 	Addon Type = "addon"
+	// IPAM is the name for the addon for IPAM CAPI Provider.
+	IPAM Type = "ipam"
 )
 
 // ToKind converts ProviderType to CAPI Operator provider object kind.
