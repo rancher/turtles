@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -131,6 +132,9 @@ var _ = Describe("SecretMapperSync get", func() {
 		err := syncer.Get(context.Background())
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
 	})
 
 	It("should handle when the source Rancher secret is not found", func() {
@@ -146,8 +150,12 @@ var _ = Describe("SecretMapperSync get", func() {
 		}
 
 		err := syncer.Get(context.Background())
+
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
 	})
 
 	It("should not error when the destination secret is not created yet", func() {
@@ -189,7 +197,12 @@ var _ = Describe("SecretMapperSync get", func() {
 		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
-		Expect(err.Error()).To(ContainSubstring("key not found: azurecredentialConfig-subscriptionId, key not found: azurecredentialConfig-clientId, key not found: azurecredentialConfig-clientSecret, key not found: azurecredentialConfig-tenantId"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			ContainSubstring("key not found: azurecredentialConfig-subscriptionId, key not found: azurecredentialConfig-clientId, key not found: azurecredentialConfig-clientSecret, key not found: azurecredentialConfig-tenantId"))
+
 		Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 			"AZURE_CLIENT_ID_B64":       "",
 			"AZURE_CLIENT_SECRET_B64":   "",
@@ -209,7 +222,12 @@ var _ = Describe("SecretMapperSync get", func() {
 		syncer.RancherSecret = rancherSecret
 
 		err := syncer.Sync(context.Background())
-		Expect(err.Error()).To(ContainSubstring("key not found: amazonec2credentialConfig-accessKey, key not found: amazonec2credentialConfig-secretKey, key not found: amazonec2credentialConfig-defaultRegion"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			ContainSubstring("key not found: amazonec2credentialConfig-accessKey, key not found: amazonec2credentialConfig-secretKey, key not found: amazonec2credentialConfig-defaultRegion"))
+
 		Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 			"AWS_REGION":                 "",
 			"AWS_B64ENCODED_CREDENTIALS": "",
@@ -225,7 +243,12 @@ var _ = Describe("SecretMapperSync get", func() {
 		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
-		Expect(err.Error()).To(ContainSubstring("googlecredentialConfig-authEncodedJson"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			ContainSubstring("googlecredentialConfig-authEncodedJson"))
+
 		Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 			"GCP_B64ENCODED_CREDENTIALS": "",
 		}))
@@ -237,7 +260,12 @@ var _ = Describe("SecretMapperSync get", func() {
 		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
-		Expect(err.Error()).To(ContainSubstring("key not found: digitaloceancredentialConfig-accessToken"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			ContainSubstring("key not found: digitaloceancredentialConfig-accessToken"))
+
 		Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 			"DO_B64ENCODED_CREDENTIALS": "",
 			"DIGITALOCEAN_ACCESS_TOKEN": "",
@@ -250,7 +278,11 @@ var _ = Describe("SecretMapperSync get", func() {
 		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
-		Expect(err.Error()).To(ContainSubstring("key not found: vmwarevsphere-password, key not found: vmwarevsphere-username"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			ContainSubstring("key not found: vmwarevsphere-password, key not found: vmwarevsphere-username"))
 		Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 			"VSPHERE_PASSWORD": "",
 			"VSPHERE_USERNAME": "",
@@ -278,5 +310,8 @@ var _ = Describe("SecretMapperSync get", func() {
 			"AWS_ACCESS_KEY_ID":          "test",
 			"AWS_SECRET_ACCESS_KEY":      "test",
 		}))
+
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsTrue(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 	})
 })

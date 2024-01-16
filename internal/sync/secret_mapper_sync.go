@@ -31,6 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
+
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 )
 
@@ -90,6 +93,11 @@ var (
 	driverMapping = map[string]string{
 		"vsphere": "vmwarevsphere",
 	}
+)
+
+var (
+	missingKey    = "Credential keys missing: %w"
+	missingSource = "Rancher Credentials secret named %s was not located"
 )
 
 type convert interface {
@@ -249,14 +257,44 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 		return s.SecretSync.Get(ctx)
 	}
 
+	conditions.Set(s.Source, conditions.FalseCondition(
+		turtlesv1.RancherCredentialsSecretCondition,
+		turtlesv1.RancherCredentialSourceMissing,
+		clusterv1.ConditionSeverityError,
+		fmt.Sprintf(missingSource, s.Source.Spec.Credentials.RancherCloudCredential),
+	))
+
 	return fmt.Errorf("unable to locate rancher secret with name %s for provider %s", s.RancherSecret.GetName(), s.Source.Spec.Name)
 }
 
 // Sync updates the credentials secret with required values from rancher manager secret.
-func (s *SecretMapperSync) Sync(_ context.Context) error {
+func (s *SecretMapperSync) Sync(ctx context.Context) error {
+	log := log.FromContext(ctx)
 	s.SecretSync.Secret.StringData = map[string]string{}
 
-	return Into(s.Source.Spec.Name, s.RancherSecret.Data, s.SecretSync.Secret.StringData)
+	if err := Into(s.Source.Spec.Name, s.RancherSecret.Data, s.SecretSync.Secret.StringData); err != nil {
+		log.Error(err, "failed to map credential keys")
+
+		conditions.Set(s.Source, conditions.FalseCondition(
+			turtlesv1.RancherCredentialsSecretCondition,
+			turtlesv1.RancherCredentialKeyMissing,
+			clusterv1.ConditionSeverityError,
+			fmt.Sprintf(missingKey, err.Error()),
+		))
+
+		return nil
+	}
+
+	log.Info(fmt.Sprintf("Credential keys from %s (%s) are successfully mapped to secret %s",
+		client.ObjectKeyFromObject(s.RancherSecret).String(),
+		s.Source.Spec.Credentials.RancherCloudCredential,
+		client.ObjectKeyFromObject(s.SecretSync.Secret).String()))
+
+	conditions.Set(s.Source, conditions.TrueCondition(
+		turtlesv1.RancherCredentialsSecretCondition,
+	))
+
+	return nil
 }
 
 // Into maps the secret keys from source secret data according to credentials map.
