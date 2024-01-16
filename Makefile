@@ -50,6 +50,8 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
+export KREW_ROOT := $(abspath $(TOOLS_BIN_DIR))
+export PATH := $(KREW_ROOT)/bin:$(PATH)
 
 # Set --output-base for conversion-gen if we are not within GOPATH
 ifneq ($(abspath $(ROOT_DIR)),$(shell go env GOPATH)/src/github.com/rancher-sandbox/rancher-turtles)

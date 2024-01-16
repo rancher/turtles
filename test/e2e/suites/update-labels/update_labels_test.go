@@ -22,6 +22,7 @@ package update_labels
 import (
 	"fmt"
 	"os"
+	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,13 +35,23 @@ import (
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
 	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	"github.com/rancher-sandbox/rancher-turtles/test/testenv"
 )
 
 var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work with CAPI 1.5.x and label renaming", Label(e2e.FullTestLabel), func() {
 
+	var (
+		rancherKubeconfig *turtlesframework.RancherGetClusterKubeconfigResult
+		clusterName       string
+		rancherCluster    *provisioningv1.Cluster
+	)
+
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
+		clusterName = "az-cluster1"
 	})
 
 	It("Should create a RKE2 cluster in Azure", func() {
@@ -57,7 +68,6 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		credsSecretName := "cc-test99"
 		credsName := "az-ecm"
 		poolName := "az-test-pool"
-		clusterName := "az-cluster1"
 
 		lookupResult := &turtlesframework.RancherLookupUserResult{}
 		turtlesframework.RancherLookupUser(ctx, turtlesframework.RancherLookupUserInput{
@@ -120,7 +130,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, []byte(cluster))).To(Succeed(), "Failed apply Digital Ocean cluster config")
 
 		By("Waiting for the rancher cluster record to appear")
-		rancherCluster := &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+		rancherCluster = &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
 			Namespace: "fleet-default",
 			Name:      clusterName,
 		}}
@@ -133,7 +143,6 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		Eventually(komega.Object(rancherCluster), e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.Ready", BeTrue()))
 
 		By("Getting kubeconfig from Rancher for new cluster")
-		rancherKubeconfig := &turtlesframework.RancherGetClusterKubeconfigResult{}
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			Getter:           setupClusterResult.BootstrapClusterProxy.GetClient(),
 			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
@@ -156,6 +165,13 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		}, rancherConnectRes)
 		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
 		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+	})
+
+	AfterEach(func() {
+		err := testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(flagVals.ArtifactFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName))
+		if err != nil {
+			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
+		}
 
 		By("Deleting cluster from Rancher")
 		err = setupClusterResult.BootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
