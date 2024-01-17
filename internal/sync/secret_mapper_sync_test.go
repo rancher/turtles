@@ -194,7 +194,7 @@ var _ = Describe("SecretMapperSync get", func() {
 		capiProvider.Spec.Name = "azure"
 		rancherSecret.Annotations[sync.DriverNameAnnotation] = "azure"
 		Expect(testEnv.Client.Create(ctx, rancherSecret)).ToNot(HaveOccurred())
-		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
+		syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -218,7 +218,7 @@ var _ = Describe("SecretMapperSync get", func() {
 	It("provider requirements aws", func() {
 		capiProvider.Spec.Name = "aws"
 		rancherSecret.Annotations[sync.DriverNameAnnotation] = "aws"
-		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
+		syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 		syncer.RancherSecret = rancherSecret
 
 		err := syncer.Sync(context.Background())
@@ -240,7 +240,7 @@ var _ = Describe("SecretMapperSync get", func() {
 		capiProvider.Spec.Name = "gcp"
 		rancherSecret.Annotations[sync.DriverNameAnnotation] = "gcp"
 		Expect(testEnv.Client.Create(ctx, rancherSecret)).ToNot(HaveOccurred())
-		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
+		syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -257,7 +257,7 @@ var _ = Describe("SecretMapperSync get", func() {
 		capiProvider.Spec.Name = "digitalocean"
 		rancherSecret.Annotations[sync.DriverNameAnnotation] = "digitalocean"
 		Expect(testEnv.Client.Create(ctx, rancherSecret)).ToNot(HaveOccurred())
-		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
+		syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -275,7 +275,7 @@ var _ = Describe("SecretMapperSync get", func() {
 		capiProvider.Spec.Name = "vsphere"
 		rancherSecret.Annotations[sync.DriverNameAnnotation] = "vmwarevsphere"
 		Expect(testEnv.Client.Create(ctx, rancherSecret)).ToNot(HaveOccurred())
-		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
+		syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		err := syncer.Sync(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -299,7 +299,7 @@ var _ = Describe("SecretMapperSync get", func() {
 		}
 		Expect(testEnv.Client.Create(ctx, rancherSecret)).ToNot(HaveOccurred())
 
-		syncer := sync.NewSecretMapperSync(testEnv, capiProvider).(*sync.SecretMapperSync)
+		syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 
 		Expect(syncer.Get(context.Background())).ToNot(HaveOccurred())
 		Expect(syncer.RancherSecret.Data["amazonec2credentialConfig-defaultRegion"]).ToNot(BeEmpty())

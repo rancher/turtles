@@ -189,10 +189,13 @@ type SecretMapperSync struct {
 }
 
 // NewSecretMapperSync creates a new secret mapper object sync.
-func NewSecretMapperSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider) Sync {
+func NewSecretMapperSync(ctx context.Context, cl client.Client, capiProvider *turtlesv1.CAPIProvider) Sync {
+	log := log.FromContext(ctx)
+
 	if capiProvider.Spec.Credentials == nil ||
 		capiProvider.Spec.Credentials.RancherCloudCredential == "" ||
 		knownProviderRequirements[capiProvider.Spec.Name] == nil {
+		log.V(6).Info("No rancher credentials source provided, skipping.")
 		return nil
 	}
 
