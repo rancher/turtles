@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
@@ -144,8 +145,10 @@ func (t *TestEnvironmentConfiguration) Build() (*TestEnvironment, error) {
 	}
 
 	options := manager.Options{
-		Scheme:             clientgoscheme.Scheme,
-		MetricsBindAddress: "0",
+		Scheme: clientgoscheme.Scheme,
+		Metrics: server.Options{
+			BindAddress: "0",
+		},
 	}
 
 	mgr, err := ctrl.NewManager(t.env.Config, options)
