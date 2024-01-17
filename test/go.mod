@@ -5,10 +5,10 @@ go 1.20
 replace github.com/rancher-sandbox/rancher-turtles => ../
 
 require (
-	code.gitea.io/sdk/gitea v0.16.0
+	code.gitea.io/sdk/gitea v0.17.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-git/go-git/v5 v5.11.0
-	github.com/onsi/ginkgo/v2 v2.13.2
+	github.com/onsi/ginkgo/v2 v2.14.0
 	github.com/onsi/gomega v1.30.0
 	github.com/rancher-sandbox/rancher-turtles v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.28.5
@@ -19,7 +19,7 @@ require (
 	sigs.k8s.io/cluster-api v1.6.0
 	sigs.k8s.io/cluster-api-operator v0.8.1
 	sigs.k8s.io/cluster-api-operator/test v0.8.1
-	sigs.k8s.io/cluster-api/test v1.6.0
+	sigs.k8s.io/cluster-api/test v1.6.1
 	sigs.k8s.io/controller-runtime v0.16.3
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -75,7 +75,7 @@ require (
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/google/uuid v1.4.0 // indirect
-	github.com/hashicorp/go-version v1.5.0 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
