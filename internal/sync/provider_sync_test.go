@@ -23,6 +23,7 @@ import (
 	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +32,13 @@ import (
 
 var _ = Describe("Provider sync", func() {
 	var (
-		err            error
-		ns             *corev1.Namespace
-		capiProvider   *turtlesv1.CAPIProvider
-		infrastructure *operatorv1.InfrastructureProvider
+		err                     error
+		ns                      *corev1.Namespace
+		otherNs                 *corev1.Namespace
+		capiProvider            *turtlesv1.CAPIProvider
+		capiProviderDuplicate   *turtlesv1.CAPIProvider
+		infrastructure          *operatorv1.InfrastructureProvider
+		infrastructureDuplicate *operatorv1.InfrastructureProvider
 	)
 
 	BeforeEach(func() {
@@ -42,6 +46,9 @@ var _ = Describe("Provider sync", func() {
 		SetContext(ctx)
 
 		ns, err = testEnv.CreateNamespace(ctx, "ns")
+		Expect(err).ToNot(HaveOccurred())
+
+		otherNs, err = testEnv.CreateNamespace(ctx, "other")
 		Expect(err).ToNot(HaveOccurred())
 
 		capiProvider = &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
@@ -52,16 +59,25 @@ var _ = Describe("Provider sync", func() {
 			Type: turtlesv1.Infrastructure,
 		}}
 
+		capiProviderDuplicate = capiProvider.DeepCopy()
+		capiProviderDuplicate.Namespace = otherNs.Name
+
 		infrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      string(capiProvider.Spec.Name),
-			Namespace: capiProvider.Namespace,
+			Namespace: ns.Name,
+		}}
+
+		infrastructureDuplicate = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(capiProvider.Spec.Name),
+			Namespace: otherNs.Name,
 		}}
 
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
+		Expect(testEnv.Client.Create(ctx, capiProviderDuplicate)).To(Succeed())
 	})
 
 	AfterEach(func() {
-		testEnv.Cleanup(ctx, ns)
+		testEnv.Cleanup(ctx, ns, otherNs)
 	})
 
 	It("Should sync spec down", func() {
@@ -102,5 +118,52 @@ var _ = Describe("Provider sync", func() {
 
 		Expect(capiProvider).To(HaveField("Status.ProviderStatus", Equal(infrastructure.Status.ProviderStatus)))
 		Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
+	})
+
+	It("Should individually sync every provider", func() {
+		Expect(testEnv.Client.Create(ctx, infrastructure.DeepCopy())).To(Succeed())
+		Eventually(UpdateStatus(infrastructure, func() {
+			infrastructure.Status = operatorv1.InfrastructureProviderStatus{
+				ProviderStatus: operatorv1.ProviderStatus{
+					InstalledVersion: ptr.To("v1.2.3"),
+				},
+			}
+		})).Should(Succeed())
+
+		s := sync.NewProviderSync(testEnv, capiProvider)
+
+		Eventually(func() (err error) {
+			err = s.Get(ctx)
+			if err != nil {
+				return
+			}
+			err = s.Sync(ctx)
+			s.Apply(ctx, &err)
+			return
+		}).Should(Succeed())
+
+		Expect(capiProvider).To(HaveField("Status.ProviderStatus", Equal(infrastructure.Status.ProviderStatus)))
+		Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
+
+		s = sync.NewProviderSync(testEnv, capiProviderDuplicate)
+
+		Eventually(func() (err error) {
+			err = s.Get(ctx)
+			if err != nil {
+				return
+			}
+			err = s.Sync(ctx)
+			s.Apply(ctx, &err)
+			if err != nil {
+				return
+			}
+
+			obj := &operatorv1.InfrastructureProvider{}
+			err = testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructureDuplicate), obj)
+			return
+		}).Should(Succeed())
+
+		Expect(capiProviderDuplicate).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
+		Expect(capiProviderDuplicate).To(HaveField("Status.ProviderStatus.InstalledVersion", BeNil()))
 	})
 })

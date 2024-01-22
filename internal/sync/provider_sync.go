@@ -41,7 +41,7 @@ func NewProviderSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider) Syn
 	template := ProviderSync{}.Template(capiProvider)
 
 	destination, ok := template.(api.Provider)
-	if !ok {
+	if !ok || destination == nil {
 		return nil
 	}
 
@@ -66,8 +66,9 @@ func (ProviderSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object
 
 	for _, provider := range turtlesv1.Providers {
 		if provider.GetType() == strings.ToLower(string(capiProvider.Spec.Type)) {
-			provider := provider
-			template = provider
+			// We always know the template type, so we can safely typecast.
+			//nolint: forcetypeassert
+			template = provider.DeepCopyObject().(api.Provider)
 
 			template.SetName(meta.Name)
 			template.SetNamespace(meta.Namespace)
