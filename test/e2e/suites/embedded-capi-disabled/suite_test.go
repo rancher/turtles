@@ -96,7 +96,7 @@ var _ = BeforeSuite(func() {
 		Scheme:               e2e.InitScheme(),
 		ArtifactFolder:       flagVals.ArtifactFolder,
 		Hostname:             hostName,
-		KubernetesVersion:    e2eConfig.GetVariable(e2e.KubernetesVersionVar),
+		KubernetesVersion:    e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
 		IsolatedMode:         flagVals.IsolatedMode,
 		HelmBinaryPath:       flagVals.HelmBinaryPath,
 	})
