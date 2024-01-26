@@ -2,8 +2,7 @@
 
 ## Release Cadence
 
-- Rancher Turtles minor versions (v0.**4**.0 versus v0.**3**.0) are released every 2-3 weeks or once a month.
-- Rancher Turtles patch versions (v0.4.**2** versus v0.4.**1**) are released as often as weekly. 
+- New Rancher Turtles versions are released every 2-4 weeks.
 
 ## Release Process
 
@@ -77,14 +76,19 @@ git push upstream ${RELEASE_TAG}
 
 ### Create a patch for new version of Rancher Turtles Docs
 
-1. Create a patch with new version of tag (i.e `v0.4`) in Rancher Turtles Docs repository.
+This step is automatic, however it requires temporarily adjusting repo permissions so that the new version patch is pushed on behalf of the tag committer.
 
-Prior art: https://github.com/rancher-sandbox/rancher-turtles-docs/commit/d36f0de97c5b5594cd8a396d6780761b6e106e3f
+1. Ask a team member or directly adjust `Docs repo > Settings > Rules > Rulesets > main > Enforcement status > Disabled`.
+
+2. Wait for the [version publish workflow](https://github.com/rancher-sandbox/rancher-turtles-docs/actions/workflows/version-publish.yamll) to finish.
+
+3. Ask a team member or directly adjust `Docs repo > Settings > Rules > Rulesets > main > Enforcement status > Active`.
+
+Example version update patch: https://github.com/rancher-sandbox/rancher-turtles-docs/commit/d36f0de97c5b5594cd8a396d6780761b6e106e3f
 
 ### Deploy site to Pages
 
-1. Run [publish workflow](https://github.com/rancher-sandbox/rancher-turtles-docs/actions/workflows/publish.yaml) manually to
-publish the new version of docs.
+1. Manually run [publish workflow](https://github.com/rancher-sandbox/rancher-turtles-docs/actions/workflows/publish.yaml) to force rollout of updated docs version.
 
 ## Versioning
 
