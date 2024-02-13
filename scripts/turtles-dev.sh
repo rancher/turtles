@@ -15,11 +15,12 @@
 # limitations under the License.
 
 RANCHER_HOSTNAME=$1
-if [ -z "$RANCHER_HOSTNAME" ]
-then
-    echo "You must pass a rancher host name"
-    exit 1
+if [ -z "$RANCHER_HOSTNAME" ]; then
+	echo "You must pass a rancher host name"
+	exit 1
 fi
+
+RANCHER_VERSION=${RANCHER_VERSION:-v2.8.1}
 
 BASEDIR=$(dirname "$0")
 
@@ -28,35 +29,33 @@ kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml"
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
 helm repo add jetstack https://charts.jetstack.io
-helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
 helm repo update
-
-helm install cert-manager jetstack/cert-manager \
-    --namespace cert-manager \
-    --create-namespace \
-    --version v1.12.3 \
-    --set installCRDs=true \
-    --wait
-
-kubectl rollout status deployment cert-manager -n cert-manager --timeout=90s
 
 export EXP_CLUSTER_RESOURCE_SET=true
 export CLUSTER_TOPOLOGY=true
+
+helm install capi-operator capi-operator/cluster-api-operator \
+	--create-namespace -n capi-operator-system \
+	--set cert-manager.enabled=true \
+	--wait
+
+kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
+
 clusterctl init -i docker
 
 helm install rancher rancher-stable/rancher \
-    --namespace cattle-system \
-    --create-namespace \
-    --set bootstrapPassword=rancheradmin \
-    --set replicas=1 \
-    --set hostname="$RANCHER_HOSTNAME" \
-    --set 'extraEnv[0].name=CATTLE_FEATURES' \
-    --set 'extraEnv[0].value=embedded-cluster-api=false' \
-    --set global.cattle.psp.enabled=false \
-    --version v2.7.5 \
-    --wait
+	--namespace cattle-system \
+	--create-namespace \
+	--set bootstrapPassword=rancheradmin \
+	--set replicas=1 \
+	--set hostname="$RANCHER_HOSTNAME" \
+	--set 'extraEnv[0].name=CATTLE_FEATURES' \
+	--set 'extraEnv[0].value=embedded-cluster-api=false' \
+	--version="$RANCHER_VERSION" \
+	--wait
 
 kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 
 tilt up
-
