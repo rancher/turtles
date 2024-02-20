@@ -83,6 +83,7 @@ type Features struct {
 // +structType=atomic
 //
 //nolint:godot
+//nolint:lll
 type Credentials struct {
 	// RancherCloudCredential is the Rancher Cloud Credential name
 	RancherCloudCredential string `json:"rancherCloudCredential,omitempty"`

@@ -18,6 +18,7 @@ package sync_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,12 +38,14 @@ import (
 
 var _ = Describe("SecretMapperSync get", func() {
 	var (
-		err           error
-		ns            *corev1.Namespace
-		globalDataNs  *corev1.Namespace
-		capiProvider  *turtlesv1.CAPIProvider
-		secret        *corev1.Secret
-		rancherSecret *corev1.Secret
+		err                        error
+		ns                         *corev1.Namespace
+		globalDataNs               *corev1.Namespace
+		capiProvider               *turtlesv1.CAPIProvider
+		capiProviderWithRancherRef *turtlesv1.CAPIProvider
+		secret                     *corev1.Secret
+		rancherSecret              *corev1.Secret
+		customRancherSecret        *corev1.Secret
 	)
 
 	BeforeEach(func() {
@@ -72,6 +75,13 @@ var _ = Describe("SecretMapperSync get", func() {
 			},
 		}
 
+		customRancherSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "secret-name",
+				Namespace: ns.Name,
+			},
+		}
+
 		capiProvider = &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: ns.Name,
@@ -88,11 +98,35 @@ var _ = Describe("SecretMapperSync get", func() {
 			},
 		}}
 
+		capiProviderWithRancherRef = capiProvider.DeepCopy()
+		capiProviderWithRancherRef.Spec.Credentials = &turtlesv1.Credentials{
+			RancherCloudCredentialNamespaceName: ns.Name + ":secret-name",
+		}
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
 	})
 
 	AfterEach(func() {
 		Expect(testEnv.Cleanup(ctx, ns, rancherSecret)).ToNot(HaveOccurred())
+	})
+
+	It("should not allow duplicate rancher credentials references", func() {
+		provider := capiProviderWithRancherRef.DeepCopy()
+		provider.Spec.Credentials.RancherCloudCredential = "duplicate"
+		Expect(testEnv.Client.Create(ctx, provider)).ToNot(Succeed())
+	})
+
+	It("should not allow empty or partial namespace:name reference for rancher credentials", func() {
+		provider := capiProviderWithRancherRef.DeepCopy()
+		provider.Spec.Credentials.RancherCloudCredentialNamespaceName = ":"
+		Expect(testEnv.Client.Create(ctx, provider)).ToNot(Succeed())
+
+		provider = capiProviderWithRancherRef.DeepCopy()
+		provider.Spec.Credentials.RancherCloudCredentialNamespaceName = ":name"
+		Expect(testEnv.Client.Create(ctx, provider)).ToNot(Succeed())
+
+		provider = capiProviderWithRancherRef.DeepCopy()
+		provider.Spec.Credentials.RancherCloudCredentialNamespaceName = "namespace:"
+		Expect(testEnv.Client.Create(ctx, provider)).ToNot(Succeed())
 	})
 
 	It("should get the source Rancher secret", func() {
@@ -137,6 +171,45 @@ var _ = Describe("SecretMapperSync get", func() {
 		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
 	})
 
+	It("should get the source Rancher secret pointed by ref", func() {
+		secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(capiProvider.Spec.ProviderSpec.ConfigSecret.Name),
+			Namespace: capiProvider.Namespace,
+		}}
+		Expect(testEnv.Client.Create(ctx, secret)).To(Succeed())
+		Expect(testEnv.Client.Create(ctx, customRancherSecret)).ToNot(HaveOccurred())
+
+		syncer := sync.SecretMapperSync{
+			SecretSync:    sync.NewSecretSync(testEnv.Client, capiProviderWithRancherRef).(*sync.SecretSync),
+			RancherSecret: sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef),
+		}
+
+		err := syncer.Get(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(syncer.RancherSecret.Name).To(Equal(customRancherSecret.Name))
+		Expect(syncer.RancherSecret.Namespace).To(Equal(customRancherSecret.Namespace))
+	})
+
+	It("should handle unexisting secret pointer by ref", func() {
+		secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(capiProvider.Spec.ProviderSpec.ConfigSecret.Name),
+			Namespace: capiProvider.Namespace,
+		}}
+		Expect(testEnv.Client.Create(ctx, secret)).To(Succeed())
+
+		syncer := sync.SecretMapperSync{
+			SecretSync:    sync.NewSecretSync(testEnv.Client, capiProviderWithRancherRef).(*sync.SecretSync),
+			RancherSecret: sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef),
+		}
+
+		err := syncer.Get(context.Background())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
+		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal(fmt.Sprintf("Rancher Credentials secret named %s:secret-name was not located", ns.Name)))
+	})
+
 	It("should handle when the source Rancher secret is not found", func() {
 		secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 			Name:      string(capiProvider.Spec.ProviderSpec.ConfigSecret.Name),
@@ -177,6 +250,14 @@ var _ = Describe("SecretMapperSync get", func() {
 			Name:      capiProvider.Spec.Credentials.RancherCloudCredential,
 			Namespace: sync.RancherCredentialsNamespace}))
 		_, isSecret := sync.SecretMapperSync{}.Template(capiProvider).(*corev1.Secret)
+		Expect(isSecret).To(BeTrue())
+	})
+
+	It("should point to the right fully qualified secret reference", func() {
+		Expect(sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef).ObjectMeta).To(Equal(metav1.ObjectMeta{
+			Name:      "secret-name",
+			Namespace: ns.Name}))
+		_, isSecret := sync.SecretMapperSync{}.Template(capiProviderWithRancherRef).(*corev1.Secret)
 		Expect(isSecret).To(BeTrue())
 	})
 

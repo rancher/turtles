@@ -233,15 +233,16 @@ func (SecretMapperSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Ob
 // Get retrieves the source Rancher secret and destenation secret.
 func (s *SecretMapperSync) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
-
 	secretList := &corev1.SecretList{}
+
 	if s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName != "" {
 		err := s.client.Get(ctx, client.ObjectKeyFromObject(s.RancherSecret), s.RancherSecret)
 		if err == nil {
 			return s.SecretSync.Get(ctx)
 		}
 
-		log.Error(err, fmt.Sprintf("Unable to get source rancher secret by reference, looking for: %s", client.ObjectKeyFromObject(s.RancherSecret).String()))
+		log.Error(err, fmt.Sprintf("Unable to get source rancher secret by reference, looking for: %s",
+			client.ObjectKeyFromObject(s.RancherSecret).String()))
 	} else if err := s.client.List(ctx, secretList, client.InNamespace(RancherCredentialsNamespace)); err != nil {
 		log.Error(err, fmt.Sprintf("Unable to list source rancher secrets, looking for: %s", client.ObjectKeyFromObject(s.RancherSecret).String()))
 
@@ -334,10 +335,12 @@ func Into(provider string, from map[string][]byte, to map[string]string) error {
 // If no argument is non-zero, it returns the zero value.
 func Or[T comparable](vals ...T) T {
 	var zero T
+
 	for _, val := range vals {
 		if val != zero {
 			return val
 		}
 	}
+
 	return zero
 }
