@@ -79,12 +79,16 @@ type Features struct {
 // Credentials defines the external credentials information for the provider.
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
+// +kubebuilder:validation:XValidation:message="rancherCloudCredentialNamespaceName should be in the namespace:name format.",rule="!has(self.rancherCloudCredentialNamespaceName) || self.rancherCloudCredentialNamespaceName.matches('^.+:.+$')"
 // +structType=atomic
 //
 //nolint:godot
 type Credentials struct {
 	// RancherCloudCredential is the Rancher Cloud Credential name
 	RancherCloudCredential string `json:"rancherCloudCredential,omitempty"`
+
+	// RancherCloudCredentialNamespaceName is the Rancher Cloud Credential namespace:name reference
+	RancherCloudCredentialNamespaceName string `json:"rancherCloudCredentialNamespaceName,omitempty"`
 
 	// +optional
 	// TODO: decide how to handle workload identity

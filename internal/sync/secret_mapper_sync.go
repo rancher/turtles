@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"text/template"
 
 	_ "embed"
@@ -193,7 +194,8 @@ func NewSecretMapperSync(ctx context.Context, cl client.Client, capiProvider *tu
 	log := log.FromContext(ctx)
 
 	if capiProvider.Spec.Credentials == nil ||
-		capiProvider.Spec.Credentials.RancherCloudCredential == "" ||
+		Or(capiProvider.Spec.Credentials.RancherCloudCredential,
+			capiProvider.Spec.Credentials.RancherCloudCredentialNamespaceName) == "" ||
 		knownProviderRequirements[capiProvider.Spec.Name] == nil {
 		log.V(6).Info("No rancher credentials source provided, skipping.")
 		return nil
@@ -212,9 +214,12 @@ func NewSecretMapperSync(ctx context.Context, cl client.Client, capiProvider *tu
 
 // GetSecret returning the source secret resource template.
 func (SecretMapperSync) GetSecret(capiProvider *turtlesv1.CAPIProvider) *corev1.Secret {
+	splitName := Or(capiProvider.Spec.Credentials.RancherCloudCredentialNamespaceName, ":")
+	namespaceName := strings.SplitN(splitName, ":", 2)
+	namespace, name := namespaceName[0], namespaceName[1]
 	meta := metav1.ObjectMeta{
-		Name:      capiProvider.Spec.Credentials.RancherCloudCredential,
-		Namespace: RancherCredentialsNamespace,
+		Name:      Or(name, capiProvider.Spec.Credentials.RancherCloudCredential),
+		Namespace: Or(namespace, RancherCredentialsNamespace),
 	}
 
 	return &corev1.Secret{ObjectMeta: meta}
@@ -230,7 +235,14 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	secretList := &corev1.SecretList{}
-	if err := s.client.List(ctx, secretList, client.InNamespace(RancherCredentialsNamespace)); err != nil {
+	if s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName != "" {
+		err := s.client.Get(ctx, client.ObjectKeyFromObject(s.RancherSecret), s.RancherSecret)
+		if err == nil {
+			return s.SecretSync.Get(ctx)
+		}
+
+		log.Error(err, fmt.Sprintf("Unable to get source rancher secret by reference, looking for: %s", client.ObjectKeyFromObject(s.RancherSecret).String()))
+	} else if err := s.client.List(ctx, secretList, client.InNamespace(RancherCredentialsNamespace)); err != nil {
 		log.Error(err, fmt.Sprintf("Unable to list source rancher secrets, looking for: %s", client.ObjectKeyFromObject(s.RancherSecret).String()))
 
 		return err
@@ -264,7 +276,9 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 		turtlesv1.RancherCredentialsSecretCondition,
 		turtlesv1.RancherCredentialSourceMissing,
 		clusterv1.ConditionSeverityError,
-		fmt.Sprintf(missingSource, s.Source.Spec.Credentials.RancherCloudCredential),
+		fmt.Sprintf(missingSource, Or(
+			s.Source.Spec.Credentials.RancherCloudCredential,
+			s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName)),
 	))
 
 	return fmt.Errorf("unable to locate rancher secret with name %s for provider %s", s.RancherSecret.GetName(), s.Source.Spec.Name)
@@ -290,7 +304,7 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 
 	log.Info(fmt.Sprintf("Credential keys from %s (%s) are successfully mapped to secret %s",
 		client.ObjectKeyFromObject(s.RancherSecret).String(),
-		s.Source.Spec.Credentials.RancherCloudCredential,
+		Or(s.Source.Spec.Credentials.RancherCloudCredential, s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName),
 		client.ObjectKeyFromObject(s.SecretSync.Secret).String()))
 
 	conditions.Set(s.Source, conditions.TrueCondition(
@@ -314,4 +328,16 @@ func Into(provider string, from map[string][]byte, to map[string]string) error {
 	}
 
 	return kerrors.NewAggregate(errors)
+}
+
+// Or returns the first of its arguments that is not equal to the zero value.
+// If no argument is non-zero, it returns the zero value.
+func Or[T comparable](vals ...T) T {
+	var zero T
+	for _, val := range vals {
+		if val != zero {
+			return val
+		}
+	}
+	return zero
 }
