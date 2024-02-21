@@ -19,6 +19,7 @@ package sync
 import (
 	"context"
 	"strings"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,6 +30,8 @@ import (
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	"github.com/rancher-sandbox/rancher-turtles/internal/api"
 )
+
+const AppliedSpecHashAnnotation = "operator.cluster.x-k8s.io/applied-spec-hash"
 
 // ProviderSync is a structure mirroring state of the CAPI Operator Provider object.
 type ProviderSync struct {
@@ -109,4 +112,27 @@ func (s *ProviderSync) syncStatus() {
 	default:
 		s.Source.SetPhase(turtlesv1.Provisioning)
 	}
+
+	s.rolloutInfrastructure()
+}
+
+func (s *ProviderSync) rolloutInfrastructure() {
+	now := metav1.NewTime(time.Now().UTC().Truncate(time.Second))
+	lastApplied := conditions.Get(s.Source, turtlesv1.LastAppliedConfigurationTime)
+
+	if lastApplied != nil && lastApplied.LastTransitionTime.Add(time.Minute).Before(now.Time) {
+		return
+	}
+
+	conditions.MarkUnknown(s.Source, turtlesv1.LastAppliedConfigurationTime, "Requesting infrastructure rollout", "")
+
+	// Unsetting operator.cluster.x-k8s.io/applied-spec-hash to sync infrastructure if needed
+	annotations := s.Destination.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[AppliedSpecHashAnnotation] = ""
+	s.Destination.SetAnnotations(annotations)
+
+	conditions.MarkTrue(s.Source, turtlesv1.LastAppliedConfigurationTime)
 }

@@ -27,4 +27,7 @@ const (
 
 	// RancherCredentialSourceMissing occures when a source credential secret is missing.
 	RancherCredentialSourceMissing = "RancherCredentialSourceMissing"
+
+	// LastAppliedConfigurationTime is set as a timestamp infor of the last configuration update byt the CAPI Operator resource.
+	LastAppliedConfigurationTime = "LastAppliedConfigurationTime"
 )
