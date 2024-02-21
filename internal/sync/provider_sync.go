@@ -31,6 +31,8 @@ import (
 	"github.com/rancher-sandbox/rancher-turtles/internal/api"
 )
 
+// AppliedSpecHashAnnotation is a spec hash annotation set by CAPI Operator,
+// to prevent infrastructure rollout without spec changes.
 const AppliedSpecHashAnnotation = "operator.cluster.x-k8s.io/applied-spec-hash"
 
 // ProviderSync is a structure mirroring state of the CAPI Operator Provider object.
@@ -131,6 +133,7 @@ func (s *ProviderSync) rolloutInfrastructure() {
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
+
 	annotations[AppliedSpecHashAnnotation] = ""
 	s.Destination.SetAnnotations(annotations)
 
