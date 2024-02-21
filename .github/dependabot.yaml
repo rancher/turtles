@@ -13,8 +13,9 @@ updates:
         patterns:
           - "*"
     ignore:
-      # Ignore Cluster-API as its upgraded manually.
+      # Ignore Cluster-API as its upgraded separately.
       - dependency-name: "sigs.k8s.io/cluster-api"
+      - dependency-name: "sigs.k8s.io/cluster-api-operator"
       # Ignore controller-runtime as its upgraded manually.
       - dependency-name: "sigs.k8s.io/controller-runtime"
       # Ignore k8s and its transitives modules as they are upgraded manually
@@ -22,6 +23,18 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
+  # Watch CAPI Operator changes daily for a timely version bump.
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "kind/cleanup"
+      - "area/dependency"
+    groups:
+      dependencies:
+        patterns:
+          - "sigs.k8s.io/cluster-api-operator"
   # Test Go module
   - package-ecosystem: "gomod"
     directory: "/test"
