@@ -17,12 +17,16 @@ limitations under the License.
 package sync_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -32,13 +36,14 @@ import (
 
 var _ = Describe("Provider sync", func() {
 	var (
-		err                     error
-		ns                      *corev1.Namespace
-		otherNs                 *corev1.Namespace
-		capiProvider            *turtlesv1.CAPIProvider
-		capiProviderDuplicate   *turtlesv1.CAPIProvider
-		infrastructure          *operatorv1.InfrastructureProvider
-		infrastructureDuplicate *operatorv1.InfrastructureProvider
+		err                          error
+		ns                           *corev1.Namespace
+		otherNs                      *corev1.Namespace
+		capiProvider                 *turtlesv1.CAPIProvider
+		capiProviderDuplicate        *turtlesv1.CAPIProvider
+		infrastructure               *operatorv1.InfrastructureProvider
+		infrastructureStatusOutdated operatorv1.ProviderStatus
+		infrastructureDuplicate      *operatorv1.InfrastructureProvider
 	)
 
 	BeforeEach(func() {
@@ -71,6 +76,14 @@ var _ = Describe("Provider sync", func() {
 			Name:      string(capiProvider.Spec.Name),
 			Namespace: otherNs.Name,
 		}}
+
+		infrastructureStatusOutdated = operatorv1.ProviderStatus{
+			Conditions: clusterv1.Conditions{{
+				Type:               turtlesv1.LastAppliedConfigurationTime,
+				Status:             corev1.ConditionTrue,
+				LastTransitionTime: metav1.NewTime(time.Now().UTC().Truncate(time.Second).Add(-6 * time.Minute)),
+			}},
+		}
 
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProviderDuplicate)).To(Succeed())
@@ -116,7 +129,40 @@ var _ = Describe("Provider sync", func() {
 			return
 		}).Should(Succeed())
 
-		Expect(capiProvider).To(HaveField("Status.ProviderStatus", Equal(infrastructure.Status.ProviderStatus)))
+		Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+		Expect(capiProvider.Status.Conditions).To(HaveLen(1))
+		Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
+	})
+
+	It("Should update outdated condition and empty the hash annotation", func() {
+		capiProvider.Status.ProviderStatus = infrastructureStatusOutdated
+		appliedCondition := conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)
+		Eventually(testEnv.Status().Update(ctx, capiProvider)).Should(Succeed())
+		Eventually(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).Should(Succeed())
+		Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(appliedCondition.LastTransitionTime.Second()))
+
+		s := sync.NewProviderSync(testEnv, capiProvider)
+
+		dest := &operatorv1.InfrastructureProvider{}
+		Eventually(func() (err error) {
+			err = s.Get(ctx)
+			if err != nil {
+				return
+			}
+			err = s.Sync(ctx)
+			s.Apply(ctx, &err)
+			if err != nil {
+				return
+			}
+
+			return testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)
+		}).Should(Succeed())
+
+		Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
+		Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+		Expect(capiProvider.Status.Conditions).To(HaveLen(1))
+		Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
+			appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 	})
 
@@ -132,17 +178,27 @@ var _ = Describe("Provider sync", func() {
 
 		s := sync.NewProviderSync(testEnv, capiProvider)
 
+		dest := &operatorv1.InfrastructureProvider{}
 		Eventually(func() (err error) {
 			err = s.Get(ctx)
 			if err != nil {
 				return
 			}
 			err = s.Sync(ctx)
+			if err != nil {
+				return
+			}
 			s.Apply(ctx, &err)
-			return
+			if err != nil {
+				return
+			}
+
+			return testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)
 		}).Should(Succeed())
 
-		Expect(capiProvider).To(HaveField("Status.ProviderStatus", Equal(infrastructure.Status.ProviderStatus)))
+		Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
+		Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+		Expect(capiProvider.Status.Conditions).To(HaveLen(1))
 		Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 
 		s = sync.NewProviderSync(testEnv, capiProviderDuplicate)
@@ -158,11 +214,12 @@ var _ = Describe("Provider sync", func() {
 				return
 			}
 
-			obj := &operatorv1.InfrastructureProvider{}
-			err = testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructureDuplicate), obj)
-			return
+			return testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructureDuplicate), dest)
 		}).Should(Succeed())
 
+		Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
+		Expect(conditions.IsTrue(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+		Expect(capiProviderDuplicate.Status.Conditions).To(HaveLen(1))
 		Expect(capiProviderDuplicate).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 		Expect(capiProviderDuplicate).To(HaveField("Status.ProviderStatus.InstalledVersion", BeNil()))
 	})
