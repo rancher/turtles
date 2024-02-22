@@ -54,9 +54,9 @@ func setup() {
 	utilruntime.Must(operatorv1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(turtlesv1.AddToScheme(scheme.Scheme))
 
-	testEnvConfig := helpers.NewTestEnvironmentConfiguration([]string{
+	testEnvConfig := helpers.NewTestEnvironmentConfiguration(
 		path.Join("config", "crd", "bases"),
-	})
+	)
 	var err error
 	testEnv, err = testEnvConfig.Build()
 	if err != nil {

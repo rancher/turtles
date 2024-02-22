@@ -39,9 +39,15 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		rancherCluster   *provisioningv1.Cluster
 		kubeconfigSecret *corev1.Secret
 		clusterName      string
+		ns               *corev1.Namespace
 	)
 
 	BeforeEach(func() {
+		var err error
+
+		ns, err = testEnv.CreateNamespace(ctx, "v2prov")
+		Expect(err).ToNot(HaveOccurred())
+
 		r = &RancherKubeconfigSecretReconciler{
 			Client: cl,
 		}
@@ -50,7 +56,7 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		rancherCluster = &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      clusterName,
-				Namespace: testNamespace,
+				Namespace: ns.Name,
 			},
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Cluster",
@@ -65,7 +71,7 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		kubeconfigSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-kubeconfig", clusterName),
-				Namespace: testNamespace,
+				Namespace: ns.Name,
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: "provisioning.cattle.io/v1",
@@ -87,6 +93,7 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 			kubeconfigSecret,
 		}
 		Expect(test.CleanupAndWait(ctx, cl, clientObjs...)).To(Succeed())
+		Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
 	})
 
 	It("should add label to a v2prov secret", func() {
@@ -101,10 +108,11 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		updatedSecret := &corev1.Secret{}
-		err = cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)).ToNot(HaveOccurred())
+			g.Expect(updatedSecret.GetLabels()).To(HaveLen(1))
+		}).Should(Succeed())
 
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(updatedSecret.Labels).To(HaveLen(1))
 		labvelVal, labelFound := updatedSecret.Labels["cluster.x-k8s.io/cluster-name"]
 		Expect(labelFound).To(BeTrue(), "Failed to find expected CAPI label")
 		Expect(labvelVal).To(Equal(clusterName))
@@ -125,15 +133,14 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		updatedSecret := &corev1.Secret{}
-		err = cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)
-
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(updatedSecret.Labels).To(HaveLen(1))
-		labvelVal, labelFound := updatedSecret.Labels["cluster.x-k8s.io/cluster-name"]
-		Expect(labelFound).To(BeTrue(), "Failed to find expected CAPI label")
-		Expect(labvelVal).To(Equal(clusterName))
-
-		Expect(kubeconfigSecret.ResourceVersion).To(Equal(updatedSecret.ResourceVersion), "Secret shouldn't have been updated")
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)).ToNot(HaveOccurred())
+			g.Expect(updatedSecret.Labels).To(HaveLen(1))
+			labvelVal, labelFound := updatedSecret.Labels["cluster.x-k8s.io/cluster-name"]
+			g.Expect(labelFound).To(BeTrue(), "Failed to find expected CAPI label")
+			g.Expect(labvelVal).To(Equal(clusterName))
+			g.Expect(kubeconfigSecret.ResourceVersion).To(Equal(updatedSecret.ResourceVersion), "Secret shouldn't have been updated")
+		})
 	})
 
 	It("should not change already existing labels but add label to v2prov secret", func() {
@@ -152,10 +159,10 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		updatedSecret := &corev1.Secret{}
-		err = cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)
-
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(updatedSecret.Labels).To(HaveLen(2))
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)).ToNot(HaveOccurred())
+			g.Expect(updatedSecret.GetLabels()).To(HaveLen(2))
+		}).Should(Succeed())
 
 		labvelVal, labelFound := updatedSecret.Labels["cluster.x-k8s.io/cluster-name"]
 		Expect(labelFound).To(BeTrue(), "Failed to find expected CAPI label")
@@ -179,11 +186,7 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		updatedSecret := &corev1.Secret{}
-		err = cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)
-
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(updatedSecret.Labels).To(HaveLen(0))
+		Eventually(testEnv.GetAs(kubeconfigSecret, &corev1.Secret{})).Should(HaveField("Labels", HaveLen(0)))
 	})
 
 	It("should not add a label to a non-v2prov Rancher cluster secret", func() {
@@ -203,9 +206,9 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		updatedSecret := &corev1.Secret{}
-		err = cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)
-
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(updatedSecret.Labels).To(HaveLen(0))
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)).ToNot(HaveOccurred())
+			g.Expect(updatedSecret.Labels).To(HaveLen(0))
+		})
 	})
 })

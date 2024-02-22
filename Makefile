@@ -283,6 +283,7 @@ KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILD
 
 .PHONY: test
 test: $(SETUP_ENVTEST) manifests ## Run tests.
+	go clean -testcache
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 ##@ Build
