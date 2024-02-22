@@ -44,7 +44,6 @@ type DeployRancherTurtlesInput struct {
 }
 
 func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) {
-
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancherTurtles")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for DeployRancherTurtles")
@@ -91,7 +90,7 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	_, err := chart.Run(values)
 	Expect(err).ToNot(HaveOccurred())
 
-	//TODO: this can probably be covered by the Operator helper
+	// TODO: this can probably be covered by the Operator helper
 
 	By("Adding CAPI infrastructure providers")
 	Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersYAML)).To(Succeed())
@@ -103,7 +102,8 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "capi-controller-manager",
 				Namespace: "capi-system",
-			}},
+			},
+		},
 	}, input.WaitDeploymentsReadyInterval...)
 
 	By("Waiting for CAPI kubeadm bootstrap deployment to be available")

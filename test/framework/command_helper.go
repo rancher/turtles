@@ -59,7 +59,7 @@ func RunCommand(ctx context.Context, input RunCommandInput, result *RunCommandRe
 
 	result.Error = err
 	result.Stdout = stdout.Bytes()
-	result.Stderr = stdout.Bytes()
+	result.Stderr = stderr.Bytes()
 	result.ExitCode = 0
 
 	if exitError, ok := err.(*exec.ExitError); ok {

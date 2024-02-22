@@ -24,9 +24,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"testing"
-
 	"runtime"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,6 +34,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/framework"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
@@ -77,12 +77,22 @@ func TestE2E(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
-	Expect(os.MkdirAll(flagVals.ArtifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", flagVals.ArtifactFolder)
+	Expect(os.MkdirAll(flagVals.ArtifactFolder, 0o755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", flagVals.ArtifactFolder)
 	Expect(flagVals.HelmBinaryPath).To(BeAnExistingFile(), "Invalid test suite argument. helm-binary-path should be an existing file.")
 	Expect(flagVals.ChartPath).To(BeAnExistingFile(), "Invalid test suite argument. chart-path should be an existing file.")
 
 	By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
 	e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
+
+	dockerUsername := ""
+	dockerPassword := ""
+	if flagVals.UseEKS {
+		Expect(flagVals.IsolatedMode).To(BeFalse(), "You cannot use eks with isolated")
+		dockerUsername = os.Getenv("GITHUB_USERNAME")
+		Expect(dockerUsername).NotTo(BeEmpty(), "Github username is required")
+		dockerPassword = os.Getenv("GITHUB_TOKEN")
+		Expect(dockerPassword).NotTo(BeEmpty(), "Github token is required")
+	}
 
 	By(fmt.Sprintf("Creating a clusterctl config into %q", flagVals.ArtifactFolder))
 	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(flagVals.ArtifactFolder, "repository"))
@@ -95,10 +105,10 @@ var _ = BeforeSuite(func() {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		Scheme:               e2e.InitScheme(),
 		ArtifactFolder:       flagVals.ArtifactFolder,
-		Hostname:             hostName,
 		KubernetesVersion:    e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
 		IsolatedMode:         flagVals.IsolatedMode,
 		HelmBinaryPath:       flagVals.HelmBinaryPath,
+		UseEKS:               flagVals.UseEKS,
 	})
 
 	if flagVals.IsolatedMode {
@@ -110,6 +120,7 @@ var _ = BeforeSuite(func() {
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:      filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher-ingress.yaml"),
 		IsolatedMode:             flagVals.IsolatedMode,
+		UseEKS:                   flagVals.UseEKS,
 		NginxIngress:             e2e.NginxIngress,
 		NginxIngressNamespace:    e2e.NginxIngressNamespace,
 		IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
@@ -121,9 +132,31 @@ var _ = BeforeSuite(func() {
 		DefaultIngressClassPatch: e2e.IngressClassPatch,
 	})
 
+	if flagVals.UseEKS {
+		By("Getting ingress hostname")
+		svcRes := &testenv.WaitForServiceIngressHostnameResult{}
+		testenv.WaitForServiceIngressHostname(ctx, testenv.WaitForServiceIngressHostnameInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			ServiceName:           "ingress-nginx-controller",
+			ServiceNamespace:      "ingress-nginx",
+			IngressWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+		}, svcRes)
+		hostName = svcRes.Hostname
+
+		By("Deploying ghcr details")
+		framework.CreateDockerRegistrySecret(ctx, framework.CreateDockerRegistrySecretInput{
+			Name:                  "regcred",
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			Namespace:             "rancher-turtles-system",
+			DockerServer:          "https://ghcr.io",
+			DockerUsername:        dockerUsername,
+			DockerPassword:        dockerPassword,
+		})
+	}
+
 	// NOTE: deploy Rancher first with the embedded-cluster-api feature disabled.
 	// and the deploy Rancher Turtles.
-	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+	rancherInput := testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:         flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:    filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher.yaml"),
@@ -142,26 +175,78 @@ var _ = BeforeSuite(func() {
 		RancherPatches:         [][]byte{e2e.RancherSettingPatch},
 		RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		IsolatedMode:           flagVals.IsolatedMode,
-		RancherIngressConfig:   e2e.IngressConfig,
-		RancherServicePatch:    e2e.RancherServicePatch,
 		Variables:              e2eConfig.Variables,
-	})
+	}
+	if !flagVals.IsolatedMode && !flagVals.UseEKS {
+		// i.e. we are using ngrok locally
+		rancherInput.RancherIngressConfig = e2e.IngressConfig
+		rancherInput.RancherServicePatch = e2e.RancherServicePatch
+	}
+	if flagVals.UseEKS {
+		rancherInput.RancherIngressClassName = "nginx"
+	}
+	testenv.DeployRancher(ctx, rancherInput)
 
-	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
+	rtInput := testenv.DeployRancherTurtlesInput{
 		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:               flagVals.HelmBinaryPath,
 		ChartPath:                    flagVals.ChartPath,
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-%s", runtime.GOARCH),
+		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues: map[string]string{
 			"cluster-api-operator.cert-manager.enabled":      "false",
 			"rancherTurtles.features.embedded-capi.disabled": "false",
 		},
+	}
+	if flagVals.UseEKS {
+		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+	} else {
+		// NOTE: this was the default previously in the chart locally and ok as
+		// we where loading the image into kind manually.
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	}
+	testenv.DeployRancherTurtles(ctx, rtInput)
+
+	// NOTE: there are no short or local tests in this suite
+	By("Deploying additional infrastructure providers")
+	awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
+	Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
+
+	testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		CAPIProvidersSecretsYAML: [][]byte{
+			e2e.AWSProviderSecret,
+			e2e.AzureIdentitySecret,
+		},
+		CAPIProvidersYAML: e2e.FullProviders,
+		TemplateData: map[string]string{
+			"AWSEncodedCredentials": e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar),
+		},
+		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		WaitForDeployments: []testenv.NamespaceName{
+			{
+				Name:      "capa-controller-manager",
+				Namespace: "capa-system",
+			},
+			{
+				Name:      "capz-controller-manager",
+				Namespace: "capz-system",
+			},
+		},
 	})
+
+	giteaValues := map[string]string{
+		"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
+		"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
+		"service.http.type":    "NodePort",
+	}
+	if flagVals.UseEKS {
+		giteaValues["service.http.type"] = "LoadBalancer"
+	}
 
 	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
@@ -171,15 +256,12 @@ var _ = BeforeSuite(func() {
 		ChartName:             e2eConfig.GetVariable(e2e.GiteaChartNameVar),
 		ChartVersion:          e2eConfig.GetVariable(e2e.GiteaChartVersionVar),
 		ValuesFilePath:        "../../data/gitea/values.yaml",
-		Values: map[string]string{
-			"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-			"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
-		},
-		RolloutWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
-		ServiceWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-getservice"),
-		AuthSecretName:      e2e.AuthSecretName,
-		Username:            e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-		Password:            e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
+		Values:                giteaValues,
+		RolloutWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
+		ServiceWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-service"),
+		AuthSecretName:        e2e.AuthSecretName,
+		Username:              e2eConfig.GetVariable(e2e.GiteaUserNameVar),
+		Password:              e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
 	})
 })
 

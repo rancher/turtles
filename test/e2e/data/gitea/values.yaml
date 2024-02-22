@@ -9,10 +9,6 @@ gitea:
     queue:
       TYPE: level
 
-service:
-  http:
-    type: "NodePort"
-
 persistence:
   enabled: false
   

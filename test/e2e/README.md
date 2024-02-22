@@ -6,6 +6,8 @@ This package contains e2e tests for rancher-turtles project. Implementation is b
 
 ### Prerequisites
 
+Required IAM permissions: <https://eksctl.io/usage/minimum-iam-policies/>
+
 In order to correctly populate provided URL rancher requires to be configured with resolvable server-url setting. In local e2e setup this is handled with [helm based](https://github.com/ngrok/kubernetes-ingress-controller#helm) installation for [ngrok-ingress](https://github.com/ngrok/kubernetes-ingress-controller), using free account.
 
 To setup a free account, the simplest way is to follow their [quickstart](https://ngrok.com/docs/using-ngrok-with/k8s/) guide, specifically steps required to populate these two environment variables:
