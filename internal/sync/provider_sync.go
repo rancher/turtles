@@ -101,6 +101,7 @@ func (s *ProviderSync) Sync(_ context.Context) error {
 // CAPIProvider <- Status.
 func (s *ProviderSync) SyncObjects() {
 	s.Destination.SetSpec(s.Source.GetSpec())
+	s.rolloutInfrastructure()
 	s.Source.SetStatus(s.Destination.GetStatus())
 	s.syncStatus()
 }
@@ -115,14 +116,14 @@ func (s *ProviderSync) syncStatus() {
 		s.Source.SetPhase(turtlesv1.Provisioning)
 	}
 
-	s.rolloutInfrastructure()
+	conditions.MarkTrue(s.Source, turtlesv1.LastAppliedConfigurationTime)
 }
 
 func (s *ProviderSync) rolloutInfrastructure() {
-	now := metav1.NewTime(time.Now().UTC().Truncate(time.Second))
+	now := time.Now()
 	lastApplied := conditions.Get(s.Source, turtlesv1.LastAppliedConfigurationTime)
 
-	if lastApplied != nil && lastApplied.LastTransitionTime.Add(time.Minute).Before(now.Time) {
+	if lastApplied != nil && lastApplied.LastTransitionTime.Add(time.Minute).After(now) {
 		return
 	}
 
@@ -136,6 +137,4 @@ func (s *ProviderSync) rolloutInfrastructure() {
 
 	annotations[AppliedSpecHashAnnotation] = ""
 	s.Destination.SetAnnotations(annotations)
-
-	conditions.MarkTrue(s.Source, turtlesv1.LastAppliedConfigurationTime)
 }

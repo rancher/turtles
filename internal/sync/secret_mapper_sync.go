@@ -18,6 +18,7 @@ package sync
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -194,9 +195,9 @@ func NewSecretMapperSync(ctx context.Context, cl client.Client, capiProvider *tu
 	log := log.FromContext(ctx)
 
 	if capiProvider.Spec.Credentials == nil ||
-		Or(capiProvider.Spec.Credentials.RancherCloudCredential,
+		cmp.Or(capiProvider.Spec.Credentials.RancherCloudCredential,
 			capiProvider.Spec.Credentials.RancherCloudCredentialNamespaceName) == "" ||
-		knownProviderRequirements[capiProvider.Spec.Name] == nil {
+		knownProviderRequirements[capiProvider.ProviderName()] == nil {
 		log.V(6).Info("No rancher credentials source provided, skipping.")
 		return nil
 	}
@@ -214,12 +215,12 @@ func NewSecretMapperSync(ctx context.Context, cl client.Client, capiProvider *tu
 
 // GetSecret returning the source secret resource template.
 func (SecretMapperSync) GetSecret(capiProvider *turtlesv1.CAPIProvider) *corev1.Secret {
-	splitName := Or(capiProvider.Spec.Credentials.RancherCloudCredentialNamespaceName, ":")
+	splitName := cmp.Or(capiProvider.Spec.Credentials.RancherCloudCredentialNamespaceName, ":")
 	namespaceName := strings.SplitN(splitName, ":", 2)
 	namespace, name := namespaceName[0], namespaceName[1]
 	meta := metav1.ObjectMeta{
-		Name:      Or(name, capiProvider.Spec.Credentials.RancherCloudCredential),
-		Namespace: Or(namespace, RancherCredentialsNamespace),
+		Name:      cmp.Or(name, capiProvider.Spec.Credentials.RancherCloudCredential),
+		Namespace: cmp.Or(namespace, RancherCredentialsNamespace),
 	}
 
 	return &corev1.Secret{ObjectMeta: meta}
@@ -258,7 +259,7 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 			continue
 		}
 
-		driverName := s.Source.Spec.Name
+		driverName := s.Source.ProviderName()
 		if name, found := driverMapping[driverName]; found {
 			driverName = name
 		}
@@ -277,12 +278,12 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 		turtlesv1.RancherCredentialsSecretCondition,
 		turtlesv1.RancherCredentialSourceMissing,
 		clusterv1.ConditionSeverityError,
-		fmt.Sprintf(missingSource, Or(
+		fmt.Sprintf(missingSource, cmp.Or(
 			s.Source.Spec.Credentials.RancherCloudCredential,
 			s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName)),
 	))
 
-	return fmt.Errorf("unable to locate rancher secret with name %s for provider %s", s.RancherSecret.GetName(), s.Source.Spec.Name)
+	return fmt.Errorf("unable to locate rancher secret with name %s for provider %s", s.RancherSecret.GetName(), s.Source.ProviderName())
 }
 
 // Sync updates the credentials secret with required values from rancher manager secret.
@@ -290,7 +291,7 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 	log := log.FromContext(ctx)
 	s.SecretSync.Secret.StringData = map[string]string{}
 
-	if err := Into(s.Source.Spec.Name, s.RancherSecret.Data, s.SecretSync.Secret.StringData); err != nil {
+	if err := Into(s.Source.ProviderName(), s.RancherSecret.Data, s.SecretSync.Secret.StringData); err != nil {
 		log.Error(err, "failed to map credential keys")
 
 		conditions.Set(s.Source, conditions.FalseCondition(
@@ -303,9 +304,22 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 		return nil
 	}
 
+	allSet := true
+
+	for k, v := range s.SecretSync.Secret.StringData {
+		if b64value, found := s.RancherSecret.Data[k]; !found || base64.StdEncoding.EncodeToString([]byte(v)) != string(b64value) {
+			allSet = false
+			break
+		}
+	}
+
+	if allSet {
+		s.SecretSync.Secret.StringData = map[string]string{}
+	}
+
 	log.Info(fmt.Sprintf("Credential keys from %s (%s) are successfully mapped to secret %s",
 		client.ObjectKeyFromObject(s.RancherSecret).String(),
-		Or(s.Source.Spec.Credentials.RancherCloudCredential, s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName),
+		cmp.Or(s.Source.Spec.Credentials.RancherCloudCredential, s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName),
 		client.ObjectKeyFromObject(s.SecretSync.Secret).String()))
 
 	conditions.Set(s.Source, conditions.TrueCondition(
@@ -329,18 +343,4 @@ func Into(provider string, from map[string][]byte, to map[string]string) error {
 	}
 
 	return kerrors.NewAggregate(errors)
-}
-
-// Or returns the first of its arguments that is not equal to the zero value.
-// If no argument is non-zero, it returns the zero value.
-func Or[T comparable](vals ...T) T {
-	var zero T
-
-	for _, val := range vals {
-		if val != zero {
-			return val
-		}
-	}
-
-	return zero
 }

@@ -18,6 +18,8 @@ package sync
 
 import (
 	"context"
+	"encoding/base64"
+	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,6 +82,19 @@ func (s *SecretSync) SyncObjects() {
 	setFeatures(s.DefaultSynchronizer.Source)
 
 	s.Secret.StringData = s.DefaultSynchronizer.Source.Status.Variables
+
+	allSet := true
+
+	for k, v := range s.DefaultSynchronizer.Source.Status.Variables {
+		if b64value, found := s.Secret.Data[k]; !found || base64.StdEncoding.EncodeToString([]byte(v)) != string(b64value) {
+			allSet = false
+			break
+		}
+	}
+
+	if allSet {
+		s.Secret.StringData = map[string]string{}
+	}
 }
 
 func setVariables(capiProvider *turtlesv1.CAPIProvider) {
@@ -89,21 +104,12 @@ func setVariables(capiProvider *turtlesv1.CAPIProvider) {
 }
 
 func setFeatures(capiProvider *turtlesv1.CAPIProvider) {
-	value := "true"
 	features := capiProvider.Spec.Features
 	variables := capiProvider.Status.Variables
 
 	if features != nil {
-		if features.ClusterResourceSet {
-			variables["EXP_CLUSTER_RESOURCE_SET"] = value
-		}
-
-		if features.ClusterTopology {
-			variables["CLUSTER_TOPOLOGY"] = value
-		}
-
-		if features.MachinePool {
-			variables["EXP_MACHINE_POOL"] = value
-		}
+		variables["EXP_CLUSTER_RESOURCE_SET"] = strconv.FormatBool(features.ClusterResourceSet)
+		variables["CLUSTER_TOPOLOGY"] = strconv.FormatBool(features.ClusterTopology)
+		variables["EXP_MACHINE_POOL"] = strconv.FormatBool(features.MachinePool)
 	}
 }

@@ -78,3 +78,12 @@ func (b *CAPIProvider) SetVariables(v map[string]string) {
 func (b *CAPIProvider) SetPhase(p Phase) {
 	b.Status.Phase = p
 }
+
+// ProviderName is a name for the managed CAPI provider resource.
+func (b *CAPIProvider) ProviderName() string {
+	if b.Spec.Name != "" {
+		return b.Spec.Name
+	}
+
+	return b.Name
+}
