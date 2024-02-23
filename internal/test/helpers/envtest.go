@@ -41,6 +41,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -116,17 +117,21 @@ func (t *TestEnvironment) CreateNamespace(ctx context.Context, generateName stri
 }
 
 // NewTestEnvironmentConfiguration creates a new test environment configuration for running tests.
-func NewTestEnvironmentConfiguration(crdDirectoryPaths []string) *TestEnvironmentConfiguration {
+func NewTestEnvironmentConfiguration(crdDirectoryPaths ...string) *TestEnvironmentConfiguration {
 	resolvedCrdDirectoryPaths := []string{}
 
-	for _, p := range crdDirectoryPaths {
+	for _, group := range crdDirectoryPaths {
 		resolvedCrdDirectoryPaths = append(
 			resolvedCrdDirectoryPaths,
-			path.Join(root, p),
-			getFilePathToAPI(root, "sigs.k8s.io", "cluster-api", "config/crd/bases"),
-			getFilePathToAPI(root, "sigs.k8s.io", "cluster-api-operator", "config/crd/bases"),
+			path.Join([]string{root, group}...),
 		)
 	}
+
+	resolvedCrdDirectoryPaths = append(
+		resolvedCrdDirectoryPaths,
+		getFilePathToAPI(root, "sigs.k8s.io", "cluster-api", "config/crd/bases"),
+		getFilePathToAPI(root, "sigs.k8s.io", "cluster-api-operator", "config/crd/bases"),
+	)
 
 	return &TestEnvironmentConfiguration{
 		env: &envtest.Environment{
@@ -156,6 +161,8 @@ func (t *TestEnvironmentConfiguration) Build() (*TestEnvironment, error) {
 		klog.Fatalf("Failed to start testenv manager: %v", err)
 	}
 
+	komega.SetClient(mgr.GetClient())
+
 	return &TestEnvironment{
 		Manager: mgr,
 		Client:  mgr.GetClient(),
@@ -177,6 +184,40 @@ func (t *TestEnvironment) Stop() error {
 	t.cancel()
 
 	return t.env.Stop()
+}
+
+// KeyAs is an opposite of client.ObjectKeyFromObject, to construct a new client.Object from provider namespace/name.
+// Example:
+//
+//	emptyCluster := testEnv.KeyAs(client.ObjectKeyFromObject(rancherCluster), &provisioningv1.Cluster{})
+//	Expect(cl.Get(ctx, emptyCluster)).To(Succeed())
+func (t *TestEnvironment) KeyAs(key client.ObjectKey, to client.Object) client.Object {
+	to.SetName(key.Name)
+	to.SetNamespace(key.Namespace)
+
+	return to
+}
+
+// GetAs is a wrapper on komega.Object helper, allowing to construct a new object from an existing object metadata
+// and match for object state in kubernetes cluster.
+// Example:
+//
+//	 // Expecting cluster to be present in the kubernetes API server and be stored in &provisioningv1.Cluster{}.
+//	 // rancherCluster will not be modified during this operation
+//		g.Eventually(testEnv.GetKeyAs(rancherCluster, &provisioningv1.Cluster{})).ShouldNot(BeNil())
+func (t *TestEnvironment) GetAs(obj, as client.Object) func() (client.Object, error) {
+	return komega.Object(t.KeyAs(client.ObjectKeyFromObject(obj), as))
+}
+
+// GetKeyAs is a wrapper on komega.Object helper, allowing to construct a new object from a key
+// and match for object state in kubernetes cluster.
+// Example:
+//
+//	 // Expecting cluster to be present in the kubernetes API server and be stored in &provisioningv1.Cluster{}
+//		rancherClusterKey := types.NamespaceName{Name: "cluster", Namespace: "default"}
+//		g.Eventually(testEnv.GetKeyAs(rancherClusterKey, &provisioningv1.Cluster{})).ShouldNot(BeNil())
+func (t *TestEnvironment) GetKeyAs(key client.ObjectKey, as client.Object) func() (client.Object, error) {
+	return komega.Object(t.KeyAs(key, as))
 }
 
 func getFilePathToAPI(root, org, pkg, apis string) string {

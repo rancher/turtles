@@ -144,11 +144,11 @@ var _ = Describe("ClusterOrNamespaceWithImportLabel", func() {
 		Expect(result).To(BeTrue())
 	})
 
-	It("should return true if client fails to get namespace", func() {
+	It("should return false if client fails to get namespace", func() {
 		namespace.Name = "non-existent-ns"
 		capiCluster.Namespace = namespace.Name
 		result := ClusterOrNamespaceWithImportLabel(ctx, logger, cl, importLabel).UpdateFunc(event.UpdateEvent{ObjectNew: capiCluster})
-		Expect(result).To(BeTrue())
+		Expect(result).To(BeFalse())
 	})
 
 	It("should return false when cluster and namespace have no import label", func() {

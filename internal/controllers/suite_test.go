@@ -17,66 +17,85 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
-	"path/filepath"
+	"fmt"
+	"path"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher-sandbox/rancher-turtles/internal/test"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/test/helpers"
+	"k8s.io/client-go/kubernetes/scheme"
+	ctrl "sigs.k8s.io/controller-runtime"
 
+	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
 	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
 	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var (
-	testEnv         *envtest.Environment
 	cfg             *rest.Config
 	cl              client.Client
-	ctx             = context.Background()
-	testNamespace   = "test-namespace"
+	testEnv         *helpers.TestEnvironment
 	kubeConfigBytes []byte
+	ctx             = ctrl.SetupSignalHandler()
 )
+
+func setup() {
+	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(operatorv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(turtlesv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(provisioningv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(managementv3.AddToScheme(scheme.Scheme))
+
+	testEnvConfig := helpers.NewTestEnvironmentConfiguration(
+		path.Join("hack", "crd", "bases"),
+		path.Join("config", "crd", "bases"),
+	)
+
+	var err error
+
+	testEnv, err = testEnvConfig.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	cfg = testEnv.Config
+	cl = testEnv.Client
+
+	go func() {
+		fmt.Println("Starting the manager")
+		if err := testEnv.StartManager(ctx); err != nil {
+			panic(fmt.Sprintf("Failed to start the envtest manager: %v", err))
+		}
+	}()
+}
+
+func teardown() {
+	if err := testEnv.Stop(); err != nil {
+		panic(fmt.Sprintf("Failed to stop envtest: %v", err))
+	}
+}
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
+	setup()
+	defer teardown()
 	RunSpecs(t, "Rancher Turtles Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
-
-	By("bootstrapping test environment")
 	var err error
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "hack", "crd", "bases"),
-		},
-		ErrorIfCRDPathMissing: true,
-		Scheme:                runtime.NewScheme(),
-	}
-
-	utilruntime.Must(clusterv1.AddToScheme(testEnv.Scheme))
-	utilruntime.Must(provisioningv1.AddToScheme(testEnv.Scheme))
-	utilruntime.Must(managementv3.AddToScheme(testEnv.Scheme))
-
-	cfg, cl, err = test.StartEnvTest(testEnv)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
-	Expect(cl).NotTo(BeNil())
+	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	kubeConfig := &api.Config{
 		Kind:       "Config",
@@ -104,18 +123,4 @@ var _ = BeforeSuite(func() {
 
 	kubeConfigBytes, err = clientcmd.Write(*kubeConfig)
 	Expect(err).NotTo(HaveOccurred())
-
-	Expect(cl.Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: testNamespace,
-			Labels: map[string]string{
-				importLabelName: "true",
-			},
-		},
-	})).To(Succeed())
-})
-
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	Expect(test.StopEnvTest(testEnv)).To(Succeed())
 })

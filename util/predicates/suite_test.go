@@ -18,20 +18,30 @@ package predicates
 
 import (
 	"context"
+	"fmt"
+	"path"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher-sandbox/rancher-turtles/internal/test"
+	"github.com/rancher-sandbox/rancher-turtles/internal/test/helpers"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+
+	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var (
-	testEnv     *envtest.Environment
+	testEnv     *helpers.TestEnvironment
 	cfg         *rest.Config
 	cl          client.Client
 	ctx         = context.Background()
@@ -48,8 +58,31 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	var err error
-	testEnv = &envtest.Environment{}
-	cfg, cl, err = test.StartEnvTest(testEnv)
+
+	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(operatorv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(turtlesv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(provisioningv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(managementv3.AddToScheme(scheme.Scheme))
+
+	testEnvConfig := helpers.NewTestEnvironmentConfiguration(
+		path.Join("hack", "crd", "bases"),
+	)
+
+	testEnv, err = testEnvConfig.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	cfg = testEnv.Config
+	cl = testEnv
+
+	go func() {
+		fmt.Println("Starting the manager")
+		if err := testEnv.StartManager(ctx); err != nil {
+			panic(fmt.Sprintf("Failed to start the envtest manager: %v", err))
+		}
+	}()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 	Expect(cl).NotTo(BeNil())
@@ -57,5 +90,11 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-	Expect(test.StopEnvTest(testEnv)).To(Succeed())
+	teardown()
 })
+
+func teardown() {
+	if err := testEnv.Stop(); err != nil {
+		panic(fmt.Sprintf("Failed to stop envtest: %v", err))
+	}
+}
