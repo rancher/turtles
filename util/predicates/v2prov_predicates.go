@@ -36,10 +36,10 @@ func V2ProvClusterOwned(logger logr.Logger) predicate.Funcs {
 		CreateFunc: func(e event.CreateEvent) bool {
 			return processIfV2ProvOwned(logger.WithValues("predicate", "V2ProvClusterOwned", "eventType", "create"), e.Object)
 		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
+		DeleteFunc: func(_ event.DeleteEvent) bool {
 			return false
 		},
-		GenericFunc: func(e event.GenericEvent) bool {
+		GenericFunc: func(_ event.GenericEvent) bool {
 			return false
 		},
 	}

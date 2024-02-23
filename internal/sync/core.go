@@ -50,7 +50,7 @@ func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	if err := s.client.Get(ctx, client.ObjectKeyFromObject(s.Destination), s.Destination); client.IgnoreNotFound(err) != nil {
-		log.Error(err, fmt.Sprintf("Unable to get mirrored manifest: %s", client.ObjectKeyFromObject(s.Destination).String()))
+		log.Error(err, "Unable to get mirrored manifest: "+client.ObjectKeyFromObject(s.Destination).String())
 
 		return err
 	}
