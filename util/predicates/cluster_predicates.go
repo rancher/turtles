@@ -149,7 +149,7 @@ func processIfClusterOrNamespaceWithImportLabel(ctx context.Context, logger logr
 	shouldImport, err := util.ShouldAutoImport(ctx, log, cl, cluster, label)
 	if err != nil {
 		log.Error(err, "namespace or cluster has already import annotation set, ignoring it")
-		return true
+		return false
 	}
 
 	return shouldImport
