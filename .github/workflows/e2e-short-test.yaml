@@ -14,7 +14,7 @@ jobs:
     - name: setupGo
       uses: actions/setup-go@v5
       with:
-        go-version: '=1.21.0'
+        go-version: '=1.22.0'
     - name: Run e2e tests
       run: ISOLATED_MODE=true GINKGO_LABEL_FILTER=short make test-e2e
     - name: Collect run artifacts
