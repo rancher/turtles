@@ -241,10 +241,10 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 			return s.SecretSync.Get(ctx)
 		}
 
-		log.Error(err, fmt.Sprintf("Unable to get source rancher secret by reference, looking for: %s",
-			client.ObjectKeyFromObject(s.RancherSecret).String()))
+		log.Error(err, "Unable to get source rancher secret by reference, looking for: "+
+			client.ObjectKeyFromObject(s.RancherSecret).String())
 	} else if err := s.client.List(ctx, secretList, client.InNamespace(RancherCredentialsNamespace)); err != nil {
-		log.Error(err, fmt.Sprintf("Unable to list source rancher secrets, looking for: %s", client.ObjectKeyFromObject(s.RancherSecret).String()))
+		log.Error(err, "Unable to list source rancher secrets, looking for: "+client.ObjectKeyFromObject(s.RancherSecret).String())
 
 		return err
 	}
