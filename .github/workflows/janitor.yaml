@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  janitor:
+  azure-janitor:
     name: azure-janitor
     runs-on: ubuntu-latest
     steps:
@@ -19,3 +19,18 @@ jobs:
             client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
             tenant-id: ${{ secrets.AZURE_TENANT_ID}}
             commit: true
+  aws-janitor:
+    if: success() || failure()
+    name: aws-janitor
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Cleanup
+        uses: rancher-sandbox/aws-janitor@v0.1.0
+        with:
+          regions: eu-west-2
+          ttl: 24h
+          commit: true
+          ignore-tag: janitor-ignore
