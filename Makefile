@@ -471,7 +471,7 @@ $(HELM): ## Put helm into tools folder.
 	rm -f $(TOOLS_BIN_DIR)/get_helm.sh
 
 $(CLUSTERCTL): $(TOOLS_BIN_DIR) ## Download and install clusterctl
-	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.6/clusterctl-linux-amd64
+	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) https://github.com/kubernetes-sigs/cluster-api/releases/download/$(CLUSTERCTL_VER)/clusterctl-linux-amd64
 	chmod +x $(CLUSTERCTL)
 
 ## --------------------------------------

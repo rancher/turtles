@@ -99,7 +99,6 @@ const (
 	CertManagerRepoNameVar = "CERT_MANAGER_REPO_NAME"
 	CertManagerPathVar     = "CERT_MANAGER_PATH"
 	CapiInfrastructureVar  = "CAPI_INFRASTRUCTURE"
-	CapiCoreVar            = "CAPI_CORE"
 
 	NgrokRepoNameVar  = "NGROK_REPO_NAME"
 	NgrokUrlVar       = "NGROK_URL"
