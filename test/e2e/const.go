@@ -127,4 +127,8 @@ const (
 	FullTestLabel  = "full"
 	DontRunLabel   = "dontrun"
 	LocalTestLabel = "local"
+
+	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
+	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
+	OwnedLabelName                 = "cluster-api.cattle.io/owned"
 )
