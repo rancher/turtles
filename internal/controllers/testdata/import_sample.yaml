@@ -30,7 +30,7 @@ subjects:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cattle-system
+  name: cattle-system-${TEST_CASE_NAME}
 
 ---
 
@@ -38,7 +38,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cattle
-  namespace: cattle-system
+  namespace: cattle-system-${TEST_CASE_NAME}
 
 ---
 
@@ -46,13 +46,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: cattle-admin-binding
-  namespace: cattle-system
+  namespace: cattle-system-${TEST_CASE_NAME}
   labels:
     cattle.io/creator: "norman"
 subjects:
 - kind: ServiceAccount
   name: cattle
-  namespace: cattle-system
+  namespace: cattle-system-${TEST_CASE_NAME}
 roleRef:
   kind: ClusterRole
   name: cattle-admin
@@ -64,7 +64,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: cattle-credentials-12aee23
-  namespace: cattle-system
+  namespace: cattle-system-${TEST_CASE_NAME}
 type: Opaque
 data:
   url: "aHR0cHM6Ly90aGlzaXNhdGVzdA=="
@@ -97,7 +97,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cattle-cluster-agent
-  namespace: cattle-system
+  namespace: cattle-system-${TEST_CASE_NAME}
   annotations:
     management.cattle.io/scale-available: "2"
 spec:
@@ -213,7 +213,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cattle-cluster-agent
-  namespace: cattle-system
+  namespace: cattle-system-${TEST_CASE_NAME}
 spec:
   ports:
   - port: 80

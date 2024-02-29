@@ -116,6 +116,20 @@ func (t *TestEnvironment) CreateNamespace(ctx context.Context, generateName stri
 	return ns, nil
 }
 
+// CreateNamespaceWithName creates a new namespace with a given name.
+func (t *TestEnvironment) CreateNamespaceWithName(ctx context.Context, name string) (*corev1.Namespace, error) {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	if err := t.Client.Create(ctx, ns); err != nil {
+		return nil, err
+	}
+
+	return ns, nil
+}
+
 // NewTestEnvironmentConfiguration creates a new test environment configuration for running tests.
 func NewTestEnvironmentConfiguration(crdDirectoryPaths ...string) *TestEnvironmentConfiguration {
 	resolvedCrdDirectoryPaths := []string{}
