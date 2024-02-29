@@ -25,6 +25,9 @@ const (
 	// RancherKubeSecretPatch is used to enable patching of the Rancher v2prov created kubeconfig
 	// secrets so that they can be used with CAPI 1.5.x.
 	RancherKubeSecretPatch featuregate.Feature = "rancher-kube-secret-patch" //nolint:gosec
+
+	// ManagementV3Cluster is used to enable the management.cattle.io/v3 cluster resource.
+	ManagementV3Cluster featuregate.Feature = "managementv3-cluster" //nolint:gosec
 )
 
 func init() {
@@ -33,4 +36,5 @@ func init() {
 
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	RancherKubeSecretPatch: {Default: false, PreRelease: featuregate.Beta},
+	ManagementV3Cluster:    {Default: false, PreRelease: featuregate.Beta},
 }
