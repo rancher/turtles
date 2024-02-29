@@ -13,6 +13,8 @@ rancherTurtles:
       kubectlImage: rancher/kubectl
     rancher-kubeconfigs:
       label: true
+    managementv3-cluster:
+      enabled: false
 cluster-api-operator:
   enabled: true
   cert-manager:
