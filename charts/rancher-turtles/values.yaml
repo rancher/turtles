@@ -28,13 +28,3 @@ cluster-api-operator:
       fetchConfig:
         url: ""
         selector: ""
-    kubeadmBootstrap:
-      namespace: capi-kubeadm-bootstrap-system
-      fetchConfig:
-        url: ""
-        selector: ""
-    kubeadmControlPlane:
-      namespace: capi-kubeadm-control-plane-system
-      fetchConfig:
-        url: ""
-        selector: ""
