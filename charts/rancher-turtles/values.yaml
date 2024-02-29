@@ -35,7 +35,6 @@ cluster-api-operator:
         readOnly: true
   cluster-api:
     enabled: true
-    version: v1.4.6
     configSecret:
       name: ""
       defaultName: capi-env-variables

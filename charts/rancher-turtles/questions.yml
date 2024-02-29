@@ -45,8 +45,3 @@ questions:
     description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually"
     label: "Enable Cert Manager"
     type: boolean
-  - variable: cluster-api-operator.cluster-api.version
-    default: "v1.4.6"
-    required: true
-    description: "Version of the core CAPI controllers to install."
-    label: "Version"
