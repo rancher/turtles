@@ -255,8 +255,10 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 				input.OwnedLabelName:                 "",
 			},
 		}
-		Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
-		Expect(rancherClusters.Items).To(HaveLen(1))
+		Eventually(func() bool {
+			Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
+			return len(rancherClusters.Items) == 1
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 		rancherCluster = &rancherClusters.Items[0]
 		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
