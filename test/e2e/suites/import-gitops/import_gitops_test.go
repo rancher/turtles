@@ -33,7 +33,6 @@ import (
 )
 
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.FullTestLabel), func() {
-
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)
@@ -63,7 +62,6 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 })
 
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
-
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -93,7 +91,6 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 })
 
 var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.DontRunLabel), func() {
-
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)
@@ -122,7 +119,6 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality sho
 })
 
 var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
-
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)

@@ -196,17 +196,36 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.CAPIImportReconciler{
-		Client:             mgr.GetClient(),
-		RancherClient:      rancherClient,
-		WatchFilterValue:   watchFilterValue,
-		InsecureSkipVerify: insecureSkipVerify,
-	}).SetupWithManager(ctx, mgr, controller.Options{
-		MaxConcurrentReconciles: concurrencyNumber,
-		CacheSyncTimeout:        maxDuration,
-	}); err != nil {
-		setupLog.Error(err, "unable to create capi controller")
-		os.Exit(1)
+	if feature.Gates.Enabled(feature.ManagementV3Cluster) {
+		setupLog.Info("enabling CAPI cluster import controller for `management.cattle.io/v3` resources")
+
+		if err := (&controllers.CAPIImportManagementV3Reconciler{
+			Client:             mgr.GetClient(),
+			RancherClient:      rancherClient,
+			WatchFilterValue:   watchFilterValue,
+			InsecureSkipVerify: insecureSkipVerify,
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+			CacheSyncTimeout:        maxDuration,
+		}); err != nil {
+			setupLog.Error(err, "unable to create capi controller")
+			os.Exit(1)
+		}
+	} else {
+		setupLog.Info("enabling CAPI cluster import controller for `provisioning.cattle.io/v1` resources")
+
+		if err := (&controllers.CAPIImportReconciler{
+			Client:             mgr.GetClient(),
+			RancherClient:      rancherClient,
+			WatchFilterValue:   watchFilterValue,
+			InsecureSkipVerify: insecureSkipVerify,
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+			CacheSyncTimeout:        maxDuration,
+		}); err != nil {
+			setupLog.Error(err, "unable to create capi controller")
+			os.Exit(1)
+		}
 	}
 
 	if feature.Gates.Enabled(feature.RancherKubeSecretPatch) {

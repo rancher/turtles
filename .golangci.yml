@@ -13,6 +13,9 @@ issues:
       linters:
         - testpackage
         - gochecknoglobals
+    - path: internal/controllers/import_controller(_v3)?\.go
+      linters:
+        - dupl
     - text: var-naming
       linters:
         - revive

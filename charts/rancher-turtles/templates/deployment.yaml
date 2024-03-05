@@ -26,7 +26,7 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=rancher-kube-secret-patch={{ index .Values "rancherTurtles" "features" "rancher-kubeconfigs" "label"}}
+        - --feature-gates=managementv3-cluster={{ index .Values "rancherTurtles" "features" "managementv3-cluster" "enabled"}},rancher-kube-secret-patch={{ index .Values "rancherTurtles" "features" "rancher-kubeconfigs" "label"}}
         {{- range .Values.rancherTurtles.managerArguments }}
         - {{ . }}
         {{- end }}  

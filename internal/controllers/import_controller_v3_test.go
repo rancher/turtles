@@ -27,9 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rancher-sandbox/rancher-turtles/internal/controllers/testdata"
 	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher-sandbox/rancher-turtles/internal/test"
-	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -37,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -44,16 +43,17 @@ import (
 
 var _ = Describe("reconcile CAPI Cluster", func() {
 	var (
-		r                        *CAPIImportReconciler
+		r                        *CAPIImportManagementV3Reconciler
 		ns                       *corev1.Namespace
 		capiCluster              *clusterv1.Cluster
-		rancherCluster           *provisioningv1.Cluster
+		rancherClusters          *managementv3.ClusterList
+		rancherCluster           *managementv3.Cluster
 		clusterRegistrationToken *managementv3.ClusterRegistrationToken
 		capiKubeconfigSecret     *corev1.Secret
-		clusterName              = "generated-rancher-cluster"
+		selectors                []client.ListOption
+		capiClusterName          = "generated-rancher-cluster"
 		sampleTemplate           string
 	)
-
 	BeforeEach(func() {
 		var err error
 
@@ -66,35 +66,46 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		sampleTemplate = setTemplateParams(
 			testdata.ImportManifest,
-			map[string]string{"${TEST_CASE_NAME}": "provisioningv1"},
+			map[string]string{"${TEST_CASE_NAME}": "mgmtv3"},
 		)
 
-		r = &CAPIImportReconciler{
-			Client:             testEnv,
-			RancherClient:      testEnv, // rancher and rancher-turtles deployed in the same cluster
+		r = &CAPIImportManagementV3Reconciler{
+			Client:             cl,
+			RancherClient:      cl, // rancher and rancher-turtles deployed in the same cluster
 			remoteClientGetter: remote.NewClusterClient,
 			Scheme:             testEnv.GetScheme(),
 		}
 
 		capiCluster = &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-cluster",
+				Name:      capiClusterName,
 				Namespace: ns.Name,
 			},
 		}
 
-		rancherCluster = &provisioningv1.Cluster{
+		rancherCluster = &managementv3.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
-				Namespace: ns.Name,
+				Namespace:    capiCluster.Namespace,
+				GenerateName: "c-",
+				Labels: map[string]string{
+					capiClusterOwner:          capiCluster.Name,
+					capiClusterOwnerNamespace: capiCluster.Namespace,
+					ownedLabelName:            "",
+				},
+			},
+		}
+
+		rancherClusters = &managementv3.ClusterList{}
+
+		selectors = []client.ListOption{
+			client.MatchingLabels{
+				capiClusterOwner:          capiCluster.Name,
+				capiClusterOwnerNamespace: capiCluster.Namespace,
 			},
 		}
 
 		clusterRegistrationToken = &managementv3.ClusterRegistrationToken{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterName,
-				Namespace: ns.Name,
-			},
+			ObjectMeta: metav1.ObjectMeta{},
 		}
 
 		capiKubeconfigSecret = &corev1.Secret{
@@ -124,22 +135,33 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(test.CleanupAndWait(ctx, cl, clientObjs...)).To(Succeed())
 		Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		for _, cluster := range rancherClusters.Items {
+			testEnv.Cleanup(ctx, &cluster)
+			testEnv.Cleanup(ctx, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: cluster.Name},
+			},
+			)
+		}
 	})
 
 	It("should reconcile a CAPI cluster when control plane not ready", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 
-		res, err := r.Reconcile(ctx, reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: capiCluster.Namespace,
-				Name:      capiCluster.Name,
-			},
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
+		Eventually(ctx, func(g Gomega) {
+			res, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
+		}).Should(Succeed())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist", func() {
+		ns.Labels = map[string]string{}
+		Expect(cl.Update(ctx, ns)).To(Succeed())
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
 		}
@@ -147,7 +169,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -158,7 +180,11 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(testEnv.GetAs(rancherCluster, &provisioningv1.Cluster{})).ShouldNot(BeNil())
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist and annotation is set on the namespace", func() {
@@ -166,7 +192,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -177,7 +203,11 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(testEnv.GetAs(rancherCluster, &provisioningv1.Cluster{})).ShouldNot(BeNil())
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists", func() {
@@ -194,10 +224,18 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
-		cluster := rancherCluster.DeepCopy()
-		cluster.Status.ClusterName = clusterName
-		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		clusterRegistrationToken.Name = cluster.Name
+		clusterRegistrationToken.Namespace = cluster.Name
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
 		token := clusterRegistrationToken.DeepCopy()
 		token.Status.ManifestURL = server.URL
@@ -228,7 +266,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 					Name:      unstructuredObj.GetName(),
 				}, unstructuredObj)).To(Succeed())
 			}
-		}, 30*time.Second).Should(Succeed())
+		}, 10*time.Second).Should(Succeed())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists but cluster name not set", func() {
@@ -236,6 +274,16 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(ctx, func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
@@ -255,9 +303,17 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
-		cluster := rancherCluster.DeepCopy()
-		cluster.Status.AgentDeployed = true
-		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
+
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		conditions.Set(&cluster, conditions.TrueCondition(managementv3.ClusterConditionAgentDeployed))
+		Expect(conditions.IsTrue(&cluster, managementv3.ClusterConditionAgentDeployed)).To(BeTrue())
+		Expect(cl.Status().Update(ctx, &cluster)).To(Succeed())
 
 		_, err := r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -282,10 +338,18 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
-		cluster := rancherCluster.DeepCopy()
-		cluster.Status.ClusterName = clusterName
-		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		clusterRegistrationToken.Name = cluster.Name
+		clusterRegistrationToken.Namespace = cluster.Name
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
 		token := clusterRegistrationToken.DeepCopy()
 		token.Status.ManifestURL = server.URL
@@ -317,9 +381,18 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
-		cluster := rancherCluster.DeepCopy()
-		cluster.Status.ClusterName = clusterName
-		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
+
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		clusterRegistrationToken.Name = cluster.Name
+		clusterRegistrationToken.Namespace = cluster.Name
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(ctx, func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
@@ -342,11 +415,19 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
-		cluster := rancherCluster.DeepCopy()
-		cluster.Status.ClusterName = clusterName
-		Expect(cl.Status().Update(ctx, cluster)).To(Succeed())
 
-		Expect(testEnv.Create(ctx, clusterRegistrationToken)).To(Succeed())
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		clusterRegistrationToken.Name = cluster.Name
+		clusterRegistrationToken.Namespace = cluster.Name
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
 
 		Eventually(ctx, func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
