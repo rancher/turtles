@@ -20,7 +20,7 @@ SHELL = /usr/bin/env bash -o pipefail
 #
 # Go.
 #
-GO_VERSION ?= 1.20.4
+GO_VERSION ?= 1.22.0
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher-sandbox/rancher-turtles
 
@@ -100,7 +100,7 @@ SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
 
-CONTROLLER_GEN_VER := v0.12.0
+CONTROLLER_GEN_VER := v0.14.0
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(abspath $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER))
 CONTROLLER_GEN_PKG := sigs.k8s.io/controller-tools/cmd/controller-gen
@@ -135,7 +135,7 @@ CLUSTERCTL_VER := v1.4.6
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 
-GOLANGCI_LINT_VER := v1.55.2
+GOLANGCI_LINT_VER := v1.56.2
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
 

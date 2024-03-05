@@ -103,7 +103,7 @@ func (t *TestEnvironment) Cleanup(ctx context.Context, objs ...client.Object) er
 func (t *TestEnvironment) CreateNamespace(ctx context.Context, generateName string) (*corev1.Namespace, error) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", generateName),
+			GenerateName: generateName + "-",
 			Labels: map[string]string{
 				"testenv/original-name": generateName,
 			},

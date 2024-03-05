@@ -115,11 +115,11 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	}
 
 	ns := &corev1.Namespace{}
+
 	err = c.Watch(
 		source.Kind(mgr.GetCache(), ns),
 		handler.EnqueueRequestsFromMapFunc(r.namespaceToCapiClusters(ctx, capiPredicates)),
 	)
-
 	if err != nil {
 		return fmt.Errorf("adding watch for namespaces: %w", err)
 	}

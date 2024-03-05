@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -56,7 +55,7 @@ func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err := r.Client.Get(ctx, req.NamespacedName, capiProvider); apierrors.IsNotFound(err) {
 		return ctrl.Result{}, nil
 	} else if err != nil {
-		log.Error(err, fmt.Sprintf("Unable to get CAPIProvider manifest: %s", req.String()))
+		log.Error(err, "Unable to get CAPIProvider manifest: "+req.String())
 
 		return ctrl.Result{}, err
 	}

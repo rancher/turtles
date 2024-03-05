@@ -41,7 +41,7 @@ jobs:
     - name: setupGo
       uses: actions/setup-go@v5
       with:
-        go-version: '=1.20.7'
+        go-version: '=1.22.0'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/import-gitops make test-e2e
       env:
@@ -74,7 +74,7 @@ jobs:
     - name: setupGo
       uses: actions/setup-go@v5
       with:
-        go-version: '=1.20.7'
+        go-version: '=1.22.0'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/v2prov make test-e2e
       env:
@@ -107,7 +107,7 @@ jobs:
     - name: setupGo
       uses: actions/setup-go@v5
       with:
-        go-version: '=1.20.7'
+        go-version: '=1.22.0'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/update-labels make test-e2e
       env:
@@ -140,7 +140,7 @@ jobs:
     - name: setupGo
       uses: actions/setup-go@v5
       with:
-        go-version: '=1.20.7'
+        go-version: '=1.22.0'
     - name: Run e2e tests
       run: GINKGO_TESTS=$(pwd)/test/e2e/suites/embedded-capi-disabled make test-e2e
       env:

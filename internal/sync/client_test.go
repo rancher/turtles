@@ -72,6 +72,6 @@ var _ = Describe("Core provider", func() {
 
 		Expect(sync.Patch(ctx, testEnv, capiProvider)).To(Succeed())
 		Eventually(Object(capiProvider)).Should(HaveField("Spec.Name", Equal("rke2")))
-		Eventually(Object(capiProvider)).Should(HaveField("Status.Phase", BeEmpty()))
+		Eventually(Object(capiProvider)).Should(HaveField("Status.Phase", Equal(turtlesv1.Pending)))
 	})
 })
