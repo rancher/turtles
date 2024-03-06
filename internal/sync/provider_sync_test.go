@@ -107,7 +107,7 @@ var _ = Describe("Provider sync", func() {
 			HaveField("Spec.ProviderSpec", Equal(capiProvider.Spec.ProviderSpec)))
 	})
 
-	It("Should sync status up", func() {
+	It("Should sync status up and set provisioning state", func() {
 		Expect(testEnv.Client.Create(ctx, infrastructure.DeepCopy())).To(Succeed())
 		Eventually(UpdateStatus(infrastructure, func() {
 			infrastructure.Status = operatorv1.InfrastructureProviderStatus{
@@ -119,49 +119,58 @@ var _ = Describe("Provider sync", func() {
 
 		s := sync.NewProviderSync(testEnv, capiProvider)
 
-		Eventually(func(g Gomega) (err error) {
+		Eventually(func(g Gomega) {
+			err = nil
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(1))
 			g.Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
-			return
 		}).Should(Succeed())
 	})
 
-	It("Should update outdated condition and empty the hash annotation", func() {
+	It("Should update outdated condition, maintain last applied time and empty the hash annotation", func() {
 		capiProvider.Status.ProviderStatus = infrastructureStatusOutdated
 		appliedCondition := conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)
 		Eventually(testEnv.Status().Update(ctx, capiProvider)).Should(Succeed())
-		Eventually(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).Should(Succeed())
-		Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).ToNot(BeNil())
-		Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(appliedCondition.LastTransitionTime.Second()))
+		Eventually(func(g Gomega) {
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
+			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).ToNot(BeNil())
+			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(appliedCondition.LastTransitionTime.Second()))
+		})
 
 		s := sync.NewProviderSync(testEnv, capiProvider)
 
 		dest := &operatorv1.InfrastructureProvider{}
-		Eventually(func(g Gomega) (err error) {
+		Eventually(func(g Gomega) {
+			err = nil
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
 			g.Expect(err).ToNot(HaveOccurred())
-
-			return testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)
-		}).Should(Succeed())
-
-		Eventually(testEnv.GetAs(infrastructure, dest)).Should(HaveField("Annotations", HaveKeyWithValue(sync.AppliedSpecHashAnnotation, "")))
-		Eventually(func(g Gomega) {
-			g.Expect(testEnv.GetAs(infrastructure, dest)).ToNot(BeNil())
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
+			g.Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(1))
-			g.Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
+			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
+
+		condition := conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)
+
+		Consistently(func(g Gomega) {
+			err = nil
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			s.Apply(ctx, &err)
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
+			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(Equal(condition))
+		}, 5*time.Second)
 	})
 
-	PIt("Should individually sync every provider", func() {
+	It("Should individually sync every provider", func() {
 		Expect(testEnv.Client.Create(ctx, infrastructure.DeepCopy())).To(Succeed())
 		Eventually(UpdateStatus(infrastructure, func() {
 			infrastructure.Status = operatorv1.InfrastructureProviderStatus{
@@ -174,23 +183,21 @@ var _ = Describe("Provider sync", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider)
 
 		dest := &operatorv1.InfrastructureProvider{}
-		Eventually(func(g Gomega) (err error) {
+		Eventually(func(g Gomega) {
+			err = nil
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(1))
-			g.Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
-
-			return
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
 		}).Should(Succeed())
-
-		Eventually(testEnv.GetAs(infrastructure, &operatorv1.InfrastructureProvider{}), 10*time.Second).Should(HaveField("Annotations", HaveKeyWithValue(sync.AppliedSpecHashAnnotation, "")))
 
 		s = sync.NewProviderSync(testEnv, capiProviderDuplicate)
 
-		Eventually(func(g Gomega) (err error) {
+		Eventually(func(g Gomega) {
+			err = nil
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
@@ -198,11 +205,21 @@ var _ = Describe("Provider sync", func() {
 
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructureDuplicate), dest)).To(Succeed())
 			g.Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
-			g.Expect(conditions.IsTrue(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(capiProviderDuplicate.Status.Conditions).To(HaveLen(1))
+			g.Expect(conditions.IsTrue(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(conditions.Get(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(time.Now().UTC().Second()))
+		})
+
+		// Provider manifest should be created and phase set to provisioning
+		Eventually(func(g Gomega) {
+			err = nil
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			s.Apply(ctx, &err)
+			g.Expect(err).ToNot(HaveOccurred())
+
 			g.Expect(capiProviderDuplicate).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 			g.Expect(capiProviderDuplicate).To(HaveField("Status.ProviderStatus.InstalledVersion", BeNil()))
-			return
 		}).Should(Succeed())
 	})
 })

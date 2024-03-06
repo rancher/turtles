@@ -108,7 +108,7 @@ func initFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&profilerAddress, "profiler-address", "",
 		"Bind address to expose the pprof profiler (e.g. localhost:6060)")
 
-	fs.DurationVar(&syncPeriod, "sync-period", 10*time.Minute,
+	fs.DurationVar(&syncPeriod, "sync-period", 2*time.Minute,
 		"The minimum interval at which watched resources are reconciled (e.g. 15m)")
 
 	fs.StringVar(&healthAddr, "health-addr", ":9440",
