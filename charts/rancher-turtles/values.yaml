@@ -1,11 +1,14 @@
 rancherTurtles:
   image: controller
   imageVersion: v0.0.0
-  imagePullPolicy: Never
+  imagePullPolicy: IfNotPresent
   namespace: rancher-turtles-system
   managerArguments: []
   imagePullSecrets: []
   features:
+    cluster-api-operator:
+      cleanup: true
+      kubectlImage: bitnami/kubectl:1.27
     embedded-capi:
       disabled: true
     rancher-webhook:
