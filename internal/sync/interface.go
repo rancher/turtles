@@ -18,6 +18,7 @@ package sync
 
 import (
 	"context"
+	"slices"
 
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,15 +37,18 @@ type Sync interface {
 // List contains a list of syncers to apply the syncing logic.
 type List []Sync
 
+// NewList creates a new list of only initialized Sync handlers.
+func NewList(syncHandlers ...Sync) List {
+	return slices.DeleteFunc(syncHandlers, func(s Sync) bool {
+		return s == nil
+	})
+}
+
 // Sync applies synchronization logic on all syncers in the list.
 func (s List) Sync(ctx context.Context) error {
 	errors := []error{}
 
 	for _, syncer := range s {
-		if syncer == nil {
-			continue
-		}
-
 		errors = append(errors, syncer.Get(ctx), syncer.Sync(ctx))
 	}
 
@@ -56,10 +60,6 @@ func (s List) Apply(ctx context.Context, reterr *error) {
 	errors := []error{*reterr}
 
 	for _, syncer := range s {
-		if syncer == nil {
-			continue
-		}
-
 		var err error
 
 		syncer.Apply(ctx, &err)

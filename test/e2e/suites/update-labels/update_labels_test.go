@@ -41,6 +41,7 @@ import (
 var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work with CAPI 1.5.x and label renaming", Label(e2e.FullTestLabel), func() {
 
 	var (
+		specName          = "updatelabels"
 		rancherKubeconfig *turtlesframework.RancherGetClusterKubeconfigResult
 		clusterName       string
 		rancherCluster    *provisioningv1.Cluster
@@ -168,7 +169,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(flagVals.ArtifactFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName))
+		err := testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(flagVals.ArtifactFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}

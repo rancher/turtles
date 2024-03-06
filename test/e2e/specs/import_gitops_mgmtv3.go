@@ -298,7 +298,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName))
+		err := testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}

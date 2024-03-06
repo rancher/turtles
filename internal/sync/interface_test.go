@@ -60,15 +60,15 @@ var _ = Describe("resource Sync interface", func() {
 		}{
 			{
 				name:     "Nil syncronizer is accepted",
-				list:     sync.List{nil},
+				list:     sync.NewList(nil),
 				expected: false,
 			}, {
 				name:     "All syncronizers is executed",
-				list:     sync.List{&MockSynchronizer{}, &MockSynchronizer{}},
+				list:     sync.NewList(&MockSynchronizer{}, &MockSynchronizer{}),
 				expected: false,
 			}, {
 				name:     "Syncronizer errors are returned",
-				list:     sync.List{&MockSynchronizer{getErr: errors.New("Fail first get"), syncronizerr: errors.New("Fail sync")}, &MockSynchronizer{getErr: errors.New("Fail second get")}},
+				list:     sync.NewList(&MockSynchronizer{getErr: errors.New("Fail first get"), syncronizerr: errors.New("Fail sync")}, &MockSynchronizer{getErr: errors.New("Fail second get")}),
 				err:      "Fail first get, Fail sync, Fail second get",
 				expected: true,
 			},
@@ -92,15 +92,15 @@ var _ = Describe("resource Sync interface", func() {
 		}{
 			{
 				name:     "Nil syncronizer is accepted",
-				list:     sync.List{nil},
+				list:     sync.NewList(nil),
 				expected: false,
 			}, {
 				name:     "All syncronizers is executed",
-				list:     sync.List{&MockSynchronizer{}, &MockSynchronizer{}},
+				list:     sync.NewList(&MockSynchronizer{}, &MockSynchronizer{}),
 				expected: false,
 			}, {
 				name:     "Syncronizer errors are returned",
-				list:     sync.List{&MockSynchronizer{applyErr: errors.New("Fail apply")}, &MockSynchronizer{applyErr: errors.New("Fail second apply")}},
+				list:     sync.NewList(&MockSynchronizer{applyErr: errors.New("Fail apply")}, &MockSynchronizer{applyErr: errors.New("Fail second apply")}),
 				err:      "Fail apply, Fail second apply",
 				expected: true,
 			},

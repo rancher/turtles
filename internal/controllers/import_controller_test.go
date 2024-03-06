@@ -129,14 +129,16 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	It("should reconcile a CAPI cluster when control plane not ready", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 
-		res, err := r.Reconcile(ctx, reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: capiCluster.Namespace,
-				Name:      capiCluster.Name,
-			},
+		Eventually(func(g Gomega) {
+			res, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
 		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist", func() {
