@@ -8,6 +8,7 @@ images:
 intervals:
   default/wait-controllers: ["15m", "10s"]
   default/wait-rancher: ["15m", "30s"]
+  default/wait-delete-cluster: ["15m", "30s"]
   default/wait-v2prov-create: ["25m", "30s"]
   default/wait-capa-create-cluster: ["30m", "30s"]
   default/wait-capz-create-cluster: ["35m", "30s"]
