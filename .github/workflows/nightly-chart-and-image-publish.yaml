@@ -52,7 +52,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
       - name: Install Helm
-        uses: Azure/setup-helm@v3
+        uses: Azure/setup-helm@v4
         with:
           version: 3.8.0
       - name: Build Helm chart
