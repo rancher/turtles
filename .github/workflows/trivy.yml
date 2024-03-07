@@ -25,7 +25,7 @@ jobs:
         run: |
           TAG=${{ github.sha }} ARCH=amd64 make docker-build
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@84384bd6e777ef152729993b8145ea352e9dd3ef
+        uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d
         with:
           image-ref: 'ghcr.io/rancher-sandbox/rancher-turtles-amd64:${{ github.sha }}'
           format: 'sarif'
