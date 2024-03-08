@@ -107,21 +107,3 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Package operator chart
         run: RELEASE_TAG=${GITHUB_REF##*/} CONTROLLER_IMAGE_VERSION=${{ env.multiarch_digest }} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
-
-      - name: Install chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
-        with:
-          install_only: true
-
-      - name: Prepare environment for the chart releaser
-        run: |
-          echo "CR_OWNER=$(cut -d '/' -f 1 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
-          echo "CR_GIT_REPO=$(cut -d '/' -f 2 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
-          rm -rf .cr-index
-          mkdir -p .cr-index
-
-      - name: Run chart-releaser upload
-        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ env.TAG }}" --make-release-latest=false
-
-      - name: Run chart-releaser index
-        run: cr index --push --release-name-template "${{ env.TAG }}"
