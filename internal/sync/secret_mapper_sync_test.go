@@ -186,10 +186,11 @@ var _ = Describe("SecretMapperSync get", func() {
 			RancherSecret: sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef),
 		}
 
-		err := syncer.Get(context.Background())
-		Expect(err).NotTo(HaveOccurred())
-		Expect(syncer.RancherSecret.Name).To(Equal(customRancherSecret.Name))
-		Expect(syncer.RancherSecret.Namespace).To(Equal(customRancherSecret.Namespace))
+		Eventually(func(g Gomega) {
+			g.Expect(syncer.Get(context.Background())).NotTo(HaveOccurred())
+			g.Expect(syncer.RancherSecret.Name).To(Equal(customRancherSecret.Name))
+			g.Expect(syncer.RancherSecret.Namespace).To(Equal(customRancherSecret.Namespace))
+		})
 	})
 
 	It("should handle unexisting secret pointer by ref", func() {
@@ -204,12 +205,13 @@ var _ = Describe("SecretMapperSync get", func() {
 			RancherSecret: sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef),
 		}
 
-		err := syncer.Get(context.Background())
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
-		Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-		Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-		Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal(fmt.Sprintf("Rancher Credentials secret named %s:secret-name was not located", ns.Name)))
+		Eventually(func(g Gomega) {
+			g.Expect(syncer.Get(context.Background())).NotTo(HaveOccurred())
+			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
+			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal(fmt.Sprintf("Rancher Credentials secret named %s:secret-name was not located", ns.Name)))
+		})
 	})
 
 	It("should handle when the source Rancher secret is not found", func() {

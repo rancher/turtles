@@ -17,8 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -147,7 +145,7 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 			}
 		})).Should(Succeed())
 
-		Eventually(Object(doSecret), 10*time.Second).Should(HaveField("Data", Equal(map[string][]byte{
+		Eventually(Object(doSecret)).Should(HaveField("Data", Equal(map[string][]byte{
 			"EXP_MACHINE_POOL":          []byte("true"),
 			"CLUSTER_TOPOLOGY":          []byte("false"),
 			"EXP_CLUSTER_RESOURCE_SET":  []byte("false"),

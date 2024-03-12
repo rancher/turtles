@@ -150,27 +150,29 @@ var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {
 		}
 		Expect(cl.Create(ctx, kubeconfigSecret)).To(Succeed())
 
-		_, err := r.Reconcile(ctx, reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: kubeconfigSecret.Namespace,
-				Name:      kubeconfigSecret.Name,
-			},
-		})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: kubeconfigSecret.Namespace,
+					Name:      kubeconfigSecret.Name,
+				},
+			})
+			g.Expect(err).NotTo(HaveOccurred())
 
-		updatedSecret := &corev1.Secret{}
-		Eventually(ctx, func(g Gomega) {
+			updatedSecret := &corev1.Secret{}
+
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(kubeconfigSecret), updatedSecret)).ToNot(HaveOccurred())
 			g.Expect(updatedSecret.GetLabels()).To(HaveLen(2))
+
+			labvelVal, labelFound := updatedSecret.Labels["cluster.x-k8s.io/cluster-name"]
+			g.Expect(labelFound).To(BeTrue(), "Failed to find expected CAPI label")
+			g.Expect(labvelVal).To(Equal(clusterName))
+
+			labvelVal, labelFound = updatedSecret.Labels["existing"]
+			g.Expect(labelFound).To(BeTrue(), "Failed to find existing label")
+			g.Expect(labvelVal).To(Equal("myvalue"))
 		}).Should(Succeed())
 
-		labvelVal, labelFound := updatedSecret.Labels["cluster.x-k8s.io/cluster-name"]
-		Expect(labelFound).To(BeTrue(), "Failed to find expected CAPI label")
-		Expect(labvelVal).To(Equal(clusterName))
-
-		labvelVal, labelFound = updatedSecret.Labels["existing"]
-		Expect(labelFound).To(BeTrue(), "Failed to find existing label")
-		Expect(labvelVal).To(Equal("myvalue"))
 	})
 
 	It("should not add a label to a non-v2prov secret", func() {
