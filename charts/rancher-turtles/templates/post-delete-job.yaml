@@ -115,12 +115,31 @@ spec:
       serviceAccountName: post-delete-job
       restartPolicy: Never
       containers:
-      - name: cluster-api-operator-deployment-cleanup
+      - name: delete-capi-controller-manager
         image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
-        command: ["/bin/bash", "-c"]
+        command: ["kubectl"]
         args:
-        - |
-          kubectl delete deployments.apps capi-controller-manager -n capi-system --ignore-not-found=true
-          kubectl delete deployments.apps capi-kubeadm-bootstrap-controller-manager -n capi-kubeadm-bootstrap-system --ignore-not-found=true
-          kubectl delete deployments.apps capi-kubeadm-control-plane-controller-manager -n capi-kubeadm-control-plane-system --ignore-not-found=true
+        - delete
+        - deployments.apps/capi-controller-manager
+        - -n
+        - capi-system
+        - --ignore-not-found=true
+      - name: delete-capi-kubeadm-bootstrap-controller-manager
+        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - deployments.apps/capi-kubeadm-bootstrap-controller-manager
+        - -n
+        - capi-kubeadm-bootstrap-system
+        - --ignore-not-found=true
+      - name: delete-capi-kubeadm-control-plane-controller-manager
+        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - deployments.apps/capi-kubeadm-control-plane-controller-manager
+        - -n
+        - capi-kubeadm-control-plane-system
+        - --ignore-not-found=true
 {{- end }}
