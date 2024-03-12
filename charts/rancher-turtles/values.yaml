@@ -8,12 +8,12 @@ rancherTurtles:
   features:
     cluster-api-operator:
       cleanup: true
-      kubectlImage: bitnami/kubectl:1.27
+      kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.28.0
     embedded-capi:
       disabled: true
     rancher-webhook:
       cleanup: true
-      kubectlImage: rancher/kubectl
+      kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.28.0
     rancher-kubeconfigs:
       label: true
     managementv3-cluster:
