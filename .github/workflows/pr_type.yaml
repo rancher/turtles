@@ -2,12 +2,7 @@ name: PR Type
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 jobs:
   check_pull_request_type:

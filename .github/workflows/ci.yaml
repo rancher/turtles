@@ -1,6 +1,9 @@
 name: Run CI checks
 
-on: [pull_request, workflow_dispatch]
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
 
 jobs:
   ci:

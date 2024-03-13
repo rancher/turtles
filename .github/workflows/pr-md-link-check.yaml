@@ -2,7 +2,7 @@ name: PR check Markdown links
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
     paths:
       - '**.md'
 
