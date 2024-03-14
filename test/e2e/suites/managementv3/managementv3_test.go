@@ -44,6 +44,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			ArtifactFolder:                 flagVals.ArtifactFolder,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
 			ClusterName:                    "highlander-e2e-clusterv3-1",
+			CNITemplate:                    e2e.CalicoCNI,
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        giteaResult.GitAddress,
