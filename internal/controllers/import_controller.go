@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +50,8 @@ import (
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 	turtlespredicates "github.com/rancher/turtles/util/predicates"
 )
+
+const fieldOwner = "rancher-turtles"
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportReconciler struct {
@@ -241,9 +245,48 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 	log.Info("found cluster name", "name", rancherCluster.Status.ClusterName)
 
-	if rancherCluster.Status.AgentDeployed {
-		log.Info("agent already deployed, no action needed")
+	if rancherCluster.Status.Ready {
+		log.Info("cluster is ready, no action needed")
 		return ctrl.Result{}, nil
+	}
+
+	// We have to ensure the agent deployment has correct nodeAffinity settings at all times
+	remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, client.ObjectKeyFromObject(capiCluster))
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
+	}
+
+	if rancherCluster.Status.AgentDeployed {
+		log.Info("updating agent node affinity settings")
+
+		agent := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      "cattle-cluster-agent",
+			Namespace: "cattle-system",
+		}}
+
+		if err := remoteClient.Get(ctx, client.ObjectKeyFromObject(agent), agent); err != nil {
+			log.Error(err, "unable to get existing agent deployment")
+			return ctrl.Result{}, err
+		}
+
+		setDeploymentAffinity(agent)
+		agent.SetManagedFields(nil)
+		agent.TypeMeta = metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       deploymentKind,
+		}
+
+		if err := remoteClient.Patch(ctx, agent, client.Apply, []client.PatchOption{
+			client.ForceOwnership,
+			client.FieldOwner(fieldOwner),
+		}...); err != nil {
+			log.Error(err, "unable to update existing agent deployment")
+			return ctrl.Result{}, err
+		}
+
+		// During the provisioning after registration the initial deployment gets
+		// updated by the rancher. We must not miss it.
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// get the registration manifest
@@ -258,11 +301,6 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	}
 
 	log.Info("Creating import manifest")
-
-	remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, client.ObjectKeyFromObject(capiCluster))
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
-	}
 
 	if err := createImportManifest(ctx, remoteClient, strings.NewReader(manifest)); err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating import manifest: %w", err)

@@ -18,6 +18,8 @@ package controllers
 
 import (
 	"bufio"
+	"bytes"
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -26,9 +28,12 @@ import (
 	"net/http"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,6 +55,7 @@ const (
 	capiClusterOwner          = "cluster-api.cattle.io/capi-cluster-owner"
 	capiClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
 
+	deploymentKind         = "Deployment"
 	defaultRequeueDuration = 1 * time.Minute
 )
 
@@ -178,19 +184,69 @@ func createImportManifest(ctx context.Context, remoteClient client.Client, in io
 	return nil
 }
 
-func createRawManifest(ctx context.Context, remoteClient client.Client, bytes []byte) error {
-	items, err := utilyaml.ToUnstructured(bytes)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling bytes or empty object passed: %w", err)
-	}
+func createRawManifest(ctx context.Context, remoteClient client.Client, data []byte) error {
+	log := log.FromContext(ctx)
+	decoder := utilyaml.NewYAMLDecoder(io.NopCloser(bytes.NewReader(data)))
 
-	for _, obj := range items {
-		if err := createObject(ctx, remoteClient, obj.DeepCopy()); err != nil {
+	for {
+		u := &unstructured.Unstructured{}
+
+		_, gvk, err := decoder.Decode(nil, u)
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		if gvk.Kind == deploymentKind {
+			deploy := &appsv1.Deployment{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, deploy); err != nil {
+				log.Error(err, "failed to decode agent deployment")
+				return err
+			}
+
+			setDeploymentAffinity(deploy)
+
+			if err := createObject(ctx, remoteClient, deploy); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		if err := createObject(ctx, remoteClient, u.DeepCopy()); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func setDeploymentAffinity(deploy *appsv1.Deployment) {
+	affinity := cmp.Or(deploy.Spec.Template.Spec.Affinity, &corev1.Affinity{})
+	nodeAffinity := cmp.Or(affinity.NodeAffinity, &corev1.NodeAffinity{})
+	preference := corev1.PreferredSchedulingTerm{
+		Weight: 100,
+		Preference: corev1.NodeSelectorTerm{
+			MatchExpressions: []corev1.NodeSelectorRequirement{{
+				Key:      "node-role.kubernetes.io/control-plane",
+				Operator: corev1.NodeSelectorOpExists,
+			}},
+		},
+	}
+	nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, preference)
+	preference.Preference.MatchExpressions = []corev1.NodeSelectorRequirement{{
+		Key:      "node-role.kubernetes.io/controlplane",
+		Operator: corev1.NodeSelectorOpExists,
+	}}
+	nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, preference)
+	preference.Preference.MatchExpressions = []corev1.NodeSelectorRequirement{{
+		Key:      "node-role.kubernetes.io/master",
+		Operator: corev1.NodeSelectorOpExists,
+	}}
+	nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, preference)
+	affinity.NodeAffinity = nodeAffinity
+	deploy.Spec.Template.Spec.Affinity = affinity
 }
 
 func createObject(ctx context.Context, c client.Client, obj client.Object) error {

@@ -25,11 +25,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher/turtles/internal/controllers/testdata"
-	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
-	"github.com/rancher/turtles/internal/test"
-	turtlesnaming "github.com/rancher/turtles/util/naming"
+	"github.com/rancher-sandbox/rancher-turtles/internal/controllers/testdata"
+	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher-sandbox/rancher-turtles/internal/test"
+	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -224,6 +225,50 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 				unstructuredObj := &unstructured.Unstructured{}
 				unstructuredObj.SetUnstructuredContent(u)
 				unstructuredObj.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+
+				if unstructuredObj.GroupVersionKind().Kind == "Deployment" {
+					dep := &appsv1.Deployment{}
+					g.Eventually(testEnv.GetAs(unstructuredObj, dep)).ShouldNot(BeNil())
+					affinity := dep.Spec.Template.Spec.Affinity.NodeAffinity
+					g.Expect(affinity).ToNot(BeNil())
+					g.Expect(affinity.PreferredDuringSchedulingIgnoredDuringExecution).To(
+						ContainElement(
+							HaveField(
+								"Preference.MatchExpressions",
+								HaveExactElements(corev1.NodeSelectorRequirement{
+									Key:      "node-role.kubernetes.io/control-plane",
+									Operator: corev1.NodeSelectorOpExists,
+								})),
+						))
+					g.Expect(affinity.PreferredDuringSchedulingIgnoredDuringExecution).To(
+						ContainElement(
+							HaveField(
+								"Preference.MatchExpressions",
+								HaveExactElements(corev1.NodeSelectorRequirement{
+									Key:      "node-role.kubernetes.io/controlplane",
+									Operator: corev1.NodeSelectorOpExists,
+								})),
+						))
+					g.Expect(affinity.PreferredDuringSchedulingIgnoredDuringExecution).To(
+						ContainElement(
+							HaveField(
+								"Preference.MatchExpressions",
+								HaveExactElements(corev1.NodeSelectorRequirement{
+									Key:      "node-role.kubernetes.io/master",
+									Operator: corev1.NodeSelectorOpExists,
+								})),
+						))
+					g.Expect(affinity.PreferredDuringSchedulingIgnoredDuringExecution).To(
+						ContainElement(
+							HaveField(
+								"Preference.MatchExpressions",
+								HaveExactElements(corev1.NodeSelectorRequirement{
+									Key:      "node-role.kubernetes.io/master",
+									Operator: corev1.NodeSelectorOpIn,
+									Values:   []string{"true"},
+								})),
+						))
+				}
 
 				g.Expect(cl.Get(ctx, client.ObjectKey{
 					Namespace: unstructuredObj.GetNamespace(),
