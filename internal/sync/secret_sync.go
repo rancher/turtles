@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 // SecretSync is a structure mirroring variable secret state of the CAPI Operator Provider object.

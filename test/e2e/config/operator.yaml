@@ -2,7 +2,7 @@ managementClusterName: rancher-turtles-e2e
 
 images:
 # Use local dev images built source tree;
-- name: ghcr.io/rancher-sandbox/rancher-turtles-{ARCH}:v0.0.1 # This should be substituted with operator image
+- name: ghcr.io/rancher/turtles-{ARCH}:v0.0.1 # This should be substituted with operator image
   loadBehavior: tryLoad
 
 intervals:

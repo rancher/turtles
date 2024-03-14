@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	turtlespredicates "github.com/rancher/turtles/util/predicates"
 )
 
 // RancherKubeconfigSecretReconciler is a controller that will reconcile secrets created by Rancher as

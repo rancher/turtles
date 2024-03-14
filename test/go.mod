@@ -1,8 +1,8 @@
-module github.com/rancher-sandbox/rancher-turtles/test
+module github.com/rancher/turtles/test
 
-go 1.22
+go 1.22.0
 
-replace github.com/rancher-sandbox/rancher-turtles => ../
+replace github.com/rancher/turtles => ../
 
 require (
 	code.gitea.io/sdk/gitea v0.17.1
@@ -10,7 +10,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/rancher-sandbox/rancher-turtles v0.0.0-00010101000000-000000000000
+	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.28.5
 	k8s.io/apimachinery v0.28.5
 	k8s.io/client-go v0.28.5

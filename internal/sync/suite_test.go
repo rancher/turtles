@@ -27,11 +27,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher-sandbox/rancher-turtles/internal/test/helpers"
+	"github.com/rancher/turtles/internal/test/helpers"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 
 	// +kubebuilder:scaffold:imports
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

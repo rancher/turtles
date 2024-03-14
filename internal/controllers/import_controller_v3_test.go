@@ -25,9 +25,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher-sandbox/rancher-turtles/internal/controllers/testdata"
-	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	"github.com/rancher-sandbox/rancher-turtles/internal/test"
+	"github.com/rancher/turtles/internal/controllers/testdata"
+	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
+	"github.com/rancher/turtles/internal/test"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

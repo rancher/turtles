@@ -1,6 +1,6 @@
-module github.com/rancher-sandbox/rancher-turtles
+module github.com/rancher/turtles
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/go-logr/logr v1.3.0

@@ -12,7 +12,7 @@ inputs:
   org:
     description: "Organization part of the image path"
     required: false
-    default: "rancher-sandbox"
+    default: "rancher"
     type: string
   registry:
     description: "The registry to login"

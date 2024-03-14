@@ -23,7 +23,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 // Sync is an inteface for mirroring state of the CAPI Operator Provider object on child objects.

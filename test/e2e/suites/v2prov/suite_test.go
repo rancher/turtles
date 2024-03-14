@@ -34,9 +34,9 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
-	"github.com/rancher-sandbox/rancher-turtles/test/testenv"
+	"github.com/rancher/turtles/test/e2e"
+	turtlesframework "github.com/rancher/turtles/test/framework"
+	"github.com/rancher/turtles/test/testenv"
 )
 
 // Test suite flags.
@@ -152,7 +152,7 @@ var _ = BeforeSuite(func() {
 		ChartPath:                    flagVals.ChartPath,
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher-sandbox/rancher-turtles-%s", runtime.GOARCH),
+		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 	})

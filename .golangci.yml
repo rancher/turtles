@@ -29,7 +29,7 @@ linters-settings:
   lll:
     line-length: 150
   goimports:
-    local-prefixes: github.com/rancher-sandbox/rancher-turtles
+    local-prefixes: github.com/rancher/turtles
   gci:
     custom-order: true
     sections:
@@ -38,7 +38,7 @@ linters-settings:
       - "dot"
       - "default"
       - "prefix(sigs.k8s.io/cluster-api)"
-      - "prefix(github.com/rancher-sandbox/rancher-turtles)"
+      - "prefix(github.com/rancher/turtles)"
     wsl:
       force-err-cuddling: false
   importas:
@@ -58,11 +58,11 @@ linters-settings:
         - pkg: k8s.io/client-go/kubernetes/scheme
           alias: clientgoscheme
        # Rancher Turtles
-        - pkg: github.com/rancher-sandbox/rancher-turtles/util/naming
+        - pkg: github.com/rancher/turtles/util/naming
           alias: turtlesnaming
-        - pkg: github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1
+        - pkg: github.com/rancher/turtles/internal/rancher/provisioning/v1
           alias: provisioningv1
-        - pkg: github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3
+        - pkg: github.com/rancher/turtles/internal/rancher/management/v3
           alias: managementv3
         # Controller Runtime
         - pkg: sigs.k8s.io/controller-runtime

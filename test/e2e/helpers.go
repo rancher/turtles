@@ -38,9 +38,9 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/yaml"
 
-	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {

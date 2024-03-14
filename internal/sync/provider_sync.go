@@ -27,8 +27,8 @@ import (
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
-	"github.com/rancher-sandbox/rancher-turtles/internal/api"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	"github.com/rancher/turtles/internal/api"
 )
 
 // AppliedSpecHashAnnotation is a spec hash annotation set by CAPI Operator,

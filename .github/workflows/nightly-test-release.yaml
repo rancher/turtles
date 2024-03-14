@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
-      PROD_ORG: rancher-sandbox
+      PROD_ORG: rancher
       RELEASE_DIR: .cr-release-packages
     steps:
       - name: Checkout

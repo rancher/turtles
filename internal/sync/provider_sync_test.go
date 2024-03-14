@@ -21,8 +21,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
-	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

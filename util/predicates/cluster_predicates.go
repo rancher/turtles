@@ -28,8 +28,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
-	"github.com/rancher-sandbox/rancher-turtles/util"
-	"github.com/rancher-sandbox/rancher-turtles/util/annotations"
+	"github.com/rancher/turtles/util"
+	"github.com/rancher/turtles/util/annotations"
 )
 
 // ClusterWithoutImportedAnnotation returns a predicate that returns true only if the provided resource does not contain

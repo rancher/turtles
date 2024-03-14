@@ -6,7 +6,7 @@ domain: cattle.io
 layout:
 - go.kubebuilder.io/v4
 projectName: rancher-turtles
-repo: github.com/rancher-sandbox/rancher-turtles
+repo: github.com/rancher/turtles
 resources:
 - api:
     crdVersion: v1
@@ -15,6 +15,6 @@ resources:
   domain: cattle.io
   group: turtles-capi
   kind: CAPIProvider
-  path: github.com/rancher-sandbox/rancher-turtles/api/v1alpha1
+  path: github.com/rancher/turtles/api/v1alpha1
   version: v1alpha1
 version: "3"

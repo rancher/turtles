@@ -54,7 +54,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot-${ARCH}
-LABEL org.opencontainers.image.source=https://github.com/rancher-sandbox/rancher-turtles
+LABEL org.opencontainers.image.source=https://github.com/rancher/turtles
 WORKDIR /
 COPY --from=builder /workspace/manager .
 # Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies

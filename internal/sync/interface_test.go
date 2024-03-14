@@ -23,8 +23,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
-	"github.com/rancher-sandbox/rancher-turtles/internal/sync"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	"github.com/rancher/turtles/internal/sync"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

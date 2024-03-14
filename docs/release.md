@@ -9,7 +9,7 @@
 1. Clone the repository locally: 
 
 ```bash
-git clone git@github.com:rancher-sandbox/rancher-turtles.git
+git clone git@github.com:rancher/turtles.git
 ```
 
 2. Depending on whether you are cutting a minor or patch release, the process varies.
@@ -19,7 +19,7 @@ git clone git@github.com:rancher-sandbox/rancher-turtles.git
         Create a new release branch (i.e release-X) and push it to the upstream repository.
 
         ```bash
-            # Note: `upstream` must be the remote pointing to `github.com/rancher-sandbox/rancher-turtles`.
+            # Note: `upstream` must be the remote pointing to `github.com/rancher/turtles`.
             git checkout -b release-0.4
             git push -u upstream release-0.4
             # Export the tag of the minor release to be cut, e.g.:
@@ -30,7 +30,7 @@ git clone git@github.com:rancher-sandbox/rancher-turtles.git
         Use existing release branch.
 
         ```bash
-            # Note: `upstream` must be the remote pointing to `github.com/rancher-sandbox/rancher-turtles`
+            # Note: `upstream` must be the remote pointing to `github.com/rancher/turtles`
             git checkout upstream/release-0.4
             # Export the tag of the patch release to be cut, e.g.:
             export RELEASE_TAG=v0.4.1
@@ -45,7 +45,7 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-This will trigger a [release GitHub action](https://github.com/rancher-sandbox/rancher-turtles/blob/main/.github/workflows/release.yaml) that creates a release with Rancher Turtles components.
+This will trigger a [release GitHub action](https://github.com/rancher/turtles/blob/main/.github/workflows/release.yaml) that creates a release with Rancher Turtles components.
 If you are cutting a new minor/major release, please follow the [next step](#post-release-steps-in-rancher-turtles-docs) below, otherwise skip.
 
 ## Post-release steps in Rancher Turtles Docs
@@ -57,7 +57,7 @@ If a new minor or major branch was created, there are some post-release actions 
 1. Clone the Rancher Turtles Docs repository locally: 
 
 ```bash
-git clone git@github.com:rancher-sandbox/rancher-turtles-docs.git
+git clone git@github.com:rancher/turtles-docs.git
 ```
 
 2. Export the tag of the minor/major release, create a signed/annotated tag and push it:
@@ -70,7 +70,7 @@ export RELEASE_TAG=v0.4
 git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 
 # Push tags
-# Note: `upstream` must be the remote pointing to `github.com/rancher-sandbox/rancher-turtles-docs`
+# Note: `upstream` must be the remote pointing to `github.com/rancher/turtles-docs`
 git push upstream ${RELEASE_TAG}
 ```
 
@@ -80,15 +80,15 @@ This step is automatic, however it requires temporarily adjusting repo permissio
 
 1. Ask a team member or directly adjust `Docs repo > Settings > Rules > Rulesets > main > Enforcement status > Disabled`.
 
-2. Wait for the [version publish workflow](https://github.com/rancher-sandbox/rancher-turtles-docs/actions/workflows/version-publish.yamll) to finish.
+2. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yamll) to finish.
 
 3. Ask a team member or directly adjust `Docs repo > Settings > Rules > Rulesets > main > Enforcement status > Active`.
 
-Example version update patch: https://github.com/rancher-sandbox/rancher-turtles-docs/commit/d36f0de97c5b5594cd8a396d6780761b6e106e3f
+Example version update patch: https://github.com/rancher/turtles-docs/commit/d36f0de97c5b5594cd8a396d6780761b6e106e3f
 
 ### Deploy site to Pages
 
-1. Manually run [publish workflow](https://github.com/rancher-sandbox/rancher-turtles-docs/actions/workflows/publish.yaml) to force rollout of updated docs version.
+1. Manually run [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml) to force rollout of updated docs version.
 
 ## Versioning
 
