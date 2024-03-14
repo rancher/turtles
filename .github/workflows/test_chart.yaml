@@ -1,6 +1,8 @@
 name: Lint and Test Charts
 
-on: pull_request
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 env:
   TAG: v0.0.1

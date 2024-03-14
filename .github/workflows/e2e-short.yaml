@@ -2,6 +2,7 @@ name: Run short e2e tests
 
 on:
   pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 jobs:
   e2e:
