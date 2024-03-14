@@ -485,6 +485,9 @@ $(RELEASE_DIR):
 $(CHART_RELEASE_DIR):
 	mkdir -p $(CHART_RELEASE_DIR)/templates
 
+clean-chart-release-dir:
+	rm -rf $(CHART_RELEASE_DIR)
+
 $(CHART_PACKAGE_DIR):
 	mkdir -p $(CHART_PACKAGE_DIR)
 
@@ -493,7 +496,7 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 	$(MAKE) release-chart
 
 .PHONY: build-chart
-build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
+build-chart: $(HELM) $(KUSTOMIZE) clean-chart-release-dir $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
