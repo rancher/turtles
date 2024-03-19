@@ -58,3 +58,8 @@ questions:
     type: boolean
     label: Use management v3 cluster manifest
     group: "Rancher Turtles Features Settings"
+  - variable: cluster-api-operator.cluster-api.rke2.enabled
+    default: "true"
+    description: "Flag to enable or disable installation of the RKE2 provider for Cluster API. By default this is enabled."
+    label: "Enable RKE2 Provider"
+    type: boolean
