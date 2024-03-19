@@ -48,6 +48,13 @@ type DeployRancherTurtlesInput struct {
 	AdditionalValues             map[string]string
 }
 
+type UninstallRancherTurtlesInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	HelmBinaryPath        string
+	Namespace             string
+	DeleteWaitInterval    []interface{}
+}
+
 func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancherTurtles")
@@ -249,4 +256,31 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 	if err != nil {
 		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
 	}
+}
+
+func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallRancherTurtles")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallRancherTurtles")
+	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UninstallRancherTurtles")
+	Expect(input.DeleteWaitInterval).ToNot(BeNil(), "DeleteWaitInterval is required for UninstallRancherTurtles")
+
+	namespace := input.Namespace
+	if namespace == "" {
+		namespace = turtlesframework.DefaultRancherTurtlesNamespace
+	}
+
+	By("Removing Turtles chart")
+	removeChart := &opframework.HelmChart{
+		BinaryPath: input.HelmBinaryPath,
+		Name:       "rancher-turtles",
+		Commands:   opframework.HelmCommands{opframework.Uninstall},
+		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: opframework.Flags(
+			"-n", namespace,
+			"--cascade", "foreground",
+			"--wait"),
+	}
+
+	_, err := removeChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
 }

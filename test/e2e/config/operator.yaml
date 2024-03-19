@@ -23,6 +23,7 @@ intervals:
   default/wait-vsphere-delete: ["20m", "30s"]
   default/wait-gitea-service: ["5m", "30s"]
   default/wait-gitea-uninstall: ["10m", "30s"]
+  default/wait-turtles-uninstall: ["10m", "30s"]
 
 variables:
   RANCHER_VERSION: "v2.8.1"

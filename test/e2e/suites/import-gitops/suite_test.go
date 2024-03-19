@@ -326,6 +326,13 @@ var _ = AfterSuite(func() {
 		DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-uninstall"),
 	})
 
+	testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		Namespace:             turtlesframework.DefaultRancherTurtlesNamespace,
+		DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-turtles-uninstall"),
+	})
+
 	testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 		SetupTestClusterResult: *setupClusterResult,
 		SkipCleanup:            flagVals.SkipCleanup,
