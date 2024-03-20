@@ -22,7 +22,7 @@ SHELL = /usr/bin/env bash -o pipefail
 #
 GO_VERSION ?= 1.22.0
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
-REPO ?= rancher-sandbox/rancher-turtles
+REPO ?= rancher/turtles
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -54,7 +54,7 @@ export KREW_ROOT := $(abspath $(TOOLS_BIN_DIR))
 export PATH := $(KREW_ROOT)/bin:$(PATH)
 
 # Set --output-base for conversion-gen if we are not within GOPATH
-ifneq ($(abspath $(ROOT_DIR)),$(shell go env GOPATH)/src/github.com/rancher-sandbox/rancher-turtles)
+ifneq ($(abspath $(ROOT_DIR)),$(shell go env GOPATH)/src/github.com/rancher/turtles)
 	CONVERSION_GEN_OUTPUT_BASE := --output-base=$(ROOT_DIR)
 else
 	export GOPATH := $(shell go env GOPATH)
@@ -147,8 +147,8 @@ TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
 ALL_ARCH = amd64 arm64 s390x
 REGISTRY ?= ghcr.io
-ORG ?= rancher-sandbox
-CONTROLLER_IMAGE_NAME ?= rancher-turtles
+ORG ?= rancher
+CONTROLLER_IMAGE_NAME ?= turtles
 CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
@@ -165,7 +165,7 @@ CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
 
 # Repo
 GH_ORG_NAME ?= $ORG
-GH_REPO_NAME ?= rancher-turtles
+GH_REPO_NAME ?= turtles
 GH_REPO ?= $(GH_ORG_NAME)/$(GH_REPO_NAME)
 
 # Allow overriding the imagePullPolicy

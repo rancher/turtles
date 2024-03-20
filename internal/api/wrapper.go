@@ -21,7 +21,7 @@ import (
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 var (

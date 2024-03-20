@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	"github.com/rancher-sandbox/rancher-turtles/internal/test"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher/turtles/internal/test"
 )
 
 var _ = Describe("Patch Rancher v2Prov Kubeconfig secrets", func() {

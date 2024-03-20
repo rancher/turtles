@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 // DefaultSynchronizer is a structure mirroring state of the CAPI Operator Provider object.

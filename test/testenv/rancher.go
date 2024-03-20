@@ -23,10 +23,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 
 	"github.com/drone/envsubst/v2"
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
+	"github.com/rancher/turtles/test/e2e"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

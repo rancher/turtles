@@ -13,7 +13,7 @@ version_settings(True, ">=0.22.2")
 settings = {
     "k8s_context": os.getenv("RT_K8S_CONTEXT", "rancher-desktop"),
     "debug": {},
-    "default_registry": "docker.io/rancher-sandbox"
+    "default_registry": "docker.io/rancher"
 }
 
 # global settings
@@ -40,7 +40,7 @@ always_enable_projects = ["turtles"]
 projects = {
     "turtles": {
         "context": ".",
-        "image": "ghcr.io/rancher-sandbox/rancher-turtles:dev",
+        "image": "ghcr.io/rancher/turtles:dev",
         "live_reload_deps": [
             "main.go",
             "go.mod",

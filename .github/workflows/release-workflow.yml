@@ -40,7 +40,7 @@ on:
         type: string
         description: Organization part of the image name
         required: false
-        default: "rancher-sandbox"
+        default: "rancher"
 
 jobs:
   build:

@@ -25,8 +25,8 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e/specs"
+	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/e2e/specs"
 )
 
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import (embedded capi disable from start)", Label(e2e.FullTestLabel), func() {

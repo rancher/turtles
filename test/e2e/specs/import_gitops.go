@@ -39,11 +39,11 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
-	"github.com/rancher-sandbox/rancher-turtles/test/testenv"
-	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher/turtles/test/e2e"
+	turtlesframework "github.com/rancher/turtles/test/framework"
+	"github.com/rancher/turtles/test/testenv"
+	turtlesnaming "github.com/rancher/turtles/util/naming"
 )
 
 type CreateUsingGitOpsSpecInput struct {

@@ -44,10 +44,10 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
-	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	"github.com/rancher-sandbox/rancher-turtles/util"
-	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
-	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
+	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
+	"github.com/rancher/turtles/util"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
+	turtlespredicates "github.com/rancher/turtles/util/predicates"
 )
 
 // CAPIImportManagementV3Reconciler represents a reconciler for importing CAPI clusters in Rancher.

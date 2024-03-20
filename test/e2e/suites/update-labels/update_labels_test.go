@@ -32,10 +32,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	"github.com/rancher-sandbox/rancher-turtles/test/e2e"
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
-	"github.com/rancher-sandbox/rancher-turtles/test/testenv"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher/turtles/test/e2e"
+	turtlesframework "github.com/rancher/turtles/test/framework"
+	"github.com/rancher/turtles/test/testenv"
 )
 
 var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work with CAPI 1.5.x and label renaming", Label(e2e.FullTestLabel), func() {

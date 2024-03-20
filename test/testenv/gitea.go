@@ -29,7 +29,7 @@ import (
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
 
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 type DeployGiteaInput struct {

@@ -15,7 +15,7 @@ def project_enable(name, project, debug):
         The project passed in is expected to be in this format:
             {
                 "context": ".",
-                "image": "rancher-sandbox/tenant-controller",
+                "image": "rancher/tenant-controller",
                 "live_reload_deps": [
                     "main.go",
                     "go.mod",

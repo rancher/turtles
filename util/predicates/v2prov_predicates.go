@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 )
 
 // V2ProvClusterOwned returns a predicate that checks for a v2prov cluster owner reference.

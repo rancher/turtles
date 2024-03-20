@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 type SetupTestClusterInput struct {

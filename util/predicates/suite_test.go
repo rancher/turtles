@@ -24,13 +24,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher-sandbox/rancher-turtles/internal/test/helpers"
+	"github.com/rancher/turtles/internal/test/helpers"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
-	managementv3 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 

@@ -42,11 +42,11 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
-	provisioningv1 "github.com/rancher-sandbox/rancher-turtles/internal/rancher/provisioning/v1"
-	"github.com/rancher-sandbox/rancher-turtles/util"
-	turtlesannotations "github.com/rancher-sandbox/rancher-turtles/util/annotations"
-	turtlesnaming "github.com/rancher-sandbox/rancher-turtles/util/naming"
-	turtlespredicates "github.com/rancher-sandbox/rancher-turtles/util/predicates"
+	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	"github.com/rancher/turtles/util"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
+	turtlesnaming "github.com/rancher/turtles/util/naming"
+	turtlespredicates "github.com/rancher/turtles/util/predicates"
 )
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
