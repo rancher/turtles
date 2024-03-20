@@ -255,7 +255,7 @@ var _ = BeforeSuite(func() {
 		ValuesFilePath:        "../../data/gitea/values.yaml",
 		Values:                giteaValues,
 		RolloutWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
-		ServiceWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-getservice"),
+		ServiceWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-service"),
 		AuthSecretName:        e2e.AuthSecretName,
 		Username:              e2eConfig.GetVariable(e2e.GiteaUserNameVar),
 		Password:              e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),

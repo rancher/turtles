@@ -15,7 +15,7 @@ intervals:
   default/wait-capv-create-cluster: ["30m", "30s"]
   default/wait-gitea: ["3m", "10s"]
   default/wait-consistently: ["30s", "5s"]
-  default/wait-getservice: ["60s", "5s"]
+  default/wait-getservice: ["5m", "30s"]
   default/wait-eks-delete: ["30m", "30s"]
   default/wait-aks-delete: ["30m", "30s"]
   default/wait-azure-delete: ["15m", "30s"]
