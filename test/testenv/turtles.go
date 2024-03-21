@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	turtlesv1 "github.com/rancher-sandbox/rancher-turtles/api/v1alpha1"
-	turtlesframework "github.com/rancher-sandbox/rancher-turtles/test/framework"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 type DeployRancherTurtlesInput struct {
