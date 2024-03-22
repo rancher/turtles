@@ -16,12 +16,13 @@ intervals:
   default/wait-gitea: ["3m", "10s"]
   default/wait-consistently: ["30s", "5s"]
   default/wait-getservice: ["5m", "30s"]
-  default/wait-eks-delete: ["30m", "30s"]
+  default/wait-eks-delete: ["35m", "30s"]
   default/wait-aks-delete: ["30m", "30s"]
   default/wait-azure-delete: ["15m", "30s"]
   default/wait-azure: ["30m", "30s"]
   default/wait-vsphere-delete: ["20m", "30s"]
   default/wait-gitea-service: ["5m", "30s"]
+  default/wait-gitea-uninstall: ["10m", "30s"]
 
 variables:
   RANCHER_VERSION: "v2.8.1"

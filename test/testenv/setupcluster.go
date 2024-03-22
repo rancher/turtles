@@ -42,7 +42,7 @@ type SetupTestClusterInput struct {
 	ClusterctlConfigPath string
 	Scheme               *runtime.Scheme
 	ArtifactFolder       string
-	//Hostname             string
+	// Hostname             string
 	KubernetesVersion string
 	IsolatedMode      bool
 	HelmBinaryPath    string
@@ -64,13 +64,11 @@ type SetupTestClusterResult struct {
 }
 
 func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTestClusterResult {
-
 	Expect(ctx).NotTo(BeNil(), "ctx is required for setupTestCluster")
 	Expect(input.E2EConfig).ToNot(BeNil(), "E2EConfig is required for setupTestCluster")
 	Expect(input.ClusterctlConfigPath).ToNot(BeEmpty(), "ClusterctlConfigPath is required for setupTestCluster")
 	Expect(input.Scheme).ToNot(BeNil(), "Scheme is required for setupTestCluster")
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for setupTestCluster")
-	//Expect(input.Hostname).ToNot(BeEmpty(), "Hostname is required for setupTestCluster")
 	Expect(input.KubernetesVersion).ToNot(BeEmpty(), "KubernetesVersion is required for SetupTestCluster")
 
 	clusterName := createClusterName(input.E2EConfig.ManagementClusterName)
@@ -87,7 +85,7 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	By("Create log folder for cluster")
 
 	result.BootstrapClusterLogFolder = filepath.Join(input.ArtifactFolder, "clusters", result.BootstrapClusterProxy.GetName())
-	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
+	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0o750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
 
 	if input.IsolatedMode {
 		result.IsolatedHostName = configureIsolatedEnvironment(ctx, result.BootstrapClusterProxy)

@@ -12,3 +12,4 @@ metadata:
 type: Opaque
 stringData:
   AWS_B64ENCODED_CREDENTIALS: "{{ .AWSEncodedCredentials }}"
+  ExternalResourceGC: "true"

@@ -18,7 +18,6 @@ jobs:
       use_eks: true
     secrets: inherit
   e2e_v2prov:
-    if: ${{ always() }}
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
       test_suite: $(pwd)/test/e2e/suites/v2prov
@@ -28,7 +27,6 @@ jobs:
       use_eks: true
     secrets: inherit
   e2e_update_labels:
-    if: ${{ always() }}
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
       test_suite: $(pwd)/test/e2e/suites/update-labels
@@ -38,7 +36,6 @@ jobs:
       use_eks: true
     secrets: inherit
   e2e_embedded_capi_disabled:
-    if: ${{ always() }}
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
       test_suite: $(pwd)/test/e2e/suites/embedded-capi-disabled

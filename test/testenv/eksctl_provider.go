@@ -98,6 +98,7 @@ func (k *EKSClusterProvider) Dispose(ctx context.Context) {
 			"cluster",
 			"--name",
 			k.name,
+			"--wait",
 		},
 	}, deleteClusterRes)
 	Expect(deleteClusterRes.Error).NotTo(HaveOccurred(), "Failed to delete cluster using eksctl")

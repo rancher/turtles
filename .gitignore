@@ -32,3 +32,6 @@ _artifacts
 hack/crd/bases/*
 
 .devbox/
+
+# act
+.secrets

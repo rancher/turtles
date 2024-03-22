@@ -263,6 +263,12 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-uninstall"),
+	})
+
 	testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 		SetupTestClusterResult: *setupClusterResult,
 		SkipCleanup:            flagVals.SkipCleanup,

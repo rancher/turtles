@@ -37,13 +37,27 @@ env:
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  GITHUB_USERNAME: $${{ github.actor }}
+  GITHUB_USERNAME: ${{ github.actor }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_REGION: eu-west-2
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   run_e2e_tests:
     runs-on: [self-hosted, linux]
     steps:
+      - name: Install eksctl
+        run: |
+          ARCH=amd64
+          PLATFORM=$(uname -s)_$ARCH
+
+          curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+          curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+
+          tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+
+          sudo mv /tmp/eksctl /usr/local/bin
       - name: Checkout
         uses: actions/checkout@v4
         with:

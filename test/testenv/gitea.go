@@ -182,3 +182,27 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 
 	return result
 }
+
+type UninstallGiteaInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	HelmBinaryPath        string
+	DeleteWaitInterval    []interface{}
+}
+
+func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallGitea")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallGitea")
+	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UninstallGitea")
+	Expect(input.DeleteWaitInterval).ToNot(BeNil(), "DeleteWaitInterval is required for UninstallGitea")
+
+	By("Removing Gitea Helm Chart")
+	removeChart := &opframework.HelmChart{
+		BinaryPath:      input.HelmBinaryPath,
+		Name:            "gitea",
+		Commands:        opframework.Commands(opframework.Uninstall),
+		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: opframework.Flags("--wait"),
+	}
+	_, err := removeChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+}
