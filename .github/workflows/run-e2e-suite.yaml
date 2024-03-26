@@ -58,6 +58,13 @@ jobs:
           tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
 
           sudo mv /tmp/eksctl /usr/local/bin
+      - name: Install aws-iam-authenticator
+        run: |
+          curl -L -o aws-iam-authenticator https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.14/aws-iam-authenticator_0.6.14_linux_amd64
+          chmod +x ./aws-iam-authenticator
+          sudo mv ./aws-iam-authenticator /usr/local/bin
+
+          aws-iam-authenticator version
       - name: Checkout
         uses: actions/checkout@v4
         with:
