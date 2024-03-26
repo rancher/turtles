@@ -83,9 +83,7 @@ const (
 )
 
 const (
-	KubernetesManagementVersionVar       = "KUBERNETES_MANAGEMENT_VERSION"
-	KubernetesManagementLegacyVersionVar = "KUBERNETES_MANAGEMENT_LEGACY_VERSION"
-	RancherLegacyVersionVar              = "RANCHER_LEGACY_VERSION"
+	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
 	KubernetesVersionVar   = "KUBERNETES_VERSION"
 	RancherFeaturesVar     = "RANCHER_FEATURES"

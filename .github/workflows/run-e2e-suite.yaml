@@ -1,4 +1,3 @@
-
 on:
   workflow_call:
     inputs:
@@ -19,6 +18,14 @@ on:
         required: false
         default: false
         type: boolean
+      use_eks:
+        description: "Use EKS for the management cluster"
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
 
 env:
   NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
@@ -30,62 +37,87 @@ env:
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  GITHUB_USERNAME: ${{ github.actor }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_REGION: eu-west-2
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   run_e2e_tests:
     runs-on: [self-hosted, linux]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: setupGo
-      uses: actions/setup-go@v5
-      with:
-        go-version: '=1.22.0'
-    - name: Run e2e tests
-      run: GINKGO_TESTS=${{ inputs.test_suite }} make test-e2e
-    - name: Collect run artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: artifacts_${{ inputs.artifact_name }}
-        path: _artifacts
-    - name: Cleanup Azure Resources
-      if: ${{ inputs.run_azure_janitor && always() }}
-      uses: rancher-sandbox/azure-janitor@v0.1.1
-      with:
-        resource-groups: highlander-e2e*
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
-        client-id: ${{ secrets.AZURE_CLIENT_ID}}
-        client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID}}
-        commit: true
-    - name: Send failed status to slack
-      if: failure()
-      uses: slackapi/slack-github-action@v1.25.0
-      with:
-        payload: |
-          {
-            "blocks": [
-              {
-                "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Rancher turtles E2E test (${{ inputs.test_name }}) run failed. Job trigger by ${{ github.event_name }} event."
-                  },
-                  "accessory": {
-                    "type": "button",
+      - name: Install eksctl
+        run: |
+          ARCH=amd64
+          PLATFORM=$(uname -s)_$ARCH
+
+          curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+          curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+
+          tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+
+          sudo mv /tmp/eksctl /usr/local/bin
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: setupGo
+        uses: actions/setup-go@v5
+        with:
+          go-version: "=1.22.0"
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: build and push e2e image
+        if: ${{ inputs.use_eks }}
+        run: make e2e-image-push
+      - name: Run e2e tests
+        run: GINKGO_LABEL_FILTER=full USE_EKS=${{ inputs.use_eks }} GINKGO_TESTS=${{ inputs.test_suite }} make test-e2e
+      - name: Collect run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts_${{ inputs.artifact_name }}
+          path: _artifacts
+      - name: Cleanup Azure Resources
+        if: ${{ inputs.run_azure_janitor && always() }}
+        uses: rancher-sandbox/azure-janitor@v0.1.1
+        with:
+          resource-groups: highlander-e2e*
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+          client-id: ${{ secrets.AZURE_CLIENT_ID}}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID}}
+          commit: true
+      - name: Send failed status to slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
                     "text": {
-                      "type": "plain_text",
-                      "text": ":github:",
-                        "emoji": true
-                      },
-                    "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      "type": "mrkdwn",
+                      "text": "Rancher turtles E2E test (${{ inputs.test_name }}) run failed. Job trigger by ${{ github.event_name }} event."
+                    },
+                    "accessory": {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":github:",
+                          "emoji": true
+                        },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
                   }
-                }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

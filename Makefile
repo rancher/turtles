@@ -74,9 +74,10 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/operator.yaml
 GINKGO_ARGS ?=
 SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
+USE_EKS ?= true
 ISOLATED_MODE ?= false
 GINKGO_NOCOLOR ?= false
-GINKGO_LABEL_FILTER ?= short || full
+GINKGO_LABEL_FILTER ?= short
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
 
 # to set multiple ginkgo skip flags, if any
@@ -519,12 +520,17 @@ test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-en
 		-e2e.chart-path=$(ROOT_DIR)/$(CHART_RELEASE_DIR) \
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER) \
-		-e2e.isolated-mode=$(ISOLATED_MODE)
+		-e2e.isolated-mode=$(ISOLATED_MODE) \
+		-e2e.use-eks=$(USE_EKS)
 
 .PHONY: e2e-image
 e2e-image: ## Build the image for e2e tests
-	TAG=v0.0.1 $(MAKE) docker-build
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(MANIFEST_IMG) CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
+	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build
+	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e-$(ARCH) CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
+
+.PHONY: e2e-image-push
+e2e-image-push: e2e-image ## Push the image for e2e tests
+	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-push
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation

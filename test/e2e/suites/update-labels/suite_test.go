@@ -24,9 +24,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"testing"
-
 	"runtime"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,6 +34,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/framework"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
@@ -76,12 +76,22 @@ func TestE2E(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
-	Expect(os.MkdirAll(flagVals.ArtifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", flagVals.ArtifactFolder)
+	Expect(os.MkdirAll(flagVals.ArtifactFolder, 0o755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", flagVals.ArtifactFolder)
 	Expect(flagVals.HelmBinaryPath).To(BeAnExistingFile(), "Invalid test suite argument. helm-binary-path should be an existing file.")
 	Expect(flagVals.ChartPath).To(BeAnExistingFile(), "Invalid test suite argument. chart-path should be an existing file.")
 
 	By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
 	e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
+
+	dockerUsername := ""
+	dockerPassword := ""
+	if flagVals.UseEKS {
+		Expect(flagVals.IsolatedMode).To(BeFalse(), "You cannot use eks with isolated")
+		dockerUsername = os.Getenv("GITHUB_USERNAME")
+		Expect(dockerUsername).NotTo(BeEmpty(), "Github username is required")
+		dockerPassword = os.Getenv("GITHUB_TOKEN")
+		Expect(dockerPassword).NotTo(BeEmpty(), "Github token is required")
+	}
 
 	By(fmt.Sprintf("Creating a clusterctl config into %q", flagVals.ArtifactFolder))
 	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(flagVals.ArtifactFolder, "repository"))
@@ -94,39 +104,22 @@ var _ = BeforeSuite(func() {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		Scheme:               e2e.InitScheme(),
 		ArtifactFolder:       flagVals.ArtifactFolder,
-		Hostname:             hostName,
-		KubernetesVersion:    e2eConfig.GetVariable(e2e.KubernetesManagementLegacyVersionVar),
+		KubernetesVersion:    e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
 		IsolatedMode:         flagVals.IsolatedMode,
 		HelmBinaryPath:       flagVals.HelmBinaryPath,
+		UseEKS:               flagVals.UseEKS,
 	})
 
 	if flagVals.IsolatedMode {
 		hostName = setupClusterResult.IsolatedHostName
 	}
 
-	testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
-		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:               flagVals.HelmBinaryPath,
-		ChartPath:                    flagVals.ChartPath,
-		CAPIProvidersYAML:            e2e.CapiProviders,
-		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-%s", runtime.GOARCH),
-		Tag:                          "v0.0.1",
-		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		AdditionalValues: map[string]string{
-			"cluster-api-operator.cluster-api.version":          "v1.5.2",
-			"cluster-api-operator.cert-manager.enabled":         "true",
-			"rancherTurtles.features.embedded-capi.disabled":    "false",
-			"rancherTurtles.features.rancher-webhook.cleanup":   "false",
-			"rancherTurtles.features.rancher-kubeconfigs.label": "true", // force to be true even if the default in teh chart changes
-		},
-	})
-
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:      filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher-ingress.yaml"),
 		IsolatedMode:             flagVals.IsolatedMode,
+		UseEKS:                   flagVals.UseEKS,
 		NginxIngress:             e2e.NginxIngress,
 		NginxIngressNamespace:    e2e.NginxIngressNamespace,
 		IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
@@ -138,26 +131,86 @@ var _ = BeforeSuite(func() {
 		DefaultIngressClassPatch: e2e.IngressClassPatch,
 	})
 
-	testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+	if flagVals.UseEKS {
+		By("Getting ingress hostname")
+		svcRes := &testenv.WaitForServiceIngressHostnameResult{}
+		testenv.WaitForServiceIngressHostname(ctx, testenv.WaitForServiceIngressHostnameInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			ServiceName:           "ingress-nginx-controller",
+			ServiceNamespace:      "ingress-nginx",
+			IngressWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+		}, svcRes)
+		hostName = svcRes.Hostname
+
+		By("Deploying ghcr details")
+		framework.CreateDockerRegistrySecret(ctx, framework.CreateDockerRegistrySecretInput{
+			Name:                  "regcred",
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			Namespace:             "rancher-turtles-system",
+			DockerServer:          "https://ghcr.io",
+			DockerUsername:        dockerUsername,
+			DockerPassword:        dockerPassword,
+		})
+	}
+
+	rancherInput := testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:         flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:    filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher.yaml"),
-		InstallCertManager:     false,
+		InstallCertManager:     true,
+		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
+		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
+		CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
 		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
 		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherUrlVar),
 		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
-		RancherVersion:         e2eConfig.GetVariable(e2e.RancherLegacyVersionVar),
+		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
 		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
 		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
-		RancherFeatures:        "embedded-cluster-api=false",
 		RancherPatches:         [][]byte{e2e.RancherSettingPatch},
 		RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		IsolatedMode:           flagVals.IsolatedMode,
-		RancherIngressConfig:   e2e.IngressConfig,
-		RancherServicePatch:    e2e.RancherServicePatch,
 		Variables:              e2eConfig.Variables,
+	}
+	if !flagVals.IsolatedMode && !flagVals.UseEKS {
+		// i.e. we are using ngrok locally
+		rancherInput.RancherIngressConfig = e2e.IngressConfig
+		rancherInput.RancherServicePatch = e2e.RancherServicePatch
+	}
+	if flagVals.UseEKS {
+		rancherInput.RancherIngressClassName = "nginx"
+	}
+	testenv.DeployRancher(ctx, rancherInput)
+
+	rtInput := testenv.DeployRancherTurtlesInput{
+		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:               flagVals.HelmBinaryPath,
+		ChartPath:                    flagVals.ChartPath,
+		CAPIProvidersYAML:            e2e.CapiProviders,
+		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+		Tag:                          "v0.0.1",
+		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		AdditionalValues: map[string]string{
+			"cluster-api-operator.cluster-api.version":          "v1.6.0",
+			"rancherTurtles.features.rancher-kubeconfigs.label": "true", // force to be true even if the default in teh chart changes
+		},
+	}
+	if flagVals.UseEKS {
+		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+	} else {
+		// NOTE: this was the default previously in the chart locally and ok as
+		// we where loading the image into kind manually.
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	}
+	testenv.DeployRancherTurtles(ctx, rtInput)
+
+	testenv.RestartRancher(ctx, testenv.RestartRancherInput{
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		RancherNamespace:      e2e.RancherNamespace,
+		RancherWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 	})
 })
 

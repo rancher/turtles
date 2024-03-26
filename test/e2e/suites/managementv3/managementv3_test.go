@@ -29,7 +29,7 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.FullTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)

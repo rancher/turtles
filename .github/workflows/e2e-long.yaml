@@ -2,47 +2,45 @@ name: Run nightly e2e tests
 
 on:
   schedule:
-   - cron: "0 0 1/2 * *"
+    - cron: "0 0 1/2 * *"
   workflow_dispatch:
 
 concurrency: ci_e2e_tests
 
 jobs:
   e2e_import_gitops:
-      uses: ./.github/workflows/run-e2e-suite.yaml
-      with:
-        test_suite: $(pwd)/test/e2e/suites/import-gitops
-        test_name: Import via GitOps
-        run_azure_janitor: false
-        artifact_name: artifacts_import_gitops
-      secrets: inherit
+    uses: ./.github/workflows/run-e2e-suite.yaml
+    with:
+      test_suite: $(pwd)/test/e2e/suites/import-gitops
+      test_name: Import via GitOps
+      run_azure_janitor: false
+      artifact_name: artifacts_import_gitops
+      use_eks: true
+    secrets: inherit
   e2e_v2prov:
-      if: ${{ always() }}
-      needs: e2e_import_gitops
-      uses: ./.github/workflows/run-e2e-suite.yaml
-      with:
-        test_suite: $(pwd)/test/e2e/suites/v2prov
-        test_name: v2 provisioning
-        run_azure_janitor: true
-        artifact_name: artifacts_v2prov
-      secrets: inherit
+    uses: ./.github/workflows/run-e2e-suite.yaml
+    with:
+      test_suite: $(pwd)/test/e2e/suites/v2prov
+      test_name: v2 provisioning
+      run_azure_janitor: true
+      artifact_name: artifacts_v2prov
+      use_eks: true
+    secrets: inherit
   e2e_update_labels:
-      if: ${{ always() }}
-      needs: e2e_v2prov
-      uses: ./.github/workflows/run-e2e-suite.yaml
-      with:
-        test_suite: $(pwd)/test/e2e/suites/update-labels
-        test_name: Update labels
-        run_azure_janitor: true
-        artifact_name: artifacts_update_labels
-      secrets: inherit
+    uses: ./.github/workflows/run-e2e-suite.yaml
+    with:
+      test_suite: $(pwd)/test/e2e/suites/update-labels
+      test_name: Update labels
+      run_azure_janitor: true
+      artifact_name: artifacts_update_labels
+      use_eks: true
+    secrets: inherit
   e2e_embedded_capi_disabled:
-      if: ${{ always() }}
-      needs: e2e_update_labels
-      uses: ./.github/workflows/run-e2e-suite.yaml
-      with:
-        test_suite: $(pwd)/test/e2e/suites/embedded-capi-disabled
-        test_name: Update labels
-        run_azure_janitor: false
-        artifact_name: artifacts_embedded_capi
-      secrets: inherit
+    uses: ./.github/workflows/run-e2e-suite.yaml
+    with:
+      test_suite: $(pwd)/test/e2e/suites/embedded-capi-disabled
+      test_name: Update labels
+      run_azure_janitor: false
+      artifact_name: artifacts_embedded_capi
+      use_eks: true
+    secrets: inherit

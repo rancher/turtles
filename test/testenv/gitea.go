@@ -19,6 +19,7 @@ package testenv
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -117,12 +118,6 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gitea", Namespace: "default"}},
 	}, input.RolloutWaitInterval...)
 
-	By("Get Git server config")
-	addr := turtlesframework.GetNodeAddress(ctx, turtlesframework.GetNodeAddressInput{
-		Lister:       input.BootstrapClusterProxy.GetClient(),
-		NodeIndex:    0,
-		AddressIndex: 0,
-	})
 	port := turtlesframework.GetServicePortByName(ctx, turtlesframework.GetServicePortByNameInput{
 		GetLister:        input.BootstrapClusterProxy.GetClient(),
 		ServiceName:      "gitea-http",
@@ -130,13 +125,50 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		PortName:         "http",
 	}, input.ServiceWaitInterval...)
 	Expect(port.NodePort).ToNot(Equal(0), "Node port for Gitea service is not set")
-	result.GitAddress = fmt.Sprintf("http://%s:%d", addr, port.NodePort)
+
+	if input.Values["service.http.type"] == "NodePort" {
+		By("Get Git server node port")
+		addr := turtlesframework.GetNodeAddress(ctx, turtlesframework.GetNodeAddressInput{
+			Lister:       input.BootstrapClusterProxy.GetClient(),
+			NodeIndex:    0,
+			AddressIndex: 0,
+		})
+
+		result.GitAddress = fmt.Sprintf("http://%s:%d", addr, port.NodePort)
+	} else {
+		By("Getting git server ingress address")
+		svcRes := &WaitForServiceIngressHostnameResult{}
+		WaitForServiceIngressHostname(ctx, WaitForServiceIngressHostnameInput{
+			BootstrapClusterProxy: input.BootstrapClusterProxy,
+			ServiceName:           "gitea-http",
+			ServiceNamespace:      "default",
+			IngressWaitInterval:   input.ServiceWaitInterval,
+		}, svcRes)
+		result.GitAddress = fmt.Sprintf("http://%s:%d", svcRes.Hostname, port.Port)
+	}
 
 	if input.Username == "" {
 		By("No gitea username, skipping creation of auth secret")
 		return result
 	}
 
+	By("Waiting for Gitea endpoint to be available")
+	url := fmt.Sprintf("%s/api/v1/version", result.GitAddress)
+	Eventually(func() error {
+		resp, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("expected status OK, got %v", resp.Status)
+		}
+
+		return nil
+	}, input.ServiceWaitInterval...).Should(Succeed())
+
+	By("Creating gitea secret")
 	turtlesframework.CreateSecret(ctx, turtlesframework.CreateSecretInput{
 		Creator:   input.BootstrapClusterProxy.GetClient(),
 		Name:      input.AuthSecretName,
@@ -149,4 +181,28 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	})
 
 	return result
+}
+
+type UninstallGiteaInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	HelmBinaryPath        string
+	DeleteWaitInterval    []interface{}
+}
+
+func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallGitea")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallGitea")
+	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UninstallGitea")
+	Expect(input.DeleteWaitInterval).ToNot(BeNil(), "DeleteWaitInterval is required for UninstallGitea")
+
+	By("Removing Gitea Helm Chart")
+	removeChart := &opframework.HelmChart{
+		BinaryPath:      input.HelmBinaryPath,
+		Name:            "gitea",
+		Commands:        opframework.Commands(opframework.Uninstall),
+		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: opframework.Flags("--wait"),
+	}
+	_, err := removeChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
 }

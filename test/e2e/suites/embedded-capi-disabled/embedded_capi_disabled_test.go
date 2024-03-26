@@ -29,7 +29,7 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import (embedded capi disable from start)", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import (embedded capi disable from start)", Label(e2e.FullTestLabel), func() {
 
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
@@ -43,7 +43,7 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplate:           e2e.CAPIDockerKubeadm,
+			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
 			ClusterName:               "highlander-e2e-cluster1",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
@@ -53,8 +53,8 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-rancher",
-			DeleteClusterWaitName:     "wait-controllers",
+			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
+			DeleteClusterWaitName:     "wait-eks-delete",
 		}
 	})
 })

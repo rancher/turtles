@@ -2,32 +2,33 @@ managementClusterName: rancher-turtles-e2e
 
 images:
 # Use local dev images built source tree;
-- name: ghcr.io/rancher/turtles-{ARCH}:v0.0.1 # This should be substituted with operator image
+- name: ghcr.io/rancher/turtles-e2e-{ARCH}:v0.0.1 # This should be substituted with operator image
   loadBehavior: tryLoad
 
 intervals:
   default/wait-controllers: ["15m", "10s"]
   default/wait-rancher: ["15m", "30s"]
-  default/wait-delete-cluster: ["15m", "30s"]
+  default/wait-delete-cluster: ["30m", "30s"]
   default/wait-v2prov-create: ["25m", "30s"]
   default/wait-capa-create-cluster: ["30m", "30s"]
   default/wait-capz-create-cluster: ["35m", "30s"]
   default/wait-capv-create-cluster: ["30m", "30s"]
   default/wait-gitea: ["3m", "10s"]
   default/wait-consistently: ["30s", "5s"]
-  default/wait-getservice: ["60s", "5s"]
-  default/wait-eks-delete: ["20m", "30s"]
-  default/wait-aks-delete: ["20m", "30s"]
+  default/wait-getservice: ["5m", "30s"]
+  default/wait-eks-delete: ["35m", "30s"]
+  default/wait-aks-delete: ["30m", "30s"]
   default/wait-azure-delete: ["15m", "30s"]
   default/wait-azure: ["30m", "30s"]
   default/wait-vsphere-delete: ["20m", "30s"]
+  default/wait-gitea-service: ["5m", "30s"]
+  default/wait-gitea-uninstall: ["10m", "30s"]
 
 variables:
-  RANCHER_VERSION: "v2.8.0"
-  RANCHER_LEGACY_VERSION: "v2.7.7"
+  RANCHER_VERSION: "v2.8.1"
   KUBERNETES_VERSION: "v1.27.0"
   KUBERNETES_MANAGEMENT_VERSION: "v1.27.0"
-  KUBERNETES_MANAGEMENT_LEGACY_VERSION: "v1.26.3"
+  KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   RANCHER_HOSTNAME: "localhost"
   RANCHER_FEATURES: ""
   RANCHER_PATH: "rancher-latest/rancher"

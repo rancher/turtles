@@ -33,11 +33,11 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+      - 10.1.0.0/16
     serviceDomain: cluster.local
     services:
       cidrBlocks:
-      - 10.128.0.0/12
+      - 10.10.0.0/16
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -230,7 +230,7 @@ data:
           serviceAccountName: kindnet
           containers:
             - name: kindnet-cni
-              image: kindest/kindnetd:v20230330-48f316cd
+              image: kindest/kindnetd:v20230511-dc714da8
               env:
                 - name: HOST_IP
                   valueFrom:
@@ -241,7 +241,7 @@ data:
                     fieldRef:
                       fieldPath: status.podIP
                 - name: POD_SUBNET
-                  value: '192.168.0.0/16'
+                  value: '10.1.0.0/16'
               volumeMounts:
                 - name: cni-cfg
                   mountPath: /etc/cni/net.d

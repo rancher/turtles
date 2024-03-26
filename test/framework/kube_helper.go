@@ -181,3 +181,55 @@ func AddLabelsToNamespace(ctx context.Context, input AddLabelsToNamespaceInput) 
 		return input.ClusterProxy.GetClient().Update(ctx, namespaceCopy)
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to update namespace %s with new labels", input.Name)
 }
+
+type CreateDockerRegistrySecretInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	Name                  string
+	Namespace             string
+	DockerServer          string
+	DockerUsername        string
+	DockerPassword        string
+}
+
+func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistrySecretInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for CreateDockerRegistrySecret")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CreateDockerRegistrySecret")
+	Expect(input.Name).ToNot(BeEmpty(), "Name is required for CreateDockerRegistrySecret")
+	Expect(input.Namespace).ToNot(BeEmpty(), "Namespace is required for CreateDockerRegistrySecret")
+	Expect(input.DockerUsername).ToNot(BeEmpty(), "DockerUsername is required for CreateDockerRegistrySecret")
+	Expect(input.DockerPassword).ToNot(BeEmpty(), "DockerPassword is required for CreateDockerRegistrySecret")
+	Expect(input.DockerServer).ToNot(BeEmpty(), "DockerServer is required for CreateDockerRegistrySecret")
+
+	Byf("Creating namespace %s", input.Namespace)
+
+	framework.CreateNamespace(ctx, framework.CreateNamespaceInput{
+		Name:    input.Namespace,
+		Creator: input.BootstrapClusterProxy.GetClient(),
+	})
+
+	Byf("Creating docker registry k8s secret (%s\\%s)", input.Namespace, input.Name)
+
+	cmdCreateSecret := &RunCommandResult{}
+	RunCommand(ctx, RunCommandInput{
+		Command: "kubectl",
+		Args: []string{
+			"--kubeconfig",
+			input.BootstrapClusterProxy.GetKubeconfigPath(),
+			"--namespace",
+			input.Namespace,
+			"create",
+			"secret",
+			"docker-registry",
+			input.Name,
+			"--docker-server",
+			input.DockerServer,
+			"--docker-username",
+			input.DockerUsername,
+			"--docker-password",
+			input.DockerPassword,
+		},
+	}, cmdCreateSecret)
+
+	Expect(cmdCreateSecret.Error).NotTo(HaveOccurred(), "Failed creating docker registry k8s secret")
+	Expect(cmdCreateSecret.ExitCode).To(Equal(0), "Creating secret return non-zero exit code")
+}

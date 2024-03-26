@@ -37,14 +37,15 @@ import (
 
 type SetupTestClusterInput struct {
 	UseExistingCluster   bool
+	UseEKS               bool
 	E2EConfig            *clusterctl.E2EConfig
 	ClusterctlConfigPath string
 	Scheme               *runtime.Scheme
 	ArtifactFolder       string
-	Hostname             string
-	KubernetesVersion    string
-	IsolatedMode         bool
-	HelmBinaryPath       string
+	// Hostname             string
+	KubernetesVersion string
+	IsolatedMode      bool
+	HelmBinaryPath    string
 }
 
 type SetupTestClusterResult struct {
@@ -63,13 +64,11 @@ type SetupTestClusterResult struct {
 }
 
 func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTestClusterResult {
-
 	Expect(ctx).NotTo(BeNil(), "ctx is required for setupTestCluster")
 	Expect(input.E2EConfig).ToNot(BeNil(), "E2EConfig is required for setupTestCluster")
 	Expect(input.ClusterctlConfigPath).ToNot(BeEmpty(), "ClusterctlConfigPath is required for setupTestCluster")
 	Expect(input.Scheme).ToNot(BeNil(), "Scheme is required for setupTestCluster")
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for setupTestCluster")
-	Expect(input.Hostname).ToNot(BeEmpty(), "Hostname is required for setupTestCluster")
 	Expect(input.KubernetesVersion).ToNot(BeEmpty(), "KubernetesVersion is required for SetupTestCluster")
 
 	clusterName := createClusterName(input.E2EConfig.ManagementClusterName)
@@ -77,7 +76,7 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 
 	By("Setting up the bootstrap cluster")
 	result.BootstrapClusterProvider, result.BootstrapClusterProxy = setupCluster(
-		ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion)
+		ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.UseEKS, input.KubernetesVersion)
 
 	if input.UseExistingCluster {
 		return result
@@ -86,7 +85,7 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	By("Create log folder for cluster")
 
 	result.BootstrapClusterLogFolder = filepath.Join(input.ArtifactFolder, "clusters", result.BootstrapClusterProxy.GetName())
-	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
+	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0o750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
 
 	if input.IsolatedMode {
 		result.IsolatedHostName = configureIsolatedEnvironment(ctx, result.BootstrapClusterProxy)
@@ -95,16 +94,32 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	return result
 }
 
-func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster bool, kubernetesVersion string) (bootstrap.ClusterProvider, framework.ClusterProxy) {
+func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster, useEKS bool, kubernetesVersion string) (bootstrap.ClusterProvider, framework.ClusterProxy) {
 	var clusterProvider bootstrap.ClusterProvider
 	kubeconfigPath := ""
 	if !useExistingCluster {
-		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
-			Name:               clusterName,
-			KubernetesVersion:  kubernetesVersion,
-			RequiresDockerSock: true,
-			Images:             config.Images,
-		})
+		if useEKS {
+			region := config.Variables["KUBERNETES_MANAGEMENT_AWS_REGION"]
+			Expect(region).ToNot(BeEmpty(), "KUBERNETES_MANAGEMENT_AWS_REGION must be set in the e2e config")
+
+			eksCreateResult := &CreateEKSBootstrapClusterAndValidateImagesInputResult{}
+			CreateEKSBootstrapClusterAndValidateImages(ctx, CreateEKSBootstrapClusterAndValidateImagesInput{
+				Name:       clusterName,
+				Version:    kubernetesVersion,
+				Region:     region,
+				NumWorkers: 1,
+				Images:     config.Images,
+			}, eksCreateResult)
+			clusterProvider = eksCreateResult.BootstrapClusterProvider
+
+		} else {
+			clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
+				Name:               clusterName,
+				KubernetesVersion:  kubernetesVersion,
+				RequiresDockerSock: true,
+				Images:             config.Images,
+			})
+		}
 		Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()

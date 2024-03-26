@@ -38,30 +38,30 @@ import (
 )
 
 type DeployRancherInput struct {
-	BootstrapClusterProxy  framework.ClusterProxy
-	HelmBinaryPath         string
-	HelmExtraValuesPath    string
-	InstallCertManager     bool
-	CertManagerChartPath   string
-	CertManagerUrl         string
-	CertManagerRepoName    string
-	RancherChartRepoName   string
-	RancherChartURL        string
-	RancherChartPath       string
-	RancherVersion         string
-	RancherImageTag        string
-	RancherNamespace       string
-	RancherHost            string
-	RancherPassword        string
-	RancherFeatures        string
-	RancherPatches         [][]byte
-	RancherWaitInterval    []interface{}
-	ControllerWaitInterval []interface{}
-	IsolatedMode           bool
-	RancherIngressConfig   []byte
-	RancherServicePatch    []byte
-	Development            bool
-	Variables              turtlesframework.VariableCollection
+	BootstrapClusterProxy   framework.ClusterProxy
+	HelmBinaryPath          string
+	HelmExtraValuesPath     string
+	InstallCertManager      bool
+	CertManagerChartPath    string
+	CertManagerUrl          string
+	CertManagerRepoName     string
+	RancherChartRepoName    string
+	RancherChartURL         string
+	RancherChartPath        string
+	RancherVersion          string
+	RancherImageTag         string
+	RancherNamespace        string
+	RancherHost             string
+	RancherPassword         string
+	RancherFeatures         string
+	RancherPatches          [][]byte
+	RancherWaitInterval     []interface{}
+	ControllerWaitInterval  []interface{}
+	RancherIngressConfig    []byte
+	RancherServicePatch     []byte
+	RancherIngressClassName string
+	Development             bool
+	Variables               turtlesframework.VariableCollection
 }
 
 type deployRancherValuesFile struct {
@@ -78,7 +78,6 @@ type deployRancherIngressValuesFile struct {
 }
 
 func DeployRancher(ctx context.Context, input DeployRancherInput) {
-
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancher")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancher")
@@ -196,6 +195,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	if input.RancherImageTag != "" {
 		values["rancherImageTag"] = input.RancherImageTag
 	}
+	if input.RancherIngressClassName != "" {
+		values["ingress.ingressClassName"] = input.RancherIngressClassName
+	}
 
 	_, err = chart.Run(values)
 	Expect(err).ToNot(HaveOccurred())
@@ -213,13 +215,13 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		})).To(Succeed())
 	}
 
-	if !input.IsolatedMode {
+	if len(input.RancherIngressConfig) > 0 {
 		By("Setting up ingress")
-
 		ingress, err := envsubst.Eval(string(input.RancherIngressConfig), os.Getenv)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
-
+	}
+	if len(input.RancherServicePatch) > 0 {
 		By("Updating rancher svc")
 		Expect(input.BootstrapClusterProxy.Apply(ctx, input.RancherServicePatch, "--server-side")).To(Succeed())
 	}
@@ -242,6 +244,25 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	}, input.ControllerWaitInterval...).ShouldNot(HaveOccurred())
 }
 
+type RestartRancherInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	RancherNamespace      string
+	RancherWaitInterval   []interface{}
+}
+
+func RestartRancher(ctx context.Context, input RestartRancherInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for RestartRancher")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RestartRancher")
+	Expect(input.RancherNamespace).ToNot(BeEmpty(), "RancherNamespace is required for RestartRancher")
+	Expect(input.RancherWaitInterval).ToNot(BeNil(), "RancherWaitInterval is required for RestartRancher")
+
+	By("Restarting Rancher by killing its pods")
+
+	Eventually(func() error {
+		return input.BootstrapClusterProxy.GetClient().DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace(input.RancherNamespace), client.MatchingLabels{"app": "rancher"})
+	}, input.RancherWaitInterval...).ShouldNot(HaveOccurred())
+}
+
 type RancherDeployIngressInput struct {
 	BootstrapClusterProxy    framework.ClusterProxy
 	HelmBinaryPath           string
@@ -256,6 +277,7 @@ type RancherDeployIngressInput struct {
 	NgrokRepoName            string
 	NgrokRepoURL             string
 	DefaultIngressClassPatch []byte
+	UseEKS                   bool
 }
 
 func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) {
@@ -265,6 +287,8 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 	if input.IsolatedMode {
 		Expect(input.NginxIngress).ToNot(BeEmpty(), "NginxIngress is required when running in isolated mode")
 		Expect(input.NginxIngressNamespace).ToNot(BeEmpty(), "NginxIngressNamespace is required when running in isolated mode")
+		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when running in isolated mode")
+	} else if input.UseEKS {
 		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when running in isolated mode")
 	} else {
 		Expect(input.NgrokApiKey).ToNot(BeEmpty(), "NgrokApiKey is required when not running in isolated mode")
@@ -279,22 +303,67 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 	komega.SetContext(ctx)
 
 	if input.IsolatedMode {
-		By("Deploying nginx ingress")
-		Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(input.NginxIngress))).To(Succeed())
+		deployIsolatedModeIngress(ctx, input)
 
-		By("Getting nginx ingress deployment")
-		ngixDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "ingress-nginx-controller", Namespace: input.NginxIngressNamespace}}
-		Eventually(
-			komega.Get(ngixDeployment),
-			input.IngressWaitInterval...,
-		).Should(Succeed(), "Failed to get nginx ingress controller")
-
-		By("Waiting for ingress-nginx-controller deployment to be available")
-		Eventually(komega.Object(ngixDeployment), input.IngressWaitInterval...).Should(HaveField("Status.AvailableReplicas", Equal(int32(1))))
+		return
+	}
+	if input.UseEKS {
+		deployEKSIngress(ctx, input)
 
 		return
 	}
 
+	deployNgrokIngress(ctx, input)
+}
+
+func deployIsolatedModeIngress(ctx context.Context, input RancherDeployIngressInput) {
+	By("Deploying nginx ingress")
+	Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(input.NginxIngress))).To(Succeed())
+
+	By("Getting nginx ingress deployment")
+	ngixDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "ingress-nginx-controller", Namespace: input.NginxIngressNamespace}}
+	Eventually(
+		komega.Get(ngixDeployment),
+		input.IngressWaitInterval...,
+	).Should(Succeed(), "Failed to get nginx ingress controller")
+
+	By("Waiting for ingress-nginx-controller deployment to be available")
+	Eventually(komega.Object(ngixDeployment), input.IngressWaitInterval...).Should(HaveField("Status.AvailableReplicas", Equal(int32(1))))
+}
+
+func deployEKSIngress(ctx context.Context, input RancherDeployIngressInput) {
+	By("Add nginx ingress chart repo")
+	certChart := &opframework.HelmChart{
+		BinaryPath:      input.HelmBinaryPath,
+		Name:            "ingress-nginx",
+		Path:            "https://kubernetes.github.io/ingress-nginx",
+		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
+		AdditionalFlags: opframework.Flags("--force-update"),
+		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+	}
+	_, err := certChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Installing nginx ingress")
+	certManagerChart := &opframework.HelmChart{
+		BinaryPath: input.HelmBinaryPath,
+		Path:       "ingress-nginx/ingress-nginx",
+		Name:       "ingress-nginx",
+		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
+		AdditionalFlags: opframework.Flags(
+			"--namespace", "ingress-nginx",
+			"--version", "v4.9.0",
+			"--create-namespace",
+		),
+		Wait: true,
+	}
+	_, err = certManagerChart.Run(map[string]string{
+		"controller.service.type": "LoadBalancer",
+	})
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
 	By("Setting up ngrok-ingress-controller")
 	addChart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
@@ -343,5 +412,4 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 
 	By("Setting up default ingress class")
 	Expect(input.BootstrapClusterProxy.Apply(ctx, input.DefaultIngressClassPatch, "--server-side")).To(Succeed())
-
 }
