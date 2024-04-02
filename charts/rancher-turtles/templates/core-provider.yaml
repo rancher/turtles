@@ -1,12 +1,15 @@
 {{- if index .Values "cluster-api-operator" "cluster-api" "enabled" }}
+{{- $namespace := index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+{{- if not (lookup "v1" "Namespace" "" $namespace) }}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   annotations:
-    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook": "post-install, post-upgrade, pre-delete"
     "helm.sh/hook-weight": "1"
   name: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+{{- end }}
 ---
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
@@ -14,7 +17,7 @@ metadata:
   name: cluster-api
   namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
   annotations:
-    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook": "post-install, post-upgrade, pre-delete"
     "helm.sh/hook-weight": "2"
 spec:
   name: cluster-api
@@ -45,7 +48,7 @@ metadata:
   name: capi-additional-rbac-roles
   namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
   annotations:
-    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook": "post-install, post-upgrade, pre-delete"
     "helm.sh/hook-weight": "2"
 data: 
   manifests: |-
