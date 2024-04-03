@@ -71,6 +71,8 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 			k.region,
 			"--kubeconfig",
 			tempFile.Name(),
+			"--tags",
+			"team=highlander,purpose=e2e",
 		},
 	}, createClusterRes)
 	Expect(createClusterRes.Error).NotTo(HaveOccurred(), "Failed to create cluster using eksctl: %s", createClusterRes.Stderr)
