@@ -28,6 +28,10 @@ const (
 
 	// ManagementV3Cluster is used to enable the management.cattle.io/v3 cluster resource.
 	ManagementV3Cluster featuregate.Feature = "managementv3-cluster" //nolint:gosec
+
+	// PropagateLabels is used to enable copying the labels from the CAPI cluster
+	// to the Rancher cluster.
+	PropagateLabels featuregate.Feature = "propagate-labels"
 )
 
 func init() {
@@ -37,4 +41,5 @@ func init() {
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	RancherKubeSecretPatch: {Default: false, PreRelease: featuregate.Beta},
 	ManagementV3Cluster:    {Default: false, PreRelease: featuregate.Beta},
+	PropagateLabels:        {Default: false, PreRelease: featuregate.Beta},
 }

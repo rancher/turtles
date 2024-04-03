@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
+	"github.com/rancher/turtles/feature"
 	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher/turtles/util"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
@@ -207,7 +208,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			return ctrl.Result{}, nil
 		}
 
-		if err := r.RancherClient.Create(ctx, &provisioningv1.Cluster{
+		newCluster := &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
 				Namespace: capiCluster.Namespace,
@@ -221,7 +222,15 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 					ownedLabelName: "",
 				},
 			},
-		}); err != nil {
+		}
+
+		if feature.Gates.Enabled(feature.PropagateLabels) {
+			for labelKey, labelVal := range capiCluster.Labels {
+				newCluster.Labels[labelKey] = labelVal
+			}
+		}
+
+		if err := r.RancherClient.Create(ctx, newCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
