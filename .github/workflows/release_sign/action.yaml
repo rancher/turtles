@@ -43,7 +43,7 @@ runs:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
-    - uses: sigstore/cosign-installer@v3.1.2
+    - uses: sigstore/cosign-installer@v3.4.0
     - name: Sign manifests
       shell: bash
       env:
