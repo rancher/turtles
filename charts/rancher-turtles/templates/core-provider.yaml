@@ -6,7 +6,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   annotations:
-    "helm.sh/hook": "post-install, post-upgrade, pre-delete"
+    "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "1"
   name: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
 {{- end }}

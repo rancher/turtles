@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: post-delete-job
-  namespace: rancher-turtles-system
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "1"
@@ -51,6 +51,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: cluster-api-operator-mutatingwebhook-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "2"
@@ -77,6 +78,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: cluster-api-operator-validatingwebhook-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "2"
@@ -103,7 +105,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: cluster-api-operator-deployment-cleanup
-  namespace: rancher-turtles-system
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "2"
