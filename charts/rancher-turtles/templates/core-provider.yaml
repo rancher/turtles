@@ -19,6 +19,7 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade, pre-delete"
     "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 spec:
   name: cluster-api
   type: core
@@ -50,6 +51,7 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade, pre-delete"
     "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 data: 
   manifests: |-
     apiVersion: rbac.authorization.k8s.io/v1
