@@ -13,11 +13,6 @@ questions:
     type: boolean
     description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually"
     label: "Enable Cert Manager"
-  - variable: rancherTurtles.namespace
-    default: "rancher-turtles-system"
-    description: "Specify a different namespace for turtles installation"
-    type: string
-    label: Namespace
   - variable: rancherTurtles.features.cluster-api-operator.cleanup
     default: true
     description: "Specify that the CAPI Operator post-delete cleanup job will be performed"
