@@ -17,11 +17,11 @@ Currently, this project has the following functionality:
 
 ## Installation & Usage
 
-Rancher Turtles is deployed using a Helm Chart. For instructions, see the [getting started guide](https://docs.rancher-turtles.com/docs/category/getting-started).
+Rancher Turtles is deployed using a Helm Chart. For instructions, see the [getting started guide](https://turtles.docs.rancher.com/docs/category/getting-started).
 
 ## Documentation
 
-Configuration steps, the quickstart guide and the architecture for this project can be found in our [documentation](https://docs.rancher-turtles.com/).
+Configuration steps, the quickstart guide and the architecture for this project can be found in our [documentation](https://turtles.docs.rancher.com).
 
 ## How to contribute?
 
