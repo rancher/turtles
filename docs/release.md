@@ -2,7 +2,7 @@
 
 ## Release Cadence
 
-- New Rancher Turtles versions are released every 2-4 weeks.
+- New Rancher Turtles versions are usually released every 2-4 weeks.
 
 ## Release Process
 
@@ -12,9 +12,9 @@
 git clone git@github.com:rancher/turtles.git
 ```
 
-2. Depending on whether you are cutting a minor or patch release, the process varies.
+2. Depending on whether you are cutting a minor/major or patch release, the process varies.
 
-    * If you are cutting a new minor release:
+    * If you are cutting a new minor/major release:
 
         Create a new release branch (i.e release-X) and push it to the upstream repository.
 
@@ -22,7 +22,7 @@ git clone git@github.com:rancher/turtles.git
             # Note: `upstream` must be the remote pointing to `github.com/rancher/turtles`.
             git checkout -b release-0.4
             git push -u upstream release-0.4
-            # Export the tag of the minor release to be cut, e.g.:
+            # Export the tag of the minor/major release to be cut, e.g.:
             export RELEASE_TAG=v0.4.0
         ```
     * If you are cutting a patch release from an existing release branch:
@@ -45,12 +45,15 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-This will trigger a [release GitHub action](https://github.com/rancher/turtles/blob/main/.github/workflows/release.yaml) that creates a release with Rancher Turtles components.
-If you are cutting a new minor/major release, please follow the [next step](#post-release-steps-in-rancher-turtles-docs) below, otherwise skip.
+This will trigger a [release GitHub action](https://github.com/rancher/turtles/actions/workflows/release.yaml) that creates a release with Rancher Turtles components.
+
+**Note:** If you are cutting a new minor/major release, please follow the [next step](#post-release-steps-in-rancher-turtles-docs) below, otherwise skip.
 
 ## Post-release steps in Rancher Turtles Docs
 
-If a new minor or major branch was created, there are some post-release actions that need to be taken.
+If a new minor/major branch was created, there are some post-release actions that need to be taken.
+
+**Note:** Before moving one, please make sure to ask a team member or directly set branch *Enforcement status* to **Disabled** in the Rancher Turtles Docs repository by navigating [here](https://github.com/rancher/turtles-docs/settings/rules/124836).
 
 ### Create a new tag for Rancher Turtles Docs repo
 
@@ -74,21 +77,21 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-### Create a patch for new version of Rancher Turtles Docs
+### Automatic patch creation for new version of Rancher Turtles Docs
 
-This step is automatic, however it requires temporarily adjusting repo permissions so that the new version patch is pushed on behalf of the tag committer.
+This step is automatic, however it requires temporarily adjusting repo permissions so that the new docs version patch is pushed on behalf of the tag committer (example new docs version [patch](https://github.com/rancher/turtles-docs/commit/e7e37a92b6e48c6f4bc0de386a0003bb2b9d610b)).
 
-1. Ask a team member or directly adjust `Docs repo > Settings > Rules > Rulesets > main > Enforcement status > Disabled`.
+1. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to finish.
 
-2. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yamll) to finish.
-
-3. Ask a team member or directly adjust `Docs repo > Settings > Rules > Rulesets > main > Enforcement status > Active`.
-
-Example version update patch: https://github.com/rancher/turtles-docs/commit/d36f0de97c5b5594cd8a396d6780761b6e106e3f
+2. Ask a team member or directly set branch *Enforcement status* back to **Active** in the Rancher Turtles Docs repository by navigating [here](https://github.com/rancher/turtles-docs/settings/rules/124836).
 
 ### Deploy site to Pages
 
+Next, we need to deploy site to Github Pages:
+
 1. Manually run [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml) to force rollout of updated docs version.
+
+Once all steps above are completed, a new version of Rancher Turtles Docs should be available at [https://turtles.docs.rancher.com].
 
 ## Versioning
 
