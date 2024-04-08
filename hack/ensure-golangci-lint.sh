@@ -83,7 +83,6 @@ get_binaries() {
     darwin/mips64) BINARIES="golangci-lint" ;;
     darwin/mips64le) BINARIES="golangci-lint" ;;
     darwin/ppc64le) BINARIES="golangci-lint" ;;
-    darwin/s390x) BINARIES="golangci-lint" ;;
     freebsd/386) BINARIES="golangci-lint" ;;
     freebsd/amd64) BINARIES="golangci-lint" ;;
     freebsd/armv6) BINARIES="golangci-lint" ;;
@@ -91,7 +90,6 @@ get_binaries() {
     freebsd/mips64) BINARIES="golangci-lint" ;;
     freebsd/mips64le) BINARIES="golangci-lint" ;;
     freebsd/ppc64le) BINARIES="golangci-lint" ;;
-    freebsd/s390x) BINARIES="golangci-lint" ;;
     linux/386) BINARIES="golangci-lint" ;;
     linux/amd64) BINARIES="golangci-lint" ;;
     linux/arm64) BINARIES="golangci-lint" ;;
@@ -100,7 +98,6 @@ get_binaries() {
     linux/mips64) BINARIES="golangci-lint" ;;
     linux/mips64le) BINARIES="golangci-lint" ;;
     linux/ppc64le) BINARIES="golangci-lint" ;;
-    linux/s390x) BINARIES="golangci-lint" ;;
     windows/386) BINARIES="golangci-lint" ;;
     windows/amd64) BINARIES="golangci-lint" ;;
     windows/arm64) BINARIES="golangci-lint" ;;
@@ -109,7 +106,6 @@ get_binaries() {
     windows/mips64) BINARIES="golangci-lint" ;;
     windows/mips64le) BINARIES="golangci-lint" ;;
     windows/ppc64le) BINARIES="golangci-lint" ;;
-    windows/s390x) BINARIES="golangci-lint" ;;
     *)
       log_crit "platform $PLATFORM is not supported.  Make sure this script is up-to-date and file request at https://github.com/${PREFIX}/issues/new"
       exit 1
@@ -260,7 +256,6 @@ uname_arch_check() {
     mipsle) return 0 ;;
     mips64) return 0 ;;
     mips64le) return 0 ;;
-    s390x) return 0 ;;
     amd64p32) return 0 ;;
   esac
   log_crit "uname_arch_check '$(uname -m)' got converted to '$arch' which is not a GOARCH value.  Please file bug report at https://github.com/client9/shlib"
