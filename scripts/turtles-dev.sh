@@ -20,7 +20,7 @@ if [ -z "$RANCHER_HOSTNAME" ]; then
 	exit 1
 fi
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.8.1}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.8.2}
 
 BASEDIR=$(dirname "$0")
 
@@ -28,7 +28,6 @@ kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml"
 
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
-helm repo add jetstack https://charts.jetstack.io
 helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
 helm repo update
@@ -38,12 +37,12 @@ export CLUSTER_TOPOLOGY=true
 
 helm install capi-operator capi-operator/cluster-api-operator \
 	--create-namespace -n capi-operator-system \
+	--set infrastructure=docker:v1.4.6 \
+	--set core=cluster-api:v1.4.6 \
 	--set cert-manager.enabled=true \
-	--wait
+	--timeout 90s --wait
 
 kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
-
-clusterctl init -i docker
 
 helm install rancher rancher-stable/rancher \
 	--namespace cattle-system \
