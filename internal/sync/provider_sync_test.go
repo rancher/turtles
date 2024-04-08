@@ -138,7 +138,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).ToNot(BeNil())
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(appliedCondition.LastTransitionTime.Second()))
-		})
+		}).Should(Succeed())
 
 		s := sync.NewProviderSync(testEnv, capiProvider)
 
@@ -158,6 +158,7 @@ var _ = Describe("Provider sync", func() {
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
 
+		Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
 		condition := conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)
 
 		Consistently(func(g Gomega) {
@@ -167,7 +168,7 @@ var _ = Describe("Provider sync", func() {
 			s.Apply(ctx, &err)
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(Equal(condition))
-		}, 5*time.Second)
+		}, 5*time.Second).Should(Succeed())
 	})
 
 	It("Should individually sync every provider", func() {
@@ -208,7 +209,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(capiProviderDuplicate.Status.Conditions).To(HaveLen(1))
 			g.Expect(conditions.IsTrue(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.Get(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(time.Now().UTC().Second()))
-		})
+		}).Should(Succeed())
 
 		// Provider manifest should be created and phase set to provisioning
 		Eventually(func(g Gomega) {

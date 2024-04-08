@@ -138,7 +138,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			})
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist", func() {
