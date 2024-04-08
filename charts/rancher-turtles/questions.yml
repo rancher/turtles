@@ -58,3 +58,9 @@ questions:
     description: "Flag to enable or disable installation of the RKE2 provider for Cluster API. By default this is enabled."
     label: "Enable RKE2 Provider"
     type: boolean
+  - variable: rancherTurtles.features.propagate-labels.enabled
+    default: false
+    description: "(Experimental) Specify that the labels from CAPI should be propagated to Rancher"
+    type: boolean
+    label: Propagate CAPI Labels
+    group: "Rancher Turtles Features Settings"

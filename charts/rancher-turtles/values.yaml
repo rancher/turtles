@@ -18,6 +18,8 @@ rancherTurtles:
       label: true
     managementv3-cluster:
       enabled: false
+    propagate-labels:
+      enabled: false
 cluster-api-operator:
   enabled: true
   cert-manager:
