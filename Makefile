@@ -128,7 +128,7 @@ GINGKO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
 GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
-HELM_VER := v3.8.1
+HELM_VER := v3.14.0
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
