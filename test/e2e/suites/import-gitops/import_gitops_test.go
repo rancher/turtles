@@ -33,7 +33,6 @@ import (
 )
 
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
-
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)
@@ -55,6 +54,7 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
+			TestClusterReimport:       true,
 			RancherServerURL:          hostName,
 			CAPIClusterCreateWaitName: "wait-rancher",
 			DeleteClusterWaitName:     "wait-controllers",
