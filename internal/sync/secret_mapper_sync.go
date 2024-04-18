@@ -98,7 +98,7 @@ var (
 )
 
 var (
-	missingKey    = "Credential keys missing: %w"
+	missingKey    = "Credential keys missing: %s"
 	missingSource = "Rancher Credentials secret named %s was not located"
 )
 

@@ -74,12 +74,18 @@ func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtles
 		sync.NewSecretMapperSync(ctx, r.Client, capiProvider),
 	)
 
+	defer r.patchStatus(ctx, capiProvider, &err)
+
 	if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, err
 	}
 	defer s.Apply(ctx, &err)
 
-	return ctrl.Result{}, sync.PatchStatus(ctx, r.Client, capiProvider)
+	return ctrl.Result{}, nil
+}
+
+func (r *CAPIProviderReconciler) patchStatus(ctx context.Context, capiProvider *turtlesv1.CAPIProvider, err *error) {
+	*err = sync.PatchStatus(ctx, r.Client, capiProvider)
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -146,7 +146,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(syncer.Get(context.Background())).ToNot(HaveOccurred())
 			g.Expect(syncer.RancherSecret.Annotations).To(Equal(rancherSecret.Annotations))
 			g.Expect(syncer.RancherSecret.Name).To(Equal(rancherSecret.Name))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should ignore similarly named secret for a different driver", func() {
@@ -165,12 +165,13 @@ var _ = Describe("SecretMapperSync get", func() {
 		}
 
 		Eventually(func(g Gomega) {
-			g.Expect(syncer.Get(context.Background())).To(HaveOccurred())
+			err = syncer.Get(context.Background())
+			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
 			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
 			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should get the source Rancher secret pointed by ref", func() {
@@ -190,7 +191,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(syncer.Get(context.Background())).NotTo(HaveOccurred())
 			g.Expect(syncer.RancherSecret.Name).To(Equal(customRancherSecret.Name))
 			g.Expect(syncer.RancherSecret.Namespace).To(Equal(customRancherSecret.Namespace))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should handle unexisting secret pointer by ref", func() {
@@ -200,18 +201,19 @@ var _ = Describe("SecretMapperSync get", func() {
 		}}
 		Expect(testEnv.Client.Create(ctx, secret)).To(Succeed())
 
-		syncer := sync.SecretMapperSync{
+		syncer := &sync.SecretMapperSync{
 			SecretSync:    sync.NewSecretSync(testEnv.Client, capiProviderWithRancherRef).(*sync.SecretSync),
 			RancherSecret: sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef),
 		}
 
 		Eventually(func(g Gomega) {
-			g.Expect(syncer.Get(context.Background())).NotTo(HaveOccurred())
+			err = syncer.Get(context.Background())
+			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
 			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
 			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal(fmt.Sprintf("Rancher Credentials secret named %s:secret-name was not located", ns.Name)))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should handle when the source Rancher secret is not found", func() {
@@ -227,12 +229,13 @@ var _ = Describe("SecretMapperSync get", func() {
 		}
 
 		Eventually(func(g Gomega) {
-			g.Expect(syncer.Get(context.Background())).To(HaveOccurred())
+			err = syncer.Get(context.Background())
+			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
 			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
 			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should not error when the destination secret is not created yet", func() {
@@ -247,7 +250,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(syncer.Get(context.Background())).ToNot(HaveOccurred())
 			g.Expect(syncer.RancherSecret.Annotations).To(Equal(rancherSecret.Annotations))
 			g.Expect(syncer.RancherSecret.Name).To(Equal(rancherSecret.Name))
-		})
+		}).Should(Succeed())
 	})
 
 	It("should point to the right initial secret", func() {
@@ -275,7 +278,7 @@ var _ = Describe("SecretMapperSync get", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).To(BeNil())
 			g.Expect(syncer.SecretSync.Secret.StringData).To(HaveLen(0))
-		})
+		}).Should(Succeed())
 	})
 
 	It("provider requirements azure", func() {
@@ -301,7 +304,7 @@ var _ = Describe("SecretMapperSync get", func() {
 				"AZURE_TENANT_ID":           "",
 				"AZURE_SUBSCRIPTION_ID_B64": "",
 			}))
-		})
+		}).Should(Succeed())
 	})
 
 	It("provider requirements aws", func() {
@@ -323,7 +326,7 @@ var _ = Describe("SecretMapperSync get", func() {
 				"AWS_ACCESS_KEY_ID":          "",
 				"AWS_SECRET_ACCESS_KEY":      "",
 			}))
-		})
+		}).Should(Succeed())
 	})
 
 	It("provider requirements gcp", func() {
@@ -342,7 +345,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 				"GCP_B64ENCODED_CREDENTIALS": "",
 			}))
-		})
+		}).Should(Succeed())
 	})
 	It("provider requirements digitalocean", func() {
 		capiProvider.Spec.Name = "digitalocean"
@@ -361,7 +364,7 @@ var _ = Describe("SecretMapperSync get", func() {
 				"DO_B64ENCODED_CREDENTIALS": "",
 				"DIGITALOCEAN_ACCESS_TOKEN": "",
 			}))
-		})
+		}).Should(Succeed())
 	})
 	It("provider requirements vsphere", func() {
 		capiProvider.Spec.Name = "vsphere"
@@ -379,7 +382,7 @@ var _ = Describe("SecretMapperSync get", func() {
 				"VSPHERE_PASSWORD": "",
 				"VSPHERE_USERNAME": "",
 			}))
-		})
+		}).Should(Succeed())
 	})
 
 	It("prepare aws secret", func() {
@@ -407,6 +410,6 @@ var _ = Describe("SecretMapperSync get", func() {
 
 			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
 			g.Expect(conditions.IsTrue(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-		})
+		}).Should(Succeed())
 	})
 })
