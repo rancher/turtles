@@ -184,26 +184,68 @@ var _ = BeforeSuite(func() {
 	}
 	testenv.DeployRancher(ctx, rancherInput)
 
-	rtInput := testenv.DeployRancherTurtlesInput{
-		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:               flagVals.HelmBinaryPath,
-		ChartPath:                    flagVals.ChartPath,
-		CAPIProvidersYAML:            e2e.CapiProviders,
-		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-		Tag:                          "v0.0.1",
-		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		AdditionalValues:             map[string]string{},
-	}
-	if flagVals.UseEKS {
-		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+	if shortTestOnly() {
+		rtInput := testenv.DeployRancherTurtlesInput{
+			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:               flagVals.HelmBinaryPath,
+			ChartPath:                    "https://rancher.github.io/turtles",
+			CAPIProvidersYAML:            e2e.CapiProviders,
+			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+			Version:                      "v0.6.0",
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			AdditionalValues:             map[string]string{},
+		}
+		testenv.DeployRancherTurtles(ctx, rtInput)
+
+		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
+			HelmBinaryPath:        flagVals.HelmBinaryPath,
+			ChartsPath:            flagVals.ChartPath,
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		})
+
+		upgradeInput := testenv.UpgradeRancherTurtlesInput{
+			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:               flagVals.HelmBinaryPath,
+			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+			Tag:                          "v0.0.1",
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			AdditionalValues:             rtInput.AdditionalValues,
+		}
+
+		if flagVals.UseEKS {
+			rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+		} else {
+			// NOTE: this was the default previously in the chart locally and ok as
+			// we where loading the image into kind manually.
+			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+		}
+
+		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 	} else {
-		// NOTE: this was the default previously in the chart locally and ok as
-		// we where loading the image into kind manually.
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+		rtInput := testenv.DeployRancherTurtlesInput{
+			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:               flagVals.HelmBinaryPath,
+			ChartPath:                    flagVals.ChartPath,
+			CAPIProvidersYAML:            e2e.CapiProviders,
+			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+			Tag:                          "v0.0.1",
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			AdditionalValues:             map[string]string{},
+		}
+		if flagVals.UseEKS {
+			rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+		} else {
+			// NOTE: this was the default previously in the chart locally and ok as
+			// we where loading the image into kind manually.
+			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+		}
+		testenv.DeployRancherTurtles(ctx, rtInput)
 	}
-	testenv.DeployRancherTurtles(ctx, rtInput)
 
 	if !shortTestOnly() && !localTestOnly() {
 		By("Running full tests, deploying additional infrastructure providers")
