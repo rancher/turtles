@@ -77,6 +77,9 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 
 	LabelNamespace bool
 
+	// TestClusterReimport defines whether to test un-importing and re-importing the cluster after initial test.
+	TestClusterReimport bool
+
 	// management.cattle.io specifc
 	CapiClusterOwnerLabel          string
 	CapiClusterOwnerNamespaceLabel string
@@ -100,6 +103,58 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		capiClusterCreateWait []interface{}
 		deleteClusterWait     []interface{}
 	)
+
+	validateRancherCluster := func() {
+		By("Waiting for the rancher cluster record to appear")
+		rancherClusters := &managementv3.ClusterList{}
+		selectors := []client.ListOption{
+			client.MatchingLabels{
+				input.CapiClusterOwnerLabel:          capiCluster.Name,
+				input.CapiClusterOwnerNamespaceLabel: capiCluster.Namespace,
+				input.OwnedLabelName:                 "",
+			},
+		}
+		Eventually(func() bool {
+			Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
+			return len(rancherClusters.Items) == 1
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+		rancherCluster = &rancherClusters.Items[0]
+		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+
+		By("Waiting for the rancher cluster to have a deployed agent")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+
+		By("Waiting for the rancher cluster to be ready")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+
+		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
+		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
+			Getter:           input.BootstrapClusterProxy.GetClient(),
+			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
+			Namespace:        rancherCluster.Spec.FleetWorkspaceName,
+			RancherServerURL: input.RancherServerURL,
+			WriteToTempFile:  true,
+		}, rancherKubeconfig)
+
+		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+			Command: "kubectl",
+			Args: []string{
+				"--kubeconfig",
+				rancherKubeconfig.TempFilePath,
+				"get",
+				"nodes",
+				"--insecure-skip-tls-verify",
+			},
+		}, rancherConnectRes)
+		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
+		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+	}
 
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
@@ -246,55 +301,45 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			WriteToTempFile: true,
 		}, originalKubeconfig)
 
-		By("Waiting for the rancher cluster record to appear")
-		rancherClusters := &managementv3.ClusterList{}
-		selectors := []client.ListOption{
-			client.MatchingLabels{
-				input.CapiClusterOwnerLabel:          capiCluster.Name,
-				input.CapiClusterOwnerNamespaceLabel: capiCluster.Namespace,
-				input.OwnedLabelName:                 "",
-			},
+		By("Running checks on Rancher cluster")
+		validateRancherCluster()
+
+		if input.TestClusterReimport {
+			By("Deleting Rancher cluster record to simulate unimporting the cluster")
+			err := input.BootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
+			Expect(err).NotTo(HaveOccurred(), "Failed to delete rancher cluster")
+
+			By("CAPI cluster should have the 'imported' annotation")
+			Eventually(func() bool {
+				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				annotations := capiCluster.GetAnnotations()
+
+				return annotations["imported"] == "true"
+			}, capiClusterCreateWait...).Should(BeTrue(), "Failed to detect 'imported' annotation on CAPI cluster")
+
+			By("Waiting for the Rancher cluster record to be removed")
+			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be unimported (deleted)")
+
+			By("Removing 'imported' annotation from CAPI cluster")
+			Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			annotations := capiCluster.GetAnnotations()
+			delete(annotations, "imported")
+			capiCluster.SetAnnotations(annotations)
+			err = input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
+			Expect(err).NotTo(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
+
+			By("Validating annotation is removed from CAPI cluster")
+			Eventually(func() bool {
+				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				annotations := capiCluster.GetAnnotations()
+				fmt.Printf("Annotations: %v\n", annotations)
+
+				return annotations["imported"] != "true"
+			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
+
+			By("Rancher should be available after removing 'imported' annotation")
+			validateRancherCluster()
 		}
-		Eventually(func() bool {
-			Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
-			return len(rancherClusters.Items) == 1
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		rancherCluster = &rancherClusters.Items[0]
-		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-
-		By("Waiting for the rancher cluster to have a deployed agent")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		By("Waiting for the rancher cluster to be ready")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
-		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:           input.BootstrapClusterProxy.GetClient(),
-			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
-			Namespace:        rancherCluster.Spec.FleetWorkspaceName,
-			RancherServerURL: input.RancherServerURL,
-			WriteToTempFile:  true,
-		}, rancherKubeconfig)
-
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-			Command: "kubectl",
-			Args: []string{
-				"--kubeconfig",
-				rancherKubeconfig.TempFilePath,
-				"get",
-				"nodes",
-				"--insecure-skip-tls-verify",
-			},
-		}, rancherConnectRes)
-		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
-		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
 	})
 
 	AfterEach(func() {

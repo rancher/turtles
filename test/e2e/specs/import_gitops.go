@@ -76,6 +76,9 @@ type CreateUsingGitOpsSpecInput struct {
 	SkipDeletionTest bool
 
 	LabelNamespace bool
+
+	// TestClusterReimport defines whether to test un-importing and re-importing the cluster after initial test.
+	TestClusterReimport bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -95,6 +98,43 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		capiClusterCreateWait []interface{}
 		deleteClusterWait     []interface{}
 	)
+
+	validateRancherCluster := func() {
+		By("Waiting for the rancher cluster record to appear")
+		rancherCluster = &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace.Name,
+			Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
+		}}
+		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+
+		By("Waiting for the rancher cluster to have a deployed agent")
+		Eventually(komega.Object(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.AgentDeployed", BeTrue()))
+
+		By("Waiting for the rancher cluster to be ready")
+		Eventually(komega.Object(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.Ready", BeTrue()))
+
+		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
+		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
+			Getter:           input.BootstrapClusterProxy.GetClient(),
+			SecretName:       fmt.Sprintf("%s-capi-kubeconfig", capiCluster.Name),
+			Namespace:        capiCluster.Namespace,
+			RancherServerURL: input.RancherServerURL,
+			WriteToTempFile:  true,
+		}, rancherKubeconfig)
+
+		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+			Command: "kubectl",
+			Args: []string{
+				"--kubeconfig",
+				rancherKubeconfig.TempFilePath,
+				"get",
+				"nodes",
+				"--insecure-skip-tls-verify",
+			},
+		}, rancherConnectRes)
+		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
+		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+	}
 
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
@@ -241,40 +281,44 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WriteToTempFile: true,
 		}, originalKubeconfig)
 
-		By("Waiting for the rancher cluster record to appear")
-		rancherCluster = &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace.Name,
-			Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
-		}}
-		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		By("Running checks on Rancher cluster")
+		validateRancherCluster()
 
-		By("Waiting for the rancher cluster to have a deployed agent")
-		Eventually(komega.Object(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.AgentDeployed", BeTrue()))
+		if input.TestClusterReimport {
+			By("Deleting Rancher cluster record to simulate unimporting the cluster")
+			err := input.BootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
+			Expect(err).NotTo(HaveOccurred(), "Failed to delete rancher cluster")
 
-		By("Waiting for the rancher cluster to be ready")
-		Eventually(komega.Object(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.Ready", BeTrue()))
+			By("CAPI cluster should have the 'imported' annotation")
+			Eventually(func() bool {
+				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				annotations := capiCluster.GetAnnotations()
 
-		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
-		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:           input.BootstrapClusterProxy.GetClient(),
-			SecretName:       fmt.Sprintf("%s-capi-kubeconfig", capiCluster.Name),
-			Namespace:        capiCluster.Namespace,
-			RancherServerURL: input.RancherServerURL,
-			WriteToTempFile:  true,
-		}, rancherKubeconfig)
+				return annotations["imported"] == "true"
+			}, capiClusterCreateWait...).Should(BeTrue(), "Failed to detect 'imported' annotation on CAPI cluster")
 
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-			Command: "kubectl",
-			Args: []string{
-				"--kubeconfig",
-				rancherKubeconfig.TempFilePath,
-				"get",
-				"nodes",
-				"--insecure-skip-tls-verify",
-			},
-		}, rancherConnectRes)
-		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
-		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+			By("Waiting for the Rancher cluster record to be removed")
+			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be unimported (deleted)")
+
+			By("Removing 'imported' annotation from CAPI cluster")
+			Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			annotations := capiCluster.GetAnnotations()
+			delete(annotations, "imported")
+			capiCluster.SetAnnotations(annotations)
+			err = input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
+			Expect(err).NotTo(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
+
+			By("Validating annotation is removed from CAPI cluster")
+			Eventually(func() bool {
+				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				annotations := capiCluster.GetAnnotations()
+
+				return annotations["imported"] != "true"
+			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
+
+			By("Rancher should be available after removing 'imported' annotation")
+			validateRancherCluster()
+		}
 	})
 
 	AfterEach(func() {

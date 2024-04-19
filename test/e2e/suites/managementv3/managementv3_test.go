@@ -51,6 +51,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			SkipCleanup:                    false,
 			SkipDeletionTest:               false,
 			LabelNamespace:                 true,
+			TestClusterReimport:            true,
 			RancherServerURL:               hostName,
 			CAPIClusterCreateWaitName:      "wait-rancher",
 			DeleteClusterWaitName:          "wait-controllers",
