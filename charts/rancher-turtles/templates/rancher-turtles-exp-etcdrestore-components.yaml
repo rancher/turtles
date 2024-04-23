@@ -1,0 +1,123 @@
+{{- if index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "enabled" }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: etcdmachinesnapshots.turtles-capi.cattle.io
+spec:
+  group: turtles-capi.cattle.io
+  names:
+    kind: EtcdMachineSnapshot
+    listKind: EtcdMachineSnapshotList
+    plural: etcdmachinesnapshots
+    singular: etcdmachinesnapshot
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: EtcdMachineSnapshot is the Schema for the EtcdMachineSnapshot
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot.
+            properties:
+              foo:
+                type: string
+            required:
+            - foo
+            type: object
+          status:
+            default: {}
+            description: EtcdMachineSnapshotStatus defines observed state of EtcdMachineSnapshot.
+            properties:
+              bar:
+                type: string
+            required:
+            - bar
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: etcdsnapshotrestores.turtles-capi.cattle.io
+spec:
+  group: turtles-capi.cattle.io
+  names:
+    kind: EtcdSnapshotRestore
+    listKind: EtcdSnapshotRestoreList
+    plural: etcdsnapshotrestores
+    singular: etcdsnapshotrestore
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: EtcdSnapshotRestore is the schema for the EtcdSnapshotRestore
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EtcdSnapshotRestoreSpec defines the desired state of EtcdSnapshotRestore.
+            properties:
+              foo:
+                type: string
+            required:
+            - foo
+            type: object
+          status:
+            default: {}
+            description: EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore.
+            properties:
+              bar:
+                type: string
+            required:
+            - bar
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+{{- end }}
