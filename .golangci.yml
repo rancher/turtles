@@ -16,12 +16,22 @@ issues:
     - path: internal/controllers/import_controller(_v3)?\.go
       linters:
         - dupl
+    - path: exp/etcdrestore/controllers/.*.go
+      linters:
+        - dupl
     - text: var-naming
       linters:
         - revive
     - text: ST1003
       linters: 
         - stylecheck
+    - linters:
+      - revive
+      text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
+      path: exp/etcdrestore/controllers/.*.go
+    - path: exp/etcdrestore/controllers/.*.go
+      linters:
+        - unused
 linters-settings:
   funlen:
     lines: 110

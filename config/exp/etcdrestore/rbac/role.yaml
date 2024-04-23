@@ -1,0 +1,136 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - events
+  - secrets
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
+  - rke2configs
+  - rke2configs/finalizers
+  - rke2configs/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - management.cattle.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - etcdmachinesnapshots
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - etcdmachinesnapshots/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - etcdmachinesnapshots/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - etcdsnapshotrestores
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - etcdsnapshotrestores/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - etcdsnapshotrestores/status
+  verbs:
+  - get
+  - patch
+  - update
