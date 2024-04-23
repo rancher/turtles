@@ -226,8 +226,12 @@ generate-manifests-api: controller-gen ## Generate ClusterRole and CustomResourc
 .PHONY: generate-exp-etcdrestore-manifests-api
 generate-exp-etcdrestore-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects for experimental API.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/etcdrestore/api/..." \
+			paths=./exp/etcdrestore/controllers/... \
+			paths=./exp/etcdrestore/webhooks/... \
 			output:crd:artifacts:config=./config/exp/etcdrestore/crd/bases \
 			output:rbac:dir=./config/exp/etcdrestore/rbac \
+			output:webhook:dir=./config/exp/etcdrestore/webhook \
+			webhook
 
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
