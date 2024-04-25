@@ -5,7 +5,7 @@ on:
 
 jobs:
   e2e:
-    runs-on: org--rancher--amd64--containers
+    runs-on: org--rancher--amd64-containers
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.3
