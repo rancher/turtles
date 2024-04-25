@@ -6,7 +6,7 @@ on:
 jobs:
   e2e:
     runs-on: org--rancher--amd64-containers
-    container: ubuntu22-full-x64
+    container: ubuntu:22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.3
