@@ -35,3 +35,6 @@ hack/crd/bases/*
 
 # act
 .secrets
+
+# helm
+**/Chart.lock
