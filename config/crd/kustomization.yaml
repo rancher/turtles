@@ -14,6 +14,10 @@ patches:
     kind: CustomResourceDefinition
     name: capiproviders.turtles-capi.cattle.io
   path: patches/turtles-capi.cattle.io_capiproviders.yaml
+- path: patches/keep-crds.yaml
+  target:
+    kind: CustomResourceDefinition
+
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
