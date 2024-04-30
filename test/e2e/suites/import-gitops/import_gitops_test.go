@@ -62,6 +62,36 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 	})
 })
 
+var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+	BeforeEach(func() {
+		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetContext(ctx)
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                 e2eConfig,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			ClusterctlConfigPath:      flagVals.ConfigPath,
+			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
+			ArtifactFolder:            flagVals.ArtifactFolder,
+			ClusterTemplate:           e2e.CAPIDockerKubeadm,
+			ClusterName:               "highlander-e2e-cluster2",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   giteaResult.GitAddress,
+			GitAuthSecretName:         e2e.AuthSecretName,
+			SkipCleanup:               false,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			TestClusterReimport:       true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-rancher",
+			DeleteClusterWaitName:     "wait-controllers",
+		}
+	})
+})
+
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
@@ -76,7 +106,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
 			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
-			ClusterName:               "highlander-e2e-cluster2",
+			ClusterName:               "highlander-e2e-cluster3",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   giteaResult.GitAddress,
@@ -104,7 +134,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality sho
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
 			ClusterTemplate:           e2e.CAPIAzureAKSMMP,
-			ClusterName:               "highlander-e2e-cluster3",
+			ClusterName:               "highlander-e2e-cluster4",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   giteaResult.GitAddress,
