@@ -20,6 +20,8 @@ rancherTurtles:
       enabled: false
     propagate-labels:
       enabled: false
+    etcd-snapshot-restore:
+      enabled: false
 cluster-api-operator:
   enabled: true
   cert-manager:
