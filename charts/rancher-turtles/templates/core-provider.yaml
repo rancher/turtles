@@ -41,6 +41,12 @@ spec:
     selector: {{ index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "core" "image" }}
+  deployment:
+    containers:
+      - name: manager
+        image: {{ index .Values "cluster-api-operator" "cluster-api" "core" "image" }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
