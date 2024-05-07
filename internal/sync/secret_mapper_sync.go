@@ -84,7 +84,7 @@ var (
 			{to: "VSPHERE_USERNAME", from: Raw{source: "vmwarevsphere-username"}},
 		},
 		"gcp": {
-			{to: "GCP_B64ENCODED_CREDENTIALS", from: Raw{source: "googlecredentialConfig-authEncodedJson"}},
+			{to: "GCP_B64ENCODED_CREDENTIALS", from: B64{source: "googlecredentialConfig-authEncodedJson"}},
 		},
 		"digitalocean": {
 			{to: "DIGITALOCEAN_ACCESS_TOKEN", from: Raw{source: "digitaloceancredentialConfig-accessToken"}},

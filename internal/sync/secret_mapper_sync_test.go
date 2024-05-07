@@ -347,6 +347,28 @@ var _ = Describe("SecretMapperSync get", func() {
 			}))
 		}).Should(Succeed())
 	})
+
+	It("converts GCP credentials with double B64 encode", func() {
+		capiProvider.Spec.Name = "gcp"
+		rancherSecret.Annotations[sync.DriverNameAnnotation] = "gcp"
+		rancherSecret.Data = map[string][]byte{
+			"googlecredentialConfig-authEncodedJson": []byte("test"),
+		}
+		Expect(testEnv.Client.Create(ctx, rancherSecret)).ToNot(HaveOccurred())
+
+		Eventually(ctx, func(g Gomega) {
+			syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
+			g.Expect(syncer.Get(ctx)).ToNot(HaveOccurred())
+			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
+			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
+			g.Expect(conditions.IsTrue(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+
+			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+				"GCP_B64ENCODED_CREDENTIALS": "dGVzdA==",
+			}))
+		}).Should(Succeed())
+	})
+
 	It("provider requirements digitalocean", func() {
 		capiProvider.Spec.Name = "digitalocean"
 		rancherSecret.Annotations[sync.DriverNameAnnotation] = "digitalocean"
