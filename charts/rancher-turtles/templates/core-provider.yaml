@@ -41,11 +41,11 @@ spec:
     selector: {{ index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" }}
     {{- end }}
 {{- end }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "core" "image" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "core" "imageUrl" }}
   deployment:
     containers:
       - name: manager
-        image: {{ index .Values "cluster-api-operator" "cluster-api" "core" "image" }}
+        imageUrl: {{ index .Values "cluster-api-operator" "cluster-api" "core" "imageUrl" }}
 {{- end }}
 ---
 apiVersion: v1

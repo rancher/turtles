@@ -51,7 +51,7 @@ cluster-api-operator:
       defaultName: capi-env-variables
     core:
       namespace: capi-system
-      image: ""
+      imageUrl: ""
       fetchConfig:
         url: ""
         selector: ""
@@ -60,13 +60,13 @@ cluster-api-operator:
       version: ""
       bootstrap:
         namespace: rke2-bootstrap-system
-        image: ""
+        imageUrl: ""
         fetchConfig:
           url: ""
           selector: ""
       controlPlane:
         namespace: rke2-control-plane-system
-        image: ""
+        imageUrl: ""
         fetchConfig:
           url: ""
           selector: ""
