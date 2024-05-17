@@ -19,7 +19,7 @@ rancherTurtles:
     managementv3-cluster:
       enabled: false
     propagate-labels:
-      enabled: false
+      enabled: true
     etcd-snapshot-restore:
       enabled: false
 cluster-api-operator:
