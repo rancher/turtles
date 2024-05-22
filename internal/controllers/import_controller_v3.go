@@ -312,6 +312,24 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 
 	log.Info("Successfully applied import manifest")
 
+	if feature.Gates.Enabled(feature.PropagateLabels) {
+		patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
+		if rancherCluster.Labels == nil {
+			rancherCluster.Labels = map[string]string{}
+		}
+
+		for labelKey, labelVal := range capiCluster.Labels {
+			rancherCluster.Labels[labelKey] = labelVal
+		}
+
+		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to patch Rancher cluster: %w", err)
+		}
+
+		log.Info("Successfully propagated labels to Rancher cluster")
+	}
+
 	return ctrl.Result{}, nil
 }
 

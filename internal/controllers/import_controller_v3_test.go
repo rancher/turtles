@@ -164,6 +164,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Update(ctx, ns)).To(Succeed())
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
+			testLabelName:   testLabelVal,
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
@@ -185,6 +186,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+		Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist and annotation is set on the namespace", func() {
@@ -217,6 +219,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}))
 		defer server.Close()
 
+		capiCluster.Labels = map[string]string{
+			testLabelName: testLabelVal,
+		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
@@ -265,6 +270,11 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 					Namespace: unstructuredObj.GetNamespace(),
 					Name:      unstructuredObj.GetName(),
 				}, unstructuredObj)).To(Succeed())
+
+				g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+				g.Expect(rancherClusters.Items).To(HaveLen(1))
+				g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+				g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 			}
 		}, 10*time.Second).Should(Succeed())
 	})

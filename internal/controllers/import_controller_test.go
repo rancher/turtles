@@ -42,6 +42,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+var (
+	testLabelName = "test-label"
+	testLabelVal  = "true"
+)
+
 var _ = Describe("reconcile CAPI Cluster", func() {
 	var (
 		r                        *CAPIImportReconciler
@@ -144,6 +149,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist", func() {
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
+			testLabelName:   testLabelVal,
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
@@ -160,7 +166,10 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(testEnv.GetAs(rancherCluster, &provisioningv1.Cluster{})).ShouldNot(BeNil())
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)).To(Succeed())
+			g.Expect(rancherCluster.Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
+		}).Should(Succeed())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist and annotation is set on the namespace", func() {
@@ -189,6 +198,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}))
 		defer server.Close()
 
+		capiCluster.Labels = map[string]string{
+			testLabelName: testLabelVal,
+		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
@@ -230,6 +242,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 					Name:      unstructuredObj.GetName(),
 				}, unstructuredObj)).To(Succeed())
 			}
+
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)).To(Succeed())
+			g.Expect(rancherCluster.Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 		}, 30*time.Second).Should(Succeed())
 	})
 
