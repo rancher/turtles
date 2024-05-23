@@ -40,6 +40,8 @@ const (
 	Addon Type = "addon"
 	// IPAM is the name for the addon for IPAM CAPI Provider.
 	IPAM Type = "ipam"
+	// RuntimeExtension is the name for the RuntimeExtension Provider.
+	RuntimeExtension Type = "runtimeextension"
 )
 
 // ToKind converts ProviderType to CAPI Operator provider object kind.
