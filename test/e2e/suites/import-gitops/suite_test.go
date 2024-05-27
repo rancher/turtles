@@ -223,6 +223,8 @@ var _ = BeforeSuite(func() {
 			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 		}
 
+		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
+
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 	} else {
 		rtInput := testenv.DeployRancherTurtlesInput{

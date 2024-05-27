@@ -1619,8 +1619,9 @@ spec:
             - message: Config secret namespace is always equal to the resource namespace
                 and should not be set.
               rule: '!has(self.configSecret) || !has(self.configSecret.__namespace__)'
-            - message: Either fetchConfig or name should be set.
-              rule: has(self.fetchConfig.url) || has(self.fetchConfig.selector) ||  has(self.name)
+            - message: One of fetchConfig url or selector should be set.
+              rule: '!has(self.fetchConfig) || [has(self.fetchConfig.url), has(self.fetchConfig.selector)].exists_one(e,
+                e)'
           status:
             default: {}
             description: CAPIProviderStatus defines the observed state of CAPIProvider.
@@ -1700,6 +1701,9 @@ spec:
                 type: object
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: CAPI Provider type should always be set.
+          rule: has(self.spec.type)
     served: true
     storage: true
     subresources:

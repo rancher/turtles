@@ -47,4 +47,9 @@ data:
     - name:         "rke2"
       url:          "https://github.com/rancher-sandbox/cluster-api-provider-rke2/releases/v0.3.0/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
+
+    # Addon providers
+    - name:         "fleet"
+      url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/latest/addon-components.yaml"
+      type:         "AddonProvider"
 {{- end }}
