@@ -41,7 +41,7 @@ type CAPIProviderSpec struct {
 
 	// Type is the type of the provider to enable
 	// +required
-	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon
+	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon;runtimeextension;ipam
 	// +kubebuilder:example=infrastructure
 	Type Type `json:"type"`
 

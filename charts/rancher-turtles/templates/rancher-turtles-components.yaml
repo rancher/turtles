@@ -1592,6 +1592,8 @@ spec:
                 - controlPlane
                 - bootstrap
                 - addon
+                - runtimeextension
+                - ipam
                 example: infrastructure
                 type: string
               variables:
