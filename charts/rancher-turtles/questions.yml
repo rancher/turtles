@@ -59,8 +59,8 @@ questions:
     label: "Enable RKE2 Provider"
     type: boolean
   - variable: rancherTurtles.features.propagate-labels.enabled
-    default: true
-    description: "Specify that the labels from CAPI should be propagated to Rancher"
+    default: false
+    description: "(Experimental) Specify that the labels from CAPI should be propagated to Rancher"
     type: boolean
     label: Propagate CAPI Labels
     group: "Rancher Turtles Features Settings"
