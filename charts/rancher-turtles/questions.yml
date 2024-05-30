@@ -64,3 +64,9 @@ questions:
     type: boolean
     label: Propagate CAPI Labels
     group: "Rancher Turtles Features Settings"
+  - variable: rancherTurtles.features.addon-provider-fleet.enabled
+    default: false
+    description: "(Experimental) Enable Fleet Addon Provider functionality in Rancher Turtles"
+    type: boolean
+    label: Seamless integration with Fleet and CAPI
+    group: "Rancher Turtles Features Settings"

@@ -1,0 +1,12 @@
+{{- if index .Values "rancherTurtles" "features" "addon-provider-fleet" "enabled" }}
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: fleet
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "2"
+spec:
+  type: addon
+{{- end }}

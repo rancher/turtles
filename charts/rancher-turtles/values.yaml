@@ -22,6 +22,8 @@ rancherTurtles:
       enabled: true
     etcd-snapshot-restore:
       enabled: false
+    addon-provider-fleet:
+      enabled: false
 cluster-api-operator:
   enabled: true
   cert-manager:
