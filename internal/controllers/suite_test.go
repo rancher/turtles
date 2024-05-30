@@ -23,6 +23,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/test/helpers"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,6 +50,12 @@ var (
 	kubeConfigBytes []byte
 	ctx             = ctrl.SetupSignalHandler()
 )
+
+func init() {
+	utilruntime.Must(feature.MutableGates.SetFromMap(map[string]bool{
+		string(feature.PropagateLabels): true,
+	}))
+}
 
 func setup() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
