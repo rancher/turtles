@@ -53,11 +53,9 @@ This will trigger a [release GitHub action](https://github.com/rancher/turtles/a
 
 If a new minor/major branch was created, there are some post-release actions that need to be taken.
 
-**Note:** Before moving one, please make sure to ask a team member or directly set branch *Enforcement status* to **Disabled** in the Rancher Turtles Docs repository by navigating [here](https://github.com/rancher/turtles-docs/settings/rules/124836).
-
 ### Create a new tag for Rancher Turtles Docs repo
 
-1. Clone the Rancher Turtles Docs repository locally: 
+1. Clone the Rancher Turtles Docs repository locally:
 
 ```bash
 git clone git@github.com:rancher/turtles-docs.git
@@ -77,19 +75,9 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-### Automatic patch creation for new version of Rancher Turtles Docs
+3. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/110). Merging it would result in automatic documentation publishing using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
 
-This step is automatic, however it requires temporarily adjusting repo permissions so that the new docs version patch is pushed on behalf of the tag committer (example new docs version [patch](https://github.com/rancher/turtles-docs/commit/e7e37a92b6e48c6f4bc0de386a0003bb2b9d610b)).
-
-1. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to finish.
-
-2. Ask a team member or directly set branch *Enforcement status* back to **Active** in the Rancher Turtles Docs repository by navigating [here](https://github.com/rancher/turtles-docs/settings/rules/124836).
-
-### Deploy site to Pages
-
-Next, we need to deploy site to Github Pages:
-
-1. Manually run [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml) to force rollout of updated docs version.
+The resulting state after the version publish workflow for the released tag is also stored under the `release-${RELEASE_TAG}` branch in the origin repository, which is consistent with the [branching strategy](#branches) for turtles.
 
 Once all steps above are completed, a new version of Rancher Turtles Docs should be available at [https://turtles.docs.rancher.com].
 
