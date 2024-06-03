@@ -297,7 +297,7 @@ ARTIFACTS ?= ${ROOT_DIR}/_artifacts
 KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 .PHONY: test
-test: $(SETUP_ENVTEST) manifests ## Run tests.
+test: $(SETUP_ENVTEST) manifests test-exp-etcdrestore ## Run all generators and exp tests.
 	go clean -testcache
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
