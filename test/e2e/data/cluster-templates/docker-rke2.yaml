@@ -17,10 +17,10 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 10.45.0.0/16
+      - 10.1.0.0/16
     services:
       cidrBlocks:
-      - 10.46.0.0/16
+      - 10.10.0.0/16
     serviceDomain: cluster.local
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -38,7 +38,7 @@ metadata:
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.28.0
+      customImage: kindest/node:${KUBERNETES_VERSION}
       bootstrapTimeout: 15m
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -46,23 +46,25 @@ kind: RKE2ControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
 spec:
-  version: ${KUBERNETES_VERSION}+rke2r1
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}+rke2r1
+  registrationMethod: internal-first
+  rolloutStrategy:
+    rollingUpdate:
+      maxSurge: 1
+    type: RollingUpdate
   serverConfig:
     disableComponents:
       kubernetesComponents:
       - cloudController
+  agentConfig:
+    nodeAnnotations:
+      test: "true"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerMachineTemplate
     name:  ${CLUSTER_NAME}-control-plane
   nodeDrainTimeout: 30s
-  rolloutStrategy:
-      type: "RollingUpdate"
-      rollingUpdate:
-        maxSurge: 1
-  registrationMethod:
-    type: "internal-first"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
@@ -71,13 +73,14 @@ metadata:
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.28.0
+      customImage: kindest/node:${KUBERNETES_VERSION}
       bootstrapTimeout: 15m
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+spec: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
