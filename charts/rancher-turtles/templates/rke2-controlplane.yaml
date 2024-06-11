@@ -40,10 +40,10 @@ spec:
     selector: {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "controlPlane" "fetchConfig" "selector" }}
     {{- end }}
 {{- end }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "rke2" "controlPlane" "image" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "rke2" "controlPlane" "imageUrl" }}
   deployment:
     containers:
       - name: manager
-        image: {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "controlPlane" "image" }}
+        imageUrl: {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "controlPlane" "imageUrl" }}
 {{- end }}
 {{- end }}
