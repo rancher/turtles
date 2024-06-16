@@ -46,6 +46,7 @@ projects = {
             "go.mod",
             "go.sum",
             "internal",
+            "features",
         ],
         "kustomize_dir": "config/default",
         "label": "turtles"
