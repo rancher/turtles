@@ -1,4 +1,4 @@
-{{- if and (index .Values "rancherTurtles" "features" "managementv3-cluster" "enabled") (index .Values "rancherTurtles" "features" "managementv3-cluster-migration" "enabled") }}
+{{- if and (eq (index .Values "rancherTurtles" "features" "managementv3-cluster" "enabled") true) (eq (index .Values "rancherTurtles" "features" "managementv3-cluster-migration" "enabled") true) }}
 ---
 apiVersion: v1
 kind: ServiceAccount
