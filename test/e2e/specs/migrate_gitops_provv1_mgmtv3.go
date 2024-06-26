@@ -383,14 +383,14 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 			annotations := capiCluster.GetAnnotations()
 			_, found := annotations["imported"]
 			return !found
-		}, 5*time.Second).Should(BeTrue(), "'imported' annotation is not expected on CAPI cluster")
+		}, 5*time.Second).Should(BeTrue(), "'imported' annotation is NOT expected on CAPI cluster")
 
-		By("Rancher should be available after removing 'imported' annotation")
+		By("Rancher should be available using new cluster import")
 		validateRancherCluster()
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), "bootstrap"+specName))
+		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+"bootstrap"+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
 		}

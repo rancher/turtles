@@ -224,6 +224,7 @@ var _ = BeforeSuite(func() {
 		}
 
 		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
+		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
 
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 	} else {
@@ -246,6 +247,8 @@ var _ = BeforeSuite(func() {
 			// we where loading the image into kind manually.
 			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 		}
+
+		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
 		testenv.DeployRancherTurtles(ctx, rtInput)
 	}
 

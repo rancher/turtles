@@ -90,7 +90,7 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 // automatically imports into Rancher Manager.
 func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateMgmtV3UsingGitOpsSpecInput) {
 	var (
-		specName              = "creategitops"
+		specName              = "creategitops-v3"
 		input                 CreateMgmtV3UsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		repoName              string
@@ -343,7 +343,12 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
+		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+"bootstrap"+specName))
+		if err != nil {
+			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+		}
+
+		err = testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}
