@@ -99,7 +99,7 @@ type MigrateV1V3UsingGitOpsSpecInput struct {
 // happened succesfully.
 func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV1V3UsingGitOpsSpecInput) {
 	var (
-		specName              = "creategitops"
+		specName              = "migratemanualgitops"
 		input                 MigrateV1V3UsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		repoName              string
@@ -182,13 +182,16 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		secretName := fmt.Sprintf("%s-kubeconfig", v3rancherCluster.Name)
+		namespace := v3rancherCluster.Spec.FleetWorkspaceName
 		if migration {
 			secretName = fmt.Sprintf("%s-capi-kubeconfig", capiCluster.Name)
+			namespace = capiCluster.Namespace
 		}
+
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			Getter:           input.BootstrapClusterProxy.GetClient(),
 			SecretName:       secretName,
-			Namespace:        v3rancherCluster.Spec.FleetWorkspaceName,
+			Namespace:        namespace,
 			RancherServerURL: input.RancherServerURL,
 			WriteToTempFile:  true,
 		}, rancherKubeconfig)
@@ -410,23 +413,6 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 			return annotations[input.V1ClusterMigratedAnnotation] == "true"
 		}, capiClusterCreateWait...).Should(BeTrue(), "Failed to detect 'migrated' annotation on CAPI cluster")
 
-		By("Redeploying Rancher after controller migration")
-		Eventually(func() error {
-			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-				Command: "kubectl",
-				Args: []string{
-					"rollout",
-					"restart",
-					"deployment",
-					"--namespace",
-					e2e.RancherNamespace,
-					"rancher",
-				},
-			}, rancherConnectRes)
-
-			return rancherConnectRes.Error
-		}, capiClusterCreateWait...).Should(Succeed(), "Failed to restart Rancher deployment after controller migration")
-
 		// Check v3 cluster
 		By("Running checks on Rancher cluster after controller migration, check that v3 cluster is created")
 		validateV3RancherCluster(true)
@@ -469,7 +455,12 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
+		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+"bootstrap"+specName))
+		if err != nil {
+			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+		}
+
+		err = testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}
