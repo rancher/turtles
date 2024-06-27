@@ -48,16 +48,16 @@ questions:
     label: Label Rancher Kubeconfigs
     group: "Rancher Turtles Features Settings"
   - variable: rancherTurtles.features.managementv3-cluster.enabled
-    default: true
+    default: false
     description: "Use v3/management cluster manifest for import, instead of v1/provisioning"
     type: boolean
     label: Use management v3 cluster manifest
     group: "Rancher Turtles Features Settings"
   - variable: rancherTurtles.features.managementv3-cluster-migration.enabled
     default: false
-    description: "Automatically migrate between provisioning and management clusters on upgrade"
+    description: "All imported clusters will use new cluster manifest, replacing old cluster manifest."
     type: boolean
-    label: All imported clusters will use new cluster manifest, replacing old cluster manifest.
+    label: Automatically migrate between provisioning and management clusters on upgrade
     group: "Rancher Turtles Features Settings"
   - variable: cluster-api-operator.cluster-api.rke2.enabled
     default: "true"

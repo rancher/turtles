@@ -17,7 +17,7 @@ rancherTurtles:
     rancher-kubeconfigs:
       label: true
     managementv3-cluster:
-      enabled: true
+      enabled: false
     managementv3-cluster-migration:
       enabled: false
     propagate-labels:
