@@ -195,6 +195,8 @@ var _ = BeforeSuite(func() {
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 			AdditionalValues:             map[string]string{},
 		}
+		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "true" // enable management.cattle.io/v3 controller
+
 		testenv.DeployRancherTurtles(ctx, rtInput)
 
 		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
@@ -203,16 +205,6 @@ var _ = BeforeSuite(func() {
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		})
-
-		upgradeInput := testenv.UpgradeRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-			HelmBinaryPath:               flagVals.HelmBinaryPath,
-			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-			Tag:                          "v0.0.1",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             rtInput.AdditionalValues,
-		}
 
 		if flagVals.UseEKS {
 			rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
@@ -224,7 +216,17 @@ var _ = BeforeSuite(func() {
 		}
 
 		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
-		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
+		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable management.cattle.io/v3 controller
+
+		upgradeInput := testenv.UpgradeRancherTurtlesInput{
+			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:               flagVals.HelmBinaryPath,
+			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+			Tag:                          "v0.0.1",
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			AdditionalValues:             rtInput.AdditionalValues,
+		}
 
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 	} else {

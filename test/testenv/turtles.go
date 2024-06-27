@@ -28,6 +28,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
 
@@ -252,6 +253,8 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 	)
 	cmd.WaitDelay = time.Minute
 	out, err = cmd.CombinedOutput()
+
+	klog.Infof("Upgrading: %s %s", input.HelmBinaryPath, strings.Join(append(values, additionalValues...), " "))
 
 	if err != nil {
 		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())

@@ -193,7 +193,9 @@ var _ = BeforeSuite(func() {
 		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		AdditionalValues:             map[string]string{},
+		AdditionalValues: map[string]string{
+			"rancherTurtles.features.managementv3-cluster.enabled": "true", // enable management.cattle.io/v3 controller
+		},
 	}
 	if flagVals.UseEKS {
 		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
