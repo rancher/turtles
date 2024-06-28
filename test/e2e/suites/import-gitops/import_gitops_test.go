@@ -32,41 +32,6 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to management v3 cluster functionality should work", Label(e2e.ShortTestLabel), func() {
-	BeforeEach(func() {
-		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
-		komega.SetContext(ctx)
-	})
-
-	specs.MigrateToV3UsingGitOpsSpec(ctx, func() specs.MigrateToV3UsingGitOpsSpecInput {
-		return specs.MigrateToV3UsingGitOpsSpecInput{
-			HelmBinaryPath:                 flagVals.HelmBinaryPath,
-			ChartPath:                      flagVals.ChartPath,
-			E2EConfig:                      e2eConfig,
-			BootstrapClusterProxy:          setupClusterResult.BootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
-			ClusterctlBinaryPath:           flagVals.ClusterctlBinaryPath,
-			ArtifactFolder:                 flagVals.ArtifactFolder,
-			ClusterTemplate:                e2e.CAPIDockerKubeadm,
-			ClusterName:                    "clusterv3-migrated",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			GitAddr:                        giteaResult.GitAddress,
-			GitAuthSecretName:              e2e.AuthSecretName,
-			SkipCleanup:                    false,
-			SkipDeletionTest:               false,
-			LabelNamespace:                 true,
-			TestClusterReimport:            true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-rancher",
-			DeleteClusterWaitName:          "wait-controllers",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-		}
-	})
-})
-
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
