@@ -1,4 +1,4 @@
-{{- if and (eq (index .Values "rancherTurtles" "features" "managementv3-cluster" "enabled") true) (eq (index .Values "rancherTurtles" "features" "managementv3-cluster-migration" "enabled") true) }}
+{{- if eq (index .Values "rancherTurtles" "features" "managementv3-cluster-migration" "enabled") true }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -19,6 +19,13 @@ metadata:
 rules:
 - apiGroups:
   - provisioning.cattle.io
+  resources:
+  - clusters
+  verbs:
+  - list
+  - delete
+- apiGroups:
+  - management.cattle.io
   resources:
   - clusters
   verbs:
@@ -58,7 +65,11 @@ spec:
           image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}
           args:
           - delete
+          {{- if eq (index .Values "rancherTurtles" "features" "managementv3-cluster" "enabled") true }}
           - clusters.provisioning.cattle.io
+          {{- else }}
+          - clusters.management.cattle.io
+          {{- end }}
           - --selector=cluster-api.cattle.io/owned
           - -A
           - --ignore-not-found=true
