@@ -45,6 +45,7 @@ BIN_DIR := bin
 TEST_DIR := test
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/$(BIN_DIR))
+EXP_ETCDRESTORE_DIR := exp/etcdrestore
 
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
@@ -295,9 +296,13 @@ ARTIFACTS ?= ${ROOT_DIR}/_artifacts
 KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 .PHONY: test
-test: $(SETUP_ENVTEST) manifests ## Run tests.
+test: $(SETUP_ENVTEST) manifests test-exp-etcdrestore ## Run all generators and exp tests.
 	go clean -testcache
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+
+.PHONY: test-exp-etcdrestore
+test-exp-etcdrestore: $(SETUP_ENVTEST) ## Run tests for experimental etcdrestore API.
+	cd $(EXP_ETCDRESTORE_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 ##@ Build
 
