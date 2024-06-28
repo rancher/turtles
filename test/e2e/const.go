@@ -134,4 +134,5 @@ const (
 	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
 	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
 	OwnedLabelName                 = "cluster-api.cattle.io/owned"
+	V1ClusterMigratedAnnotation    = "cluster-api.cattle.io/migrated"
 )
