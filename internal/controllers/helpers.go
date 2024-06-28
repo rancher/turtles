@@ -49,6 +49,7 @@ const (
 	ownedLabelName            = "cluster-api.cattle.io/owned"
 	capiClusterOwner          = "cluster-api.cattle.io/capi-cluster-owner"
 	capiClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
+	v1ClusterMigrated         = "cluster-api.cattle.io/migrated"
 
 	defaultRequeueDuration = 1 * time.Minute
 )
