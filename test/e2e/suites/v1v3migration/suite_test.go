@@ -197,6 +197,14 @@ var _ = BeforeSuite(func() {
 			"rancherTurtles.features.managementv3-cluster.enabled": "false", // disable management.cattle.io/v3 controller
 		},
 	}
+
+	testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		ChartsPath:            flagVals.ChartPath,
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+	})
+
 	if flagVals.UseEKS {
 		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"

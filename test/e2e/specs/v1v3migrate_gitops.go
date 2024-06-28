@@ -95,11 +95,11 @@ type MigrateV1V3UsingGitOpsSpecInput struct {
 }
 
 // MigrateV1V3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
-// automatically imports into Rancher Manager, then it will enbale v3 cluster feature and check that migration
+// automatically imports into Rancher Manager, then it will enable v3 cluster feature and check that migration
 // happened succesfully.
 func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV1V3UsingGitOpsSpecInput) {
 	var (
-		specName              = "creategitops"
+		specName              = "migratemanualgitops"
 		input                 MigrateV1V3UsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		repoName              string
@@ -151,7 +151,7 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
 	}
 
-	validateV3RancherCluster := func() {
+	validateV3RancherCluster := func(migration bool) {
 		By("Waiting for the rancher cluster record to appear")
 		rancherClusters := &managementv3.ClusterList{}
 		selectors := []client.ListOption{
@@ -181,26 +181,34 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
+		secretName := fmt.Sprintf("%s-kubeconfig", v3rancherCluster.Name)
+		namespace := v3rancherCluster.Spec.FleetWorkspaceName
+		if migration {
+			secretName = fmt.Sprintf("%s-kubeconfig", capiCluster.Name)
+			namespace = capiCluster.Namespace
+		}
+
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			Getter:           input.BootstrapClusterProxy.GetClient(),
-			SecretName:       fmt.Sprintf("%s-kubeconfig", v3rancherCluster.Name),
-			Namespace:        v3rancherCluster.Spec.FleetWorkspaceName,
+			SecretName:       secretName,
+			Namespace:        namespace,
 			RancherServerURL: input.RancherServerURL,
 			WriteToTempFile:  true,
 		}, rancherKubeconfig)
 
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-			Command: "kubectl",
-			Args: []string{
-				"--kubeconfig",
-				rancherKubeconfig.TempFilePath,
-				"get",
-				"nodes",
-				"--insecure-skip-tls-verify",
-			},
-		}, rancherConnectRes)
-		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
-		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+		Eventually(func() bool {
+			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+				Command: "kubectl",
+				Args: []string{
+					"--kubeconfig",
+					rancherKubeconfig.TempFilePath,
+					"get",
+					"nodes",
+					"--insecure-skip-tls-verify",
+				},
+			}, rancherConnectRes)
+			return rancherConnectRes.Error == nil && rancherConnectRes.ExitCode == 0
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue(), "Failed to connect to Rancher cluster using kubeconfig")
 	}
 
 	BeforeEach(func() {
@@ -368,7 +376,7 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
 		} else {
 			// NOTE: this was the default previously in the chart locally and ok as
-			// we where loading the image into kind manually.
+			// we were loading the image into kind manually.
 			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 		}
 		testenv.UpgradeRancherTurtles(ctx, rtInput)
@@ -390,12 +398,42 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 		}), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
 		// Annotate v1 cluster as migrated
-		Eventually(komega.Update(v1rancherCluster, func() {
-			v3rancherCluster.Annotations[input.V1ClusterMigratedAnnotation] = "true"
-		}), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		Eventually(komega.Get(v1rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		annotations := v1rancherCluster.GetAnnotations()
+		annotations[input.V1ClusterMigratedAnnotation] = "true"
+		v1rancherCluster.SetAnnotations(annotations)
+		err := input.BootstrapClusterProxy.GetClient().Update(ctx, v1rancherCluster)
+		Expect(err).NotTo(HaveOccurred(), "Failed to add 'migrated' annotation to Rancher v1 cluster")
+
+		By("Rancher V1 cluster should have the 'migrated' annotation")
+		Eventually(func() bool {
+			Eventually(komega.Get(v1rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			annotations := v1rancherCluster.GetAnnotations()
+
+			return annotations[input.V1ClusterMigratedAnnotation] == "true"
+		}, capiClusterCreateWait...).Should(BeTrue(), "Failed to detect 'migrated' annotation on CAPI cluster")
+
+		By("Redeploying Rancher after controller migration")
+		Eventually(func() error {
+			restartRes := new(turtlesframework.RunCommandResult)
+			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+				Command: "kubectl",
+				Args: []string{
+					"rollout",
+					"restart",
+					"deployment",
+					"--namespace",
+					e2e.RancherNamespace,
+					"rancher",
+				},
+			}, restartRes)
+
+			return restartRes.Error
+		}, capiClusterCreateWait...).Should(Succeed(), "Failed to restart Rancher deployment after controller migration")
 
 		// Check v3 cluster
-		validateV3RancherCluster()
+		By("Running checks on Rancher cluster after controller migration, check that v3 cluster is created")
+		validateV3RancherCluster(true)
 
 		if input.TestClusterReimport {
 			By("Deleting Rancher cluster record to simulate unimporting the cluster")
@@ -425,18 +463,22 @@ func MigrateV1V3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateV
 			Eventually(func() bool {
 				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 				annotations := capiCluster.GetAnnotations()
-				fmt.Printf("Annotations: %v\n", annotations)
 
 				return annotations["imported"] != "true"
 			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
 
 			By("Rancher should be available after removing 'imported' annotation")
-			validateV3RancherCluster()
+			validateV3RancherCluster(false)
 		}
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
+		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+"bootstrap"+specName))
+		if err != nil {
+			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+		}
+
+		err = testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}
