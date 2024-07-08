@@ -314,8 +314,8 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		log.Info("Successfully propagated labels to Rancher cluster")
 	}
 
-	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed) {
-		log.Info("agent already deployed, no action needed")
+	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
+		log.Info("agent is ready, no action needed")
 		return ctrl.Result{}, nil
 	}
 
@@ -335,6 +335,13 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 	remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, client.ObjectKeyFromObject(capiCluster))
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
+	}
+
+	if requeue, err := validateImportReadiness(ctx, remoteClient, strings.NewReader(manifest)); err != nil {
+		return ctrl.Result{}, fmt.Errorf("verifying import manifest: %w", err)
+	} else if requeue {
+		log.Info("Import manifests are being deleted, not ready to be applied yet, requeue")
+		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
 	if err := createImportManifest(ctx, remoteClient, strings.NewReader(manifest)); err != nil {

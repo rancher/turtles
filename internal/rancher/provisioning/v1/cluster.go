@@ -18,6 +18,8 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // Cluster is the struct representing a Rancher Cluster.
@@ -41,6 +43,8 @@ type ClusterStatus struct {
 	ClusterName   string `json:"clusterName,omitempty"`
 	AgentDeployed bool   `json:"agentDeployed,omitempty"`
 	Ready         bool   `json:"ready,omitempty"`
+
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // ClusterList contains a list of ClusterList.
@@ -49,6 +53,16 @@ type ClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Cluster `json:"items"`
+}
+
+// GetConditions method to implement capi conditions getter interface.
+func (c *Cluster) GetConditions() clusterv1.Conditions {
+	return c.Status.Conditions
+}
+
+// SetConditions method to implement capi conditions setter interface.
+func (c *Cluster) SetConditions(conditions clusterv1.Conditions) {
+	c.Status.Conditions = conditions
 }
 
 func init() {
