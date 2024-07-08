@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -179,6 +180,41 @@ func createImportManifest(ctx context.Context, remoteClient client.Client, in io
 	return nil
 }
 
+func validateImportReadiness(ctx context.Context, remoteClient client.Client, in io.Reader) (bool, error) {
+	log := log.FromContext(ctx)
+
+	jobs := &batchv1.JobList{}
+	if err := remoteClient.List(ctx, jobs, client.MatchingLabels(map[string]string{"cattle.io/creator": "norman"})); err != nil {
+		return false, fmt.Errorf("error looking for cleanup job: %w", err)
+	}
+
+	for _, job := range jobs.Items {
+		if job.GenerateName == "cattle-cleanup-" {
+			log.Info("cleanup job is being performed, waiting...", "gvk", job.GroupVersionKind(), "name", job.GetName(), "namespace", job.GetNamespace())
+			return true, nil
+		}
+	}
+
+	reader := yamlDecoder.NewYAMLReader(bufio.NewReaderSize(in, 4096))
+
+	for {
+		raw, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			return false, err
+		}
+
+		if requeue, err := verifyRawManifest(ctx, remoteClient, raw); err != nil || requeue {
+			return requeue, err
+		}
+	}
+
+	return false, nil
+}
+
 func createRawManifest(ctx context.Context, remoteClient client.Client, bytes []byte) error {
 	items, err := utilyaml.ToUnstructured(bytes)
 	if err != nil {
@@ -192,6 +228,41 @@ func createRawManifest(ctx context.Context, remoteClient client.Client, bytes []
 	}
 
 	return nil
+}
+
+func verifyRawManifest(ctx context.Context, remoteClient client.Client, bytes []byte) (bool, error) {
+	items, err := utilyaml.ToUnstructured(bytes)
+	if err != nil {
+		return false, fmt.Errorf("error unmarshalling bytes or empty object passed: %w", err)
+	}
+
+	for _, obj := range items {
+		if requeue, err := checkDeletion(ctx, remoteClient, obj.DeepCopy()); err != nil || requeue {
+			return requeue, err
+		}
+	}
+
+	return false, nil
+}
+
+func checkDeletion(ctx context.Context, c client.Client, obj client.Object) (bool, error) {
+	log := log.FromContext(ctx)
+	gvk := obj.GetObjectKind().GroupVersionKind()
+
+	err := c.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+	if apierrors.IsNotFound(err) {
+		log.V(4).Info("object is missing, ready to be created", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("checking object in remote cluster: %w", err)
+	}
+
+	if obj.GetDeletionTimestamp() != nil {
+		log.Info("object is being deleted, waiting", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func createObject(ctx context.Context, c client.Client, obj client.Object) error {

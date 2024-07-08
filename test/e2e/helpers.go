@@ -60,20 +60,6 @@ func CreateRepoName(specName string) string {
 }
 
 func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
-	turtlesframework.Byf("Dumping logs from the %q workload cluster", capiCluster.Name)
-
-	// Dump all the logs from the workload cluster before deleting them.
-	clusterProxy.CollectWorkloadClusterLogs(ctx, capiCluster.Namespace, capiCluster.Name, filepath.Join(artifactFolder, "clusters", capiCluster.Name))
-
-	turtlesframework.Byf("Dumping all the Cluster API resources in the %q namespace", namespace.Name)
-
-	// Dump all Cluster API related resources to artifacts before deleting them.
-	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-		Lister:    clusterProxy.GetClient(),
-		Namespace: namespace.Name,
-		LogPath:   filepath.Join(artifactFolder, "clusters", clusterProxy.GetName(), "resources"),
-	})
-
 	if !skipCleanup {
 		turtlesframework.Byf("Deleting cluster %s", capiCluster)
 		// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance

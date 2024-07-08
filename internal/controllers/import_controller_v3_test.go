@@ -332,8 +332,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		cluster := rancherClusters.Items[0]
 		Expect(cluster.Name).To(ContainSubstring("c-"))
 
-		conditions.Set(&cluster, conditions.TrueCondition(managementv3.ClusterConditionAgentDeployed))
-		Expect(conditions.IsTrue(&cluster, managementv3.ClusterConditionAgentDeployed)).To(BeTrue())
+		conditions.Set(&cluster, conditions.TrueCondition(managementv3.ClusterConditionReady))
+		Expect(conditions.IsTrue(&cluster, managementv3.ClusterConditionReady)).To(BeTrue())
 		Expect(cl.Status().Update(ctx, &cluster)).To(Succeed())
 
 		_, err := r.Reconcile(ctx, reconcile.Request{
@@ -477,8 +477,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)).To(Succeed())
-			conditions.Set(rancherCluster, conditions.TrueCondition(managementv3.ClusterConditionAgentDeployed))
-			g.Expect(conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)).To(BeTrue())
+			conditions.Set(rancherCluster, conditions.TrueCondition(managementv3.ClusterConditionReady))
+			g.Expect(conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)).To(BeTrue())
 			g.Expect(cl.Status().Update(ctx, rancherCluster)).To(Succeed())
 		}).Should(Succeed())
 
