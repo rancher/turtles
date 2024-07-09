@@ -197,8 +197,9 @@ var _ = BeforeSuite(func() {
 		Tag:                          "v0.0.1",
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues: map[string]string{
-			"cluster-api-operator.cert-manager.enabled":      "false",
-			"rancherTurtles.features.embedded-capi.disabled": "false",
+			"cluster-api-operator.cert-manager.enabled":            "false",
+			"rancherTurtles.features.embedded-capi.disabled":       "false",
+			"rancherTurtles.features.managementv3-cluster.enabled": "false",
 		},
 	}
 	if flagVals.UseEKS {
