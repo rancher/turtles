@@ -30,7 +30,6 @@ import (
 )
 
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import (embedded capi disable from start)", Label(e2e.FullTestLabel), func() {
-
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)
