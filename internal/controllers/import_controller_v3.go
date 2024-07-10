@@ -150,17 +150,16 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 		return ctrl.Result{Requeue: true}, err
 	}
 
+	log = log.WithValues("cluster", capiCluster.Name)
+
 	if capiCluster.ObjectMeta.DeletionTimestamp.IsZero() && !turtlesannotations.HasClusterImportAnnotation(capiCluster) &&
-		!controllerutil.ContainsFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
-		log.Info("CAPI cluster is imported, adding finalizer")
-		controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
+		controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
+		log.Info("CAPI cluster is marked for import, adding finalizer")
 
 		if err := r.Client.Update(ctx, capiCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error adding finalizer: %w", err)
 		}
 	}
-
-	log = log.WithValues("cluster", capiCluster.Name)
 
 	// Wait for controlplane to be ready. This should never be false as the predicates
 	// do the filtering.
@@ -231,14 +230,23 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		rancherCluster = &rancherClusterList.Items[0]
 	}
 
+	if !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
+		if err := r.reconcileDelete(ctx, capiCluster); err != nil {
+			log.Error(err, "Removing CAPI Cluster failed, retrying")
+			return ctrl.Result{}, err
+		}
+
+		if controllerutil.RemoveFinalizer(rancherCluster, managementv3.CapiClusterFinalizer) {
+			if err := r.Client.Update(ctx, rancherCluster); err != nil {
+				return ctrl.Result{}, fmt.Errorf("error removing rancher cluster finalizer: %w", err)
+			}
+		}
+	}
+
 	if !capiCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err := r.deleteDependentRancherCluster(ctx, capiCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error deleting associated managementv3.Cluster resources: %w", err)
 		}
-	}
-
-	if !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, capiCluster)
 	}
 
 	return r.reconcileNormal(ctx, capiCluster, rancherCluster)
@@ -270,6 +278,9 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 					capiClusterOwnerNamespace: capiCluster.Namespace,
 					ownedLabelName:            "",
 				},
+				Finalizers: []string{
+					managementv3.CapiClusterFinalizer,
+				},
 			},
 			Spec: managementv3.ClusterSpec{
 				DisplayName: capiCluster.Name,
@@ -296,9 +307,10 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, err
 	}
 
-	if feature.Gates.Enabled(feature.PropagateLabels) {
-		patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+	patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+	needsFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
 
+	if feature.Gates.Enabled(feature.PropagateLabels) {
 		if rancherCluster.Labels == nil {
 			rancherCluster.Labels = map[string]string{}
 		}
@@ -312,6 +324,10 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		}
 
 		log.Info("Successfully propagated labels to Rancher cluster")
+	} else if needsFinalizer {
+		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to patch Rancher cluster: %w", err)
+		}
 	}
 
 	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
@@ -431,7 +447,7 @@ func (r *CAPIImportManagementV3Reconciler) rancherV1ClusterToCapiCluster(ctx con
 	}
 }
 
-func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling rancher cluster deletion")
 
@@ -447,16 +463,13 @@ func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, 
 
 	annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
 	capiCluster.SetAnnotations(annotations)
+	controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
 
-	if controllerutil.ContainsFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
-		controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
-
-		if err := r.Client.Update(ctx, capiCluster); err != nil {
-			return ctrl.Result{}, fmt.Errorf("error removing finalizer: %w", err)
-		}
+	if err := r.Client.Update(ctx, capiCluster); err != nil {
+		return fmt.Errorf("error removing finalizer: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	return nil
 }
 
 func (r *CAPIImportManagementV3Reconciler) deleteDependentRancherCluster(ctx context.Context, capiCluster *clusterv1.Cluster) error {
@@ -471,7 +484,7 @@ func (r *CAPIImportManagementV3Reconciler) deleteDependentRancherCluster(ctx con
 		},
 	}
 
-	return r.RancherClient.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...)
+	return client.IgnoreNotFound(r.RancherClient.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...))
 }
 
 // verifyV1ClusterMigration verifies if a v1 cluster has been successfully migrated.
