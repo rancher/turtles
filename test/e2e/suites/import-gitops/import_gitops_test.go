@@ -75,7 +75,7 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      flagVals.ClusterctlBinaryPath,
 			ArtifactFolder:            flagVals.ArtifactFolder,
-			ClusterTemplate:           e2e.CAPIDockerKubeadm,
+			ClusterTemplate:           e2e.CAPIDockerRKE2,
 			ClusterName:               "clusterv1-docker-rke2",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
