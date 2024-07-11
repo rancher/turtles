@@ -12,7 +12,7 @@ metadata:
 spec:
   name: docker
   type: infrastructure
-  version: v1.7.0
+  version: v1.4.6
   configSecret:
     name: variables
 ---
