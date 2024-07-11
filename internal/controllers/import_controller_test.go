@@ -146,6 +146,25 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
+	It("should remove a CAPI cluster with turtles finalizer", func() {
+		capiCluster.Finalizers = []string{managementv3.CapiClusterFinalizer}
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+		Expect(cl.Delete(ctx, capiCluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).To(HaveOccurred())
+		}).Should(Succeed())
+	})
+
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist", func() {
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
