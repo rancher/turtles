@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package managementv3
+package import_gitops_v3
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -44,6 +44,39 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			ArtifactFolder:                 flagVals.ArtifactFolder,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
 			ClusterName:                    "clusterv3-auto-import-kubeadm",
+			ControlPlaneMachineCount:       ptr.To[int](1),
+			WorkerMachineCount:             ptr.To[int](1),
+			GitAddr:                        giteaResult.GitAddress,
+			GitAuthSecretName:              e2e.AuthSecretName,
+			SkipCleanup:                    false,
+			SkipDeletionTest:               false,
+			LabelNamespace:                 true,
+			TestClusterReimport:            true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-rancher",
+			DeleteClusterWaitName:          "wait-controllers",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+		}
+	})
+})
+
+var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.DontRunLabel), func() {
+	BeforeEach(func() {
+		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2eConfig,
+			BootstrapClusterProxy:          setupClusterResult.BootstrapClusterProxy,
+			ClusterctlConfigPath:           flagVals.ConfigPath,
+			ClusterctlBinaryPath:           flagVals.ClusterctlBinaryPath,
+			ArtifactFolder:                 flagVals.ArtifactFolder,
+			ClusterTemplate:                e2e.CAPIDockerRKE2,
+			ClusterName:                    "clusterv3-auto-import-rke2",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        giteaResult.GitAddress,
