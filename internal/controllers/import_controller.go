@@ -30,10 +30,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -43,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	"github.com/rancher/turtles/feature"
+	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher/turtles/util"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
@@ -143,15 +146,22 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	log = log.WithValues("cluster", capiCluster.Name)
 
+	// Collect errors as an aggregate to return together after all patches have been performed.
+	var errs []error
+
+	if !capiCluster.ObjectMeta.DeletionTimestamp.IsZero() && controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
+		if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
+			log.Error(err, "failed to remove CAPI cluster finalizer "+managementv3.CapiClusterFinalizer)
+			errs = append(errs, err)
+		}
+	}
+
 	// Wait for controlplane to be ready. This should never be false as the predicates
 	// do the filtering.
 	if !capiCluster.Status.ControlPlaneReady && !conditions.IsTrue(capiCluster, clusterv1.ControlPlaneReadyCondition) {
 		log.Info("clusters control plane is not ready, requeue")
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
-
-	// Collect errors as an aggregate to return together after all patches have been performed.
-	var errs []error
 
 	result, err := r.reconcile(ctx, capiCluster)
 	if err != nil {
@@ -349,4 +359,43 @@ func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster 
 	capiCluster.SetAnnotations(annotations)
 
 	return ctrl.Result{}, nil
+}
+
+// CAPIDowngradeReconciler is a reconciler for downgraded managementv3 clusters.
+type CAPIDowngradeReconciler struct {
+	RancherClient client.Client
+	Scheme        *runtime.Scheme
+}
+
+// SetupWithManager sets up reconciler with manager.
+func (r *CAPIDowngradeReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
+	if err := ctrl.NewControllerManagedBy(mgr).
+		For(&managementv3.Cluster{}).
+		WithOptions(options).
+		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
+			_, exist := object.GetLabels()[ownedLabelName]
+			return exist
+		})).
+		Complete(reconcile.AsReconciler(r.RancherClient, r)); err != nil {
+		return fmt.Errorf("creating new downgrade controller: %w", err)
+	}
+
+	return nil
+}
+
+// Reconcile performs check for downgraded clusters and removes finalizer on the clusters still owned by the previous management v3 controller.
+func (r *CAPIDowngradeReconciler) Reconcile(ctx context.Context, cluster *managementv3.Cluster) (res ctrl.Result, err error) {
+	log := log.FromContext(ctx)
+
+	patchBase := client.MergeFromWithOptions(cluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
+	if !controllerutil.RemoveFinalizer(cluster, managementv3.CapiClusterFinalizer) {
+		return
+	}
+
+	if err = r.RancherClient.Patch(ctx, cluster, patchBase); err != nil {
+		log.Error(err, "Unable to remove turtles finalizer from cluster"+cluster.Name)
+	}
+
+	return
 }

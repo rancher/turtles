@@ -34,7 +34,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/framework"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
@@ -84,16 +83,6 @@ var _ = BeforeSuite(func() {
 	By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
 	e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
 
-	dockerUsername := ""
-	dockerPassword := ""
-	if flagVals.UseEKS {
-		Expect(flagVals.IsolatedMode).To(BeFalse(), "You cannot use eks with isolated")
-		dockerUsername = os.Getenv("GITHUB_USERNAME")
-		Expect(dockerUsername).NotTo(BeEmpty(), "Github username is required")
-		dockerPassword = os.Getenv("GITHUB_TOKEN")
-		Expect(dockerPassword).NotTo(BeEmpty(), "Github token is required")
-	}
-
 	By(fmt.Sprintf("Creating a clusterctl config into %q", flagVals.ArtifactFolder))
 	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(flagVals.ArtifactFolder, "repository"))
 
@@ -132,28 +121,6 @@ var _ = BeforeSuite(func() {
 		DefaultIngressClassPatch: e2e.IngressClassPatch,
 	})
 
-	if flagVals.UseEKS {
-		By("Getting ingress hostname")
-		svcRes := &testenv.WaitForServiceIngressHostnameResult{}
-		testenv.WaitForServiceIngressHostname(ctx, testenv.WaitForServiceIngressHostnameInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			ServiceName:           "ingress-nginx-controller",
-			ServiceNamespace:      "ingress-nginx",
-			IngressWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		}, svcRes)
-		hostName = svcRes.Hostname
-
-		By("Deploying ghcr details")
-		framework.CreateDockerRegistrySecret(ctx, framework.CreateDockerRegistrySecretInput{
-			Name:                  "regcred",
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			Namespace:             "rancher-turtles-system",
-			DockerServer:          "https://ghcr.io",
-			DockerUsername:        dockerUsername,
-			DockerPassword:        dockerPassword,
-		})
-	}
-
 	rancherInput := testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:         flagVals.HelmBinaryPath,
@@ -179,132 +146,49 @@ var _ = BeforeSuite(func() {
 		rancherInput.RancherIngressConfig = e2e.IngressConfig
 		rancherInput.RancherServicePatch = e2e.RancherServicePatch
 	}
-	if flagVals.UseEKS {
-		rancherInput.RancherIngressClassName = "nginx"
-	}
 	testenv.DeployRancher(ctx, rancherInput)
 
-	if shortTestOnly() {
-		rtInput := testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-			HelmBinaryPath:               flagVals.HelmBinaryPath,
-			ChartPath:                    "https://rancher.github.io/turtles",
-			CAPIProvidersYAML:            e2e.CapiProviders,
-			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-			Version:                      "v0.6.0",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             map[string]string{},
-		}
-		testenv.DeployRancherTurtles(ctx, rtInput)
+	rtInput := testenv.DeployRancherTurtlesInput{
+		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:               flagVals.HelmBinaryPath,
+		ChartPath:                    "https://rancher.github.io/turtles",
+		CAPIProvidersYAML:            e2e.CapiProviders,
+		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+		Version:                      "v0.6.0",
+		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		AdditionalValues:             map[string]string{},
+	}
+	testenv.DeployRancherTurtles(ctx, rtInput)
 
-		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
-			HelmBinaryPath:        flagVals.HelmBinaryPath,
-			ChartsPath:            flagVals.ChartPath,
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		})
+	testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		ChartsPath:            flagVals.ChartPath,
+		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+	})
 
-		upgradeInput := testenv.UpgradeRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-			HelmBinaryPath:               flagVals.HelmBinaryPath,
-			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-			Tag:                          "v0.0.1",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             rtInput.AdditionalValues,
-		}
-
-		if flagVals.UseEKS {
-			rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
-		} else {
-			// NOTE: this was the default previously in the chart locally and ok as
-			// we where loading the image into kind manually.
-			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-		}
-
-		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
-		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
-
-		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
-	} else {
-		rtInput := testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-			HelmBinaryPath:               flagVals.HelmBinaryPath,
-			ChartPath:                    flagVals.ChartPath,
-			CAPIProvidersYAML:            e2e.CapiProviders,
-			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-			Tag:                          "v0.0.1",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             map[string]string{},
-		}
-		if flagVals.UseEKS {
-			rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
-		} else {
-			// NOTE: this was the default previously in the chart locally and ok as
-			// we where loading the image into kind manually.
-			rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-		}
-
-		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
-		testenv.DeployRancherTurtles(ctx, rtInput)
+	upgradeInput := testenv.UpgradeRancherTurtlesInput{
+		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+		HelmBinaryPath:               flagVals.HelmBinaryPath,
+		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+		Tag:                          "v0.0.1",
+		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+		AdditionalValues:             rtInput.AdditionalValues,
 	}
 
-	if !shortTestOnly() && !localTestOnly() {
-		By("Running full tests, deploying additional infrastructure providers")
-		awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
-		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
+	// NOTE: this was the default previously in the chart locally and ok as
+	// we where loading the image into kind manually.
+	rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
+	rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
 
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSProviderSecret,
-				e2e.AzureIdentitySecret,
-			},
-			CAPIProvidersYAML: e2e.FullProviders,
-			TemplateData: map[string]string{
-				"AWSEncodedCredentials": e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar),
-			},
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capa-controller-manager",
-					Namespace: "capa-system",
-				},
-				{
-					Name:      "capz-controller-manager",
-					Namespace: "capz-system",
-				},
-			},
-		})
-	} else if Label(e2e.LocalTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
-		By("Running local vSphere tests, deploying vSphere infrastructure provider")
-
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.VSphereProviderSecret,
-			},
-			CAPIProvidersYAML:            e2e.CapvProvider,
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capv-controller-manager",
-					Namespace: "capv-system",
-				},
-			},
-		})
-	}
+	testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 
 	giteaValues := map[string]string{
 		"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
 		"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
 		"service.http.type":    "NodePort",
-	}
-	if flagVals.UseEKS {
-		giteaValues["service.http.type"] = "LoadBalancer"
 	}
 
 	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
@@ -343,36 +227,6 @@ var _ = AfterSuite(func() {
 		SkipCleanup:            flagVals.SkipCleanup,
 		ArtifactFolder:         flagVals.ArtifactFolder,
 	})
-})
-
-var _ = AfterEach(func() {
-	testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
-		HelmBinaryPath:        flagVals.HelmBinaryPath,
-		ChartsPath:            flagVals.ChartPath,
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-	})
-
-	upgradeInput := testenv.UpgradeRancherTurtlesInput{
-		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:               flagVals.HelmBinaryPath,
-		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-		Tag:                          "v0.0.1",
-		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		AdditionalValues:             map[string]string{},
-	}
-
-	if flagVals.UseEKS {
-		upgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-		upgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
-	} else {
-		// NOTE: this was the default previously in the chart locally and ok as
-		// we where loading the image into kind manually.
-		upgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-	}
-
-	testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 })
 
 func shortTestOnly() bool {

@@ -171,17 +171,15 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 	// Collect errors as an aggregate to return together after all patches have been performed.
 	var errs []error
 
+	patchBase := client.MergeFromWithOptions(capiCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
 	result, err := r.reconcile(ctx, capiCluster)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("error reconciling cluster: %w", err))
 	}
 
 	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		capiClusterCopy := capiCluster.DeepCopy()
-
-		patchBase := client.MergeFromWithOptions(capiCluster, client.MergeFromWithOptimisticLock{})
-
-		if err := r.Client.Patch(ctx, capiClusterCopy, patchBase); err != nil {
+		if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
 			errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
 		}
 		return nil
@@ -456,6 +454,8 @@ func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, 
 		capiCluster.Name,
 		turtlesannotations.ClusterImportedAnnotation))
 
+	patchBase := client.MergeFromWithOptions(capiCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
 	annotations := capiCluster.GetAnnotations()
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -465,7 +465,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, 
 	capiCluster.SetAnnotations(annotations)
 	controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
 
-	if err := r.Client.Update(ctx, capiCluster); err != nil {
+	if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
 		return fmt.Errorf("error removing finalizer: %w", err)
 	}
 

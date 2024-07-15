@@ -226,6 +226,15 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			setupLog.Error(err, "unable to create capi controller")
 			os.Exit(1)
 		}
+
+		if err := (&controllers.CAPIDowngradeReconciler{
+			RancherClient: rancherClient,
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+		}); err != nil {
+			setupLog.Error(err, "unable to create rancher management v3 downgrade controller")
+			os.Exit(1)
+		}
 	}
 
 	if feature.Gates.Enabled(feature.RancherKubeSecretPatch) {

@@ -194,6 +194,7 @@ type UpgradeRancherTurtlesInput struct {
 	AdditionalValues             map[string]string
 	Image                        string
 	Tag                          string
+	SkipCleanup                  bool
 }
 
 func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput) {
@@ -211,18 +212,20 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 		additionalValues = append(additionalValues, "--set", fmt.Sprintf("%s=%s", name, val))
 	}
 
-	defer func() {
-		values := []string{"repo", "remove", "rancher-turtles-local"}
-		cmd := exec.Command(
-			input.HelmBinaryPath,
-			values...,
-		)
-		cmd.WaitDelay = time.Minute
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			Expect(fmt.Errorf("Unable to perform chart removal: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
-		}
-	}()
+	if !input.SkipCleanup {
+		defer func() {
+			values := []string{"repo", "remove", "rancher-turtles-local"}
+			cmd := exec.Command(
+				input.HelmBinaryPath,
+				values...,
+			)
+			cmd.WaitDelay = time.Minute
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				Expect(fmt.Errorf("Unable to perform chart removal: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
+			}
+		}()
+	}
 
 	values := []string{"repo", "update"}
 	cmd := exec.Command(
