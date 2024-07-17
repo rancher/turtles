@@ -7,7 +7,7 @@ replace github.com/rancher/turtles => ../..
 require (
 	github.com/onsi/ginkgo/v2 v2.17.2
 	github.com/onsi/gomega v1.33.1
-	github.com/rancher-sandbox/cluster-api-provider-rke2 v0.3.0
+	github.com/rancher/cluster-api-provider-rke2 v0.5.0
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 	k8s.io/api v0.29.4
@@ -15,7 +15,7 @@ require (
 	k8s.io/client-go v0.29.4
 	k8s.io/component-base v0.29.4
 	k8s.io/klog/v2 v2.110.1
-	sigs.k8s.io/cluster-api v1.7.1
+	sigs.k8s.io/cluster-api v1.7.2
 	sigs.k8s.io/cluster-api-operator v0.12.0
 	sigs.k8s.io/controller-runtime v0.17.3
 )
