@@ -49,6 +49,22 @@ This will trigger a [release GitHub action](https://github.com/rancher/turtles/a
 
 **Note:** If you are cutting a new minor/major release, please follow the [next step](#post-release-steps-in-rancher-turtles-docs) below, otherwise skip.
 
+## Announcing a release
+
+When the new release is available, we need to notify a list of Slack channels so users and relevant stakeholders can stay up to date with the latest version and changes:
+- SUSE Software Solutions `discuss-rancher-cluster-api`
+- SUSE Software Solutions `team-engs-on-rancher-manager`
+- Rancher Users `cluster-api`
+
+You can use the following notification template and adapt it to the specifics of the release you are announcing:
+
+```
+Hi all! We are happy to announce a new release of Rancher Turtles - vx.x.x! With this release we <one line summary of the release>:
+- list of relevant features/fixes
+- ...
+Please, take a look at the release notes <here link to GitHub release notes>.
+```
+
 ## Post-release steps in Rancher Turtles Docs
 
 If a new minor/major branch was created, there are some post-release actions that need to be taken.
