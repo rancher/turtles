@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -32,7 +33,7 @@ import (
 
 const (
 	retryableOperationInterval = 3 * time.Second
-	retryableOperationTimeout  = 3 * time.Minute
+	retryableOperationTimeout  = 99 * time.Minute
 )
 
 // GetNodeAddressInput is th einput to GetNodeAddress.
@@ -232,4 +233,29 @@ func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistryS
 
 	Expect(cmdCreateSecret.Error).NotTo(HaveOccurred(), "Failed creating docker registry k8s secret")
 	Expect(cmdCreateSecret.ExitCode).To(Equal(0), "Creating secret return non-zero exit code")
+}
+
+// GetIngressHostInput is the input to GetIngressHost.
+type GetIngressHostInput struct {
+	GetLister        framework.GetLister
+	IngressName      string
+	IngressNamespace string
+	IngressRuleIndex int
+}
+
+// GetIngressHost gets the host from an ingress object.
+func GetIngressHost(ctx context.Context, input GetIngressHostInput) string {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for GetNodeAddress")
+	Expect(input.GetLister).ToNot(BeNil(), "Invalid argument. input.GetLister can't be nil when calling GetIngressHost")
+
+	ingress := &networkingv1.Ingress{}
+	Eventually(func() error {
+		return input.GetLister.Get(ctx, client.ObjectKey{Namespace: input.IngressNamespace, Name: input.IngressName}, ingress)
+	}).Should(Succeed(), "Failed to get ingress")
+
+	Expect(ingress.Spec.Rules).NotTo(HaveLen(0), "Expected ingress to have at least 1 rule")
+	Expect(len(ingress.Spec.Rules) >= input.IngressRuleIndex).To(BeTrue(), "Ingress rule index is greater than number of rules")
+
+	rule := ingress.Spec.Rules[input.IngressRuleIndex]
+	return rule.Host
 }

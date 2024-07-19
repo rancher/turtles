@@ -297,6 +297,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			Getter:          input.BootstrapClusterProxy.GetClient(),
 			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
+			ClusterName:     capiCluster.Name,
 			Namespace:       capiCluster.Namespace,
 			WriteToTempFile: true,
 		}, originalKubeconfig)

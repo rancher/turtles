@@ -57,6 +57,7 @@ spec:
       numCPUs: 2
       os: Linux
       powerOffMode: hard
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
       server: '${VSPHERE_SERVER}'
       template: '${VSPHERE_TEMPLATE}'
       thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
@@ -186,6 +187,7 @@ spec:
       server: '${VSPHERE_SERVER}'
       template: '${VSPHERE_TEMPLATE}'
       thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate

@@ -41,6 +41,7 @@ import (
 	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
@@ -86,6 +87,7 @@ func InitScheme() *runtime.Scheme {
 	Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
 	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
 	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
+	Expect(networkingv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
