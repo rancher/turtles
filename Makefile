@@ -76,6 +76,7 @@ SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
 USE_EKS ?= true
 ISOLATED_MODE ?= false
+GITEA_CUSTOM_INGRESS ?= false
 GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
@@ -535,7 +536,8 @@ test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-en
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER) \
 		-e2e.isolated-mode=$(ISOLATED_MODE) \
-		-e2e.use-eks=$(USE_EKS)
+		-e2e.use-eks=$(USE_EKS) \
+		-e2e.gitea-custom-ingress=$(GITEA_CUSTOM_INGRESS)
 
 .PHONY: e2e-image
 e2e-image: ## Build the image for e2e tests

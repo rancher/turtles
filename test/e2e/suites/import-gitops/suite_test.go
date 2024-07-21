@@ -29,14 +29,14 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/framework"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Test suite flags.
@@ -301,10 +301,15 @@ var _ = BeforeSuite(func() {
 	giteaValues := map[string]string{
 		"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
 		"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
-		"service.http.type":    "NodePort",
 	}
+
+	giteaServiceType := corev1.ServiceTypeNodePort
 	if flagVals.UseEKS {
-		giteaValues["service.http.type"] = "LoadBalancer"
+		giteaServiceType = corev1.ServiceTypeLoadBalancer
+	}
+
+	if flagVals.GiteaCustomIngress {
+		giteaServiceType = corev1.ServiceTypeClusterIP
 	}
 
 	giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
@@ -321,6 +326,9 @@ var _ = BeforeSuite(func() {
 		AuthSecretName:        e2e.AuthSecretName,
 		Username:              e2eConfig.GetVariable(e2e.GiteaUserNameVar),
 		Password:              e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
+		ServiceType:           giteaServiceType,
+		CustomIngressConfig:   e2e.GiteaIngress,
+		Variables:             e2eConfig.Variables,
 	})
 })
 

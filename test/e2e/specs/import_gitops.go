@@ -277,6 +277,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			Getter:          input.BootstrapClusterProxy.GetClient(),
 			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
+			ClusterName:     capiCluster.Name,
 			Namespace:       capiCluster.Namespace,
 			WriteToTempFile: true,
 		}, originalKubeconfig)

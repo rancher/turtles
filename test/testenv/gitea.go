@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -47,6 +48,9 @@ type DeployGiteaInput struct {
 	Username              string
 	Password              string
 	AuthSecretName        string
+	CustomIngressConfig   []byte
+	ServiceType           corev1.ServiceType
+	Variables             turtlesframework.VariableCollection
 }
 
 type DeployGiteaResult struct {
@@ -63,10 +67,19 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	Expect(input.ChartVersion).ToNot(BeEmpty(), "Chartversion is required for DeployGitea")
 	Expect(input.RolloutWaitInterval).ToNot(BeNil(), "RolloutWaitInterval is required for DeployGitea")
 	Expect(input.ServiceWaitInterval).ToNot(BeNil(), "ServiceWaitInterval is required for DeployGitea")
+	Expect(input.ServiceType).ToNot(BeEmpty(), "ServiceType is required for DeployGitea")
 
 	if input.Username != "" {
 		Expect(input.Password).ToNot(BeEmpty(), "Password is required for DeployGitea if a username is supplied")
 		Expect(input.AuthSecretName).ToNot(BeEmpty(), "AuthSecretName is required for DeployGitea if a username is supplied")
+	}
+
+	if input.ServiceType == corev1.ServiceTypeClusterIP {
+		Expect(input.CustomIngressConfig).ToNot(BeEmpty(), "CustomIngressConfig is required for DeployGitea if service type is ClusterIP")
+	}
+
+	if input.Values["service.http.type"] == "" {
+		input.Values["service.http.type"] = string(input.ServiceType)
 	}
 
 	result := &DeployGiteaResult{}
@@ -126,7 +139,8 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	}, input.ServiceWaitInterval...)
 	Expect(port.NodePort).ToNot(Equal(0), "Node port for Gitea service is not set")
 
-	if input.Values["service.http.type"] == "NodePort" {
+	switch input.Values["service.http.type"] {
+	case string(corev1.ServiceTypeNodePort):
 		By("Get Git server node port")
 		addr := turtlesframework.GetNodeAddress(ctx, turtlesframework.GetNodeAddressInput{
 			Lister:       input.BootstrapClusterProxy.GetClient(),
@@ -135,7 +149,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		})
 
 		result.GitAddress = fmt.Sprintf("http://%s:%d", addr, port.NodePort)
-	} else {
+	case string(corev1.ServiceTypeLoadBalancer):
 		By("Getting git server ingress address")
 		svcRes := &WaitForServiceIngressHostnameResult{}
 		WaitForServiceIngressHostname(ctx, WaitForServiceIngressHostnameInput{
@@ -145,6 +159,22 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 			IngressWaitInterval:   input.ServiceWaitInterval,
 		}, svcRes)
 		result.GitAddress = fmt.Sprintf("http://%s:%d", svcRes.Hostname, port.Port)
+	case string(corev1.ServiceTypeClusterIP):
+		By("Creating custom ingress for gitea")
+		variableGetter := turtlesframework.GetVariable(input.Variables)
+		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), variableGetter)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
+
+		By("Getting git server ingress address")
+		host := turtlesframework.GetIngressHost(ctx, turtlesframework.GetIngressHostInput{
+			GetLister:        input.BootstrapClusterProxy.GetClient(),
+			IngressRuleIndex: 0,
+			IngressName:      "gitea-http",
+			IngressNamespace: "default",
+		})
+
+		result.GitAddress = fmt.Sprintf("https://%s", host)
 	}
 
 	if input.Username == "" {

@@ -43,6 +43,7 @@ type RancherGetClusterKubeconfigInput struct {
 	Getter           framework.Getter
 	SecretName       string
 	Namespace        string
+	ClusterName      string
 	RancherServerURL string
 	WriteToTempFile  bool
 }
@@ -160,7 +161,7 @@ func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKu
 func (i *RancherGetClusterKubeconfigInput) isDockerCluster(ctx context.Context) bool {
 	cluster := &clusterv1.Cluster{}
 	key := client.ObjectKey{
-		Name:      i.SecretName,
+		Name:      i.ClusterName,
 		Namespace: i.Namespace,
 	}
 

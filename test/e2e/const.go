@@ -80,6 +80,9 @@ var (
 
 	//go:embed data/cluster-templates/vsphere-kubeadm.yaml
 	CAPIvSphereKubeadm []byte
+
+	//go:embed data/gitea/ingress.yaml
+	GiteaIngress []byte
 )
 
 const (

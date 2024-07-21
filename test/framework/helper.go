@@ -38,7 +38,7 @@ type VariableLookupFunc func(key string) string
 // GetVariable is used to get the value for a variable. The expectation is that the variable exists in one of
 // the sources. Assertion will fail if its not found. The order of precedence when checking for variables is:
 // 1. Environment variables
-// 2. Base variablesß
+// 2. Base variables
 // This is a re-implementation of the CAPI function to add additional logging.
 func GetVariable(vars VariableCollection) VariableLookupFunc {
 	Expect(vars).ToNot(BeNil(), "Variable should not be nil")
