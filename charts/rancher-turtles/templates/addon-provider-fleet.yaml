@@ -1,4 +1,5 @@
 {{- if index .Values "rancherTurtles" "features" "addon-provider-fleet" "enabled" }}
+---
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
 metadata:
@@ -9,4 +10,33 @@ metadata:
     "helm.sh/hook-weight": "2"
 spec:
   type: addon
+  additionalManifests:
+    name: fleet-addon-config
+    namespace: '{{ .Values.rancherTurtles.namespace }}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleet-addon-config
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade"
+    "helm.sh/hook-weight": "2"
+data:
+  manifests: |-
+    apiVersion: addons.cluster.x-k8s.io/v1alpha1
+    kind: FleetAddonConfig
+    metadata:
+      name: fleet-addon-config
+    spec:
+      clusterClass:
+        patchResource: true
+      cluster:
+        patchResource: true
+        selector:
+          matchLabels:
+            cluster-api.cattle.io/rancher-auto-import: "true"
+        namespaceSelector:
+          matchLabels:
+            cluster-api.cattle.io/rancher-auto-import: "true"
 {{- end }}
