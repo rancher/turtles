@@ -72,6 +72,7 @@ type GitCommitAndPushInput struct {
 	Username      string
 	Password      string
 	CommitMessage string
+	GitPushWait   []interface{}
 }
 
 // GitCommitAndPush will commit the files for a repo and push the changes to the origin.
@@ -111,4 +112,12 @@ func GitCommitAndPush(ctx context.Context, input GitCommitAndPushInput) {
 	}
 	err = repo.Push(pushOptions)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed pushing changes")
+
+	Eventually(func() error {
+		err := repo.Push(pushOptions)
+		if err.Error() == "already up-to-date" {
+			return nil
+		}
+		return err
+	}, input.GitPushWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 }
