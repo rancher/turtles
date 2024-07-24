@@ -32,8 +32,12 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -182,6 +186,17 @@ var _ = BeforeSuite(func() {
 	rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
 	rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
+
+	upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
+		By("Waiting for CAAPF deployment to be available")
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "caapf-controller-manager",
+				Namespace: "rancher-turtles-system",
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+	})
 
 	testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 

@@ -194,6 +194,7 @@ type UpgradeRancherTurtlesInput struct {
 	AdditionalValues             map[string]string
 	Image                        string
 	Tag                          string
+	PostUpgradeSteps             []func()
 	SkipCleanup                  bool
 }
 
@@ -258,6 +259,10 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 
 	if err != nil {
 		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
+	}
+
+	for _, step := range input.PostUpgradeSteps {
+		step()
 	}
 }
 
