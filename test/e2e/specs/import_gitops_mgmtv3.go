@@ -257,6 +257,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			Username:      input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
 			Password:      input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 			CommitMessage: "ci: add clusters bundle",
+			GitPushWait:   input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-gitpush"),
 		})
 
 		By("Applying GitRepo")

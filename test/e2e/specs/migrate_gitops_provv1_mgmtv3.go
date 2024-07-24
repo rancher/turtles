@@ -301,6 +301,7 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 			Username:      input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
 			Password:      input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 			CommitMessage: "ci: add clusters bundle",
+			GitPushWait:   input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-gitpush"),
 		})
 
 		By("Applying GitRepo")
