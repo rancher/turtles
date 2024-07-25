@@ -168,6 +168,11 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
+	if turtlesannotations.HasClusterImportAnnotation(capiCluster) {
+		log.Info("cluster was imported already and has imported=true annotation set, skipping re-import")
+		return ctrl.Result{}, nil
+	}
+
 	// Collect errors as an aggregate to return together after all patches have been performed.
 	var errs []error
 

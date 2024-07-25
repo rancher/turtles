@@ -361,14 +361,14 @@ func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster 
 	return ctrl.Result{}, nil
 }
 
-// CAPIDowngradeReconciler is a reconciler for downgraded managementv3 clusters.
-type CAPIDowngradeReconciler struct {
+// CAPICleanupReconciler is a reconciler for cleanup of managementv3 clusters.
+type CAPICleanupReconciler struct {
 	RancherClient client.Client
 	Scheme        *runtime.Scheme
 }
 
 // SetupWithManager sets up reconciler with manager.
-func (r *CAPIDowngradeReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *CAPICleanupReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&managementv3.Cluster{}).
 		WithOptions(options).
@@ -383,18 +383,19 @@ func (r *CAPIDowngradeReconciler) SetupWithManager(_ context.Context, mgr ctrl.M
 	return nil
 }
 
-// Reconcile performs check for downgraded clusters and removes finalizer on the clusters still owned by the previous management v3 controller.
-func (r *CAPIDowngradeReconciler) Reconcile(ctx context.Context, cluster *managementv3.Cluster) (res ctrl.Result, err error) {
+// Reconcile performs check for clusters and removes finalizer on the clusters in deleteion
+// still containing the turtles finalizer.
+func (r *CAPICleanupReconciler) Reconcile(ctx context.Context, cluster *managementv3.Cluster) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx)
 
 	patchBase := client.MergeFromWithOptions(cluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
 
-	if !controllerutil.RemoveFinalizer(cluster, managementv3.CapiClusterFinalizer) {
+	if cluster.DeletionTimestamp.IsZero() || !controllerutil.RemoveFinalizer(cluster, managementv3.CapiClusterFinalizer) {
 		return
 	}
 
 	if err = r.RancherClient.Patch(ctx, cluster, patchBase); err != nil {
-		log.Error(err, "Unable to remove turtles finalizer from cluster"+cluster.Name)
+		log.Error(err, "Unable to remove turtles finalizer from cluster"+cluster.GetName())
 	}
 
 	return
