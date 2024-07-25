@@ -31,8 +31,10 @@ data:
     spec:
       clusterClass:
         patchResource: true
+        setOwnerReferences: true
       cluster:
         patchResource: true
+        setOwnerReferences: true
         selector:
           matchLabels:
             cluster-api.cattle.io/rancher-auto-import: "true"
