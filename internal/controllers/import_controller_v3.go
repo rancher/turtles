@@ -60,6 +60,7 @@ const (
 // CAPIImportManagementV3Reconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportManagementV3Reconciler struct {
 	Client             client.Client
+	UncachedClient     client.Client
 	RancherClient      client.Client
 	recorder           record.EventRecorder
 	WatchFilterValue   string
@@ -262,14 +263,8 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 
 	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
 	if apierrors.IsNotFound(err) {
-		shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName)
-		if err != nil {
+		if autoImport, err := r.shouldAutoImportUncached(ctx, capiCluster); err != nil || !autoImport {
 			return ctrl.Result{}, err
-		}
-
-		if !shouldImport {
-			log.Info("not auto importing cluster as namespace or cluster isn't marked auto import")
-			return ctrl.Result{}, nil
 		}
 
 		newCluster := &managementv3.Cluster{
@@ -370,6 +365,24 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 	log.Info("Successfully applied import manifest")
 
 	return ctrl.Result{}, nil
+}
+
+func (r *CAPIImportManagementV3Reconciler) shouldAutoImportUncached(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
+	log := log.FromContext(ctx)
+
+	if err := r.UncachedClient.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
+		return false, client.IgnoreNotFound(err)
+	}
+
+	if shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName); err != nil {
+		return false, err
+	} else if !shouldImport {
+		log.Info("not auto importing cluster as namespace or cluster isn't marked auto import")
+
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (r *CAPIImportManagementV3Reconciler) rancherV3ClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {

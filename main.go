@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"cmp"
 	"context"
 	"flag"
 	"fmt"
@@ -190,10 +191,37 @@ func setupChecks(mgr ctrl.Manager) {
 }
 
 func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
-	rancherClient, err := setupRancherClient(mgr)
+	rancherClient, err := setupRancherClient(client.Options{Scheme: mgr.GetClient().Scheme()})
 	if err != nil {
 		setupLog.Error(err, "failed to create client")
 		os.Exit(1)
+	}
+
+	rancherClient = cmp.Or(rancherClient, mgr.GetClient())
+
+	options := client.Options{
+		Scheme: mgr.GetClient().Scheme(),
+		Cache: &client.CacheOptions{
+			DisableFor: []client.Object{
+				&clusterv1.Cluster{},
+			},
+		},
+	}
+
+	uncachedClient, err := setupRancherClient(options)
+	if err != nil {
+		setupLog.Error(err, "failed to create uncached rancher client")
+		os.Exit(1)
+	}
+
+	if uncachedClient == nil {
+		cl, err := client.New(mgr.GetConfig(), options)
+		if err != nil {
+			setupLog.Error(err, "failed to create uncached rancher client (same cluster)")
+			os.Exit(1)
+		}
+
+		uncachedClient = cl
 	}
 
 	if feature.Gates.Enabled(feature.ManagementV3Cluster) {
@@ -201,6 +229,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 		if err := (&controllers.CAPIImportManagementV3Reconciler{
 			Client:             mgr.GetClient(),
+			UncachedClient:     uncachedClient,
 			RancherClient:      rancherClient,
 			WatchFilterValue:   watchFilterValue,
 			InsecureSkipVerify: insecureSkipVerify,
@@ -263,7 +292,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 // setupRancherClient can either create a client for an in-cluster installation (rancher and rancher-turtles in the same cluster)
 // or create a client for an out-of-cluster installation (rancher and rancher-turtles in different clusters) based on the
 // existence of Rancher kubeconfig file.
-func setupRancherClient(mgr ctrl.Manager) (client.Client, error) {
+func setupRancherClient(options client.Options) (client.Client, error) {
 	if len(rancherKubeconfig) > 0 {
 		setupLog.Info("out-of-cluster installation of rancher-turtles", "using kubeconfig from path", rancherKubeconfig)
 
@@ -272,7 +301,7 @@ func setupRancherClient(mgr ctrl.Manager) (client.Client, error) {
 			return nil, fmt.Errorf("unable to load kubeconfig from file: %w", err)
 		}
 
-		rancherClient, err := client.New(restConfig, client.Options{Scheme: mgr.GetClient().Scheme()})
+		rancherClient, err := client.New(restConfig, options)
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +311,7 @@ func setupRancherClient(mgr ctrl.Manager) (client.Client, error) {
 
 	setupLog.Info("in-cluster installation of rancher-turtles")
 
-	return mgr.GetClient(), nil
+	return nil, nil
 }
 
 // loadConfigWithContext loads a REST Config from a path using a logic similar to the one used in controller-runtime.

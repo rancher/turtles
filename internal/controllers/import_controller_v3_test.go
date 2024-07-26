@@ -74,6 +74,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		r = &CAPIImportManagementV3Reconciler{
 			Client:             cl,
+			UncachedClient:     cl,
 			RancherClient:      cl, // rancher and rancher-turtles deployed in the same cluster
 			remoteClientGetter: remote.NewClusterClient,
 			Scheme:             testEnv.GetScheme(),
