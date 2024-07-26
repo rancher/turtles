@@ -169,3 +169,5 @@ data:
 kind: ConfigMap
 metadata:
   name: ${CLUSTER_NAME}-lb-config
+  annotations:
+    "helm.sh/resource-policy": keep
