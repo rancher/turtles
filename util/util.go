@@ -26,6 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 )
 
 // ShouldImport checks if the object has the label set to true.
@@ -49,8 +51,8 @@ func ShouldAutoImport(ctx context.Context, logger logr.Logger, cl client.Client,
 
 	// Check CAPI cluster for label first
 	hasLabel, autoImport := ShouldImport(capiCluster, label)
-	if hasLabel && autoImport {
-		logger.V(2).Info("Cluster contains import annotation")
+	if hasLabel && autoImport && !turtlesannotations.HasClusterImportAnnotation(capiCluster) {
+		logger.V(2).Info("Cluster contains import label and has no `imported` annotation")
 
 		return true, nil
 	}
