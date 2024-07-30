@@ -147,13 +147,13 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 	})
 
 	It("Should create a role binding with the correct properties", func() {
-		roleBinding := r.createRoleBinding(serviceAccountName, serviceAccountNamespace, planSecretName, rke2Config)
+		roleBinding := r.createRoleBinding(planSecretName, rke2Config)
 
 		Expect(roleBinding.ObjectMeta.Name).To(Equal(planSecretName))
 		Expect(roleBinding.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
 		Expect(roleBinding.Subjects[0].Kind).To(Equal("ServiceAccount"))
-		Expect(roleBinding.Subjects[0].Name).To(Equal(serviceAccountName))
-		Expect(roleBinding.Subjects[0].Namespace).To(Equal(serviceAccountNamespace))
+		Expect(roleBinding.Subjects[0].Name).To(Equal(planSecretName))
+		Expect(roleBinding.Subjects[0].Namespace).To(Equal(rke2Config.Namespace))
 		Expect(roleBinding.RoleRef.APIGroup).To(Equal(rbacv1.GroupName))
 		Expect(roleBinding.RoleRef.Kind).To(Equal("Role"))
 		Expect(roleBinding.RoleRef.Name).To(Equal(planSecretName))
@@ -170,13 +170,13 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 	})
 
 	It("Should return service account token when secret is present and populated", func() {
-		token, err := r.EnsureServiceAccountSecretPopulated(ctx, planSecretName)
+		token, err := r.ensureServiceAccountSecretPopulated(ctx, planSecretName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(token).To(Equal([]byte("test-token")))
 	})
 
 	It("Should add connect-info-config.json when it's not present", func() {
-		err := r.CreateConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem, token)
+		err := r.createConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem, token)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
@@ -197,14 +197,14 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Path: "/etc/rancher/agent/connect-info-config.json",
 		})
 
-		err := r.CreateConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem, token)
+		err := r.createConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem, token)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(HaveLen(1))
 	})
 
 	It("Should add system-agent-install.sh when it's not present", func() {
-		err := r.CreateSystemAgentInstallScript(ctx, serverUrl, rke2Config)
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, rke2Config)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
@@ -225,14 +225,14 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Path: "/opt/system-agent-install.sh",
 		})
 
-		err := r.CreateSystemAgentInstallScript(ctx, serverUrl, rke2Config)
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, rke2Config)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(HaveLen(1))
 	})
 
 	It("Should add config.yaml when it's not present", func() {
-		err := r.CreateConfigYAML(rke2Config)
+		err := r.createConfigYAML(rke2Config)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
@@ -253,7 +253,7 @@ preserveWorkDirectory: true`,
 			Path: "/etc/rancher/agent/config.yaml",
 		})
 
-		err := r.CreateConfigYAML(rke2Config)
+		err := r.createConfigYAML(rke2Config)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(HaveLen(1))
