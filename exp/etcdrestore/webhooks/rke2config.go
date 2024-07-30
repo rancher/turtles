@@ -82,7 +82,7 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create secret plan resources: %s", err))
 	}
 
-	serviceAccountToken, err := r.EnsureServiceAccountSecretPopulated(ctx, planSecretName)
+	serviceAccountToken, err := r.ensureServiceAccountSecretPopulated(ctx, planSecretName)
 	if err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to ensure service account secret is populated: %s", err))
 	}
@@ -127,15 +127,15 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to get ca setting: %s", err))
 	}
 
-	if err := r.CreateConnectInfoJson(ctx, rke2Config, planSecretName, serverUrl, pem, serviceAccountToken); err != nil {
+	if err := r.createConnectInfoJson(ctx, rke2Config, planSecretName, serverUrl, pem, serviceAccountToken); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create connect info json: %s", err))
 	}
 
-	if err := r.CreateSystemAgentInstallScript(ctx, serverUrl, rke2Config); err != nil {
+	if err := r.createSystemAgentInstallScript(ctx, serverUrl, rke2Config); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create system agent install script: %s", err))
 	}
 
-	if err := r.CreateConfigYAML(rke2Config); err != nil {
+	if err := r.createConfigYAML(rke2Config); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create config.yaml: %s", err))
 	}
 
@@ -152,14 +152,11 @@ func (r *RKE2ConfigWebhook) createSecretPlanResources(ctx context.Context, planS
 
 	var errs []error
 
-	// Create the ServiceAccount first to later pass to the RoleBinding creation
-	sa := r.createServiceAccount(planSecretName, rke2Config)
-
 	resources := []client.Object{
-		sa,
+		r.createServiceAccount(planSecretName, rke2Config),
 		r.createSecret(planSecretName, rke2Config),
 		r.createRole(planSecretName, rke2Config),
-		r.createRoleBinding(sa.Name, sa.Namespace, planSecretName, rke2Config),
+		r.createRoleBinding(planSecretName, rke2Config),
 		r.createServiceAccountSecret(planSecretName, rke2Config),
 	}
 
@@ -225,7 +222,7 @@ func (r *RKE2ConfigWebhook) createRole(planSecretName string, rke2Config *bootst
 }
 
 // createRoleBinding creates a RoleBinding for the plan.
-func (r *RKE2ConfigWebhook) createRoleBinding(serviceAccountName, serviceAccountNamespace, planSecretName string, rke2Config *bootstrapv1.RKE2Config) *rbacv1.RoleBinding {
+func (r *RKE2ConfigWebhook) createRoleBinding(planSecretName string, rke2Config *bootstrapv1.RKE2Config) *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      planSecretName,
@@ -234,8 +231,8 @@ func (r *RKE2ConfigWebhook) createRoleBinding(serviceAccountName, serviceAccount
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      serviceAccountName,
-				Namespace: serviceAccountNamespace,
+				Name:      planSecretName,
+				Namespace: rke2Config.Namespace,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -264,7 +261,7 @@ func (r *RKE2ConfigWebhook) createServiceAccountSecret(planSecretName string, rk
 }
 
 // ensureServiceAccountSecretPopulated ensures the ServiceAccount secret is populated.
-func (r *RKE2ConfigWebhook) EnsureServiceAccountSecretPopulated(ctx context.Context, planSecretName string) ([]byte, error) {
+func (r *RKE2ConfigWebhook) ensureServiceAccountSecretPopulated(ctx context.Context, planSecretName string) ([]byte, error) {
 	logger := log.FromContext(ctx)
 
 	logger.Info("Ensuring service account secret is populated")
@@ -306,7 +303,7 @@ func (r *RKE2ConfigWebhook) EnsureServiceAccountSecretPopulated(ctx context.Cont
 }
 
 // createConnectInfoJson creates the connect-info-config.json file.
-func (r *RKE2ConfigWebhook) CreateConnectInfoJson(ctx context.Context, rke2Config *bootstrapv1.RKE2Config, planSecretName, serverUrl, pem string, serviceAccountToken []byte) error {
+func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Config *bootstrapv1.RKE2Config, planSecretName, serverUrl, pem string, serviceAccountToken []byte) error {
 	connectInfoJsonPath := "/etc/rancher/agent/connect-info-config.json"
 
 	filePaths := make(map[string]struct{})
@@ -400,7 +397,7 @@ func (r *RKE2ConfigWebhook) CreateConnectInfoJson(ctx context.Context, rke2Confi
 }
 
 // createSystemAgentInstallScript creates the system-agent-install.sh script.
-func (r *RKE2ConfigWebhook) CreateSystemAgentInstallScript(ctx context.Context, serverUrl string, rke2Config *bootstrapv1.RKE2Config) error {
+func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, serverUrl string, rke2Config *bootstrapv1.RKE2Config) error {
 	systemAgentInstallScriptPath := "/opt/system-agent-install.sh"
 
 	filePaths := make(map[string]struct{})
@@ -456,7 +453,7 @@ func (r *RKE2ConfigWebhook) CreateSystemAgentInstallScript(ctx context.Context, 
 }
 
 // createConfigYAML creates the config.yaml file.
-func (r *RKE2ConfigWebhook) CreateConfigYAML(rke2Config *bootstrapv1.RKE2Config) error {
+func (r *RKE2ConfigWebhook) createConfigYAML(rke2Config *bootstrapv1.RKE2Config) error {
 	configYAMLPath := "/etc/rancher/agent/config.yaml"
 
 	filePaths := make(map[string]struct{})
