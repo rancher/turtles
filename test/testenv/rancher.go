@@ -263,75 +263,76 @@ func RestartRancher(ctx context.Context, input RestartRancherInput) {
 	}, input.RancherWaitInterval...).ShouldNot(HaveOccurred())
 }
 
+type IngressType string
+
+const (
+	CustomIngress   IngressType = "custom"
+	NgrokIngress    IngressType = "ngrok"
+	EKSNginxIngress IngressType = "eks"
+)
+
 type RancherDeployIngressInput struct {
 	BootstrapClusterProxy    framework.ClusterProxy
 	HelmBinaryPath           string
 	HelmExtraValuesPath      string
-	IsolatedMode             bool
-	NginxIngress             []byte
-	NginxIngressNamespace    string
+	CustomIngress            []byte // TODO: add ability to pass a function that deploys the custom ingress
+	CustomIngressNamespace   string
+	CustomIngressDeployment  string
 	IngressWaitInterval      []interface{}
+	DefaultIngressClassPatch []byte
+	IngressType              IngressType
 	NgrokApiKey              string
 	NgrokAuthToken           string
 	NgrokPath                string
 	NgrokRepoName            string
 	NgrokRepoURL             string
-	DefaultIngressClassPatch []byte
-	UseEKS                   bool
 }
 
 func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) {
-
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherDeployIngress")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RancherDeployIngress")
-	if input.IsolatedMode {
-		Expect(input.NginxIngress).ToNot(BeEmpty(), "NginxIngress is required when running in isolated mode")
-		Expect(input.NginxIngressNamespace).ToNot(BeEmpty(), "NginxIngressNamespace is required when running in isolated mode")
-		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when running in isolated mode")
-	} else if input.UseEKS {
-		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when running in isolated mode")
-	} else {
-		Expect(input.NgrokApiKey).ToNot(BeEmpty(), "NgrokApiKey is required when not running in isolated mode")
-		Expect(input.NgrokAuthToken).ToNot(BeEmpty(), "NgrokAuthToken is required when not running in isolated mode")
-		Expect(input.NgrokPath).ToNot(BeEmpty(), "NgrokPath is required when not running in isolated mode")
-		Expect(input.NgrokRepoName).ToNot(BeEmpty(), "NgrokRepoName is required when not running in isolated mode")
-		Expect(input.NgrokRepoURL).ToNot(BeEmpty(), "NgrokRepoURL is required when not running in isolated mode")
-		Expect(input.HelmExtraValuesPath).ToNot(BeNil(), "HelmExtraValuesPath is when not running in isolated mode")
-	}
+	Expect(input.IngressType).ToNot(BeEmpty(), "IngressType is required for RancherDeployIngress")
 
 	komega.SetClient(input.BootstrapClusterProxy.GetClient())
 	komega.SetContext(ctx)
 
-	if input.IsolatedMode {
+	switch input.IngressType {
+	case CustomIngress:
+		Expect(input.CustomIngress).ToNot(BeEmpty(), "CustomIngress is required when using custom ingress")
+		Expect(input.CustomIngressNamespace).ToNot(BeEmpty(), "CustomIngressNamespace is required when using custom ingress")
+		Expect(input.CustomIngressDeployment).ToNot(BeEmpty(), "CustomIngressDeployment is required when using custom ingress")
+		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when using custom ingress")
 		deployIsolatedModeIngress(ctx, input)
-
-		return
+	case NgrokIngress:
+		Expect(input.NgrokApiKey).ToNot(BeEmpty(), "NgrokApiKey is required when using ngrok ingress")
+		Expect(input.NgrokAuthToken).ToNot(BeEmpty(), "NgrokAuthToken is required when using ngrok ingress")
+		Expect(input.NgrokPath).ToNot(BeEmpty(), "NgrokPath is required  when using ngrok ingress")
+		Expect(input.NgrokRepoName).ToNot(BeEmpty(), "NgrokRepoName is required when using ngrok ingress")
+		Expect(input.NgrokRepoURL).ToNot(BeEmpty(), "NgrokRepoURL is required when using ngrok ingress")
+		Expect(input.HelmExtraValuesPath).ToNot(BeNil(), "HelmExtraValuesPath is when using ngrok ingress")
+		deployNgrokIngress(ctx, input)
+	case EKSNginxIngress:
+		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when using eks ingress")
+		deployEKSIngress(input)
 	}
-	if input.UseEKS {
-		deployEKSIngress(ctx, input)
-
-		return
-	}
-
-	deployNgrokIngress(ctx, input)
 }
 
 func deployIsolatedModeIngress(ctx context.Context, input RancherDeployIngressInput) {
-	By("Deploying nginx ingress")
-	Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(input.NginxIngress))).To(Succeed())
+	By("Deploying custom ingress")
+	Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(input.CustomIngress))).To(Succeed())
 
-	By("Getting nginx ingress deployment")
-	ngixDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "ingress-nginx-controller", Namespace: input.NginxIngressNamespace}}
+	By("Getting custom ingress deployment")
+	ingressDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: input.CustomIngressDeployment, Namespace: input.CustomIngressNamespace}}
 	Eventually(
-		komega.Get(ngixDeployment),
+		komega.Get(ingressDeployment),
 		input.IngressWaitInterval...,
-	).Should(Succeed(), "Failed to get nginx ingress controller")
+	).Should(Succeed(), "Failed to get custom ingress controller")
 
-	By("Waiting for ingress-nginx-controller deployment to be available")
-	Eventually(komega.Object(ngixDeployment), input.IngressWaitInterval...).Should(HaveField("Status.AvailableReplicas", Equal(int32(1))))
+	turtlesframework.Byf("Waiting for %s deployment to be available", input.CustomIngressDeployment)
+	Eventually(komega.Object(ingressDeployment), input.IngressWaitInterval...).Should(HaveField("Status.AvailableReplicas", Equal(int32(1))))
 }
 
-func deployEKSIngress(ctx context.Context, input RancherDeployIngressInput) {
+func deployEKSIngress(input RancherDeployIngressInput) {
 	By("Add nginx ingress chart repo")
 	certChart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,

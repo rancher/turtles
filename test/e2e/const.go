@@ -92,6 +92,7 @@ const (
 	RancherTurtlesNamespace = "rancher-turtles-system"
 	RancherNamespace        = "cattle-system"
 	NginxIngressNamespace   = "ingress-nginx"
+	NginxIngressDeployment  = "ingress-nginx-controller"
 )
 
 const (

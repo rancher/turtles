@@ -37,15 +37,15 @@ import (
 
 type SetupTestClusterInput struct {
 	UseExistingCluster   bool
-	UseEKS               bool
 	E2EConfig            *clusterctl.E2EConfig
 	ClusterctlConfigPath string
 	Scheme               *runtime.Scheme
 	ArtifactFolder       string
 	// Hostname             string
-	KubernetesVersion string
-	IsolatedMode      bool
-	HelmBinaryPath    string
+	KubernetesVersion     string
+	IsolatedMode          bool
+	HelmBinaryPath        string
+	CustomClusterProvider CustomClusterProvider
 }
 
 type SetupTestClusterResult struct {
@@ -76,7 +76,7 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 
 	By("Setting up the bootstrap cluster")
 	result.BootstrapClusterProvider, result.BootstrapClusterProxy = setupCluster(
-		ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.UseEKS, input.KubernetesVersion)
+		ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion, input.CustomClusterProvider)
 
 	if input.UseExistingCluster {
 		return result
@@ -87,31 +87,18 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	result.BootstrapClusterLogFolder = filepath.Join(input.ArtifactFolder, "clusters", result.BootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0o750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
 
-	if input.IsolatedMode {
-		result.IsolatedHostName = configureIsolatedEnvironment(ctx, result.BootstrapClusterProxy)
-	}
+	result.IsolatedHostName = getInternalClusterHostname(ctx, result.BootstrapClusterProxy)
 
 	return result
 }
 
-func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster, useEKS bool, kubernetesVersion string) (bootstrap.ClusterProvider, framework.ClusterProxy) {
+func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster bool, kubernetesVersion string, customClusterProvider CustomClusterProvider) (bootstrap.ClusterProvider, framework.ClusterProxy) {
 	var clusterProvider bootstrap.ClusterProvider
 	kubeconfigPath := ""
+
 	if !useExistingCluster {
-		if useEKS {
-			region := config.Variables["KUBERNETES_MANAGEMENT_AWS_REGION"]
-			Expect(region).ToNot(BeEmpty(), "KUBERNETES_MANAGEMENT_AWS_REGION must be set in the e2e config")
-
-			eksCreateResult := &CreateEKSBootstrapClusterAndValidateImagesInputResult{}
-			CreateEKSBootstrapClusterAndValidateImages(ctx, CreateEKSBootstrapClusterAndValidateImagesInput{
-				Name:       clusterName,
-				Version:    kubernetesVersion,
-				Region:     region,
-				NumWorkers: 1,
-				Images:     config.Images,
-			}, eksCreateResult)
-			clusterProvider = eksCreateResult.BootstrapClusterProvider
-
+		if customClusterProvider != nil { // if customClusterProvider is provided, use it to create the bootstrap cluster instead of kind
+			clusterProvider = customClusterProvider(ctx, config, clusterName, kubernetesVersion)
 		} else {
 			clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 				Name:               clusterName,
@@ -120,6 +107,7 @@ func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *run
 				Images:             config.Images,
 			})
 		}
+
 		Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
@@ -132,9 +120,10 @@ func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *run
 	return clusterProvider, proxy
 }
 
-// configureIsolatedEnvironment gets the isolatedHostName by setting it to the IP of the first and only node in the boostrap cluster. Labels the node with
+// configureIsolatedEnvironment gets the internal by setting it to the IP of the first and only node in the boostrap cluster. Labels the node with
 // "ingress-ready" so that the nginx ingress controller can pick it up, required by kind. See: https://kind.sigs.k8s.io/docs/user/ingress/#create-cluster
-func configureIsolatedEnvironment(ctx context.Context, clusterProxy framework.ClusterProxy) string {
+// This hostname can be used in an environment where the cluster is isolated from the outside world and a Rancher hostname is required.
+func getInternalClusterHostname(ctx context.Context, clusterProxy framework.ClusterProxy) string {
 	cpNodeList := corev1.NodeList{}
 	Expect(clusterProxy.GetClient().List(ctx, &cpNodeList)).To(Succeed())
 	Expect(cpNodeList.Items).To(HaveLen(1))

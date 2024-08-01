@@ -91,31 +91,39 @@ var _ = BeforeSuite(func() {
 	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(flagVals.ArtifactFolder, "repository"))
 
 	hostName = e2eConfig.GetVariable(e2e.RancherHostnameVar)
+	ingressType := testenv.NgrokIngress
+	var customClusterProvider testenv.CustomClusterProvider
 
-	setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-		UseExistingCluster:   flagVals.UseExistingCluster,
-		E2EConfig:            e2eConfig,
-		ClusterctlConfigPath: clusterctlConfigPath,
-		Scheme:               e2e.InitScheme(),
-		ArtifactFolder:       flagVals.ArtifactFolder,
-		KubernetesVersion:    e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
-		IsolatedMode:         flagVals.IsolatedMode,
-		HelmBinaryPath:       flagVals.HelmBinaryPath,
-		UseEKS:               flagVals.UseEKS,
-	})
+	if flagVals.UseEKS {
+		customClusterProvider = testenv.EKSBootsrapCluster
+		Expect(customClusterProvider).NotTo(BeNil(), "EKS custom cluster provider is required")
+		ingressType = testenv.EKSNginxIngress
+	}
 
 	if flagVals.IsolatedMode {
-		hostName = setupClusterResult.IsolatedHostName
+		ingressType = testenv.CustomIngress
 	}
+
+	setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
+		UseExistingCluster:    flagVals.UseExistingCluster,
+		E2EConfig:             e2eConfig,
+		ClusterctlConfigPath:  clusterctlConfigPath,
+		Scheme:                e2e.InitScheme(),
+		ArtifactFolder:        flagVals.ArtifactFolder,
+		KubernetesVersion:     e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
+		IsolatedMode:          flagVals.IsolatedMode,
+		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		CustomClusterProvider: customClusterProvider,
+	})
 
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:      filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher-ingress.yaml"),
-		IsolatedMode:             flagVals.IsolatedMode,
-		UseEKS:                   flagVals.UseEKS,
-		NginxIngress:             e2e.NginxIngress,
-		NginxIngressNamespace:    e2e.NginxIngressNamespace,
+		IngressType:              ingressType,
+		CustomIngress:            e2e.NginxIngress,
+		CustomIngressNamespace:   e2e.NginxIngressNamespace,
+		CustomIngressDeployment:  e2e.NginxIngressDeployment,
 		IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		NgrokApiKey:              e2eConfig.GetVariable(e2e.NgrokApiKeyVar),
 		NgrokAuthToken:           e2eConfig.GetVariable(e2e.NgrokAuthTokenVar),
@@ -124,6 +132,10 @@ var _ = BeforeSuite(func() {
 		NgrokRepoURL:             e2eConfig.GetVariable(e2e.NgrokUrlVar),
 		DefaultIngressClassPatch: e2e.IngressClassPatch,
 	})
+
+	if flagVals.IsolatedMode {
+		hostName = setupClusterResult.IsolatedHostName
+	}
 
 	rancherInput := testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
