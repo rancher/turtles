@@ -30,7 +30,13 @@ kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
 helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
+helm repo add jetstack https://charts.jetstack.io
 helm repo update
+
+helm install cert-manager jetstack/cert-manager \
+	--namespace cert-manager \
+	--create-namespace \
+	--set crds.enabled=true
 
 export EXP_CLUSTER_RESOURCE_SET=true
 export CLUSTER_TOPOLOGY=true
@@ -39,7 +45,6 @@ helm install capi-operator capi-operator/cluster-api-operator \
 	--create-namespace -n capi-operator-system \
 	--set infrastructure=docker:v1.4.6 \
 	--set core=cluster-api:v1.4.6 \
-	--set cert-manager.enabled=true \
 	--timeout 90s --wait
 
 kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
