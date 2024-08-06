@@ -75,12 +75,13 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/operator.yaml
 GINKGO_ARGS ?=
 SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
-USE_EKS ?= true
-ISOLATED_MODE ?= false
 GITEA_CUSTOM_INGRESS ?= false
 GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
+
+MANAGEMENT_CLUSTER_INFRASTRUCTURE ?= eks
+E2ECONFIG_VARS ?= MANAGEMENT_CLUSTER_INFRASTRUCTURE=$(MANAGEMENT_CLUSTER_INFRASTRUCTURE)
 
 # to set multiple ginkgo skip flags, if any
 ifneq ($(strip $(GINKGO_SKIP)),)
@@ -529,7 +530,7 @@ release-chart: $(HELM) $(NOTES) build-chart verify-gen
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-end tests
-	$(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+	$(E2ECONFIG_VARS) $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --label-filter="$(GINKGO_LABEL_FILTER)" \
 		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
 		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(GINKGO_TESTS) -- \
@@ -540,8 +541,6 @@ test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-en
 		-e2e.chart-path=$(ROOT_DIR)/$(CHART_RELEASE_DIR) \
 	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER) \
-		-e2e.isolated-mode=$(ISOLATED_MODE) \
-		-e2e.use-eks=$(USE_EKS) \
 		-e2e.gitea-custom-ingress=$(GITEA_CUSTOM_INGRESS)
 
 .PHONY: e2e-image
