@@ -18,6 +18,7 @@ package testenv
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -32,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/yaml"
@@ -413,4 +415,63 @@ func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
 
 	By("Setting up default ingress class")
 	Expect(input.BootstrapClusterProxy.Apply(ctx, input.DefaultIngressClassPatch, "--server-side")).To(Succeed())
+}
+
+type PreRancherInstallHookInput struct {
+	Ctx                context.Context
+	RancherInput       *DeployRancherInput
+	PreSetupOutput     PreManagementClusterSetupResult
+	SetupClusterResult *SetupTestClusterResult
+	E2EConfig          *clusterctl.E2EConfig
+}
+
+type PreRancherInstallHookResult struct {
+	HostName string
+}
+
+// PreRancherInstallHook is a hook that can be used to perform actions before Rancher is installed.
+func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallHookResult {
+	hostName := ""
+
+	switch e2e.ManagementClusterInfrastuctureType(input.E2EConfig.GetVariable(e2e.ManagementClusterInfrastucture)) {
+	case e2e.ManagementClusterInfrastuctureEKS:
+		By("Getting ingress hostname")
+		svcRes := &WaitForServiceIngressHostnameResult{}
+		WaitForServiceIngressHostname(input.Ctx, WaitForServiceIngressHostnameInput{
+			BootstrapClusterProxy: input.SetupClusterResult.BootstrapClusterProxy,
+			ServiceName:           "ingress-nginx-controller",
+			ServiceNamespace:      "ingress-nginx",
+			IngressWaitInterval:   input.E2EConfig.GetIntervals(input.SetupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+		}, svcRes)
+
+		hostName = svcRes.Hostname
+		input.RancherInput.RancherHost = hostName
+
+		By("Deploying ghcr details")
+		turtlesframework.CreateDockerRegistrySecret(input.Ctx, turtlesframework.CreateDockerRegistrySecretInput{
+			Name:                  "regcred",
+			BootstrapClusterProxy: input.SetupClusterResult.BootstrapClusterProxy,
+			Namespace:             "rancher-turtles-system",
+			DockerServer:          "https://ghcr.io",
+			DockerUsername:        input.PreSetupOutput.DockerUsername,
+			DockerPassword:        input.PreSetupOutput.DockerPassword,
+		})
+
+		input.RancherInput.RancherIngressClassName = "nginx"
+	case e2e.ManagementClusterInfrastuctureIsolatedKind:
+		hostName = input.SetupClusterResult.IsolatedHostName
+		input.RancherInput.RancherHost = hostName
+	case e2e.ManagementClusterInfrastuctureKind:
+		// i.e. we are using ngrok locally
+		input.RancherInput.RancherIngressConfig = e2e.IngressConfig
+		input.RancherInput.RancherServicePatch = e2e.RancherServicePatch
+		hostName = input.E2EConfig.GetVariable(e2e.RancherHostnameVar)
+		input.RancherInput.RancherHost = hostName
+	default:
+		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", input.E2EConfig.GetVariable(e2e.ManagementClusterInfrastucture)))
+	}
+
+	return PreRancherInstallHookResult{
+		HostName: hostName,
+	}
 }

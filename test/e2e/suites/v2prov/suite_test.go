@@ -34,7 +34,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/framework"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
@@ -83,26 +82,7 @@ var _ = BeforeSuite(func() {
 	By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
 	e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
 
-	hostName = e2eConfig.GetVariable(e2e.RancherHostnameVar)
-	ingressType := testenv.NgrokIngress
-	dockerUsername := ""
-	dockerPassword := ""
-	var customClusterProvider testenv.CustomClusterProvider
-
-	if flagVals.UseEKS {
-		Expect(flagVals.IsolatedMode).To(BeFalse(), "You cannot use eks with isolated")
-		dockerUsername = os.Getenv("GITHUB_USERNAME")
-		Expect(dockerUsername).NotTo(BeEmpty(), "Github username is required")
-		dockerPassword = os.Getenv("GITHUB_TOKEN")
-		Expect(dockerPassword).NotTo(BeEmpty(), "Github token is required")
-		customClusterProvider = testenv.EKSBootsrapCluster
-		Expect(customClusterProvider).NotTo(BeNil(), "EKS custom cluster provider is required")
-		ingressType = testenv.EKSNginxIngress
-	}
-
-	if flagVals.IsolatedMode {
-		ingressType = testenv.CustomIngress
-	}
+	preSetupOutput := testenv.PreManagementClusterSetupHook(e2eConfig)
 
 	By(fmt.Sprintf("Creating a clusterctl config into %q", flagVals.ArtifactFolder))
 	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(flagVals.ArtifactFolder, "repository"))
@@ -114,16 +94,15 @@ var _ = BeforeSuite(func() {
 		Scheme:                e2e.InitScheme(),
 		ArtifactFolder:        flagVals.ArtifactFolder,
 		KubernetesVersion:     e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
-		IsolatedMode:          flagVals.IsolatedMode,
 		HelmBinaryPath:        flagVals.HelmBinaryPath,
-		CustomClusterProvider: customClusterProvider,
+		CustomClusterProvider: preSetupOutput.CustomClusterProvider,
 	})
 
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 		HelmBinaryPath:           flagVals.HelmBinaryPath,
 		HelmExtraValuesPath:      filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher-ingress.yaml"),
-		IngressType:              ingressType,
+		IngressType:              preSetupOutput.IngressType,
 		CustomIngress:            e2e.NginxIngress,
 		CustomIngressNamespace:   e2e.NginxIngressNamespace,
 		CustomIngressDeployment:  e2e.NginxIngressDeployment,
@@ -135,32 +114,6 @@ var _ = BeforeSuite(func() {
 		NgrokRepoURL:             e2eConfig.GetVariable(e2e.NgrokUrlVar),
 		DefaultIngressClassPatch: e2e.IngressClassPatch,
 	})
-
-	if flagVals.IsolatedMode {
-		hostName = setupClusterResult.IsolatedHostName
-	}
-
-	if flagVals.UseEKS {
-		By("Getting ingress hostname")
-		svcRes := &testenv.WaitForServiceIngressHostnameResult{}
-		testenv.WaitForServiceIngressHostname(ctx, testenv.WaitForServiceIngressHostnameInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			ServiceName:           "ingress-nginx-controller",
-			ServiceNamespace:      "ingress-nginx",
-			IngressWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		}, svcRes)
-		hostName = svcRes.Hostname
-
-		By("Deploying ghcr details")
-		framework.CreateDockerRegistrySecret(ctx, framework.CreateDockerRegistrySecretInput{
-			Name:                  "regcred",
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			Namespace:             "rancher-turtles-system",
-			DockerServer:          "https://ghcr.io",
-			DockerUsername:        dockerUsername,
-			DockerPassword:        dockerPassword,
-		})
-	}
 
 	rancherInput := testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
@@ -175,7 +128,6 @@ var _ = BeforeSuite(func() {
 		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
 		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
 		Development:            true,
-		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
 		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
 		RancherFeatures:        e2eConfig.GetVariable(e2e.RancherFeaturesVar),
@@ -184,14 +136,18 @@ var _ = BeforeSuite(func() {
 		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		Variables:              e2eConfig.Variables,
 	}
-	if !flagVals.IsolatedMode && !flagVals.UseEKS {
-		// i.e. we are using ngrok locally
-		rancherInput.RancherIngressConfig = e2e.IngressConfig
-		rancherInput.RancherServicePatch = e2e.RancherServicePatch
-	}
-	if flagVals.UseEKS {
-		rancherInput.RancherIngressClassName = "nginx"
-	}
+
+	rancherHookResult := testenv.PreRancherInstallHook(
+		&testenv.PreRancherInstallHookInput{
+			Ctx:                ctx,
+			RancherInput:       &rancherInput,
+			E2EConfig:          e2eConfig,
+			SetupClusterResult: setupClusterResult,
+			PreSetupOutput:     preSetupOutput,
+		})
+
+	hostName = rancherHookResult.HostName
+
 	testenv.DeployRancher(ctx, rancherInput)
 
 	rtInput := testenv.DeployRancherTurtlesInput{
@@ -205,14 +161,9 @@ var _ = BeforeSuite(func() {
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues:             map[string]string{},
 	}
-	if flagVals.UseEKS {
-		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
-	} else {
-		// NOTE: this was the default previously in the chart locally and ok as
-		// we where loading the image into kind manually.
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-	}
+
+	testenv.PreRancherTurtlesInstallHook(&rtInput, e2eConfig)
+
 	testenv.DeployRancherTurtles(ctx, rtInput)
 
 	testenv.RestartRancher(ctx, testenv.RestartRancherInput{

@@ -95,7 +95,17 @@ const (
 	NginxIngressDeployment  = "ingress-nginx-controller"
 )
 
+type ManagementClusterInfrastuctureType string
+
 const (
+	ManagementClusterInfrastuctureEKS          ManagementClusterInfrastuctureType = "eks"
+	ManagementClusterInfrastuctureIsolatedKind ManagementClusterInfrastuctureType = "isolated-kind"
+	ManagementClusterInfrastuctureKind         ManagementClusterInfrastuctureType = "kind"
+)
+
+const (
+	ManagementClusterInfrastucture = "MANAGEMENT_CLUSTER_INFRASTRUCTURE"
+
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
 	KubernetesVersionVar   = "KUBERNETES_VERSION"
