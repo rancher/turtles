@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	"cmp"
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
@@ -69,10 +70,16 @@ func (r *CAPIProviderReconciler) reconcileNormal(ctx context.Context, capiProvid
 
 func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtlesv1.CAPIProvider) (_ ctrl.Result, err error) {
 	s := sync.NewList(
-		sync.NewProviderSync(r.Client, capiProvider),
 		sync.NewSecretSync(r.Client, capiProvider),
 		sync.NewSecretMapperSync(ctx, r.Client, capiProvider),
 	)
+
+	switch cmp.Or(capiProvider.Spec.Name, capiProvider.GetName()) {
+	case "azure":
+		s = append(s, sync.NewAzureProviderSync(r.Client, capiProvider))
+	default:
+		s = append(s, sync.NewProviderSync(r.Client, capiProvider))
+	}
 
 	defer r.patchStatus(ctx, capiProvider, &err)
 

@@ -17,7 +17,7 @@ data:
       url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/v2.3.5/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "azure"
-      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/v1.13.2/infrastructure-components.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/v1.16.0/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "docker"
       url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.4.6/infrastructure-components-development.yaml"
