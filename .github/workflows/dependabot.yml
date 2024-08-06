@@ -17,6 +17,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    outputs:
+      output1: ${{ steps.check_changes.outputs.CHANGES }}
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # tag=v3.5.0
@@ -25,9 +27,18 @@ jobs:
       id: go
     - name: Check out code into the Go module directory
       uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # tag=v4.1.3
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if git diff --quiet; then
+          echo "CHANGES=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "CHANGES=true" >> "$GITHUB_OUTPUT"
+        fi
     - name: Update generated code
       run: make generate
     - name: Commit changes
+      if: steps.check_changes.outputs.CHANGES == 'true'
       run: |
         git config --local user.email "49699333+dependabot[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
