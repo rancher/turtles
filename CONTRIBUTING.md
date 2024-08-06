@@ -1,3 +1,3 @@
 # Contributing Guidelines
 
-Please check our Contributing Guide [here](https://turtles.docs.rancher.com/docs/contributing/intro).
+Please check our Developer Guide [here](https://turtles.docs.rancher.com/developer-guide/intro).
