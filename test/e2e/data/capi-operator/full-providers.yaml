@@ -7,7 +7,6 @@ metadata:
 spec:
   type: infrastructure
   name: aws
-  version: v2.3.5
   configSecret:
     name: full-variables
   variables:
@@ -25,7 +24,6 @@ metadata:
 spec:
   type: infrastructure
   name: azure
-  version: v1.11.5
   configSecret:
     name: azure-variables
   variables:
