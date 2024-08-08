@@ -33,3 +33,4 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git add .
         [[ -z "$(git status -s)" ]] || git commit -m "Update generated code"
+        git push
