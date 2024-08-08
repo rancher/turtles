@@ -31,10 +31,13 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/framework"
-	turtlesframework "github.com/rancher/turtles/test/framework"
+
 	"github.com/rancher/turtles/test/testenv"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -198,7 +201,7 @@ var _ = BeforeSuite(func() {
 		HelmBinaryPath:               flagVals.HelmBinaryPath,
 		ChartPath:                    flagVals.ChartPath,
 		CAPIProvidersYAML:            e2e.CapiProviders,
-		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
+		Namespace:                    framework.DefaultRancherTurtlesNamespace,
 		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
 		Tag:                          "v0.0.1",
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
@@ -215,6 +218,18 @@ var _ = BeforeSuite(func() {
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	}
 	testenv.DeployRancherTurtles(ctx, rtInput)
+
+	By("Waiting for CAAPF deployment to be available")
+	capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+		Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      "caapf-controller-manager",
+			Namespace: e2e.RancherTurtlesNamespace,
+		}},
+	}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+	By("Setting the CAAPF config to use hostNetwork")
+	Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 
 	if !shortTestOnly() && !localTestOnly() {
 		By("Running full tests, deploying additional infrastructure providers")
