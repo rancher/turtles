@@ -40,10 +40,12 @@ var _ = Describe("Provider sync", func() {
 		ns                           *corev1.Namespace
 		otherNs                      *corev1.Namespace
 		capiProvider                 *turtlesv1.CAPIProvider
+		capiProviderAzure            *turtlesv1.CAPIProvider
 		capiProviderDuplicate        *turtlesv1.CAPIProvider
 		infrastructure               *operatorv1.InfrastructureProvider
 		infrastructureStatusOutdated operatorv1.ProviderStatus
 		infrastructureDuplicate      *operatorv1.InfrastructureProvider
+		infrastructureAzure          *operatorv1.InfrastructureProvider
 	)
 
 	BeforeEach(func() {
@@ -64,11 +66,20 @@ var _ = Describe("Provider sync", func() {
 			Type: turtlesv1.Infrastructure,
 		}}
 
+		capiProviderAzure = capiProvider.DeepCopy()
+		capiProviderAzure.Spec.Name = "azure"
+		capiProviderAzure.Name = "azure"
+
 		capiProviderDuplicate = capiProvider.DeepCopy()
 		capiProviderDuplicate.Namespace = otherNs.Name
 
 		infrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      string(capiProvider.Spec.Name),
+			Namespace: ns.Name,
+		}}
+
+		infrastructureAzure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(capiProviderAzure.Spec.Name),
 			Namespace: ns.Name,
 		}}
 
@@ -87,6 +98,7 @@ var _ = Describe("Provider sync", func() {
 
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProviderDuplicate)).To(Succeed())
+		Expect(testEnv.Client.Create(ctx, capiProviderAzure)).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -105,6 +117,29 @@ var _ = Describe("Provider sync", func() {
 
 		Eventually(Object(infrastructure)).Should(
 			HaveField("Spec.ProviderSpec", Equal(capiProvider.Spec.ProviderSpec)))
+	})
+
+	It("Should sync azure spec", func() {
+		s := sync.NewAzureProviderSync(testEnv, capiProviderAzure)
+
+		Eventually(s.Get(ctx)).Should(Succeed())
+		Expect(s.Sync(ctx)).To(Succeed())
+
+		var err error
+		s.Apply(ctx, &err)
+		Expect(err).To(Succeed())
+
+		capiProviderAzure.Spec.Deployment = &operatorv1.DeploymentSpec{
+			Containers: []operatorv1.ContainerSpec{{
+				Name: "manager",
+				Args: map[string]string{
+					"--bootstrap-config-gvk": "RKE2Config.v1beta1.bootstrap.cluster.x-k8s.io",
+				},
+			}},
+		}
+
+		Eventually(Object(infrastructureAzure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(capiProviderAzure.Spec.ProviderSpec)))
 	})
 
 	It("Should sync status up and set provisioning state", func() {
