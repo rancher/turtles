@@ -239,6 +239,7 @@ generate-exp-etcdrestore-manifests-api: controller-gen ## Generate ClusterRole a
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
 	cd $(TEST_DIR); go mod tidy
+	cd $(EXP_ETCDRESTORE_DIR); go mod tidy
 
 .PHONY: generate-go-deepcopy
 generate-go-deepcopy:  ## Run deepcopy generation
