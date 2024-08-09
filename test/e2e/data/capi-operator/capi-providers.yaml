@@ -12,7 +12,6 @@ metadata:
 spec:
   name: docker
   type: infrastructure
-  version: v1.4.6
   configSecret:
     name: variables
 ---
@@ -29,7 +28,6 @@ metadata:
 spec:
   name: kubeadm
   type: bootstrap
-  version: v1.4.6
   configSecret:
     name: variables
 ---
@@ -46,6 +44,5 @@ metadata:
 spec:
   name: kubeadm
   type: controlPlane
-  version: v1.4.6
   configSecret:
     name: variables

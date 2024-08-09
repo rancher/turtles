@@ -14,7 +14,7 @@ data:
 
     # Infrastructure providers
     - name:         "aws"
-      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/v2.3.5/infrastructure-components.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/v2.6.1/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "azure"
       url:          "https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/v1.16.0/infrastructure-components.yaml"
@@ -23,13 +23,13 @@ data:
       url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.4.6/infrastructure-components-development.yaml"
       type:         "InfrastructureProvider"
     - name:         "gcp"
-      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/v1.6.0/infrastructure-components.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/v1.7.0/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "vsphere"
-      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/v1.9.1/infrastructure-components.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/v1.10.2/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "digitalocean"
-      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-digitalocean/releases/v1.4.1/infrastructure-components.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api-provider-digitalocean/releases/v1.6.0/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
 
     # Bootstrap providers

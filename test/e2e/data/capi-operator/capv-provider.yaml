@@ -7,7 +7,6 @@ metadata:
 spec:
   name: vsphere
   type: infrastructure
-  version: v1.8.5
   configSecret:
     name: vsphere-variables
   variables:
