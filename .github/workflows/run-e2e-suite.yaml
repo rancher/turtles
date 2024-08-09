@@ -45,7 +45,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   MANAGEMENT_CLUSTER_INFRASTRUCTURE: ${{ inputs.management_cluster_infrastructure }}
   GINKGO_LABEL_FILTER: full 
-  GINKGO_TESTS: ${{ inputs.test_suite }}
+  GINKGO_TESTS: ${{ github.workspace }}/${{ inputs.test_suite }}
 
 jobs:
   run_e2e_tests:
