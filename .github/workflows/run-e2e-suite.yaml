@@ -1,6 +1,11 @@
 on:
   workflow_call:
     inputs:
+      management_cluster_infrastructure:
+        description: "The infrastructure to use for the management cluster: eks, kind or isolated-kind"
+        type: string
+        required: true
+        default: "eks"
       test_suite:
         description: "The test suite to run (i.e. path to it)"
         required: true
@@ -17,10 +22,6 @@ on:
         description: "Run the Azure janitor after the test to cleanup"
         required: false
         default: false
-        type: boolean
-      use_eks:
-        description: "Use EKS for the management cluster"
-        required: true
         type: boolean
 
 permissions:
@@ -42,6 +43,9 @@ env:
   AWS_REGION: eu-west-2
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  MANAGEMENT_CLUSTER_INFRASTRUCTURE: ${{ inputs.management_cluster_infrastructure }}
+  GINKGO_LABEL_FILTER: full 
+  GINKGO_TESTS: ${{ inputs.test_suite }}
 
 jobs:
   run_e2e_tests:
@@ -80,10 +84,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: build and push e2e image
-        if: ${{ inputs.use_eks }}
+        if: ${{ inputs.management_cluster_infrastructure == 'eks' }}
         run: make e2e-image-push
       - name: Run e2e tests
-        run: GINKGO_LABEL_FILTER=full USE_EKS=${{ inputs.use_eks }} GINKGO_TESTS=${{ inputs.test_suite }} make test-e2e
+        run: make test-e2e
       - name: Collect run artifacts
         if: always()
         uses: actions/upload-artifact@v4

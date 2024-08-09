@@ -25,13 +25,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/rancher/turtles/test/e2e"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-
-	turtlesframework "github.com/rancher/turtles/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
 type DeployGiteaInput struct {
@@ -235,4 +236,19 @@ func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
 	}
 	_, err := removeChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func PreGiteaInstallHook(giteaInput *DeployGiteaInput, e2eConfig *clusterctl.E2EConfig) {
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+
+	switch infrastructureType {
+	case e2e.ManagementClusterInfrastuctureEKS:
+		giteaInput.ServiceType = corev1.ServiceTypeLoadBalancer
+	case e2e.ManagementClusterInfrastuctureIsolatedKind:
+		giteaInput.ServiceType = corev1.ServiceTypeNodePort
+	case e2e.ManagementClusterInfrastuctureKind:
+		giteaInput.ServiceType = corev1.ServiceTypeClusterIP
+	default:
+		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
+	}
 }

@@ -26,12 +26,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/rancher/turtles/test/e2e"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-
-	turtlesframework "github.com/rancher/turtles/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
 type DeployRancherTurtlesInput struct {
@@ -291,4 +292,39 @@ func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesI
 
 	_, err := removeChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
+}
+
+// PreRancherTurtlesInstallHook is a hook that can be used to perform actions before Rancher Turtles is installed.
+func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput, e2eConfig *clusterctl.E2EConfig) {
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+
+	switch infrastructureType {
+	case e2e.ManagementClusterInfrastuctureEKS:
+		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+	case e2e.ManagementClusterInfrastuctureIsolatedKind:
+		// NOTE: rancher turtles image is loadded into kind manually, we can set the imagePullPolicy to Never
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	case e2e.ManagementClusterInfrastuctureKind:
+		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	default:
+		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
+	}
+}
+
+// PreRancherTurtlesInstallHook is a hook that can be used to perform actions before Rancher Turtles is installed.
+func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput, e2eConfig *clusterctl.E2EConfig) {
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+	switch infrastructureType {
+	case e2e.ManagementClusterInfrastuctureEKS:
+		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
+	case e2e.ManagementClusterInfrastuctureIsolatedKind:
+		// NOTE: rancher turtles image is loadded into kind manually, we can set the imagePullPolicy to Never
+		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	case e2e.ManagementClusterInfrastuctureKind:
+		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
+	default:
+		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
+	}
 }

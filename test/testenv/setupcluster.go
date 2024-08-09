@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/rancher/turtles/test/e2e"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -43,7 +44,6 @@ type SetupTestClusterInput struct {
 	ArtifactFolder       string
 	// Hostname             string
 	KubernetesVersion     string
-	IsolatedMode          bool
 	HelmBinaryPath        string
 	CustomClusterProvider CustomClusterProvider
 }
@@ -144,4 +144,38 @@ func getInternalClusterHostname(ctx context.Context, clusterProxy framework.Clus
 
 func createClusterName(baseName string) string {
 	return fmt.Sprintf("%s-%s", baseName, util.RandomString(6))
+}
+
+// PreManagementClusterSetupResult is the output of the preManagementClusterSetupHook.
+type PreManagementClusterSetupResult struct {
+	IngressType           IngressType
+	DockerUsername        string
+	DockerPassword        string
+	CustomClusterProvider CustomClusterProvider
+}
+
+// PreManagementClusterSetupHook is a hook that can be used to perform actions before the management cluster is setup.
+func PreManagementClusterSetupHook(e2eConfig *clusterctl.E2EConfig) PreManagementClusterSetupResult {
+	output := PreManagementClusterSetupResult{}
+
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+
+	switch infrastructureType {
+	case e2e.ManagementClusterInfrastuctureEKS:
+		output.DockerUsername = os.Getenv("GITHUB_USERNAME")
+		Expect(output.DockerUsername).NotTo(BeEmpty(), "Github username is required")
+		output.DockerPassword = os.Getenv("GITHUB_TOKEN")
+		Expect(output.DockerPassword).NotTo(BeEmpty(), "Github token is required")
+		output.CustomClusterProvider = EKSBootsrapCluster
+		Expect(output.CustomClusterProvider).NotTo(BeNil(), "EKS custom cluster provider is required")
+		output.IngressType = EKSNginxIngress
+	case e2e.ManagementClusterInfrastuctureIsolatedKind:
+		output.IngressType = CustomIngress
+	case e2e.ManagementClusterInfrastuctureKind:
+		output.IngressType = NgrokIngress
+	default:
+		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
+	}
+
+	return output
 }
