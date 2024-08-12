@@ -98,12 +98,12 @@ const (
 	NginxIngressDeployment  = "ingress-nginx-controller"
 )
 
-type ManagementClusterInfrastuctureType string
+type ManagementClusterEnvironmentType string
 
 const (
-	ManagementClusterInfrastuctureEKS          ManagementClusterInfrastuctureType = "eks"
-	ManagementClusterInfrastuctureIsolatedKind ManagementClusterInfrastuctureType = "isolated-kind"
-	ManagementClusterInfrastuctureKind         ManagementClusterInfrastuctureType = "kind"
+	ManagementClusterEnvironmentEKS          ManagementClusterEnvironmentType = "eks"
+	ManagementClusterEnvironmentIsolatedKind ManagementClusterEnvironmentType = "isolated-kind"
+	ManagementClusterEnvironmentKind         ManagementClusterEnvironmentType = "kind"
 )
 
 const (

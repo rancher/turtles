@@ -36,10 +36,15 @@ const (
 	retryableOperationTimeout  = 99 * time.Minute
 )
 
-// GetNodeAddressInput is th einput to GetNodeAddress.
+// GetNodeAddressInput represents the input parameters for retrieving a specific node's address.
 type GetNodeAddressInput struct {
-	Lister       framework.Lister
-	NodeIndex    int
+	// Lister is an interface used for listing resources.
+	Lister framework.Lister
+
+	// NodeIndex is the index of the node to retrieve the address from.
+	NodeIndex int
+
+	// AddressIndex is the index of the address to retrieve from the node.
 	AddressIndex int
 }
 
@@ -63,16 +68,27 @@ func GetNodeAddress(ctx context.Context, input GetNodeAddressInput) string {
 	return node.Status.Addresses[input.AddressIndex].Address
 }
 
-// GetServicePortByNameInput is the input to GetServicePortByName.
+// GetServicePortByNameInput represents the input parameters for retrieving a service port by name.
 type GetServicePortByNameInput struct {
-	GetLister        framework.GetLister
-	ServiceName      string
+	// GetLister is the function used to retrieve a lister.
+	GetLister framework.GetLister
+
+	// ServiceName is the name of the service.
+	ServiceName string
+
+	// ServiceNamespace is the namespace of the service.
 	ServiceNamespace string
-	PortName         string
+
+	// PortName is the name of the port.
+	PortName string
 }
 
+// GetServicePortByNameOutput represents the output of the GetServicePortByName function.
 type GetServicePortByNameOutput struct {
-	Port     int32
+	// Port is the port number of the service.
+	Port int32
+
+	// NodePort is the node port number of the service.
 	NodePort int32
 }
 
@@ -104,14 +120,27 @@ func GetServicePortByName(ctx context.Context, input GetServicePortByNameInput, 
 	}
 }
 
-// CreateSecretInput is the input to CreateSecret.
+// CreateSecretInput represents the input parameters for creating a secret.
 type CreateSecretInput struct {
-	Creator     framework.Creator
-	Name        string
-	Namespace   string
-	Type        corev1.SecretType
-	Data        map[string]string
-	Labels      map[string]string
+	// Creator is the framework.Creator responsible for creating the secret.
+	Creator framework.Creator
+
+	// Name is the name of the secret.
+	Name string
+
+	// Namespace is the namespace in which the secret will be created.
+	Namespace string
+
+	// Type is the type of the secret.
+	Type corev1.SecretType
+
+	// Data is a map of key-value pairs representing the secret data.
+	Data map[string]string
+
+	// Labels is a map of key-value pairs representing the labels associated with the secret.
+	Labels map[string]string
+
+	// Annotations is a map of key-value pairs representing the annotations associated with the secret.
 	Annotations map[string]string
 }
 
@@ -146,11 +175,16 @@ func CreateSecret(ctx context.Context, input CreateSecretInput) {
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to create secret %s", klog.KObj(secret))
 }
 
-// AddLabelsToNamespaceInput is th einput to AddLabelsToNamespace.
+// AddLabelsToNamespaceInput represents the input parameters for adding labels to a namespace.
 type AddLabelsToNamespaceInput struct {
+	// ClusterProxy is the cluster proxy object used for interacting with the Kubernetes cluster.
 	ClusterProxy framework.ClusterProxy
-	Name         string
-	Labels       map[string]string
+
+	// Name is the name of the namespace to which labels will be added.
+	Name string
+
+	// Labels is a map of key-value pairs representing the labels to be added to the namespace.
+	Labels map[string]string
 }
 
 // AddLabelsToNamespace will add labels to a namespace.
@@ -183,13 +217,25 @@ func AddLabelsToNamespace(ctx context.Context, input AddLabelsToNamespaceInput) 
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to update namespace %s with new labels", input.Name)
 }
 
+// CreateDockerRegistrySecretInput represents the input parameters for creating a Docker registry secret.
 type CreateDockerRegistrySecretInput struct {
+	// BootstrapClusterProxy is the bootstrap cluster proxy.
 	BootstrapClusterProxy framework.ClusterProxy
-	Name                  string
-	Namespace             string
-	DockerServer          string
-	DockerUsername        string
-	DockerPassword        string
+
+	// Name is the name of the secret.
+	Name string
+
+	// Namespace is the namespace where the secret will be created.
+	Namespace string
+
+	// DockerServer is the Docker server URL.
+	DockerServer string
+
+	// DockerUsername is the username for authenticating with the Docker registry.
+	DockerUsername string
+
+	// DockerPassword is the password for authenticating with the Docker registry.
+	DockerPassword string
 }
 
 func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistrySecretInput) {
@@ -235,11 +281,18 @@ func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistryS
 	Expect(cmdCreateSecret.ExitCode).To(Equal(0), "Creating secret return non-zero exit code")
 }
 
-// GetIngressHostInput is the input to GetIngressHost.
+// GetIngressHostInput represents the input parameters for retrieving the host of an Ingress.
 type GetIngressHostInput struct {
-	GetLister        framework.GetLister
-	IngressName      string
+	// GetLister is a function that returns a lister for accessing Kubernetes resources.
+	GetLister framework.GetLister
+
+	// IngressName is the name of the Ingress.
+	IngressName string
+
+	// IngressNamespace is the namespace of the Ingress.
 	IngressNamespace string
+
+	// IngressRuleIndex is the index of the Ingress rule.
 	IngressRuleIndex int
 }
 

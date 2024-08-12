@@ -32,17 +32,29 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
+// WaitForServiceIngressHostnameInput represents the input parameters for waiting for a service ingress hostname.
 type WaitForServiceIngressHostnameInput struct {
+	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
-	ServiceName           string
-	ServiceNamespace      string
-	IngressWaitInterval   []interface{}
+
+	// ServiceName is the name of the service.
+	ServiceName string
+
+	// ServiceNamespace is the namespace of the service.
+	ServiceNamespace string
+
+	// IngressWaitInterval is the interval to wait between ingress checks.
+	IngressWaitInterval []interface{}
 }
 
+// WaitForServiceIngressHostnameResult represents the result of waiting for the service ingress hostname.
 type WaitForServiceIngressHostnameResult struct {
+	// Hostname is the hostname of the service ingress.
 	Hostname string
 }
 
+// WaitForServiceIngressHostname waits for a service to have an external IP and retrieves its hostname.
+// It expects the required input parameters to be non-nil.
 func WaitForServiceIngressHostname(ctx context.Context, input WaitForServiceIngressHostnameInput, result *WaitForServiceIngressHostnameResult) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for WaitForServiceIngressHostname")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for WaitForServiceIngressHostname")

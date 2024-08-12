@@ -38,20 +38,34 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// RancherGetClusterKubeconfigInput is the input to RancherGetClusterKubeconfig.
+// RancherGetClusterKubeconfigInput represents the input parameters for getting the kubeconfig of a cluster in Rancher.
 type RancherGetClusterKubeconfigInput struct {
-	Getter           framework.Getter
-	SecretName       string
-	Namespace        string
-	ClusterName      string
+	// Getter is the framework getter used to retrieve the kubeconfig.
+	Getter framework.Getter
+
+	// SecretName is the name of the secret containing the kubeconfig.
+	SecretName string
+
+	// Namespace is the namespace of the secret containing the kubeconfig.
+	Namespace string
+
+	// ClusterName is the name of the cluster.
+	ClusterName string
+
+	// RancherServerURL is the URL of the Rancher server.
 	RancherServerURL string
-	WriteToTempFile  bool
+
+	// WriteToTempFile indicates whether to write the kubeconfig to a temporary file.
+	WriteToTempFile bool
 }
 
-// RancherGetClusterKubeconfigResult is the result of RancherGetClusterKubeconfig.
+// RancherGetClusterKubeconfigResult represents the result of getting the kubeconfig for a Rancher cluster.
 type RancherGetClusterKubeconfigResult struct {
+	// KubeconfigData contains the kubeconfig data as a byte array.
 	KubeconfigData []byte
-	TempFilePath   string
+
+	// TempFilePath is the temporary file path where the kubeconfig is stored.
+	TempFilePath string
 }
 
 // RancherGetClusterKubeconfig will get the Kubeconfig for a cluster from Rancher.
@@ -203,12 +217,18 @@ func fixConfig(ctx context.Context, name string, config *api.Config) {
 	config.Clusters[currentCluster].Server = controlPlaneURL.String()
 }
 
+// RancherLookupUserInput represents the input for looking up a user in Rancher.
 type RancherLookupUserInput struct {
+	// ClusterProxy is the cluster proxy used for communication with Rancher.
 	ClusterProxy framework.ClusterProxy
-	Username     string
+
+	// Username is the username of the user to look up.
+	Username string
 }
 
+// RancherLookupUserResult represents the result of a user lookup in Rancher.
 type RancherLookupUserResult struct {
+	// User is the username of the user found in Rancher.
 	User string
 }
 

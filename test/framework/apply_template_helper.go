@@ -25,13 +25,21 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
-// ApplyFromTemplateInput is the input to ApplyFromTemplate.
+// ApplyFromTemplateInput represents the input parameters for applying a template.
 type ApplyFromTemplateInput struct {
-	Getter                        func(key string) string
-	Template                      []byte
+	// Getter is a function that retrieves a value based on a given key.
+	Getter func(key string) string
+
+	// Template is the content of the template to be applied.
+	Template []byte
+
+	// AddtionalEnvironmentVariables is a map of additional environment variables to be set during template application.
 	AddtionalEnvironmentVariables map[string]string
 
-	Proxy          framework.ClusterProxy
+	// Proxy is the cluster proxy used for applying the template.
+	Proxy framework.ClusterProxy
+
+	// OutputFilePath is the path where the output of the template application will be stored.
 	OutputFilePath string
 }
 

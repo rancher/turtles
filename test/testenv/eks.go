@@ -28,20 +28,27 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
+// CreateEKSBootstrapClusterAndValidateImagesInput represents the input parameters for creating an EKS bootstrap cluster and validating images.
 type CreateEKSBootstrapClusterAndValidateImagesInput struct {
-	Name       string
-	Version    string
-	Region     string
+	// Name is the name of the bootstrap cluster.
+	Name string
+	// Version is the version of the bootstrap cluster.
+	Version string
+	// Region is the AWS region where the bootstrap cluster will be created.
+	Region string
+	// NumWorkers is the number of worker nodes in the bootstrap cluster.
 	NumWorkers int
-	Images     []clusterctl.ContainerImage
+	// Images is a list of container images to be validated.
+	Images []clusterctl.ContainerImage
 }
 
 type CreateEKSBootstrapClusterAndValidateImagesInputResult struct {
 	// BootstrapClusterProvider manages provisioning of the the bootstrap cluster to be used for the e2e tests.
-	// Please note that provisioning will be skipped if e2e.use-existing-cluster is provided.
 	BootstrapClusterProvider bootstrap.ClusterProvider
 }
 
+// CreateEKSBootstrapClusterAndValidateImages is a function that creates an EKS bootstrap cluster and validates images.
+// It expects the required input parameters to be non-nil.
 func CreateEKSBootstrapClusterAndValidateImages(ctx context.Context, input CreateEKSBootstrapClusterAndValidateImagesInput, res *CreateEKSBootstrapClusterAndValidateImagesInputResult) {
 	Expect(ctx).ToNot(BeNil(), "Context is required for CreateEKSBootstrapClusterAndValidateImages")
 	Expect(input.Name).ToNot(BeEmpty(), "Name is required for CreateEKSBootstrapClusterAndValidateImages")

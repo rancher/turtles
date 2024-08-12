@@ -28,13 +28,23 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
+// DeployChartMuseumInput represents the input parameters for deploying ChartMuseum.
 type DeployChartMuseumInput struct {
-	HelmBinaryPath        string
+	// HelmBinaryPath is the path to the Helm binary.
+	HelmBinaryPath string
+
+	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
-	ChartsPath            string
-	WaitInterval          []interface{}
+
+	// ChartsPath is the path to the charts.
+	ChartsPath string
+
+	// WaitInterval is the interval to wait for.
+	WaitInterval []interface{}
 }
 
+// DeployChartMuseum installs ChartMuseum to the Kubernetes cluster using the provided input parameters.
+// It expects the required input parameters to be non-nil.
 func DeployChartMuseum(ctx context.Context, input DeployChartMuseumInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployChartMuseum")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployChartMuseum")

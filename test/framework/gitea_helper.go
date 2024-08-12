@@ -25,12 +25,19 @@ import (
 	"code.gitea.io/sdk/gitea"
 )
 
-// GiteaCreateRepoInput is the input to GiteaCreateRepo.
+// GiteaCreateRepoInput represents the input parameters for creating a repository in Gitea.
 type GiteaCreateRepoInput struct {
+	// ServerAddr is the address of the Gitea server.
 	ServerAddr string
-	RepoName   string
-	Username   string
-	Password   string
+
+	// RepoName is the name of the repository to be created.
+	RepoName string
+
+	// Username is the username of the user creating the repository.
+	Username string
+
+	// Password is the password of the user creating the repository.
+	Password string
 }
 
 // GiteaCreateRepo will create a new repo in the Gitea server.

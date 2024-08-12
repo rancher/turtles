@@ -32,16 +32,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// FleetCreateGitRepoInput is the input to FleetCreateGitRepo.
+// FleetCreateGitRepoInput represents the input parameters for creating a Git repository in Fleet.
 type FleetCreateGitRepoInput struct {
-	Name             string
-	Namespace        string
-	Repo             string
-	Branch           string
-	Paths            []string
-	FleetGeneration  int
+	// Name is the name of the Git repository.
+	Name string
+
+	// Namespace is the namespace in which the Git repository will be created.
+	Namespace string
+
+	// Repo is the URL of the Git repository.
+	Repo string
+
+	// Branch is the branch of the Git repository to use.
+	Branch string
+
+	// Paths are the paths within the Git repository to sync.
+	Paths []string
+
+	// FleetGeneration is the generation of the Fleet instance.
+	FleetGeneration int
+
+	// ClientSecretName is the name of the client secret to use for authentication.
 	ClientSecretName string
-	ClusterProxy     framework.ClusterProxy
+
+	// ClusterProxy is the ClusterProxy instance for interacting with the cluster.
+	ClusterProxy framework.ClusterProxy
 }
 
 // FleetCreateGitRepo will create and apply a GitRepo resource to the cluster. See the Fleet docs
@@ -77,10 +92,15 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to appl GitRepo")
 }
 
-// FleetDeleteGitRepoInput is the input to FleetDeleteGitRepo.
+// FleetDeleteGitRepoInput represents the input parameters for deleting a Git repository in the fleet.
 type FleetDeleteGitRepoInput struct {
-	Name         string
-	Namespace    string
+	// Name is the name of the Git repository to be deleted.
+	Name string
+
+	// Namespace is the namespace of the Git repository to be deleted.
+	Namespace string
+
+	// ClusterProxy is the cluster proxy used for interacting with the cluster.
 	ClusterProxy framework.ClusterProxy
 }
 
@@ -117,10 +137,13 @@ func FleetDeleteGitRepo(ctx context.Context, input FleetDeleteGitRepoInput) {
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to delete GitRepo")
 }
 
-// FleetCreateFleetFileInput is the input to FleetCreateFleetFile.
+// FleetCreateFleetFileInput represents the input parameters for creating a fleet file.
 type FleetCreateFleetFileInput struct {
+	// Namespace is the namespace in which the fleet file will be created.
 	Namespace string
-	FilePath  string
+
+	// FilePath is the file path of the fleet file.
+	FilePath string
 }
 
 // FleetCreateFleetFile will create a fleet.yaml file in the given location.
