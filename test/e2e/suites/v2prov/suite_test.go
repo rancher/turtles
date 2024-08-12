@@ -161,7 +161,7 @@ var _ = BeforeSuite(func() {
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-		Tag:                          "v0.0.1",
+		Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues:             map[string]string{},
 	}

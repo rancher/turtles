@@ -171,6 +171,7 @@ var _ = BeforeSuite(func() {
 		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
 			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
+			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		})
@@ -180,7 +181,7 @@ var _ = BeforeSuite(func() {
 			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
 			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-			Tag:                          "v0.0.1",
+			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 			AdditionalValues:             rtInput.AdditionalValues,
 			PostUpgradeSteps:             []func(){},
@@ -214,7 +215,7 @@ var _ = BeforeSuite(func() {
 			CAPIProvidersYAML:            e2e.CapiProviders,
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
 			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-			Tag:                          "v0.0.1",
+			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 			AdditionalValues:             map[string]string{},
 		}

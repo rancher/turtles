@@ -39,6 +39,9 @@ type DeployChartMuseumInput struct {
 	// ChartsPath is the path to the charts.
 	ChartsPath string
 
+	// ChartVersion is the version of the chart.
+	ChartVersion string
+
 	// WaitInterval is the interval to wait for.
 	WaitInterval []interface{}
 }
@@ -56,6 +59,7 @@ func DeployChartMuseum(ctx context.Context, input DeployChartMuseumInput) {
 	turtlesframework.DeployChartMuseum(ctx, turtlesframework.ChartMuseumInput{
 		HelmBinaryPath:       input.HelmBinaryPath,
 		ChartsPath:           input.ChartsPath,
+		ChartVersion:         input.ChartVersion,
 		Proxy:                input.BootstrapClusterProxy,
 		WaitInterval:         input.WaitInterval,
 		ChartMuseumManifests: e2e.ChartMuseum,

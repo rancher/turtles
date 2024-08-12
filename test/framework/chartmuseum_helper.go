@@ -38,6 +38,9 @@ type ChartMuseumInput struct {
 	// ChartsPath is the path to the charts.
 	ChartsPath string
 
+	// ChartVersion is the version of the chart.
+	ChartVersion string
+
 	// ChartMuseumManifests are the ChartMuseum manifests.
 	ChartMuseumManifests []byte
 
@@ -116,7 +119,7 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	exec.Command(
 		input.HelmBinaryPath,
 		"cm-push", input.ChartsPath,
-		"rancher-turtles-local", "-a", "v0.0.1",
+		"rancher-turtles-local", "-a", input.ChartVersion,
 		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
 	).CombinedOutput()
 

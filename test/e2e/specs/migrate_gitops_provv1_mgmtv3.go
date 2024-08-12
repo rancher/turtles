@@ -353,6 +353,7 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
 			HelmBinaryPath:        input.HelmBinaryPath,
 			ChartsPath:            input.ChartPath,
+			ChartVersion:          input.E2EConfig.GetVariable(e2e.TurtlesVersionVar),
 			BootstrapClusterProxy: input.BootstrapClusterProxy,
 			WaitInterval:          input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		})
@@ -362,7 +363,7 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 			HelmBinaryPath:               input.HelmBinaryPath,
 			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
-			Tag:                          "v0.0.1",
+			Tag:                          input.E2EConfig.GetVariable(e2e.TurtlesVersionVar),
 			WaitDeploymentsReadyInterval: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers"),
 			SkipCleanup:                  true,
 			AdditionalValues:             map[string]string{},
