@@ -22,9 +22,9 @@ package v2prov
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -57,6 +57,8 @@ var (
 
 	ctx = context.Background()
 
+	artifactsFolder string
+
 	setupClusterResult *testenv.SetupTestClusterResult
 )
 
@@ -74,34 +76,36 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
-	Expect(os.MkdirAll(flagVals.ArtifactFolder, 0o755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", flagVals.ArtifactFolder)
-	Expect(flagVals.HelmBinaryPath).To(BeAnExistingFile(), "Invalid test suite argument. helm-binary-path should be an existing file.")
-	Expect(flagVals.ChartPath).To(BeAnExistingFile(), "Invalid test suite argument. chart-path should be an existing file.")
-
 	By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
+	Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
 	e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
+	e2e.ValidateE2EConfig(e2eConfig)
+
+	artifactsFolder = e2eConfig.GetVariable(e2e.ArtifactsFolderVar)
 
 	preSetupOutput := testenv.PreManagementClusterSetupHook(e2eConfig)
 
-	By(fmt.Sprintf("Creating a clusterctl config into %q", flagVals.ArtifactFolder))
-	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(flagVals.ArtifactFolder, "repository"))
+	By(fmt.Sprintf("Creating a clusterctl config into %q", artifactsFolder))
+	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(artifactsFolder, "repository"))
+
+	useExistingCluter, err := strconv.ParseBool(e2eConfig.GetVariable(e2e.UseExistingClusterVar))
+	Expect(err).ToNot(HaveOccurred(), "Failed to parse the USE_EXISTING_CLUSTER variable")
 
 	setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-		UseExistingCluster:    flagVals.UseExistingCluster,
+		UseExistingCluster:    useExistingCluter,
 		E2EConfig:             e2eConfig,
 		ClusterctlConfigPath:  clusterctlConfigPath,
 		Scheme:                e2e.InitScheme(),
-		ArtifactFolder:        flagVals.ArtifactFolder,
+		ArtifactFolder:        artifactsFolder,
 		KubernetesVersion:     e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
-		HelmBinaryPath:        flagVals.HelmBinaryPath,
+		HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 		CustomClusterProvider: preSetupOutput.CustomClusterProvider,
 	})
 
 	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:           flagVals.HelmBinaryPath,
-		HelmExtraValuesPath:      filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher-ingress.yaml"),
+		HelmBinaryPath:           e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+		HelmExtraValuesPath:      filepath.Join(e2eConfig.GetVariable(e2e.HelmExtraValuesFolderVar), "deploy-rancher-ingress.yaml"),
 		IngressType:              preSetupOutput.IngressType,
 		CustomIngress:            e2e.NginxIngress,
 		CustomIngressNamespace:   e2e.NginxIngressNamespace,
@@ -117,8 +121,8 @@ var _ = BeforeSuite(func() {
 
 	rancherInput := testenv.DeployRancherInput{
 		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:         flagVals.HelmBinaryPath,
-		HelmExtraValuesPath:    filepath.Join(flagVals.HelmExtraValuesDir, "deploy-rancher.yaml"),
+		HelmBinaryPath:         e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+		HelmExtraValuesPath:    filepath.Join(e2eConfig.GetVariable(e2e.HelmExtraValuesFolderVar), "deploy-rancher.yaml"),
 		InstallCertManager:     true,
 		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
 		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
@@ -152,8 +156,8 @@ var _ = BeforeSuite(func() {
 
 	rtInput := testenv.DeployRancherTurtlesInput{
 		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:               flagVals.HelmBinaryPath,
-		ChartPath:                    flagVals.ChartPath,
+		HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+		TurtlesChartPath:             e2eConfig.GetVariable(e2e.TurtlesPathVar),
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
 		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
@@ -174,9 +178,12 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	skipCleanup, err := strconv.ParseBool(e2eConfig.GetVariable(e2e.SkipResourceCleanupVar))
+	Expect(err).ToNot(HaveOccurred(), "Failed to parse the SKIP_RESOURCE_CLEANUP variable")
+
 	testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 		SetupTestClusterResult: *setupClusterResult,
-		SkipCleanup:            flagVals.SkipCleanup,
-		ArtifactFolder:         flagVals.ArtifactFolder,
+		SkipCleanup:            skipCleanup,
+		ArtifactFolder:         artifactsFolder,
 	})
 })

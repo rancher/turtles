@@ -158,7 +158,7 @@ type PreManagementClusterSetupResult struct {
 func PreManagementClusterSetupHook(e2eConfig *clusterctl.E2EConfig) PreManagementClusterSetupResult {
 	output := PreManagementClusterSetupResult{}
 
-	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
 
 	switch infrastructureType {
 	case e2e.ManagementClusterInfrastuctureEKS:

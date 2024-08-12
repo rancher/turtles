@@ -239,7 +239,7 @@ func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
 }
 
 func PreGiteaInstallHook(giteaInput *DeployGiteaInput, e2eConfig *clusterctl.E2EConfig) {
-	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
 
 	switch infrastructureType {
 	case e2e.ManagementClusterInfrastuctureEKS:

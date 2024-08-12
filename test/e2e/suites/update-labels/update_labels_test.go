@@ -169,12 +169,12 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, setupClusterResult.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(flagVals.ArtifactFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+"bootstrap"+specName))
+		err := testenv.CollectArtifacts(ctx, setupClusterResult.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactsFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+"bootstrap"+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
 		}
 
-		err = testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(flagVals.ArtifactFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+specName))
+		err = testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(artifactsFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}

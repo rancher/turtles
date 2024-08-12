@@ -80,8 +80,15 @@ GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
 
-MANAGEMENT_CLUSTER_INFRASTRUCTURE ?= eks
-E2ECONFIG_VARS ?= MANAGEMENT_CLUSTER_INFRASTRUCTURE=$(MANAGEMENT_CLUSTER_INFRASTRUCTURE)
+MANAGEMENT_CLUSTER_ENVIRONMENT ?= eks
+
+E2ECONFIG_VARS ?= MANAGEMENT_CLUSTER_ENVIRONMENT=$(MANAGEMENT_CLUSTER_ENVIRONMENT) \
+ARTIFACTS=$(ARTIFACTS) \
+HELM_BINARY_PATH=$(HELM) \
+CLUSTERCTL_BINARY_PATH=$(CLUSTERCTL) \
+SKIP_RESOURCE_CLEANUP=$(SKIP_RESOURCE_CLEANUP) \
+USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) \
+TURTLES_PATH=$(ROOT_DIR)/$(CHART_RELEASE_DIR)
 
 # to set multiple ginkgo skip flags, if any
 ifneq ($(strip $(GINKGO_SKIP)),)
@@ -535,14 +542,7 @@ test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-en
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --label-filter="$(GINKGO_LABEL_FILTER)" \
 		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
 		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(GINKGO_TESTS) -- \
-	    -e2e.artifacts-folder="$(ARTIFACTS)" \
-	    -e2e.config="$(E2E_CONF_FILE)" \
-		-e2e.helm-binary-path=$(HELM) \
-		-e2e.clusterctl-binary-path=$(CLUSTERCTL) \
-		-e2e.chart-path=$(ROOT_DIR)/$(CHART_RELEASE_DIR) \
-	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
-		-e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER) \
-		-e2e.gitea-custom-ingress=$(GITEA_CUSTOM_INGRESS)
+	    -e2e.config="$(E2E_CONF_FILE)"
 
 .PHONY: e2e-image
 e2e-image: ## Build the image for e2e tests

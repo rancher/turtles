@@ -38,7 +38,9 @@ import (
 type DeployRancherTurtlesInput struct {
 	BootstrapClusterProxy        framework.ClusterProxy
 	HelmBinaryPath               string
-	ChartPath                    string
+	TurtlesChartUrl              string
+	TurtlesChartPath             string
+	TurtlesChartRepoName         string
 	CAPIProvidersSecretYAML      []byte
 	CAPIProvidersYAML            []byte
 	Namespace                    string
@@ -60,7 +62,7 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancherTurtles")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for DeployRancherTurtles")
-	Expect(input.ChartPath).ToNot(BeEmpty(), "ChartPath is required for DeployRancherTurtles")
+	Expect(input.TurtlesChartPath).ToNot(BeEmpty(), "ChartPath is required for DeployRancherTurtles")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancherTurtles")
 	Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required for DeployRancherTurtles")
 
@@ -74,15 +76,29 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersSecretYAML)).To(Succeed())
 	}
 
-	chartPath := input.ChartPath
-	if input.Version != "" {
+	chartPath := input.TurtlesChartPath
+	if input.Version != "" && input.TurtlesChartUrl == "" {
 		chartPath = "rancher-turtles-external/rancher-turtles"
 
 		By("Adding external rancher turtles chart repo")
 		addChart := &opframework.HelmChart{
 			BinaryPath:      input.HelmBinaryPath,
 			Name:            "rancher-turtles-external",
-			Path:            input.ChartPath,
+			Path:            input.TurtlesChartPath,
+			Commands:        opframework.Commands(opframework.Repo, opframework.Add),
+			AdditionalFlags: opframework.Flags("--force-update"),
+			Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+		}
+		_, err := addChart.Run(nil)
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	if input.TurtlesChartUrl != "" {
+		By("Adding Rancher chart repo")
+		addChart := &opframework.HelmChart{
+			BinaryPath:      input.HelmBinaryPath,
+			Name:            input.TurtlesChartRepoName,
+			Path:            input.TurtlesChartUrl,
 			Commands:        opframework.Commands(opframework.Repo, opframework.Add),
 			AdditionalFlags: opframework.Flags("--force-update"),
 			Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
@@ -296,14 +312,14 @@ func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesI
 
 // PreRancherTurtlesInstallHook is a hook that can be used to perform actions before Rancher Turtles is installed.
 func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput, e2eConfig *clusterctl.E2EConfig) {
-	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
 
 	switch infrastructureType {
 	case e2e.ManagementClusterInfrastuctureEKS:
 		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
 	case e2e.ManagementClusterInfrastuctureIsolatedKind:
-		// NOTE: rancher turtles image is loadded into kind manually, we can set the imagePullPolicy to Never
+		// NOTE: rancher turtles image is loaded into kind manually, we can set the imagePullPolicy to Never
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	case e2e.ManagementClusterInfrastuctureKind:
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
@@ -312,15 +328,16 @@ func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput, e2eConfig 
 	}
 }
 
-// PreRancherTurtlesInstallHook is a hook that can be used to perform actions before Rancher Turtles is installed.
+// PreRancherTurtlesUpgradelHook is a hook that can be used to perform actions before Rancher Turtles is upgraded.
 func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput, e2eConfig *clusterctl.E2EConfig) {
-	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
+
 	switch infrastructureType {
 	case e2e.ManagementClusterInfrastuctureEKS:
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
 	case e2e.ManagementClusterInfrastuctureIsolatedKind:
-		// NOTE: rancher turtles image is loadded into kind manually, we can set the imagePullPolicy to Never
+		// NOTE: rancher turtles image is loaded into kind manually, we can set the imagePullPolicy to Never
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	case e2e.ManagementClusterInfrastuctureKind:
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"

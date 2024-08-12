@@ -433,7 +433,9 @@ type PreRancherInstallHookResult struct {
 func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallHookResult {
 	hostName := ""
 
-	switch e2e.ManagementClusterInfrastuctureType(input.E2EConfig.GetVariable(e2e.ManagementClusterInfrastucture)) {
+	infrastructureType := e2e.ManagementClusterInfrastuctureType(input.E2EConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
+
+	switch e2e.ManagementClusterInfrastuctureType(infrastructureType) {
 	case e2e.ManagementClusterInfrastuctureEKS:
 		By("Getting ingress hostname")
 		svcRes := &WaitForServiceIngressHostnameResult{}
@@ -468,7 +470,7 @@ func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallH
 		hostName = input.E2EConfig.GetVariable(e2e.RancherHostnameVar)
 		input.RancherInput.RancherHost = hostName
 	default:
-		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", input.E2EConfig.GetVariable(e2e.ManagementClusterInfrastucture)))
+		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
 	}
 
 	return PreRancherInstallHookResult{

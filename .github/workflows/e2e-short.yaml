@@ -5,7 +5,7 @@ on:
     types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 env:
-  MANAGEMENT_CLUSTER_INFRASTRUCTURE: "isolated-kind"
+  MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind"
   GINKGO_LABEL_FILTER: "short"
 
 jobs:
