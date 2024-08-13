@@ -11,8 +11,8 @@ env:
   CONTROLLER_IMG: controller
   CONTROLLER_IMAGE_VERSION: v0.0.1
   PULL_POLICY: Never
-  CERT_MANAGER_VERSION: v1.12.3
-  RANCHER_VERSION: v2.8.2
+  CERT_MANAGER_VERSION: v1.15.2
+  RANCHER_VERSION: v2.9.0
 
 jobs:
   lint-test:
@@ -59,7 +59,7 @@ jobs:
         uses: helm/kind-action@v1.9.0
         with:
           cluster_name: kind
-          node_image: kindest/node:v1.26.3
+          node_image: kindest/node:v1.30.0
 
       - name: Add local docker image
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
@@ -68,13 +68,13 @@ jobs:
         run: helm repo add jetstack https://charts.jetstack.io
 
       - name: Add rancher chart repo
-        run: helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 
       - name: Install cert-manager
         run: helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set installCRDs=true --wait
 
       - name: Install Rancher
-        run: helm install rancher rancher-stable/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set global.cattle.psp.enabled=false --version ${{ env.RANCHER_VERSION }} --wait
+        run: helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Run chart-testing (install)
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug

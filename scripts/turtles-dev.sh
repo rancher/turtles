@@ -20,7 +20,7 @@ if [ -z "$RANCHER_HOSTNAME" ]; then
 	exit 1
 fi
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.8.2}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.9.0}
 
 BASEDIR=$(dirname "$0")
 
@@ -43,8 +43,8 @@ export CLUSTER_TOPOLOGY=true
 
 helm install capi-operator capi-operator/cluster-api-operator \
 	--create-namespace -n capi-operator-system \
-	--set infrastructure=docker:v1.4.6 \
-	--set core=cluster-api:v1.4.6 \
+	--set infrastructure=docker:v1.7.3 \
+	--set core=cluster-api:v1.7.3 \
 	--timeout 90s --wait
 
 kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s

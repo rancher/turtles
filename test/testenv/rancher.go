@@ -204,7 +204,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 			Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
 			AdditionalFlags: opframework.Flags(
 				"--namespace", "cert-manager",
-				"--version", "v1.12.0",
+				"--version", "v1.15.2",
 				"--create-namespace",
 			),
 			Wait: true,
@@ -466,7 +466,7 @@ func deployEKSIngress(input RancherDeployIngressInput) {
 		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
 		AdditionalFlags: opframework.Flags(
 			"--namespace", "ingress-nginx",
-			"--version", "v4.9.0",
+			"--version", "v4.11.0",
 			"--create-namespace",
 		),
 		Wait: true,
