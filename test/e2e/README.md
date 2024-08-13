@@ -99,6 +99,7 @@ variables:
   RANCHER_HOSTNAME: "localhost" # Your ngrok domain
   NGROK_API_KEY: "" # Key and token values for establishing ingress
   NGROK_AUTHTOKEN: ""
+  MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # Environment to run the tests in: eks, isolated-kind, kind.
 ```
 
 ## Testdata
@@ -113,7 +114,19 @@ While all the tests are based on the combination of [ginkgo](https://github.com/
 
 ## Cluster configuration
 
-[Kind](https://kind.sigs.k8s.io/) is used to set up a cluster for e2e tests. All required components like rancher, rancher-turtles and [cluster-api-operator](https://github.com/kubernetes-sigs/cluster-api-operator) (which provisions cluster-api with required providers) are installed using [helm](https://kind.sigs.k8s.io/) charts.
+### Kind
+
+[Kind](https://kind.sigs.k8s.io/) is used to set up a cluster for e2e tests. All required components like rancher, rancher-turtles and [cluster-api-operator](https://github.com/kubernetes-sigs/cluster-api-operator) (which provisions cluster-api with required providers) are installed using [helm](https://kind.sigs.k8s.io/) charts. This option can be enabled by setting `MANAGEMENT_CLUSTER_ENVIRONMENT` to `kind`. It's also required to set `NGROK_API_KEY`, `NGROK_AUTHTOKEN` and `RANCHER_HOSTNAME` environment variables.
+
+### Isolated Kind
+
+This is similar to Kind but instead of public endpoint for Rancher, it uses the internal IP of CP node. This setup can be used to test providers are running in the same network as Rancher. This option can be enabled by setting `MANAGEMENT_CLUSTER_ENVIRONMENT` to `isolated-kind`.
+
+### EKS
+
+EKS is used to set up a cluster for e2e tests. In this setup nginx ingress will be deployed to provide a public endpoint for Rancher. This option can be enabled by setting `MANAGEMENT_CLUSTER_ENVIRONMENT` to `eks`.
+
+### Customizing the cluster
 
 To configure individual components, a series of `server-side-apply` patches are being issued. All required patch manifests are located under `test/e2e/resources/config`. Under circumstances each manifest could have a limited environment based configuration with `envsubst` (for example: setting `RANCHER_HOSTNAME` value in ingress configuration).
 
