@@ -127,10 +127,10 @@ var _ = BeforeSuite(func() {
 		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
 		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
 		CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
-		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherRepoNameVar),
-		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherUrlVar),
-		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherPathVar),
-		RancherVersion:         e2eConfig.GetVariable(e2e.RancherVersionVar),
+		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherAlphaRepoNameVar),
+		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherAlphaUrlVar),
+		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherAlphaPathVar),
+		RancherVersion:         e2eConfig.GetVariable(e2e.RancherAlphaVersionVar),
 		RancherHost:            hostName,
 		RancherNamespace:       e2e.RancherNamespace,
 		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
@@ -194,9 +194,12 @@ var _ = BeforeSuite(func() {
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      "caapf-controller-manager",
-				Namespace: "rancher-turtles-system",
+				Namespace: e2e.RancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+		By("Setting the CAAPF config to use hostNetwork")
+		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 	})
 
 	testenv.UpgradeRancherTurtles(ctx, upgradeInput)

@@ -84,6 +84,9 @@ var (
 	//go:embed data/cluster-templates/vsphere-rke2.yaml
 	CAPIvSphereRKE2 []byte
 
+	//go:embed data/cluster-api-addon-provider-fleet/host-network-patch.yaml
+	AddonProviderFleetHostNetworkPatch []byte
+
 	//go:embed data/gitea/ingress.yaml
 	GiteaIngress []byte
 )
@@ -108,18 +111,22 @@ const (
 
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
-	KubernetesVersionVar   = "KUBERNETES_VERSION"
-	RancherFeaturesVar     = "RANCHER_FEATURES"
-	RancherHostnameVar     = "RANCHER_HOSTNAME"
-	RancherVersionVar      = "RANCHER_VERSION"
-	RancherPathVar         = "RANCHER_PATH"
-	RancherUrlVar          = "RANCHER_URL"
-	RancherRepoNameVar     = "RANCHER_REPO_NAME"
-	RancherPasswordVar     = "RANCHER_PASSWORD"
-	CertManagerUrlVar      = "CERT_MANAGER_URL"
-	CertManagerRepoNameVar = "CERT_MANAGER_REPO_NAME"
-	CertManagerPathVar     = "CERT_MANAGER_PATH"
-	CapiInfrastructureVar  = "CAPI_INFRASTRUCTURE"
+	KubernetesVersionVar    = "KUBERNETES_VERSION"
+	RancherFeaturesVar      = "RANCHER_FEATURES"
+	RancherHostnameVar      = "RANCHER_HOSTNAME"
+	RancherVersionVar       = "RANCHER_VERSION"
+	RancherAlphaVersionVar  = "RANCHER_ALPHA_VERSION"
+	RancherPathVar          = "RANCHER_PATH"
+	RancherAlphaPathVar     = "RANCHER_ALPHA_PATH"
+	RancherUrlVar           = "RANCHER_URL"
+	RancherAlphaUrlVar      = "RANCHER_ALPHA_URL"
+	RancherRepoNameVar      = "RANCHER_REPO_NAME"
+	RancherAlphaRepoNameVar = "RANCHER_ALPHA_REPO_NAME"
+	RancherPasswordVar      = "RANCHER_PASSWORD"
+	CertManagerUrlVar       = "CERT_MANAGER_URL"
+	CertManagerRepoNameVar  = "CERT_MANAGER_REPO_NAME"
+	CertManagerPathVar      = "CERT_MANAGER_PATH"
+	CapiInfrastructureVar   = "CAPI_INFRASTRUCTURE"
 
 	NgrokRepoNameVar  = "NGROK_REPO_NAME"
 	NgrokUrlVar       = "NGROK_URL"
