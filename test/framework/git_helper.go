@@ -30,10 +30,17 @@ import (
 
 // GitCloneRepoInput is the input to GitCloneRepo.
 type GitCloneRepoInput struct {
-	Address       string
+	// Address is the URL of the repository to clone.
+	Address string
+
+	// CloneLocation is the directory where the repository will be cloned.
 	CloneLocation string
-	Username      string
-	Password      string
+
+	// Username is the username for authentication (optional).
+	Username string
+
+	// Password is the password for authentication (optional).
+	Password string
 }
 
 // GitCloneRepo will clone a repo to a given location.
@@ -66,13 +73,22 @@ func GitCloneRepo(ctx context.Context, input GitCloneRepoInput) string {
 	return cloneDir
 }
 
-// GitCommitAndPushInput is th einput to GitCommitAndPush.
+// GitCommitAndPushInput is the input to GitCommitAndPush.
 type GitCommitAndPushInput struct {
+	// CloneLocation is the directory where the repository is cloned.
 	CloneLocation string
-	Username      string
-	Password      string
+
+	// Username is the username for authentication (optional).
+	Username string
+
+	// Password is the password for authentication (optional).
+	Password string
+
+	// CommitMessage is the message for the commit.
 	CommitMessage string
-	GitPushWait   []interface{}
+
+	// GitPushWait is the wait time for the git push operation.
+	GitPushWait []interface{}
 }
 
 // GitCommitAndPush will commit the files for a repo and push the changes to the origin.

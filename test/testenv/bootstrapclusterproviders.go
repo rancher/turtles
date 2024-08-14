@@ -26,9 +26,12 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
+// CustomClusterProvider is a function type that represents a custom cluster provider.
+// It takes in a context, an E2EConfig, a cluster name, and a Kubernetes version as parameters.
+// It returns a bootstrap.ClusterProvider.
 type CustomClusterProvider func(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider
 
-// EKSBootsrapCluster creates a new EKS bootstrap cluster and returns a ClusterProvider
+// EKSBootsrapCluster is a function that creates a new EKS bootstrap cluster.
 func EKSBootsrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider {
 	By("Creating a new EKS bootstrap cluster")
 

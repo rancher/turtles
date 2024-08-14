@@ -30,12 +30,20 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
+// CleanupTestClusterInput represents the input parameters for cleaning up a test cluster.
 type CleanupTestClusterInput struct {
+	// SetupTestClusterResult contains the result of setting up the test cluster.
 	SetupTestClusterResult
-	SkipCleanup    bool
+
+	// SkipCleanup indicates whether to skip the cleanup process.
+	SkipCleanup bool
+
+	// ArtifactFolder specifies the folder where artifacts are stored.
 	ArtifactFolder string
 }
 
+// CleanupTestCluster is a function that cleans up the test cluster.
+// It expects the required input parameters to be non-nil.
 func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CleanupTestCluster")
 	Expect(input.SetupTestClusterResult).ToNot(BeNil(), "SetupTestClusterResult is required for CleanupTestCluster")
@@ -69,6 +77,8 @@ var secrets = []string{
 	"AZURE_TENANT_ID",
 }
 
+// CollectArtifacts collects artifacts using the provided kubeconfig path, name, and additional arguments.
+// It returns an error if the kubeconfig path is empty or if there is an error running the kubectl command.
 func CollectArtifacts(ctx context.Context, kubeconfigPath, name string, args ...string) error {
 	if kubeconfigPath == "" {
 		return fmt.Errorf("Unable to collect artifacts: kubeconfig path is empty")

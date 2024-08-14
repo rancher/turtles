@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/gomega"
 
@@ -114,4 +115,16 @@ func CreateClusterctlLocalRepository(ctx context.Context, config *clusterctl.E2E
 	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
 	return clusterctlConfig
+}
+
+func ValidateE2EConfig(config *clusterctl.E2EConfig) {
+	Expect(os.MkdirAll(config.GetVariable(ArtifactsFolderVar), 0o755)).To(Succeed(), "Invalid test suite argument. Can't create artifacts folder %q", config.GetVariable(ArtifactsFolderVar))
+	Expect(config.GetVariable(HelmBinaryPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. HELM_BINARY_PATH should be an existing file.")
+	Expect(config.GetVariable(TurtlesPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. TURTLES_PATH should be an existing file.")
+
+	_, err := strconv.ParseBool(config.GetVariable(UseExistingClusterVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse USE_EXISTING_CLUSTER %q", config.GetVariable(UseExistingClusterVar))
+
+	_, err = strconv.ParseBool(config.GetVariable(SkipResourceCleanupVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_RESOURCE_CLEANUP %q", config.GetVariable(SkipResourceCleanupVar))
 }

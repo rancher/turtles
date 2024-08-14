@@ -27,22 +27,32 @@ intervals:
   default/wait-turtles-uninstall: ["10m", "30s"]
 
 variables:
-  MANAGEMENT_CLUSTER_INFRASTRUCTURE: "isolated-kind" # supported options are eks, isolated-kind, kind
-  RANCHER_VERSION: "v2.8.1"
+  MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # supported options are eks, isolated-kind, kind
   RANCHER_ALPHA_VERSION: "v2.9.1-alpha1"
+  CLUSTERCTL_BINARY_PATH: ""
+  USE_EXISTING_CLUSTER: "false"
+  SKIP_RESOURCE_CLEANUP: "false"
+  ARTIFACTS_FOLDER: "_artifacts"
+  HELM_BINARY_PATH: "helm"
+  HELM_EXTRA_VALUES_FOLDER: "/tmp"
   KUBERNETES_VERSION: "v1.28.6"
   KUBERNETES_MANAGEMENT_VERSION: "v1.27.0"
+  RKE2_VERSION: "v1.28.1+rke2r1"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   RANCHER_HOSTNAME: "localhost"
   RANCHER_FEATURES: ""
   RANCHER_PATH: "rancher-latest/rancher"
   RANCHER_ALPHA_PATH: "rancher-alpha/rancher"
+  RANCHER_ALPHA_URL: "https://releases.rancher.com/server-charts/alpha"
+  RANCHER_VERSION: "v2.8.1"
+  TURTLES_VERSION: "v0.0.1"
+  TURTLES_PATH: "turtles/rancher-turtles"
+  TURTLES_REPO_NAME: "turtles"
+  TURTLES_URL: https://rancher.github.io/turtles
   CPI_IMAGE_K8S_VERSION: "v1.27.0"
-  RKE2_VERSION: "v1.28.1+rke2r1"
   RANCHER_REPO_NAME: "rancher-latest"
   RANCHER_ALPHA_REPO_NAME: "rancher-alpha"
   RANCHER_URL: "https://releases.rancher.com/server-charts/latest"
-  RANCHER_ALPHA_URL: "https://releases.rancher.com/server-charts/alpha"
   CERT_MANAGER_URL: "https://charts.jetstack.io"
   CERT_MANAGER_REPO_NAME: "jetstack"
   CERT_MANAGER_PATH: "jetstack/cert-manager"

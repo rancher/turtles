@@ -28,21 +28,32 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
+// CreateECRCredsInput represents the input parameters for creating ECR credentials.
 type CreateECRCredsInput struct {
+	// BootstrapClusterProxy is the cluster proxy used for bootstrapping.
 	BootstrapClusterProxy framework.ClusterProxy
-	Name                  string
-	Account               string
-	Region                string
-	Namespace             string
+
+	// Name is the name of the ECR credentials.
+	Name string
+
+	// Account is the AWS account associated with the ECR credentials.
+	Account string
+
+	// Region is the AWS region where the ECR credentials are created.
+	Region string
+
+	// Namespace is the Kubernetes namespace where the ECR credentials are stored.
+	Namespace string
 }
 
+// CreateECRCreds is a function that creates ECR credentials for a given input. It expects the required input parameters to be non-nil.
 func CreateECRCreds(ctx context.Context, input CreateECRCredsInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CreateECRCreds")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CreateECRCreds")
-	Expect(input.Name).ToNot(BeEmpty(), "Name is required for CreatECRCreds")
-	Expect(input.Namespace).ToNot(BeEmpty(), "Namespace is required for CreatECRCreds")
-	Expect(input.Account).ToNot(BeEmpty(), "Account is required for CreatECRCreds")
-	Expect(input.Region).ToNot(BeEmpty(), "Region is required for CreatECRCreds")
+	Expect(input.Name).ToNot(BeEmpty(), "Name is required for CreateECRCreds")
+	Expect(input.Namespace).ToNot(BeEmpty(), "Namespace is required for CreateECRCreds")
+	Expect(input.Account).ToNot(BeEmpty(), "Account is required for CreateECRCreds")
+	Expect(input.Region).ToNot(BeEmpty(), "Region is required for CreateECRCreds")
 
 	By("Getting password for ECR")
 	cmdPwdRes := &turtlesframework.RunCommandResult{}

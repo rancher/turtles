@@ -30,16 +30,34 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
-// ChartMuseumInput is the input to DeployChartMuseum.
+// ChartMuseumInput represents the input parameters for interacting with ChartMuseum.
 type ChartMuseumInput struct {
-	HelmBinaryPath       string
-	ChartsPath           string
+	// HelmBinaryPath is the path to the Helm binary.
+	HelmBinaryPath string
+
+	// ChartsPath is the path to the charts.
+	ChartsPath string
+
+	// ChartVersion is the version of the chart.
+	ChartVersion string
+
+	// ChartMuseumManifests are the ChartMuseum manifests.
 	ChartMuseumManifests []byte
-	DeploymentName       string
-	ServiceName          string
-	PortName             string
-	Proxy                framework.ClusterProxy
-	WaitInterval         []interface{}
+
+	// DeploymentName is the name of the deployment.
+	DeploymentName string
+
+	// ServiceName is the name of the service.
+	ServiceName string
+
+	// PortName is the name of the port.
+	PortName string
+
+	// Proxy is the cluster proxy.
+	Proxy framework.ClusterProxy
+
+	// WaitInterval is the wait interval.
+	WaitInterval []interface{}
 }
 
 // DeployChartMuseum will create a new repo in the Gitea server.
@@ -101,7 +119,7 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	exec.Command(
 		input.HelmBinaryPath,
 		"cm-push", input.ChartsPath,
-		"rancher-turtles-local", "-a", "v0.0.1",
+		"rancher-turtles-local", "-a", input.ChartVersion,
 		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
 	).CombinedOutput()
 

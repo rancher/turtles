@@ -32,14 +32,28 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
+// CAPIOperatorDeployProviderInput represents the input parameters for deploying a CAPI operator provider.
 type CAPIOperatorDeployProviderInput struct {
-	E2EConfig                    *clusterctl.E2EConfig
-	BootstrapClusterProxy        framework.ClusterProxy
-	CAPIProvidersSecretsYAML     [][]byte
-	CAPIProvidersYAML            []byte
-	TemplateData                 map[string]string
+	// E2EConfig is the configuration for end-to-end testing.
+	E2EConfig *clusterctl.E2EConfig
+
+	// BootstrapClusterProxy is the proxy for the bootstrap cluster.
+	BootstrapClusterProxy framework.ClusterProxy
+
+	// CAPIProvidersSecretsYAML is the YAML representation of the secrets for the CAPI providers.
+	CAPIProvidersSecretsYAML [][]byte
+
+	// CAPIProvidersYAML is the YAML representation of the CAPI providers.
+	CAPIProvidersYAML []byte
+
+	// TemplateData is the data used for templating.
+	TemplateData map[string]string
+
+	// WaitDeploymentsReadyInterval is the interval for waiting for deployments to be ready.
 	WaitDeploymentsReadyInterval []interface{}
-	WaitForDeployments           []NamespaceName
+
+	// WaitForDeployments is the list of deployments to wait for.
+	WaitForDeployments []NamespaceName
 }
 
 type NamespaceName struct {
@@ -47,6 +61,10 @@ type NamespaceName struct {
 	Namespace string
 }
 
+// CAPIOperatorDeployProvider deploys the CAPI operator providers.
+// It expects the required input parameters to be non-nil.
+// It iterates over the CAPIProvidersSecretsYAML and applies them. Then, it applies the CAPI operator providers.
+// If there are no deployments to wait for, the function returns. Otherwise, it waits for the provider deployments to be ready.
 func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployProviderInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")

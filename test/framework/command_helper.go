@@ -25,19 +25,31 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// RunCommandInput is the input to RunCommand.
+// RunCommandInput represents the input parameters for running a command.
 type RunCommandInput struct {
-	Command              string
-	Args                 []string
+	// Command is the command to be executed.
+	Command string
+
+	// Args are the arguments to be passed to the command.
+	Args []string
+
+	// EnvironmentVariables are the environment variables to be set for the command.
 	EnvironmentVariables map[string]string
 }
 
-// RunCommandResult is the result of RunCommand.
+// RunCommandResult represents the result of running a command.
 type RunCommandResult struct {
+	// ExitCode is the exit code of the command.
 	ExitCode int
-	Stdout   []byte
-	Stderr   []byte
-	Error    error
+
+	// Stdout is the standard output of the command.
+	Stdout []byte
+
+	// Stderr is the standard error of the command.
+	Stderr []byte
+
+	// Error is the error that occurred while running the command.
+	Error error
 }
 
 // RunCommand will run a command with the given args and environment variables.

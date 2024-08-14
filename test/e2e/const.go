@@ -98,16 +98,16 @@ const (
 	NginxIngressDeployment  = "ingress-nginx-controller"
 )
 
-type ManagementClusterInfrastuctureType string
+type ManagementClusterEnvironmentType string
 
 const (
-	ManagementClusterInfrastuctureEKS          ManagementClusterInfrastuctureType = "eks"
-	ManagementClusterInfrastuctureIsolatedKind ManagementClusterInfrastuctureType = "isolated-kind"
-	ManagementClusterInfrastuctureKind         ManagementClusterInfrastuctureType = "kind"
+	ManagementClusterEnvironmentEKS          ManagementClusterEnvironmentType = "eks"
+	ManagementClusterEnvironmentIsolatedKind ManagementClusterEnvironmentType = "isolated-kind"
+	ManagementClusterEnvironmentKind         ManagementClusterEnvironmentType = "kind"
 )
 
 const (
-	ManagementClusterInfrastucture = "MANAGEMENT_CLUSTER_INFRASTRUCTURE"
+	ManagementClusterEnvironmentVar = "MANAGEMENT_CLUSTER_ENVIRONMENT"
 
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
@@ -140,6 +140,17 @@ const (
 	GiteaChartVersionVar = "GITEA_CHART_VERSION"
 	GiteaUserNameVar     = "GITEA_USER_NAME"
 	GiteaUserPasswordVar = "GITEA_USER_PWD"
+
+	ArtifactsFolderVar       = "ARTIFACTS_FOLDER"
+	UseExistingClusterVar    = "USE_EXISTING_CLUSTER"
+	HelmBinaryPathVar        = "HELM_BINARY_PATH"
+	HelmExtraValuesFolderVar = "HELM_EXTRA_VALUES_FOLDER"
+	TurtlesVersionVar        = "TURTLES_VERSION"
+	TurtlesPathVar           = "TURTLES_PATH"
+	TurtlesUrlVar            = "TURTLES_URL"
+	TurtlesRepoNameVar       = "TURTLES_REPO_NAME"
+	SkipResourceCleanupVar   = "SKIP_RESOURCE_CLEANUP"
+	ClusterctlBinaryPathVar  = "CLUSTERCTL_BINARY_PATH"
 
 	RKE2VersionVar = "RKE2_VERSION"
 

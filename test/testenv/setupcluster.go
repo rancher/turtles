@@ -36,15 +36,30 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
+// SetupTestClusterInput represents the input parameters for setting up a test cluster.
 type SetupTestClusterInput struct {
-	UseExistingCluster   bool
-	E2EConfig            *clusterctl.E2EConfig
+	// UseExistingCluster specifies whether to use an existing cluster or create a new one.
+	UseExistingCluster bool
+
+	// E2EConfig is the configuration for end-to-end testing.
+	E2EConfig *clusterctl.E2EConfig
+
+	// ClusterctlConfigPath is the path to the clusterctl configuration file.
 	ClusterctlConfigPath string
-	Scheme               *runtime.Scheme
-	ArtifactFolder       string
-	// Hostname             string
-	KubernetesVersion     string
-	HelmBinaryPath        string
+
+	// Scheme is the runtime scheme.
+	Scheme *runtime.Scheme
+
+	// ArtifactFolder is the folder where artifacts are stored.
+	ArtifactFolder string
+
+	// KubernetesVersion is the version of Kubernetes to use.
+	KubernetesVersion string
+
+	// HelmBinaryPath is the path to the Helm binary.
+	HelmBinaryPath string
+
+	// CustomClusterProvider is a custom cluster provider.
 	CustomClusterProvider CustomClusterProvider
 }
 
@@ -63,6 +78,8 @@ type SetupTestClusterResult struct {
 	IsolatedHostName string
 }
 
+// SetupTestCluster sets up a test cluster for running tests.
+// It expects the required input parameters to be non-nil.
 func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTestClusterResult {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for setupTestCluster")
 	Expect(input.E2EConfig).ToNot(BeNil(), "E2EConfig is required for setupTestCluster")
@@ -120,7 +137,7 @@ func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *run
 	return clusterProvider, proxy
 }
 
-// configureIsolatedEnvironment gets the internal by setting it to the IP of the first and only node in the boostrap cluster. Labels the node with
+// getInternalClusterHostname gets the internal by setting it to the IP of the first and only node in the boostrap cluster. Labels the node with
 // "ingress-ready" so that the nginx ingress controller can pick it up, required by kind. See: https://kind.sigs.k8s.io/docs/user/ingress/#create-cluster
 // This hostname can be used in an environment where the cluster is isolated from the outside world and a Rancher hostname is required.
 func getInternalClusterHostname(ctx context.Context, clusterProxy framework.ClusterProxy) string {
@@ -146,22 +163,35 @@ func createClusterName(baseName string) string {
 	return fmt.Sprintf("%s-%s", baseName, util.RandomString(6))
 }
 
-// PreManagementClusterSetupResult is the output of the preManagementClusterSetupHook.
+// PreManagementClusterSetupResult represents the result of pre-management cluster setup.
 type PreManagementClusterSetupResult struct {
-	IngressType           IngressType
-	DockerUsername        string
-	DockerPassword        string
+	// IngressType specifies the type of ingress for the cluster.
+	IngressType IngressType
+
+	// DockerUsername is the username for accessing the Docker registry.
+	DockerUsername string
+
+	// DockerPassword is the password for accessing the Docker registry.
+	DockerPassword string
+
+	// CustomClusterProvider represents the custom cluster provider for the cluster.
 	CustomClusterProvider CustomClusterProvider
 }
 
-// PreManagementClusterSetupHook is a hook that can be used to perform actions before the management cluster is setup.
+// PreManagementClusterSetupHook is a function that performs pre-setup tasks for the management cluster.
+// It expects the required input parameters to be non-nil.
+// It checks the environment type and sets the Docker username, Docker password, custom cluster provider, and ingress type accordingly.
+// If the environment type is e2e.ManagementClusterEnvironmentEKS, it expects the GITHUB_USERNAME and GITHUB_TOKEN environment variables to be set.
+// If the environment type is e2e.ManagementClusterEnvironmentIsolatedKind, it sets the ingress type to CustomIngress.
+// If the environment type is e2e.ManagementClusterEnvironmentKind, it sets the ingress type to NgrokIngress.
+// If the environment type is not recognized, it fails with an error message indicating the invalid infrastructure type.
 func PreManagementClusterSetupHook(e2eConfig *clusterctl.E2EConfig) PreManagementClusterSetupResult {
 	output := PreManagementClusterSetupResult{}
 
-	infrastructureType := e2e.ManagementClusterInfrastuctureType(e2eConfig.GetVariable(e2e.ManagementClusterInfrastucture))
+	infrastructureType := e2e.ManagementClusterEnvironmentType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
 
 	switch infrastructureType {
-	case e2e.ManagementClusterInfrastuctureEKS:
+	case e2e.ManagementClusterEnvironmentEKS:
 		output.DockerUsername = os.Getenv("GITHUB_USERNAME")
 		Expect(output.DockerUsername).NotTo(BeEmpty(), "Github username is required")
 		output.DockerPassword = os.Getenv("GITHUB_TOKEN")
@@ -169,9 +199,9 @@ func PreManagementClusterSetupHook(e2eConfig *clusterctl.E2EConfig) PreManagemen
 		output.CustomClusterProvider = EKSBootsrapCluster
 		Expect(output.CustomClusterProvider).NotTo(BeNil(), "EKS custom cluster provider is required")
 		output.IngressType = EKSNginxIngress
-	case e2e.ManagementClusterInfrastuctureIsolatedKind:
+	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		output.IngressType = CustomIngress
-	case e2e.ManagementClusterInfrastuctureKind:
+	case e2e.ManagementClusterEnvironmentKind:
 		output.IngressType = NgrokIngress
 	default:
 		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))

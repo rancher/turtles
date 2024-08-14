@@ -26,12 +26,21 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// ClusterctlGenerateFromTemplateInput is the input to ClusterctlGenerateFromTemplate.
+// ClusterctlGenerateFromTemplateInput represents the input parameters for generating from a template.
 type ClusterctlGenerateFromTemplateInput struct {
-	ClusterName          string
-	TemplatePath         string
-	OutputFilePath       string
+	// ClusterName is the name of the cluster.
+	ClusterName string
+
+	// TemplatePath is the path to the template.
+	TemplatePath string
+
+	// OutputFilePath is the path to the output file.
+	OutputFilePath string
+
+	// ClusterCtlBinaryPath is the path to the ClusterCtl binary.
 	ClusterCtlBinaryPath string
+
+	// EnvironmentVariables are the environment variables to be set.
 	EnvironmentVariables map[string]string
 }
 

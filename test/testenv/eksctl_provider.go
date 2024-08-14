@@ -15,6 +15,8 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 )
 
+// NewEKSClusterProvider creates a new instance of EKSClusterProvider.
+// It expects the required input parameters to be non-nil.
 func NewEKSClusterProvider(name, version, region string, numWorkers int) bootstrap.ClusterProvider {
 	Expect(name).ToNot(BeEmpty(), "name is required for NewEKSClusterProvider")
 	Expect(version).ToNot(BeEmpty(), "version is required for NewEKSClusterProvider")
@@ -29,15 +31,25 @@ func NewEKSClusterProvider(name, version, region string, numWorkers int) bootstr
 	}
 }
 
+// EKSClusterProvider represents a provider for managing EKS clusters.
+// EKSClusterProvider represents a provider for managing EKS clusters.
 type EKSClusterProvider struct {
-	name           string
-	version        string
-	region         string
-	numWorkers     int
+	// name of the EKS cluster.
+	name string
+	// version of the EKS cluster.
+	version string
+	// region where the EKS cluster is located.
+	region string
+	// number of worker nodes in the EKS cluster.
+	numWorkers int
+	// path to the kubeconfig file for the EKS cluster.
 	kubeconfigPath string
 }
 
-// Create a EKS cluster.
+// Create creates an EKS cluster using eksctl.
+// It creates a temporary file for kubeconfig and writes the EKS kubeconfig to it.
+// The cluster is created with the specified name, version, number of worker nodes, region, and tags.
+// The kubeconfig path is set to the path of the temporary file.
 func (k *EKSClusterProvider) Create(ctx context.Context) {
 	tempFile, err := os.CreateTemp("", "kubeconfig")
 	Expect(err).NotTo(HaveOccurred(), "Failed to create temp file for kubeconfig")

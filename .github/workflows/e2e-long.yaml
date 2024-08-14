@@ -15,7 +15,7 @@ jobs:
       test_name: Import via GitOps
       run_azure_janitor: false
       artifact_name: artifacts_import_gitops
-      management_cluster_infrastructure: eks
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_import_gitops_v3:
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -24,7 +24,7 @@ jobs:
       test_name: Import via GitOps [v3]
       run_azure_janitor: false
       artifact_name: artifacts_import_gitops_v3
-      management_cluster_infrastructure: eks
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_v2prov:
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -33,7 +33,7 @@ jobs:
       test_name: v2 provisioning
       run_azure_janitor: true
       artifact_name: artifacts_v2prov
-      management_cluster_infrastructure: eks
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_update_labels:
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -42,7 +42,7 @@ jobs:
       test_name: Update labels
       run_azure_janitor: true
       artifact_name: artifacts_update_labels
-      management_cluster_infrastructure: eks
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_embedded_capi_disabled:
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -51,7 +51,7 @@ jobs:
       test_name: Embedded CAPI disabled
       run_azure_janitor: false
       artifact_name: artifacts_embedded_capi
-      management_cluster_infrastructure: eks
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_embedded_capi_disabled_v3:
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -60,5 +60,5 @@ jobs:
       test_name: Embedded CAPI disabled [v3]
       run_azure_janitor: false
       artifact_name: artifacts_embedded_capi_v3
-      management_cluster_infrastructure: eks
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
