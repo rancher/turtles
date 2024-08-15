@@ -15,7 +15,7 @@ rancherTurtles:
       cleanup: true
       kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
     rancher-kubeconfigs:
-      label: true
+      label: false
     managementv3-cluster:
       enabled: true
     managementv3-cluster-migration:
