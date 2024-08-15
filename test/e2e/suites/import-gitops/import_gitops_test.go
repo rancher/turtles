@@ -121,34 +121,6 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.DontRunLabel), func() {
-	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
-		SetContext(ctx)
-	})
-
-	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
-		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
-			ArtifactFolder:            artifactsFolder,
-			ClusterTemplate:           e2e.CAPIAzureAKSMMP,
-			ClusterName:               "highlander-e2e-cluster4",
-			ControlPlaneMachineCount:  ptr.To[int](1),
-			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   giteaResult.GitAddress,
-			GitAuthSecretName:         e2e.AuthSecretName,
-			SkipCleanup:               false,
-			SkipDeletionTest:          false,
-			LabelNamespace:            true,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
-			DeleteClusterWaitName:     "wait-aks-delete",
-		}
-	})
-})
-
 var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
