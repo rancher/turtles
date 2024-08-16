@@ -985,7 +985,7 @@ data:
             - --v=2
             - --cloud-provider=vsphere
             - --cloud-config=/etc/cloud/vsphere.conf
-            image: gcr.io/cloud-provider-vsphere/cpi/release/manager:${CPI_IMAGE_K8S_VERSION}
+            image: gcr.io/cloud-provider-vsphere/cpi/release/manager:${CPI_IMAGE_VERSION}
             name: vsphere-cloud-controller-manager
             resources:
               requests:

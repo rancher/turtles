@@ -59,7 +59,7 @@ jobs:
         uses: helm/kind-action@v1.9.0
         with:
           cluster_name: kind
-          node_image: kindest/node:v1.30.0
+          node_image: kindest/node:v1.30.3
 
       - name: Add local docker image
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
