@@ -69,6 +69,10 @@ jobs:
           sudo mv ./aws-iam-authenticator /usr/local/bin
 
           aws-iam-authenticator version
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
       - name: Checkout
         uses: actions/checkout@v4.1.3
         with:
