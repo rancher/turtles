@@ -15,3 +15,9 @@ kind: Setting
 metadata:
   name: eula-agreed
 value: "2023-08-16T20:39:11.062Z"
+---
+apiVersion: management.cattle.io/v3
+kind: Setting
+metadata:
+  name: agent-tls-mode
+value: "system-store"
