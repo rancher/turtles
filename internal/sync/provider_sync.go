@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -89,10 +90,10 @@ func (ProviderSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object
 // Direction of updates:
 // Spec -> down
 // up <- Status.
-func (s *ProviderSync) Sync(_ context.Context) error {
+func (s *ProviderSync) Sync(ctx context.Context) error {
 	s.SyncObjects()
 
-	return nil
+	return s.updateLatestVersion(ctx)
 }
 
 // SyncObjects updates the Source CAPIProvider object and the destination provider object states.
@@ -148,4 +149,34 @@ func (s *ProviderSync) rolloutInfrastructure() {
 	s.Destination.SetAnnotations(annotations)
 
 	conditions.MarkTrue(s.Source, turtlesv1.LastAppliedConfigurationTime)
+}
+
+func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
+	// Skip for user specified versions
+	if s.Source.Spec.Version != "" {
+		return nil
+	}
+
+	now := time.Now().UTC()
+	lastCheck := conditions.Get(s.Source, turtlesv1.CheckLatestVersionTime)
+
+	if lastCheck != nil && lastCheck.Status == corev1.ConditionTrue && lastCheck.LastTransitionTime.Add(24*time.Hour).After(now) {
+		return nil
+	}
+
+	patchBase := client.MergeFrom(s.Destination)
+
+	// Unsetting .spec.version to force latest version rollout
+	spec := s.Destination.GetSpec()
+	spec.Version = ""
+	s.Destination.SetSpec(spec)
+
+	conditions.MarkTrue(s.Source, turtlesv1.CheckLatestVersionTime)
+
+	err := s.client.Patch(ctx, s.Destination, patchBase)
+	if err != nil {
+		conditions.MarkUnknown(s.Source, turtlesv1.CheckLatestVersionTime, "Requesting latest version rollout", "")
+	}
+
+	return client.IgnoreNotFound(err)
 }
