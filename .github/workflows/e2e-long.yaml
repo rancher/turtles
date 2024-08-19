@@ -22,7 +22,7 @@ jobs:
     with:
       test_suite: test/e2e/suites/import-gitops-v3
       test_name: Import via GitOps [v3]
-      run_azure_janitor: false
+      run_azure_janitor: true
       artifact_name: artifacts_import_gitops_v3
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
@@ -31,7 +31,7 @@ jobs:
     with:
       test_suite: test/e2e/suites/v2prov
       test_name: v2 provisioning
-      run_azure_janitor: true
+      run_azure_janitor: false
       artifact_name: artifacts_v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
@@ -40,7 +40,7 @@ jobs:
     with:
       test_suite: test/e2e/suites/update-labels
       test_name: Update labels
-      run_azure_janitor: true
+      run_azure_janitor: false
       artifact_name: artifacts_update_labels
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit

@@ -96,7 +96,7 @@ jobs:
           path: _artifacts
       - name: Cleanup Azure Resources
         if: ${{ inputs.run_azure_janitor && always() }}
-        uses: rancher-sandbox/azure-janitor@v0.1.1
+        uses: rancher-sandbox/azure-janitor@v0.1.2
         with:
           resource-groups: highlander-e2e*
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
