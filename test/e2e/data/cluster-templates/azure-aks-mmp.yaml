@@ -31,6 +31,7 @@ spec:
     name: cluster-identity
   location: southcentralus
   resourceGroupName: "${CLUSTER_NAME}"
+  nodeResourceGroupName: "${CLUSTER_NAME}-nodes"
   sshPublicKey: ""
   subscriptionID: "${AZURE_SUBSCRIPTION_ID}"
   version: "${KUBERNETES_VERSION}"
