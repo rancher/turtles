@@ -156,18 +156,6 @@ var _ = BeforeSuite(func() {
 	testenv.DeployRancher(ctx, rancherInput)
 
 	if shortTestOnly() {
-		rtInput := testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-			TurtlesChartPath:             "https://rancher.github.io/turtles",
-			CAPIProvidersYAML:            e2e.CapiProviders,
-			Namespace:                    framework.DefaultRancherTurtlesNamespace,
-			Version:                      "v0.6.0",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             map[string]string{},
-		}
-		testenv.DeployRancherTurtles(ctx, rtInput)
-
 		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
 			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
@@ -176,37 +164,36 @@ var _ = BeforeSuite(func() {
 			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		})
 
-		upgradeInput := testenv.UpgradeRancherTurtlesInput{
+		rtInput := testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			TurtlesChartPath:             e2eConfig.GetVariable(e2e.TurtlesPathVar),
+			CAPIProvidersYAML:            e2e.CapiProviders,
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
 			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
 			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             rtInput.AdditionalValues,
-			PostUpgradeSteps:             []func(){},
+			AdditionalValues:             map[string]string{},
 		}
-
-		testenv.PreRancherTurtlesInstallHook(&rtInput, e2eConfig)
 
 		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
 		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
 
-		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
-			By("Waiting for CAAPF deployment to be available")
-			capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-				Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-					Name:      "caapf-controller-manager",
-					Namespace: e2e.RancherTurtlesNamespace,
-				}},
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		testenv.PreRancherTurtlesInstallHook(&rtInput, e2eConfig)
 
-			By("Setting the CAAPF config to use hostNetwork")
-			Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
-		})
+		testenv.DeployRancherTurtles(ctx, rtInput)
 
-		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
+		By("Waiting for CAAPF deployment to be available")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "caapf-controller-manager",
+				Namespace: e2e.RancherTurtlesNamespace,
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+		By("Setting the CAAPF config to use hostNetwork")
+		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 	} else {
 		rtInput := testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
