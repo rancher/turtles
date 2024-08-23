@@ -1,0 +1,50 @@
+name: Request for CAPI Provider Certification
+description: Request that a CAPI provider is added to the list of certified providers.
+body:
+  - type: textarea
+    id: provider
+    attributes:
+      label: What is the provider you would like to be added?
+      placeholder: "Specify the name and the type of provider."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repository
+    attributes:
+      label: What is the repository URL?
+      placeholder: "Link to GitHub repository where the provider's source code is hosted."
+    validations:
+      required: true
+
+  - type: textarea
+    id: check_successful
+    attributes:
+      label: Did you follow the certification process?
+      placeholder: "You need to follow the certification process before requesting a provider to be added to the list. You can refer to the Turtles documentation [here](https://turtles.docs.rancher.com/tasks/provider-certification/intro)."
+    validations:
+      required: true     
+
+  - type: textarea
+    id: certification_info
+    attributes:
+      label: Confirm test suite integration for the provider.
+      placeholder: "You can share the CI status badge and the integration source code."
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why do you think this provider should be added?
+      placeholder: "All providers in the certified list are actively validated which means we have to keep it limited to the most relevant projects."
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else you would like to add?
+      placeholder: "Miscellaneous information."
+    validations:
+      required: false
