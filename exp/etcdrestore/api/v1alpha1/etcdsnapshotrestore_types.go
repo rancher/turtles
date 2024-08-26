@@ -22,12 +22,12 @@ import (
 
 // EtcdSnapshotRestoreSpec defines the desired state of EtcdSnapshotRestore.
 type EtcdSnapshotRestoreSpec struct {
-	Foo string `json:"foo"`
+	Foo string `json:"foo,omitempty""`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore.
 type EtcdSnapshotRestoreStatus struct {
-	Bar string `json:"bar"`
+	Bar string `json:"bar,omitempty""`
 }
 
 // EtcdSnapshotRestore is the schema for the EtcdSnapshotRestore API.

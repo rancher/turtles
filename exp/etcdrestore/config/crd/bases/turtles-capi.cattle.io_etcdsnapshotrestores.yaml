@@ -42,16 +42,12 @@ spec:
             properties:
               foo:
                 type: string
-            required:
-            - foo
             type: object
           status:
             description: EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore.
             properties:
               bar:
                 type: string
-            required:
-            - bar
             type: object
         type: object
     served: true

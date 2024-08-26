@@ -1,20 +1,14 @@
 # Adds namespace to all resources.
 namespace: rancher-turtles-system
 
-namePrefix: rancher-turtles-
+namePrefix: rancher-turtles-etcdbackuprestore
 
 bases:
 - ../crd
 - ../rbac
 - ../webhook
-
-# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-# crd/kustomization.yaml
-#- ../webhook
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-#- ../certmanager
-# [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-#- ../prometheus
+- ../manager
+- ../certmanager
 
 # Protect the /metrics endpoint by putting it behind auth.
 # If you want your controller-manager to expose the /metrics
@@ -23,6 +17,8 @@ patchesStrategicMerge:
 - manager_webhook_patch.yaml
 - webhookcainjection_patch.yaml
 - manager_role_aggregation_patch.yaml
+- manager_image_patch.yaml
+- manager_pull_policy.yaml
 
 # patchesStrategicMerge:
 # - manager_role_aggregation_patch.yaml
