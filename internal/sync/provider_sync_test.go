@@ -40,9 +40,11 @@ var _ = Describe("Provider sync", func() {
 		ns                           *corev1.Namespace
 		otherNs                      *corev1.Namespace
 		capiProvider                 *turtlesv1.CAPIProvider
+		capiProviderFollowLatest     *turtlesv1.CAPIProvider
 		capiProviderAzure            *turtlesv1.CAPIProvider
 		capiProviderDuplicate        *turtlesv1.CAPIProvider
 		infrastructure               *operatorv1.InfrastructureProvider
+		infrastructureFollowLatest   *operatorv1.InfrastructureProvider
 		infrastructureStatusOutdated operatorv1.ProviderStatus
 		infrastructureDuplicate      *operatorv1.InfrastructureProvider
 		infrastructureAzure          *operatorv1.InfrastructureProvider
@@ -73,6 +75,10 @@ var _ = Describe("Provider sync", func() {
 		capiProviderDuplicate = capiProvider.DeepCopy()
 		capiProviderDuplicate.Namespace = otherNs.Name
 
+		capiProviderFollowLatest = capiProvider.DeepCopy()
+		capiProviderFollowLatest.Name = "latest"
+		capiProviderFollowLatest.Spec.FollowLatest = true
+
 		infrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      string(capiProvider.Spec.Name),
 			Namespace: ns.Name,
@@ -85,6 +91,11 @@ var _ = Describe("Provider sync", func() {
 
 		infrastructureDuplicate = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      string(capiProvider.Spec.Name),
+			Namespace: otherNs.Name,
+		}}
+
+		infrastructureFollowLatest = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(capiProviderFollowLatest.Spec.Name),
 			Namespace: otherNs.Name,
 		}}
 
@@ -103,6 +114,7 @@ var _ = Describe("Provider sync", func() {
 			},
 		}
 
+		Expect(testEnv.Client.Create(ctx, capiProviderFollowLatest)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProviderDuplicate)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProviderAzure)).To(Succeed())
@@ -169,26 +181,25 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
+			g.Expect(capiProvider.Status.Conditions).To(HaveLen(1))
 			g.Expect(capiProvider).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 		}).Should(Succeed())
 	})
 
 	It("Should update outdated condition, maintain last applied time and empty the hash annotation", func() {
-		capiProvider.Status.ProviderStatus = infrastructureStatusOutdated
+		capiProviderFollowLatest.Status.ProviderStatus = infrastructureStatusOutdated
 
-		appliedCondition := conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)
-		lastVersionCheckCondition := conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime)
+		appliedCondition := conditions.Get(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime)
+		lastVersionCheckCondition := conditions.Get(capiProviderFollowLatest, turtlesv1.CheckLatestVersionTime)
 
-		Eventually(testEnv.Status().Update(ctx, capiProvider)).Should(Succeed())
+		Eventually(testEnv.Status().Update(ctx, capiProviderFollowLatest)).Should(Succeed())
 		Eventually(func(g Gomega) {
-			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).ToNot(BeNil())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(appliedCondition.LastTransitionTime.Second()))
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProviderFollowLatest), capiProviderFollowLatest)).To(Succeed())
+			g.Expect(conditions.Get(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime)).ToNot(BeNil())
+			g.Expect(conditions.Get(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Second()).To(Equal(appliedCondition.LastTransitionTime.Second()))
 		}).Should(Succeed())
 
-		s := sync.NewProviderSync(testEnv, capiProvider)
+		s := sync.NewProviderSync(testEnv, capiProviderFollowLatest)
 
 		dest := &operatorv1.InfrastructureProvider{}
 		Eventually(func(g Gomega) {
@@ -200,46 +211,59 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
 			g.Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
-			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).LastTransitionTime.Equal(
+			g.Expect(capiProviderFollowLatest.Status.Conditions).To(HaveLen(2))
+			g.Expect(conditions.IsTrue(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(conditions.IsTrue(capiProviderFollowLatest, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(conditions.Get(capiProviderFollowLatest, turtlesv1.CheckLatestVersionTime).LastTransitionTime.Equal(
 				&lastVersionCheckCondition.LastTransitionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
+			g.Expect(conditions.Get(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
 
-		Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
-		condition := conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)
-		lastVersionCheckCondition = conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime)
+		Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProviderFollowLatest), capiProviderFollowLatest)).To(Succeed())
+		condition := conditions.Get(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime)
+		lastVersionCheckCondition = conditions.Get(capiProviderFollowLatest, turtlesv1.CheckLatestVersionTime)
 
 		Consistently(func(g Gomega) {
 			err = nil
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
-			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProvider), capiProvider)).To(Succeed())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(Equal(condition))
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime)).To(Equal(lastVersionCheckCondition))
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(capiProviderFollowLatest), capiProviderFollowLatest)).To(Succeed())
+			g.Expect(conditions.Get(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime)).To(Equal(condition))
+			g.Expect(conditions.Get(capiProviderFollowLatest, turtlesv1.CheckLatestVersionTime)).To(Equal(lastVersionCheckCondition))
 		}, 5*time.Second).Should(Succeed())
 	})
 
 	It("Should set the last applied version check condition and empty the version field", func() {
-		s := sync.NewProviderSync(testEnv, capiProvider)
+		s := sync.NewProviderSync(testEnv, capiProviderFollowLatest)
 
-		infrastructure.Spec.Version = "v1.2.3"
+		infrastructureFollowLatest.Spec.Version = "v1.2.3"
 
-		Expect(testEnv.Create(ctx, infrastructure)).To(Succeed())
+		Expect(testEnv.Create(ctx, infrastructureFollowLatest)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			err = nil
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
+			g.Expect(conditions.IsTrue(capiProviderFollowLatest, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(conditions.IsTrue(capiProviderFollowLatest, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(capiProviderFollowLatest.Status.Conditions).To(HaveLen(2))
 		}, 5*time.Second).Should(Succeed())
+	})
+
+	It("Should not set the last applied version check, if the FollowLatest is not set", func() {
+		s := sync.NewProviderSync(testEnv, capiProvider)
+
+		Consistently(func(g Gomega) {
+			err = nil
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			s.Apply(ctx, &err)
+			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(capiProvider.Status.Conditions).To(HaveLen(1))
+		}).Should(Succeed())
 	})
 
 	It("Should individually sync every provider", func() {
@@ -261,9 +285,8 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(s.Sync(ctx)).To(Succeed())
 			s.Apply(ctx, &err)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
+			g.Expect(capiProvider.Status.Conditions).To(HaveLen(1))
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
-			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
 		}).Should(Succeed())
 
@@ -278,9 +301,8 @@ var _ = Describe("Provider sync", func() {
 
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructureDuplicate), dest)).To(Succeed())
 			g.Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
-			g.Expect(capiProviderDuplicate.Status.Conditions).To(HaveLen(2))
+			g.Expect(capiProviderDuplicate.Status.Conditions).To(HaveLen(1))
 			g.Expect(conditions.IsTrue(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
-			g.Expect(conditions.IsTrue(capiProviderDuplicate, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
 			g.Expect(conditions.Get(capiProviderDuplicate, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.Minute()).To(Equal(time.Now().UTC().Minute()))
 		}).Should(Succeed())
 

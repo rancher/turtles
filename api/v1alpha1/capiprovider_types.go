@@ -60,6 +60,12 @@ type CAPIProviderSpec struct {
 	// +kubebuilder:example={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
 
+	// FollowLatest allows to track current latest version, and update provider accordingly to keep
+	// manifests in sync with new releases. Maximum version of the released components is limited by the provider
+	// override in the clusterctl.yaml data within clusterctl-config `ConfigMap`, or the fetchConfig.url.
+	// +optional
+	FollowLatest bool `json:"followLatest,omitempty"`
+
 	// ProviderSpec is the spec of the underlying CAPI Provider resource.
 	operatorv1.ProviderSpec `json:",inline"`
 }

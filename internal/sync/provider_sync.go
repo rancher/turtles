@@ -153,7 +153,7 @@ func (s *ProviderSync) rolloutInfrastructure() {
 
 func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
 	// Skip for user specified versions
-	if s.Source.Spec.Version != "" {
+	if s.Source.Spec.Version != "" || !s.Source.Spec.FollowLatest {
 		return nil
 	}
 

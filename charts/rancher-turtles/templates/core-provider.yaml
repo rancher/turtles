@@ -21,6 +21,7 @@ metadata:
     "helm.sh/hook-weight": "2"
 spec:
   name: cluster-api
+  followLatest: true
   type: core
   version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
   additionalManifests:

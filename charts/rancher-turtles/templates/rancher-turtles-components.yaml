@@ -2769,6 +2769,12 @@ spec:
                       desired version of the release from GitHub.
                     type: string
                 type: object
+              followLatest:
+                description: |-
+                  FollowLatest allows to track current latest version, and update provider accordingly to keep
+                  manifests in sync with new releases. Maximum version of the released components is limited by the provider
+                  override in the clusterctl.yaml data within clusterctl-config `ConfigMap`, or the fetchConfig.url.
+                type: boolean
               manager:
                 description: Manager defines the properties that can be enabled on
                   the controller manager for the provider.

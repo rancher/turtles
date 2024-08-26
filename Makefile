@@ -237,6 +237,12 @@ generate-manifests-api: controller-gen ## Generate ClusterRole and CustomResourc
 			output:crd:artifacts:config=./config/crd/bases \
 			output:rbac:dir=./config/rbac \
 
+.PHONY: generate-manifests-chart
+generate-manifests-chart: controller-gen kustomize
+	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
+	$(KUSTOMIZE) build ./config/exp/etcdrestore > $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
+	./scripts/process-exp-etcdrestore-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
+
 .PHONY: generate-exp-etcdrestore-manifests-api
 generate-exp-etcdrestore-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects for experimental API.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/etcdrestore/api/..." \
@@ -521,10 +527,7 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 	$(MAKE) release-chart
 
 .PHONY: build-chart
-build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
-	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	$(KUSTOMIZE) build ./config/exp/etcdrestore > $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
-	./scripts/process-exp-etcdrestore-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
+build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) generate-manifests-chart ## Builds the chart to publish with a release
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(CONTROLLER_IMAGE_VERSION)"'@' $(CHART_RELEASE_DIR)/values.yaml
