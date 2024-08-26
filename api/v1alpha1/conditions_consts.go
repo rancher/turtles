@@ -28,6 +28,9 @@ const (
 	// RancherCredentialSourceMissing occures when a source credential secret is missing.
 	RancherCredentialSourceMissing = "RancherCredentialSourceMissing"
 
-	// LastAppliedConfigurationTime is set as a timestamp infor of the last configuration update byt the CAPI Operator resource.
+	// LastAppliedConfigurationTime is set as a timestamp info of the last configuration update byt the CAPI Operator resource.
 	LastAppliedConfigurationTime = "LastAppliedConfigurationTime"
+
+	// CheckLatestVersionTime is set as a timestamp info of the last timestamp of the latest version being up-to-date for the CAPIProvider.
+	CheckLatestVersionTime = "CheckLatestVersionTime"
 )
