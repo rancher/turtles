@@ -17,17 +17,45 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+)
+
+// ETCDSnapshotPhase is a string representation of the phase of the etcd snapshot
+type ETCDSnapshotRestorePhase string
+
+const (
+	// ETCDSnapshotRestorePhasePending is the phase when the snapshot was submitted but was not registered
+	ETCDSnapshotRestorePhasePending ETCDSnapshotRestorePhase = "Pending"
+	// ETCDSnapshotRestorePhaseStarted is the phase when the snapshot creation has started
+	ETCDSnapshotRestorePhaseStarted ETCDSnapshotRestorePhase = "Started"
+	// ETCDSnapshotRestorePhaseShutdown is the phase when the etcd cluster is being shutdown
+	ETCDSnapshotRestorePhaseShutdown ETCDSnapshotRestorePhase = "Shutdown"
+	// ETCDSnapshotRestorePhaseRunning is the phase when the snapshot is being restored
+	ETCDSnapshotRestorePhaseRunning ETCDSnapshotRestorePhase = "Running"
+	// ETCDSnapshotRestorePhaseAgentRestart is the phase when the cluster is being restarted
+	ETCDSnapshotRestorePhaseAgentRestart ETCDSnapshotRestorePhase = "Restart"
+	// ETCDSnapshotRestorePhaseJoinAgents is the phase when the snapshot creation has finished
+	ETCDSnapshotRestorePhaseJoinAgents ETCDSnapshotRestorePhase = "Joining"
+	// ETCDSnapshotRestorePhaseFailed is the phase when the snapshot creation has failed
+	ETCDSnapshotRestorePhaseFailed ETCDSnapshotRestorePhase = "Failed"
+	// ETCDSnapshotRestorePhaseFinished is the phase when the snapshot creation has finished
+	ETCDSnapshotRestorePhaseFinished ETCDSnapshotRestorePhase = "Done"
 )
 
 // EtcdSnapshotRestoreSpec defines the desired state of EtcdSnapshotRestore.
 type EtcdSnapshotRestoreSpec struct {
-	Foo string `json:"foo,omitempty""`
+	ClusterName             string                 `json:"clusterName"`
+	EtcdMachineSnapshotName string                 `json:"etcdMachineSnapshotName"`
+	TTLSecondsAfterFinished int                    `json:"ttlSecondsAfterFinished"`
+	ConfigRef               corev1.ObjectReference `json:"configRef"`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore.
 type EtcdSnapshotRestoreStatus struct {
-	Bar string `json:"bar,omitempty""`
+	Phase      ETCDSnapshotPhase    `json:"phase,omitempty"`
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // EtcdSnapshotRestore is the schema for the EtcdSnapshotRestore API.
