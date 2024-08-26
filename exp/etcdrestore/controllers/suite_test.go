@@ -54,7 +54,7 @@ func setup() {
 	utilruntime.Must(snapshotrestorev1.AddToScheme(scheme.Scheme))
 
 	testEnvConfig := helpers.NewTestEnvironmentConfiguration(
-		path.Join("config", "exp", "etcdrestore", "crd", "bases"),
+		path.Join("exp", "etcdrestore", "config", "crd", "bases"),
 	)
 
 	var err error

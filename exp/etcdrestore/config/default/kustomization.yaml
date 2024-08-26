@@ -1,7 +1,7 @@
 # Adds namespace to all resources.
 namespace: rancher-turtles-system
 
-namePrefix: rancher-turtles-etcdbackuprestore
+namePrefix: rancher-turtles-etcdsnapshotrestore
 
 bases:
 - ../crd
