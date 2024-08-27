@@ -40,7 +40,7 @@ git clone git@github.com:rancher/turtles.git
 ```bash
 # Create tags locally
 git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
-git tag -s  -a test/${RELEASE_TAG} -m “Testing framework ${RELEASE_TAG}”
+git tag -s  -a test/${RELEASE_TAG} -m "Testing framework ${RELEASE_TAG}"
 
 # Push tags
 git push upstream ${RELEASE_TAG}
