@@ -53,7 +53,7 @@ projects = {
     },
     "turtles-etcdsnapshotrestore": {
         "context": "exp/etcdrestore",
-        "image": "ghcr.io/rancher/turtles-etcd-backup-restore:dev",
+        "image": "ghcr.io/rancher/turtles-etcd-snapshot-restore:dev",
         "live_reload_deps": [
             "main.go",
             "go.mod",

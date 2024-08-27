@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-        - image: ghcr.io/rancher/turtles-etcd-backup-restore:dev
+        - image: ghcr.io/rancher/turtles-etcd-snapshot-restore:dev
           name: manager

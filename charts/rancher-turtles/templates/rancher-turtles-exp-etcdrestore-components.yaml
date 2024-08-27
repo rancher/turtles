@@ -408,7 +408,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
-        image: ghcr.io/rancher/turtles-etcd-backup-restore:dev
+        image: ghcr.io/rancher/turtles-etcd-snapshot-restore:dev
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
