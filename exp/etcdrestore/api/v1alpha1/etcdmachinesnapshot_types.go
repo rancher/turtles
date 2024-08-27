@@ -22,12 +22,12 @@ import (
 
 // EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot.
 type EtcdMachineSnapshotSpec struct {
-	Foo string `json:"foo"`
+	Foo string `json:"foo,omitempty""`
 }
 
 // EtcdMachineSnapshotStatus defines observed state of EtcdMachineSnapshot.
 type EtcdMachineSnapshotStatus struct {
-	Bar string `json:"bar"`
+	Bar string `json:"bar,omitempty""`
 }
 
 // EtcdMachineSnapshot is the Schema for the EtcdMachineSnapshot API.

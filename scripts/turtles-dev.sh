@@ -28,7 +28,7 @@ kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml"
 
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
-helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
@@ -49,7 +49,7 @@ helm install capi-operator capi-operator/cluster-api-operator \
 
 kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
 
-helm install rancher rancher-stable/rancher \
+helm install rancher rancher-latest/rancher \
 	--namespace cattle-system \
 	--create-namespace \
 	--set bootstrapPassword=rancheradmin \

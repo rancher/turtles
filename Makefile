@@ -242,9 +242,9 @@ generate-exp-etcdrestore-manifests-api: controller-gen ## Generate ClusterRole a
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/etcdrestore/api/..." \
 			paths=./exp/etcdrestore/controllers/... \
 			paths=./exp/etcdrestore/webhooks/... \
-			output:crd:artifacts:config=./config/exp/etcdrestore/crd/bases \
-			output:rbac:dir=./config/exp/etcdrestore/rbac \
-			output:webhook:dir=./config/exp/etcdrestore/webhook \
+			output:crd:artifacts:config=./exp/etcdrestore/config/crd/bases \
+			output:rbac:dir=./exp/etcdrestore/config/rbac \
+			output:webhook:dir=./exp/etcdrestore/config/webhook \
 			webhook
 
 .PHONY: generate-modules
@@ -523,7 +523,7 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 .PHONY: build-chart
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	$(KUSTOMIZE) build ./config/exp/etcdrestore > $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
+	$(KUSTOMIZE) build ./exp/etcdrestore/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	./scripts/process-exp-etcdrestore-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml

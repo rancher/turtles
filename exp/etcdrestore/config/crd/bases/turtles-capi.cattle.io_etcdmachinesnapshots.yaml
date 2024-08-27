@@ -42,16 +42,12 @@ spec:
             properties:
               foo:
                 type: string
-            required:
-            - foo
             type: object
           status:
             description: EtcdMachineSnapshotStatus defines observed state of EtcdMachineSnapshot.
             properties:
               bar:
                 type: string
-            required:
-            - bar
             type: object
         type: object
     served: true
