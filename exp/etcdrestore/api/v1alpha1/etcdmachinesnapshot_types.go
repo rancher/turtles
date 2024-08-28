@@ -18,16 +18,36 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	corev1 "k8s.io/api/core/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot.
+// ETCDSnapshotPhase is a string representation of the phase of the etcd snapshot
+type ETCDSnapshotPhase string
+
+const (
+	// ETCDSnapshotPhasePending is the phase when the snapshot was submitted but was not registered
+	ETCDSnapshotPhasePending ETCDSnapshotPhase = "Pending"
+	// ETCDSnapshotPhaseRunning is the phase when the snapshot creation has started
+	ETCDSnapshotPhaseRunning ETCDSnapshotPhase = "Running"
+	// ETCDSnapshotPhaseFailed is the phase when the snapshot creation has failed
+	ETCDSnapshotPhaseFailed ETCDSnapshotPhase = "Failed"
+	// ETCDSnapshotPhaseDone is the phase when the snapshot creation has finished
+	ETCDSnapshotPhaseDone ETCDSnapshotPhase = "Done"
+)
+
+// EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
 type EtcdMachineSnapshotSpec struct {
-	Foo string `json:"foo,omitempty""`
+	ClusterName string                 `json:"clusterName"`
+	MachineName string                 `json:"machineName"`
+	ConfigRef   corev1.ObjectReference `json:"configRef"`
 }
 
-// EtcdMachineSnapshotStatus defines observed state of EtcdMachineSnapshot.
+// EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
 type EtcdMachineSnapshotStatus struct {
-	Bar string `json:"bar,omitempty""`
+	Phase      ETCDSnapshotPhase    `json:"phase,omitempty"`
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // EtcdMachineSnapshot is the Schema for the EtcdMachineSnapshot API.
