@@ -38,6 +38,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"sigs.k8s.io/cluster-api/controllers/remote"
+
+	_ "embed"
 )
 
 const (
@@ -47,6 +49,13 @@ const (
 	secretTypeMachinePlan     = "cluster-api.cattle.io/machine-plan"
 	defaultFileOwner          = "root:root"
 )
+
+var (
+	//go:embed install.sh
+	installSh []byte
+)
+
+// +kubebuilder:webhook:path=/mutate-bootstrap-cluster-x-k8s-io-v1beta1-rke2config,mutating=true,failurePolicy=fail,sideEffects=None,groups=bootstrap.cluster.x-k8s.io,resources=rke2configs,verbs=create;update,versions=v1beta1,name=systemagentrke2config.kb.io,admissionReviewVersions=v1
 
 // RKE2ConfigWebhook defines a webhook for RKE2Config.
 type RKE2ConfigWebhook struct {
