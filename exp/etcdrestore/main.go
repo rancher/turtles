@@ -256,7 +256,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 func setupWebhooks(mgr ctrl.Manager) {
 	if err := (&expwebhooks.RKE2ConfigWebhook{
 		Client:                mgr.GetClient(),
-		InsecurrSkipTLSVerify: insecureSkipVerify,
+		InsecureSkipTLSVerify: insecureSkipVerify,
 	}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "RKE2Config")
 		os.Exit(1)

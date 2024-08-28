@@ -61,7 +61,7 @@ var (
 type RKE2ConfigWebhook struct {
 	client.Client
 	Tracker               *remote.ClusterCacheTracker
-	InsecurrSkipTLSVerify bool
+	InsecureSkipTLSVerify bool
 }
 
 var _ webhook.CustomDefaulter = &RKE2ConfigWebhook{}
@@ -345,7 +345,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		CurrentContext: "agent",
 	}
 
-	if r.InsecurrSkipTLSVerify {
+	if r.InsecureSkipTLSVerify {
 		logger.Info("InsecureSkipTLSVerify is set to true, skipping skip tls verification in kubeconfig")
 		kubeConfig.Clusters["agent"].InsecureSkipTLSVerify = true
 		kubeConfig.Clusters["agent"].CertificateAuthorityData = nil
