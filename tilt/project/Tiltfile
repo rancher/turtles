@@ -104,6 +104,7 @@ def update_manager(yaml, containerName, debug, env):
     print("update manager")
     debug_port = int(debug.get("port", 0))
     debug_continue = bool(debug.get("continue", "true"))
+    debug_insecure_skip_verify = bool(debug.get("insecure_skip_verify", "false"))
     objs = decode_yaml_stream(yaml)
     for o in objs:
         if o["kind"] == "Deployment":
@@ -136,6 +137,8 @@ def update_manager(yaml, containerName, debug, env):
                                 if arg == "--leader-elect" or arg == "--leader-elect=true":
                                     continue
                                 debugArgs.append(arg)
+                        if debug_insecure_skip_verify:
+                            debugArgs.append("--insecure-skip-verify=true")
                         c["command"] = cmd
                         print(cmd)
                         if len(debugArgs) == 0:
