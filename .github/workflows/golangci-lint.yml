@@ -16,7 +16,7 @@ jobs:
         working-directory:
           - ""
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.7
       - uses: actions/setup-go@v5
         with:
           go-version: '=1.22.0'
