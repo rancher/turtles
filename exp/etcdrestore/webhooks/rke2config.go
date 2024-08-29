@@ -43,7 +43,7 @@ import (
 )
 
 const (
-	rke2ConfigNameLabel       = "cluster-api.cattle.io/rke2config-name"
+	RKE2ConfigNameLabel       = "cluster-api.cattle.io/rke2config-name"
 	planSecretNameLabel       = "cluster-api.cattle.io/plan-secret-name"
 	serviceAccountSecretLabel = "cluster-api.cattle.io/service-account.name"
 	secretTypeMachinePlan     = "cluster-api.cattle.io/machine-plan"
@@ -189,7 +189,7 @@ func (r *RKE2ConfigWebhook) createServiceAccount(planSecretName string, rke2Conf
 			Name:      planSecretName,
 			Namespace: rke2Config.Namespace,
 			Labels: map[string]string{
-				rke2ConfigNameLabel: rke2Config.Name,
+				RKE2ConfigNameLabel: rke2Config.Name,
 				planSecretNameLabel: planSecretName,
 			},
 		},
@@ -203,7 +203,7 @@ func (r *RKE2ConfigWebhook) createSecret(planSecretName string, rke2Config *boot
 			Name:      planSecretName,
 			Namespace: rke2Config.Namespace,
 			Labels: map[string]string{
-				rke2ConfigNameLabel: rke2Config.Name,
+				RKE2ConfigNameLabel: rke2Config.Name,
 			},
 		},
 		Type: secretTypeMachinePlan,
@@ -379,6 +379,9 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      connectInfoConfigSecretName,
 			Namespace: rke2Config.Namespace,
+			Labels: map[string]string{
+				RKE2ConfigNameLabel: rke2Config.Name,
+			},
 		},
 		Data: map[string][]byte{
 			connectInfoConfigKey: connectInfoConfigJson,
@@ -428,6 +431,9 @@ func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      installScriptSecretName,
 			Namespace: rke2Config.Namespace,
+			Labels: map[string]string{
+				RKE2ConfigNameLabel: rke2Config.Name,
+			},
 		},
 		Data: map[string][]byte{
 			installScriptKey: []byte(fmt.Sprintf("%s%s%s", serverUrlBash, binaryURL, installSh)),
