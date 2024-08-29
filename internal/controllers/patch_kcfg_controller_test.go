@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/internal/test"
 )
 

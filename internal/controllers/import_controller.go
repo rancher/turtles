@@ -44,9 +44,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/feature"
-	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher/turtles/util"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	turtlesnaming "github.com/rancher/turtles/util/naming"

@@ -70,9 +70,9 @@ linters-settings:
        # Rancher Turtles
         - pkg: github.com/rancher/turtles/util/naming
           alias: turtlesnaming
-        - pkg: github.com/rancher/turtles/internal/rancher/provisioning/v1
+        - pkg: github.com/rancher/turtles/api/rancher/provisioning/v1
           alias: provisioningv1
-        - pkg: github.com/rancher/turtles/internal/rancher/management/v3
+        - pkg: github.com/rancher/turtles/api/rancher/management/v3
           alias: managementv3
         # Controller Runtime
         - pkg: sigs.k8s.io/controller-runtime
