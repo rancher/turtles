@@ -3,7 +3,10 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
     controller-gen.kubebuilder.io/version: v0.14.0
+  labels:
+    turtles-capi.cattle.io: etcd-restore
   name: etcdmachinesnapshots.turtles-capi.cattle.io
 spec:
   group: turtles-capi.cattle.io
@@ -175,7 +178,10 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
     controller-gen.kubebuilder.io/version: v0.14.0
+  labels:
+    turtles-capi.cattle.io: etcd-restore
   name: etcdsnapshotrestores.turtles-capi.cattle.io
 spec:
   group: turtles-capi.cattle.io
@@ -356,7 +362,8 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: serviceaccount
     app.kubernetes.io/part-of: rancher-turtles
-  name: rancher-turtles-etcdsnapshotrestoremanager
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-manager
   namespace: rancher-turtles-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -369,7 +376,8 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: role
     app.kubernetes.io/part-of: rancher-turtles
-  name: rancher-turtles-etcdsnapshotrestoreleader-election-role
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-leader-election-role
   namespace: rancher-turtles-system
 rules:
 - apiGroups:
@@ -411,7 +419,9 @@ aggregationRule:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: rancher-turtles-etcdsnapshotrestoreaggregated-manager-role
+  labels:
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-aggregated-manager-role
 rules: []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -420,7 +430,8 @@ metadata:
   labels:
     rancher-turtles-exp/aggregate-to-manager: "true"
     rancher-turtles/aggregate-to-manager: "true"
-  name: rancher-turtles-etcdsnapshotrestoremanager-role
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-manager-role
 rules:
 - apiGroups:
   - ""
@@ -563,15 +574,16 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: rolebinding
     app.kubernetes.io/part-of: rancher-turtles
-  name: rancher-turtles-etcdsnapshotrestoreleader-election-rolebinding
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-leader-election-rolebinding
   namespace: rancher-turtles-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: rancher-turtles-etcdsnapshotrestoreleader-election-role
+  name: rancher-turtles-etcdsnapshotrestore-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: rancher-turtles-etcdsnapshotrestoremanager
+  name: rancher-turtles-etcdsnapshotrestore-manager
   namespace: rancher-turtles-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -584,44 +596,52 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: clusterrolebinding
     app.kubernetes.io/part-of: rancher-turtles
-  name: rancher-turtles-etcdsnapshotrestoremanager-rolebinding
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: rancher-turtles-etcdsnapshotrestoreaggregated-manager-role
+  name: rancher-turtles-etcdsnapshotrestore-aggregated-manager-role
 subjects:
 - kind: ServiceAccount
-  name: rancher-turtles-etcdsnapshotrestoremanager
+  name: rancher-turtles-etcdsnapshotrestore-manager
   namespace: rancher-turtles-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rancher-turtles-etcdsnapshotrestorewebhook-service
+  labels:
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-webhook-service
   namespace: rancher-turtles-system
 spec:
   ports:
   - port: 443
     targetPort: webhook-server
+  selector:
+    turtles-capi.cattle.io: etcd-restore
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-  name: rancher-turtles-etcdsnapshotrestorecontroller-manager
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-controller-manager
   namespace: rancher-turtles-system
 spec:
   replicas: 1
   selector:
     matchLabels:
       control-plane: controller-manager
+      turtles-capi.cattle.io: etcd-restore
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
         control-plane: controller-manager
+        turtles-capi.cattle.io: etcd-restore
     spec:
       containers:
       - args:
@@ -671,7 +691,7 @@ spec:
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
           readOnly: true
-      serviceAccountName: rancher-turtles-etcdsnapshotrestoremanager
+      serviceAccountName: rancher-turtles-etcdsnapshotrestore-manager
       terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule
@@ -681,26 +701,30 @@ spec:
       volumes:
       - name: cert
         secret:
-          secretName: rancher-turtles-etcdsnapshotrestorewebhook-service-cert
+          secretName: rancher-turtles-etcdsnapshotrestore-webhook-service-cert
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: rancher-turtles-etcdsnapshotrestoreserving-cert
+  labels:
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-serving-cert
   namespace: rancher-turtles-system
 spec:
   dnsNames:
-  - rancher-turtles-etcdsnapshotrestorewebhook-service.$(SERVICE_NAMESPACE).svc
-  - rancher-turtles-etcdsnapshotrestorewebhook-service.$(SERVICE_NAMESPACE).svc.cluster.local
+  - rancher-turtles-etcdsnapshotrestore-webhook-service.rancher-turtles-system.svc
+  - rancher-turtles-etcdsnapshotrestore-webhook-service.rancher-turtles-system.svc.cluster.local
   issuerRef:
     kind: Issuer
-    name: rancher-turtles-etcdsnapshotrestoreselfsigned-issuer
-  secretName: rancher-turtles-etcdsnapshotrestorewebhook-service-cert
+    name: rancher-turtles-etcdsnapshotrestore-selfsigned-issuer
+  secretName: rancher-turtles-etcdsnapshotrestore-webhook-service-cert
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: rancher-turtles-etcdsnapshotrestoreselfsigned-issuer
+  labels:
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-selfsigned-issuer
   namespace: rancher-turtles-system
 spec:
   selfSigned: {}
@@ -709,23 +733,25 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
-  name: rancher-turtles-etcdsnapshotrestoremutating-webhook-configuration
+    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+  labels:
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-mutating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
     service:
-      name: rancher-turtles-etcdsnapshotrestorewebhook-service
+      name: rancher-turtles-etcdsnapshotrestore-webhook-service
       namespace: rancher-turtles-system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1alpha1-rke2config
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-rke2config
   failurePolicy: Fail
   name: systemagentrke2config.kb.io
   rules:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1alpha1
+    - v1beta1
     operations:
     - CREATE
     - UPDATE

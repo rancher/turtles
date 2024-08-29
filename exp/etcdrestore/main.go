@@ -27,7 +27,6 @@ import (
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	expcontrollers "github.com/rancher/turtles/exp/etcdrestore/controllers"
 	expwebhooks "github.com/rancher/turtles/exp/etcdrestore/webhooks"
-	"github.com/rancher/turtles/feature"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -219,47 +218,47 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if feature.Gates.Enabled(feature.EtcdSnapshotRestore) {
-		setupLog.Info("enabling EtcdMachineSnapshot controller")
+	setupLog.Info("enabling EtcdMachineSnapshot controller")
 
-		if err := (&expcontrollers.EtcdMachineSnapshotReconciler{
-			Client:           mgr.GetClient(),
-			Tracker:          tracker,
-			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
-			setupLog.Error(err, "unable to create EtcdMachineSnapshot controller")
-			os.Exit(1)
-		}
-
-		setupLog.Info("enabling EtcdSnapshotRestore controller")
-
-		if err := (&expcontrollers.EtcdSnapshotRestoreReconciler{
-			Client:           mgr.GetClient(),
-			Tracker:          tracker,
-			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
-			setupLog.Error(err, "unable to create EtcdSnapshotRestore controller")
-			os.Exit(1)
-		}
-
-		setupLog.Info("enabling EtcdSnapshotSync controller")
-
-		if err := (&expcontrollers.EtcdSnapshotSyncReconciler{
-			Client:           mgr.GetClient(),
-			Tracker:          tracker,
-			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
-			setupLog.Error(err, "unable to create EtcdSnapshotSync controller")
-			os.Exit(1)
-		}
+	if err := (&expcontrollers.EtcdMachineSnapshotReconciler{
+		Client:           mgr.GetClient(),
+		Tracker:          tracker,
+		WatchFilterValue: watchFilterValue,
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+		setupLog.Error(err, "unable to create EwtcdMachineSnapshot controller")
+		os.Exit(1)
 	}
+
+	setupLog.Info("enabling EtcdSnapshotRestore controller")
+
+	if err := (&expcontrollers.EtcdSnapshotRestoreReconciler{
+		Client:           mgr.GetClient(),
+		Tracker:          tracker,
+		WatchFilterValue: watchFilterValue,
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+		setupLog.Error(err, "unable to create EtcdSnapshotRestore controller")
+		os.Exit(1)
+	}
+
+	setupLog.Info("enabling EtcdSnapshotSync controller")
+
+	if err := (&expcontrollers.EtcdSnapshotSyncReconciler{
+		Client:           mgr.GetClient(),
+		Tracker:          tracker,
+		WatchFilterValue: watchFilterValue,
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+		setupLog.Error(err, "unable to create EtcdSnapshotSync controller")
+		os.Exit(1)
+	}
+
 }
 
 func setupWebhooks(mgr ctrl.Manager) {
-	if feature.Gates.Enabled(feature.EtcdSnapshotRestore) {
-		if err := (&expwebhooks.RKE2ConfigWebhook{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "RKE2Config")
-			os.Exit(1)
-		}
+	if err := (&expwebhooks.RKE2ConfigWebhook{
+		Client:                mgr.GetClient(),
+		InsecureSkipTLSVerify: insecureSkipVerify,
+	}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "RKE2Config")
+		os.Exit(1)
 	}
 }

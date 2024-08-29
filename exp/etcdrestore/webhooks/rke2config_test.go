@@ -43,6 +43,7 @@ var (
 	planSecretName          string
 	serverUrl               string
 	pem                     string
+	systemAgentVersion      string
 	token                   []byte
 )
 
@@ -59,6 +60,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 		planSecretName = "plan-secret"
 		serverUrl = "https://example.com"
 		pem = "test-pem"
+		systemAgentVersion = "v1.0.0"
 		token = []byte("test-token")
 
 		rke2Config = &bootstrapv1.RKE2Config{
@@ -204,7 +206,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 	})
 
 	It("Should add system-agent-install.sh when it's not present", func() {
-		err := r.createSystemAgentInstallScript(ctx, serverUrl, rke2Config)
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
@@ -225,7 +227,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Path: "/opt/system-agent-install.sh",
 		})
 
-		err := r.createSystemAgentInstallScript(ctx, serverUrl, rke2Config)
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(HaveLen(1))

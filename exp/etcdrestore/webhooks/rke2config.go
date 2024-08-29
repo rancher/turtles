@@ -38,6 +38,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"sigs.k8s.io/cluster-api/controllers/remote"
+
+	_ "embed"
 )
 
 const (
@@ -48,10 +50,18 @@ const (
 	defaultFileOwner          = "root:root"
 )
 
+var (
+	//go:embed install.sh
+	installSh []byte
+)
+
+// +kubebuilder:webhook:path=/mutate-bootstrap-cluster-x-k8s-io-v1beta1-rke2config,mutating=true,failurePolicy=fail,sideEffects=None,groups=bootstrap.cluster.x-k8s.io,resources=rke2configs,verbs=create;update,versions=v1beta1,name=systemagentrke2config.kb.io,admissionReviewVersions=v1
+
 // RKE2ConfigWebhook defines a webhook for RKE2Config.
 type RKE2ConfigWebhook struct {
 	client.Client
-	Tracker *remote.ClusterCacheTracker
+	Tracker               *remote.ClusterCacheTracker
+	InsecureSkipTLSVerify bool
 }
 
 var _ webhook.CustomDefaulter = &RKE2ConfigWebhook{}
@@ -111,11 +121,24 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 
 	pem := caSetting.Value
 
+	systemAgentVersionSetting := &managementv3.Setting{}
+	if err := r.Get(context.Background(), client.ObjectKey{
+		Name: "system-agent-version",
+	}, caSetting); err != nil {
+		return apierrors.NewBadRequest(fmt.Sprintf("failed to get ca setting: %s", err))
+	}
+
+	systemAgentVersion := systemAgentVersionSetting.Value
+
+	if systemAgentVersion == "" {
+		return apierrors.NewBadRequest("system agent version setting is empty")
+	}
+
 	if err := r.createConnectInfoJson(ctx, rke2Config, planSecretName, serverUrl, pem, serviceAccountToken); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create connect info json: %s", err))
 	}
 
-	if err := r.createSystemAgentInstallScript(ctx, serverUrl, rke2Config); err != nil {
+	if err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create system agent install script: %s", err))
 	}
 
@@ -273,7 +296,7 @@ func (r *RKE2ConfigWebhook) ensureServiceAccountSecretPopulated(ctx context.Cont
 
 		if len(saSecret.Data[corev1.ServiceAccountTokenKey]) == 0 {
 			err := fmt.Errorf("secret %s not yet populated", planSecretName)
-			logger.Error(err, "Secret %s not yet populated", "secret", planSecretName)
+			logger.Error(err, "Secret not yet populated", "secret", planSecretName)
 			return err
 		}
 
@@ -288,6 +311,8 @@ func (r *RKE2ConfigWebhook) ensureServiceAccountSecretPopulated(ctx context.Cont
 
 // createConnectInfoJson creates the connect-info-config.json file.
 func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Config *bootstrapv1.RKE2Config, planSecretName, serverUrl, pem string, serviceAccountToken []byte) error {
+	logger := log.FromContext(ctx)
+
 	connectInfoJsonPath := "/etc/rancher/agent/connect-info-config.json"
 
 	filePaths := make(map[string]struct{})
@@ -299,7 +324,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		return nil
 	}
 
-	kubeConfig, err := clientcmd.Write(clientcmdapi.Config{
+	kubeConfig := clientcmdapi.Config{
 		Clusters: map[string]*clientcmdapi.Cluster{
 			"agent": {
 				Server:                   serverUrl,
@@ -318,7 +343,15 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 			},
 		},
 		CurrentContext: "agent",
-	})
+	}
+
+	if r.InsecureSkipTLSVerify {
+		logger.Info("InsecureSkipTLSVerify is set to true, skipping skip tls verification in kubeconfig")
+		kubeConfig.Clusters["agent"].InsecureSkipTLSVerify = true
+		kubeConfig.Clusters["agent"].CertificateAuthorityData = nil
+	}
+
+	kubeConfigYAML, err := clientcmd.Write(kubeConfig)
 
 	if err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to write kubeconfig: %s", err))
@@ -331,7 +364,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 	}{
 		Namespace:  rke2Config.Namespace,
 		SecretName: planSecretName,
-		KubeConfig: string(kubeConfig),
+		KubeConfig: string(kubeConfigYAML),
 	}
 
 	connectInfoConfigJson, err := json.MarshalIndent(connectInfoConfig, "", " ")
@@ -346,14 +379,6 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      connectInfoConfigSecretName,
 			Namespace: rke2Config.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: rke2Config.APIVersion,
-					Kind:       rke2Config.Kind,
-					Name:       rke2Config.Name,
-					UID:        rke2Config.UID,
-				},
-			},
 		},
 		Data: map[string][]byte{
 			connectInfoConfigKey: connectInfoConfigJson,
@@ -381,7 +406,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 }
 
 // createSystemAgentInstallScript creates the system-agent-install.sh script.
-func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, serverUrl string, rke2Config *bootstrapv1.RKE2Config) error {
+func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, serverUrl, systemAgentVersion string, rke2Config *bootstrapv1.RKE2Config) error {
 	systemAgentInstallScriptPath := "/opt/system-agent-install.sh"
 
 	filePaths := make(map[string]struct{})
@@ -397,22 +422,15 @@ func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, 
 	installScriptKey := "install.sh"
 
 	serverUrlBash := fmt.Sprintf("CATTLE_SERVER=%s\n", serverUrl)
+	binaryURL := fmt.Sprintf("CATTLE_AGENT_BINARY_BASE_URL=\"%s/assets\"\n", serverUrl)
 
 	if err := r.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      installScriptSecretName,
 			Namespace: rke2Config.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: rke2Config.APIVersion,
-					Kind:       rke2Config.Kind,
-					Name:       rke2Config.Name,
-					UID:        rke2Config.UID,
-				},
-			},
 		},
 		Data: map[string][]byte{
-			installScriptKey: []byte(fmt.Sprintf("%s%s", serverUrlBash, installsh)),
+			installScriptKey: []byte(fmt.Sprintf("%s%s%s", serverUrlBash, binaryURL, installSh)),
 		},
 	},
 	); err != nil {
