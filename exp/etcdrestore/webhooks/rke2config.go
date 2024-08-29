@@ -50,6 +50,10 @@ const (
 	defaultFileOwner          = "root:root"
 )
 
+const (
+	SystemAgentAnnotation = "cluster-api.cattle.io/turtles-system-agent"
+)
+
 var (
 	//go:embed install.sh
 	installSh []byte
@@ -84,6 +88,12 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a RKE2Config but got a %T", obj))
 	}
+
+	if rke2Config.Annotations == nil {
+		rke2Config.Annotations = map[string]string{}
+	}
+
+	rke2Config.Annotations[SystemAgentAnnotation] = ""
 
 	planSecretName := strings.Join([]string{rke2Config.Name, "rke2config", "plan"}, "-")
 
