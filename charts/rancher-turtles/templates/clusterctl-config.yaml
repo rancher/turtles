@@ -31,6 +31,9 @@ data:
     - name:         "digitalocean"
       url:          "https://github.com/kubernetes-sigs/cluster-api-provider-digitalocean/releases/v1.6.0/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
+    - name:         "elemental"
+      url:          "https://github.com/rancher-sandbox/cluster-api-provider-elemental/releases/v0.6.0/infrastructure-components.yaml"
+      type:         "InfrastructureProvider"
 
     # Bootstrap providers
     - name:         "kubeadm"
