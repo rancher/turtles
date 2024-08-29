@@ -28,9 +28,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 

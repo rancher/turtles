@@ -21,7 +21,7 @@ As described in `Rancher` integration strategy [ADR](./0005-rancher-integration-
 
 ## Decision
 
-The `rancher-turtles` operator will be using `kubebuilder` [annotations](https://kubebuilder.io/reference/markers) on specified for the `Rancher` proxy types located under the `./internal/rancher` directory, to generate deep copy definitions and therefore allow specified resources to match the `Object` [interface](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/client/object.go#L45) provided by the controller-runtime.
+The `rancher-turtles` operator will be using `kubebuilder` [annotations](https://kubebuilder.io/reference/markers) on specified for the `Rancher` proxy types located under the `./api/rancher` directory, to generate deep copy definitions and therefore allow specified resources to match the `Object` [interface](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/client/object.go#L45) provided by the controller-runtime.
 
 This will allow us to:
 

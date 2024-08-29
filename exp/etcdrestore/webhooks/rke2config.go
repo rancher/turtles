@@ -23,13 +23,12 @@ import (
 	"strings"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/retry"
@@ -89,43 +88,28 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 
 	logger.Info("Service account secret is populated")
 
-	serverUrlSetting := &unstructured.Unstructured{}
-	serverUrlSetting.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "management.cattle.io",
-		Kind:    "Setting",
-		Version: "v3",
-	})
+	serverUrlSetting := &managementv3.Setting{}
 
 	if err := r.Get(context.Background(), client.ObjectKey{
 		Name: "server-url",
 	}, serverUrlSetting); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to get server url setting: %s", err))
 	}
-	serverUrl, ok := serverUrlSetting.Object["value"].(string)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("failed to get server url setting: %s", err))
-	}
+
+	serverUrl := serverUrlSetting.Value
 
 	if serverUrl == "" {
 		return apierrors.NewBadRequest("server url setting is empty")
 	}
 
-	caSetting := &unstructured.Unstructured{}
-	caSetting.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "management.cattle.io",
-		Kind:    "Setting",
-		Version: "v3",
-	})
+	caSetting := &managementv3.Setting{}
 	if err := r.Get(context.Background(), client.ObjectKey{
 		Name: "cacerts",
 	}, caSetting); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to get ca setting: %s", err))
 	}
 
-	pem, ok := caSetting.Object["value"].(string)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("failed to get ca setting: %s", err))
-	}
+	pem := caSetting.Value
 
 	if err := r.createConnectInfoJson(ctx, rke2Config, planSecretName, serverUrl, pem, serviceAccountToken); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create connect info json: %s", err))

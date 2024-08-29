@@ -39,8 +39,8 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/yaml"
 
-	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	networkingv1 "k8s.io/api/networking/v1"
 )

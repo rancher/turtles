@@ -41,7 +41,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
 
-	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	"github.com/rancher/turtles/util"
 )
 

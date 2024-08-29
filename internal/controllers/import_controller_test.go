@@ -25,9 +25,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/internal/controllers/testdata"
-	managementv3 "github.com/rancher/turtles/internal/rancher/management/v3"
-	provisioningv1 "github.com/rancher/turtles/internal/rancher/provisioning/v1"
 	"github.com/rancher/turtles/internal/test"
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"

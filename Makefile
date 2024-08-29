@@ -226,14 +226,14 @@ manifests: generate
 
 .PHONY: generate-manifests-external
 generate-manifests-external: vendor controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./internal/rancher/..." output:crd:artifacts:config=hack/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/rancher/..." output:crd:artifacts:config=hack/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
 
 .PHONY: generate-manifests-api
 generate-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/..." \
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/v1alpha1/..." \
 			output:crd:artifacts:config=./config/crd/bases \
 			output:rbac:dir=./config/rbac \
 
@@ -258,7 +258,6 @@ generate-go-deepcopy:  ## Run deepcopy generation
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt \
 		paths=./api/... \
-		paths=./internal/rancher/... \
 		paths=./exp/etcdrestore/api/...
 
 # Run go mod
