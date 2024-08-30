@@ -251,6 +251,14 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	setupLog.Info("enabling ETCDSnapshotSecret controller")
+
+	if err := (&expcontrollers.ETCDSnapshotSecretReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+		setupLog.Error(err, "unable to create ETCDSnapshotSecret controller")
+		os.Exit(1)
+	}
 }
 
 func setupWebhooks(mgr ctrl.Manager) {

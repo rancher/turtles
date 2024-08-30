@@ -124,7 +124,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 
 		Expect(serviceAccount.ObjectMeta.Name).To(Equal(planSecretName))
 		Expect(serviceAccount.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
-		Expect(serviceAccount.ObjectMeta.Labels[rke2ConfigNameLabel]).To(Equal(rke2Config.Name))
+		Expect(serviceAccount.ObjectMeta.Labels[RKE2ConfigNameLabel]).To(Equal(rke2Config.Name))
 		Expect(serviceAccount.ObjectMeta.Labels[planSecretNameLabel]).To(Equal(planSecretName))
 	})
 
@@ -133,7 +133,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 
 		Expect(secret.ObjectMeta.Name).To(Equal(planSecretName))
 		Expect(secret.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
-		Expect(secret.ObjectMeta.Labels[rke2ConfigNameLabel]).To(Equal(rke2Config.Name))
+		Expect(secret.ObjectMeta.Labels[RKE2ConfigNameLabel]).To(Equal(rke2Config.Name))
 		Expect(string(secret.Type)).To(Equal(secretTypeMachinePlan))
 	})
 
