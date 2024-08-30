@@ -225,7 +225,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		Tracker:          tracker,
 		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
-		setupLog.Error(err, "unable to create EwtcdMachineSnapshot controller")
+		setupLog.Error(err, "unable to create EtcdMachineSnapshot controller")
 		os.Exit(1)
 	}
 

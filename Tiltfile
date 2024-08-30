@@ -62,7 +62,7 @@ projects = {
             "webhooks",
         ],
         "kustomize_dir": "config/default",
-        "label": "turtles-etcdsnapshotprestore"
+        "label": "turtles-etcdsnapshotrestore"
     }
 }
 

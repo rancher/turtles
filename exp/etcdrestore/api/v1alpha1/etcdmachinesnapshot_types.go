@@ -35,6 +35,9 @@ const (
 	ETCDSnapshotPhaseFailed ETCDSnapshotPhase = "Failed"
 	// ETCDSnapshotPhaseDone is the phase when the snapshot creation has finished
 	ETCDSnapshotPhaseDone ETCDSnapshotPhase = "Done"
+
+	// ETCDMachineSnapshotFinalizer allows the controller to clean up resources associated with EtcdMachineSnapshot
+	ETCDMachineSnapshotFinalizer = "etcdmachinesnapshot.turtles.cattle.io"
 )
 
 // EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
