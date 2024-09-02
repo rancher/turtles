@@ -62,36 +62,6 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 	})
 })
 
-var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.DontRunLabel), func() {
-	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
-		SetContext(ctx)
-	})
-
-	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
-		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
-			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:            artifactsFolder,
-			ClusterTemplate:           e2e.CAPIDockerRKE2,
-			ClusterName:               "clusterv1-docker-rke2",
-			ControlPlaneMachineCount:  ptr.To[int](1),
-			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   giteaResult.GitAddress,
-			GitAuthSecretName:         e2e.AuthSecretName,
-			SkipCleanup:               false,
-			SkipDeletionTest:          false,
-			LabelNamespace:            true,
-			TestClusterReimport:       true,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-rancher",
-			DeleteClusterWaitName:     "wait-controllers",
-		}
-	})
-})
-
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
