@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
@@ -96,8 +97,9 @@ func (r *CAPIProviderReconciler) patchStatus(ctx context.Context, capiProvider *
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CAPIProviderReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) (err error) {
+func (r *CAPIProviderReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) (err error) {
 	b := ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&turtlesv1.CAPIProvider{})
 
 	resources := []client.Object{

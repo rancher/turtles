@@ -27,6 +27,7 @@ import (
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
@@ -53,7 +54,7 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 			Scheme: testEnv.GetScheme(),
 		}
 
-		Expect(r.SetupWithManager(ctx, testEnv.Manager)).ToNot(HaveOccurred())
+		Expect(r.SetupWithManager(ctx, testEnv.Manager, controller.Options{})).ToNot(HaveOccurred())
 	})
 
 	It("Should create infrastructure docker provider and secret", func() {

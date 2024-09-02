@@ -261,6 +261,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		RancherClient: rancherClient,
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
+		CacheSyncTimeout:        maxDuration,
 	}); err != nil {
 		setupLog.Error(err, "unable to create rancher management v3 cleanup controller")
 		os.Exit(1)
@@ -272,7 +273,10 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		if err := (&controllers.RancherKubeconfigSecretReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+			CacheSyncTimeout:        maxDuration,
+		}); err != nil {
 			setupLog.Error(err, "unable to create Rancher kubeconfig secret controller")
 			os.Exit(1)
 		}
@@ -283,7 +287,10 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 	if err := (&controllers.CAPIProviderReconciler{
 		Client: mgr.GetClient(),
 		Scheme: scheme,
-	}).SetupWithManager(ctx, mgr); err != nil {
+	}).SetupWithManager(ctx, mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+		CacheSyncTimeout:        maxDuration,
+	}); err != nil {
 		setupLog.Error(err, "unable to create CAPI Provider controller")
 		os.Exit(1)
 	}
