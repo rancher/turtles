@@ -5,6 +5,7 @@ rancherTurtles:
   namespace: rancher-turtles-system
   managerArguments: []
   imagePullSecrets: []
+  rancherInstalled: true
   features:
     cluster-api-operator:
       cleanup: true
