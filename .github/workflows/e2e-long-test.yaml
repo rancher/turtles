@@ -32,7 +32,14 @@ env:
 jobs:
   e2e_import_gitops:
     name: E2E Tests - Import Gitops
-    runs-on: [self-hosted, linux]
+    # Use the BCI Node.js container when running in EIO's provided runners,
+    # because the Node.js runtime is needed. If using public GH provided runners,
+    # a container isn't necessary, because they already provide the runtime, but
+    # the BCI image can still be used anyway.
+    container: registry.suse.com/bci/nodejs:20
+    # For when running in EIO's provided runners. More details are available in
+    # https://github.com/rancherlabs/eio/wiki/GitHub-Actions-Runners.
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
     steps:
     - name: Checkout
       uses: actions/checkout@v4.1.7
@@ -64,7 +71,14 @@ jobs:
         commit: true
   e2e_v2prov:
     name: E2E Tests - v2prov
-    runs-on: [self-hosted, linux]
+    # Use the BCI Node.js container when running in EIO's provided runners,
+    # because the Node.js runtime is needed. If using public GH provided runners,
+    # a container isn't necessary, because they already provide the runtime, but
+    # the BCI image can still be used anyway.
+    container: registry.suse.com/bci/nodejs:20
+    # For when running in EIO's provided runners. More details are available in
+    # https://github.com/rancherlabs/eio/wiki/GitHub-Actions-Runners.
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
     needs: e2e_import_gitops
     steps:
     - name: Checkout
@@ -97,7 +111,14 @@ jobs:
         commit: true
   e2e_update_labels:
     name: E2E Tests - Update labels
-    runs-on: [self-hosted, linux]
+    # Use the BCI Node.js container when running in EIO's provided runners,
+    # because the Node.js runtime is needed. If using public GH provided runners,
+    # a container isn't necessary, because they already provide the runtime, but
+    # the BCI image can still be used anyway.
+    container: registry.suse.com/bci/nodejs:20
+    # For when running in EIO's provided runners. More details are available in
+    # https://github.com/rancherlabs/eio/wiki/GitHub-Actions-Runners.
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
     needs: e2e_v2prov
     steps:
     - name: Checkout
@@ -130,7 +151,14 @@ jobs:
         commit: true
   e2e_embedded_capi_disabled:
     name: E2E Tests - Embedded CAPI Disabled
-    runs-on: [self-hosted, linux]
+    # Use the BCI Node.js container when running in EIO's provided runners,
+    # because the Node.js runtime is needed. If using public GH provided runners,
+    # a container isn't necessary, because they already provide the runtime, but
+    # the BCI image can still be used anyway.
+    container: registry.suse.com/bci/nodejs:20
+    # For when running in EIO's provided runners. More details are available in
+    # https://github.com/rancherlabs/eio/wiki/GitHub-Actions-Runners.
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
     needs: e2e_update_labels
     steps:
     - name: Checkout
