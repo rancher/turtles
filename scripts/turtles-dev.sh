@@ -45,6 +45,8 @@ helm install capi-operator capi-operator/cluster-api-operator \
 	--create-namespace -n capi-operator-system \
 	--set infrastructure=docker:v1.7.3 \
 	--set core=cluster-api:v1.7.3 \
+	--set controlPlane=rke2:v0.6.1 \
+	--set bootstrap=rke2:v0.6.1 \
 	--timeout 90s --wait
 
 kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
