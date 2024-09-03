@@ -18,17 +18,25 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
+	k3sv1 "github.com/rancher/turtles/exp/etcdrestore/api/k3s/v1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-
-	"sigs.k8s.io/cluster-api/controllers/remote"
-
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+const snapshotPhaseRequeueDuration = 1 * time.Minute
 
 // EtcdMachineSnapshotReconciler reconciles an EtcdMachineSnapshot object.
 type EtcdMachineSnapshotReconciler struct {
@@ -60,18 +68,193 @@ func (r *EtcdMachineSnapshotReconciler) SetupWithManager(_ context.Context, mgr 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=etcdmachinesnapshots/finalizers,verbs=update
 
 // Reconcile reconciles the EtcdMachineSnapshot object.
-func (r *EtcdMachineSnapshotReconciler) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+func (r *EtcdMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	log := log.FromContext(ctx)
+
+	etcdMachineSnapshot := &snapshotrestorev1.EtcdMachineSnapshot{}
+	if err := r.Client.Get(ctx, req.NamespacedName, etcdMachineSnapshot); apierrors.IsNotFound(err) {
+		// Object not found, return. Created objects are automatically garbage collected.
+		return ctrl.Result{}, nil
+	} else if err != nil {
+		log.Error(err, fmt.Sprintf("Unable to get etcdMachineSnapshot resource: %s", req.String()))
+		return ctrl.Result{}, err
+	}
+
+	// Initialize the patch helper.
+	patchHelper, err := patch.NewHelper(etcdMachineSnapshot, r.Client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	defer func() {
+		// Always attempt to patch the object and status after each reconciliation.
+		// Patch ObservedGeneration only if the reconciliation completed successfully.
+		patchOpts := []patch.Option{}
+		if reterr == nil {
+			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
+		}
+		if err := patchHelper.Patch(ctx, etcdMachineSnapshot, patchOpts...); err != nil {
+			reterr = kerrors.NewAggregate([]error{reterr, err})
+		}
+	}()
+
+	// Handle deleted etcdMachineSnapshot
+	if !etcdMachineSnapshot.ObjectMeta.DeletionTimestamp.IsZero() {
+		return r.reconcileDelete(ctx, etcdMachineSnapshot)
+	}
+
+	// Ensure the finalizer is present
+	if !controllerutil.ContainsFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer) {
+		controllerutil.AddFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer)
+		if err := r.Client.Update(ctx, etcdMachineSnapshot); err != nil {
+			log.Error(err, "Failed to add finalizer to EtcdMachineSnapshot")
+			return ctrl.Result{}, err
+		}
+	}
+
+	return r.reconcileNormal(ctx, etcdMachineSnapshot)
 }
 
 func (r *EtcdMachineSnapshotReconciler) reconcileNormal(
-	_ context.Context, _ *snapshotrestorev1.EtcdMachineSnapshot,
-) (_ ctrl.Result, err error) {
+	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot,
+) (ctrl.Result, error) {
+
+	// Handle different phases of the etcdmachinesnapshot creation process
+	switch etcdMachineSnapshot.Status.Phase {
+	case "":
+		// Initial phase, set to Pending
+		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhasePending
+	case snapshotrestorev1.ETCDSnapshotPhasePending:
+		// Transition to Running
+		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseRunning
+	case snapshotrestorev1.ETCDSnapshotPhaseRunning:
+		// Check the status of the snapshot creation process
+		// List ETCDSnapshotFile resources to determine if the snapshot is complete
+		if err := checkSnapshotStatus(ctx, r, etcdMachineSnapshot); err != nil {
+			// If no matching ready snapshot is found, requeue the request
+			return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
+		}
+		return ctrl.Result{}, nil
+	case snapshotrestorev1.ETCDSnapshotPhaseFailed:
+		// If the snapshot creation failed, requeue the request
+		return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
+	case snapshotrestorev1.ETCDSnapshotPhaseDone:
+		// Snapshot creation is complete, no further action needed
+		return ctrl.Result{}, nil
+	}
+
+	patchBase := client.MergeFromWithOptions(etcdMachineSnapshot.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
+	// Patch the resource at the top-level
+	if err := r.Client.Status().Patch(ctx, etcdMachineSnapshot, patchBase); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to update EtcdMachineSnapshot status: %w", err)
+	}
+
+	// Requeue the request if necessary
+	if etcdMachineSnapshot.Status.Phase != snapshotrestorev1.ETCDSnapshotPhaseDone {
+		return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
 func (r *EtcdMachineSnapshotReconciler) reconcileDelete(
-	_ context.Context, _ *snapshotrestorev1.EtcdMachineSnapshot,
+	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot,
 ) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+
+	// Log the start of the deletion process
+	log.Info("Starting deletion of EtcdMachineSnapshot", "name", etcdMachineSnapshot.Name)
+
+	// Perform any necessary cleanup of associated resources here
+	// Example: Delete associated snapshot resources
+	snapshotList := &snapshotrestorev1.EtcdMachineSnapshotList{}
+	if err := r.Client.List(ctx, snapshotList, client.InNamespace(etcdMachineSnapshot.Namespace)); err != nil {
+		log.Error(err, "Failed to list associated EtcdMachineSnapshots")
+		return ctrl.Result{}, err
+	}
+
+	for _, snapshot := range snapshotList.Items {
+		if snapshot.Spec.MachineName == etcdMachineSnapshot.Spec.MachineName {
+			if err := r.Client.Delete(ctx, &snapshot); err != nil {
+				log.Error(err, "Failed to delete associated EtcdMachineSnapshot", "snapshotName", snapshot.Name)
+				return ctrl.Result{}, err
+			}
+			log.Info("Deleted associated EtcdMachineSnapshot", "snapshotName", snapshot.Name)
+		}
+	}
+
+	// Remove the finalizer to allow deletion of the EtcdMachineSnapshot
+	controllerutil.RemoveFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer)
+	if err := r.Client.Update(ctx, etcdMachineSnapshot); err != nil {
+		log.Error(err, "Failed to remove finalizer from EtcdMachineSnapshot")
+		return ctrl.Result{}, err
+	}
+
+	// Log the completion of the deletion process
+	log.Info("Completed deletion of EtcdMachineSnapshot", "name", etcdMachineSnapshot.Name)
+
 	return ctrl.Result{}, nil
+}
+
+// checkSnapshotStatus checks the status of the snapshot creation process.
+func checkSnapshotStatus(ctx context.Context, r *EtcdMachineSnapshotReconciler, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot) error {
+	log := log.FromContext(ctx)
+
+	etcdSnapshotFileList := &k3sv1.ETCDSnapshotFileList{}
+
+	if err := r.Client.List(ctx, etcdSnapshotFileList); err != nil {
+		log.Error(err, "Failed to list ETCDSnapshotFile resources")
+		return err
+	}
+
+	patchBase := client.MergeFromWithOptions(etcdMachineSnapshot.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
+	// Iterate through the list of ETCDSnapshotFile resources
+	for _, snapshotFile := range etcdSnapshotFileList.Items {
+		// Validate the snapshotFile fields
+		if err := validateETCDSnapshotFile(snapshotFile); err != nil {
+			// Log the error and continue to the next snapshotFile
+			log.Error(err, "Failed to validate ETCDSnapshotFile")
+			continue
+		}
+
+		// Extract fields directly after validation
+		snapshotName := snapshotFile.Spec.SnapshotName
+		readyToUse := *snapshotFile.Status.ReadyToUse
+
+		// Check if the snapshot is ready to use and matches the machine snapshot name
+		if readyToUse && snapshotName == etcdMachineSnapshot.Name {
+			// Update the status to Done
+			etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseDone
+			if err := r.Client.Status().Patch(ctx, etcdMachineSnapshot, patchBase); err != nil {
+				return fmt.Errorf("failed to update EtcdMachineSnapshot status to Done: %w", err)
+			}
+			return nil
+		}
+	}
+
+	// If no matching ready snapshot is found, return an error to retry
+	return errors.New("snapshot not ready")
+}
+
+// validateETCDSnapshotFile validates the fields of an ETCDSnapshotFile resource.
+func validateETCDSnapshotFile(snapshotFile k3sv1.ETCDSnapshotFile) error {
+	if snapshotFile.Spec.SnapshotName == "" {
+		return fmt.Errorf("SnapshotName is empty for etcdsnapshotfile %s", snapshotFile.Name)
+	}
+
+	if snapshotFile.Spec.Location == "" {
+		return fmt.Errorf("Location is empty for etcdsnapshotfile %s", snapshotFile.Name)
+	}
+
+	if snapshotFile.Spec.NodeName == "" {
+		return fmt.Errorf("Node name is empty for etcdsnapshotfile %s", snapshotFile.Name)
+	}
+
+	if snapshotFile.Status.ReadyToUse == nil {
+		return fmt.Errorf("ReadyToUse field is nil for etcdsnapshotfile %s", snapshotFile.Name)
+	}
+
+	return nil
 }

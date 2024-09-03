@@ -24,6 +24,7 @@ import (
 	"time"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
+	k3sv1 "github.com/rancher/turtles/exp/etcdrestore/api/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	expcontrollers "github.com/rancher/turtles/exp/etcdrestore/controllers"
 	expwebhooks "github.com/rancher/turtles/exp/etcdrestore/webhooks"
@@ -75,6 +76,7 @@ func init() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(snapshotrestorev1.AddToScheme(scheme))
 	utilruntime.Must(bootstrapv1.AddToScheme(scheme))
+	utilruntime.Must(k3sv1.AddToScheme(scheme))
 }
 
 // initFlags initializes the flags.
@@ -225,7 +227,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		Tracker:          tracker,
 		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
-		setupLog.Error(err, "unable to create EwtcdMachineSnapshot controller")
+		setupLog.Error(err, "unable to create EtcdMachineSnapshot controller")
 		os.Exit(1)
 	}
 
