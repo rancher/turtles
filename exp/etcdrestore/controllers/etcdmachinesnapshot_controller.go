@@ -100,7 +100,7 @@ func (r *EtcdMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	// Handle deleted etcdMachineSnapshot
 	if !etcdMachineSnapshot.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, etcdMachineSnapshot)
+		return ctrl.Result{}, r.reconcileDelete(ctx, etcdMachineSnapshot)
 	}
 
 	// Ensure the finalizer is present
@@ -124,9 +124,11 @@ func (r *EtcdMachineSnapshotReconciler) reconcileNormal(
 	case "":
 		// Initial phase, set to Pending
 		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhasePending
+		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhasePending:
 		// Transition to Running
 		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseRunning
+		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhaseRunning:
 		// Check the status of the snapshot creation process
 		// List ETCDSnapshotFile resources to determine if the snapshot is complete
@@ -143,13 +145,6 @@ func (r *EtcdMachineSnapshotReconciler) reconcileNormal(
 		return ctrl.Result{}, nil
 	}
 
-	patchBase := client.MergeFromWithOptions(etcdMachineSnapshot.DeepCopy(), client.MergeFromWithOptimisticLock{})
-
-	// Patch the resource at the top-level
-	if err := r.Client.Status().Patch(ctx, etcdMachineSnapshot, patchBase); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to update EtcdMachineSnapshot status: %w", err)
-	}
-
 	// Requeue the request if necessary
 	if etcdMachineSnapshot.Status.Phase != snapshotrestorev1.ETCDSnapshotPhaseDone {
 		return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
@@ -160,7 +155,7 @@ func (r *EtcdMachineSnapshotReconciler) reconcileNormal(
 
 func (r *EtcdMachineSnapshotReconciler) reconcileDelete(
 	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot,
-) (ctrl.Result, error) {
+) error {
 	log := log.FromContext(ctx)
 
 	// Log the start of the deletion process
@@ -171,30 +166,26 @@ func (r *EtcdMachineSnapshotReconciler) reconcileDelete(
 	snapshotList := &snapshotrestorev1.EtcdMachineSnapshotList{}
 	if err := r.Client.List(ctx, snapshotList, client.InNamespace(etcdMachineSnapshot.Namespace)); err != nil {
 		log.Error(err, "Failed to list associated EtcdMachineSnapshots")
-		return ctrl.Result{}, err
+		return err
 	}
 
 	for _, snapshot := range snapshotList.Items {
 		if snapshot.Spec.MachineName == etcdMachineSnapshot.Spec.MachineName {
 			if err := r.Client.Delete(ctx, &snapshot); err != nil {
 				log.Error(err, "Failed to delete associated EtcdMachineSnapshot", "snapshotName", snapshot.Name)
-				return ctrl.Result{}, err
+				return err
 			}
 			log.Info("Deleted associated EtcdMachineSnapshot", "snapshotName", snapshot.Name)
 		}
 	}
 
-	// Remove the finalizer to allow deletion of the EtcdMachineSnapshot
+	// Remove the finalizer so the EtcdMachineSnapshot can be garbage collected by Kubernetes.
 	controllerutil.RemoveFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer)
-	if err := r.Client.Update(ctx, etcdMachineSnapshot); err != nil {
-		log.Error(err, "Failed to remove finalizer from EtcdMachineSnapshot")
-		return ctrl.Result{}, err
-	}
 
 	// Log the completion of the deletion process
 	log.Info("Completed deletion of EtcdMachineSnapshot", "name", etcdMachineSnapshot.Name)
 
-	return ctrl.Result{}, nil
+	return nil
 }
 
 // checkSnapshotStatus checks the status of the snapshot creation process.
@@ -207,8 +198,6 @@ func checkSnapshotStatus(ctx context.Context, r *EtcdMachineSnapshotReconciler, 
 		log.Error(err, "Failed to list ETCDSnapshotFile resources")
 		return err
 	}
-
-	patchBase := client.MergeFromWithOptions(etcdMachineSnapshot.DeepCopy(), client.MergeFromWithOptimisticLock{})
 
 	// Iterate through the list of ETCDSnapshotFile resources
 	for _, snapshotFile := range etcdSnapshotFileList.Items {
@@ -227,9 +216,6 @@ func checkSnapshotStatus(ctx context.Context, r *EtcdMachineSnapshotReconciler, 
 		if readyToUse && snapshotName == etcdMachineSnapshot.Name {
 			// Update the status to Done
 			etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseDone
-			if err := r.Client.Status().Patch(ctx, etcdMachineSnapshot, patchBase); err != nil {
-				return fmt.Errorf("failed to update EtcdMachineSnapshot status to Done: %w", err)
-			}
 			return nil
 		}
 	}
