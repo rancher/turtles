@@ -25,6 +25,8 @@ import (
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	expcontrollers "github.com/rancher/turtles/exp/etcdrestore/controllers"
 	expwebhooks "github.com/rancher/turtles/exp/etcdrestore/webhooks"
@@ -77,6 +79,8 @@ func init() {
 	utilruntime.Must(snapshotrestorev1.AddToScheme(scheme))
 	utilruntime.Must(bootstrapv1.AddToScheme(scheme))
 	utilruntime.Must(k3sv1.AddToScheme(scheme))
+	utilruntime.Must(provisioningv1.AddToScheme(scheme))
+	utilruntime.Must(managementv3.AddToScheme(scheme))
 }
 
 // initFlags initializes the flags.
