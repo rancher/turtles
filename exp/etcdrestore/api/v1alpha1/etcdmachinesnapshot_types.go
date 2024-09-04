@@ -42,9 +42,10 @@ const (
 
 // EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
 type EtcdMachineSnapshotSpec struct {
-	ClusterName string                 `json:"clusterName"`
-	MachineName string                 `json:"machineName"`
-	ConfigRef   corev1.ObjectReference `json:"configRef"`
+	ClusterName string                      `json:"clusterName"`
+	MachineName string                      `json:"machineName"`
+	ConfigRef   corev1.LocalObjectReference `json:"configRef"`
+	Manual      bool                        `json:"manual"`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
