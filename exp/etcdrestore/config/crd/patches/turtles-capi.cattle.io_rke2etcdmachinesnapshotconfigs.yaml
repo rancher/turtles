@@ -1,0 +1,3 @@
+- op: add
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/status/default
+  value: {}

@@ -4,6 +4,7 @@
 resources:
 - bases/turtles-capi.cattle.io_etcdmachinesnapshots.yaml
 - bases/turtles-capi.cattle.io_etcdsnapshotrestores.yaml
+- bases/turtles-capi.cattle.io_rke2etcdmachinesnapshotconfigs.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -21,6 +22,12 @@ patches:
     kind: CustomResourceDefinition
     name: etcdsnapshotrestores.turtles-capi.cattle.io
   path: patches/turtles-capi.cattle.io_etcdsnapshotrestores.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: etcdsnapshotrestores.turtles-capi.cattle.io
+  path: patches/turtles-capi.cattle.io_rke2etcdmachinesnapshotconfigs.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
