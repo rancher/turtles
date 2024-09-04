@@ -479,10 +479,10 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0 h1:TgtAeesdhpm2S
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0/go.mod h1:VHVDI/KrK4fjnV61bE2g3sA7tiETLn8sooImelsCx3Y=
 sigs.k8s.io/cluster-api v1.7.3 h1:DsSRxsA+18jxLqPAo29abZ9kOPK1/xwhSuQb/MROzSs=
 sigs.k8s.io/cluster-api v1.7.3/go.mod h1:V9ZhKLvQtsDODwjXOKgbitjyCmC71yMBwDcMyNNIov0=
-sigs.k8s.io/cluster-api-operator v0.12.0 h1:7EBStWwkvWg+yZW8Uq8XihmQdFXcEXZOEYfjqdJEN18=
-sigs.k8s.io/cluster-api-operator v0.12.0/go.mod h1:GcWnGrKz74LS/E0IuFcT6YHBtL7zR9DNqjyVezf72mk=
-sigs.k8s.io/cluster-api-operator/test v0.12.0 h1:WkEo05+Qu5G/c+lYzxN0U1Pc78PlSj451L9Cr6Wn+44=
-sigs.k8s.io/cluster-api-operator/test v0.12.0/go.mod h1:etiWYqu2Gym8oZFrOT7H4wXywUBezE1JsQMSQSnfZeE=
+sigs.k8s.io/cluster-api-operator v0.13.0 h1:nDcr1qPzsYZLuyjKD/gDDi9gsO97keUbXNC73nOkp7o=
+sigs.k8s.io/cluster-api-operator v0.13.0/go.mod h1:RQmbeIbRq0ENEDVAOhpXHB6xVyt28aJWnwx0ovM5DUw=
+sigs.k8s.io/cluster-api-operator/test v0.13.0 h1:fXsPONWm5k1bPYRsS+/XGOiNTT3mzWTUy+r8XDUylIQ=
+sigs.k8s.io/cluster-api-operator/test v0.13.0/go.mod h1:khKlbxd1KX8lo4E6yQUZ4dioEaiMlePtTg5lfDyULjw=
 sigs.k8s.io/cluster-api/test v1.7.3 h1:Nl1IOF03MZzjr6x45IJOFWlV4cNHpJ45qsn3A+1Tf98=
 sigs.k8s.io/cluster-api/test v1.7.3/go.mod h1:KbK8+zZEmSopCm6IGd9Vk+573sQ+HL6hnPvqelJEYi4=
 sigs.k8s.io/controller-runtime v0.17.3 h1:65QmN7r3FWgTxDMz9fvGnO1kbf2nu+acg9p2R9oYYYk=
