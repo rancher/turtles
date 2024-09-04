@@ -32,9 +32,9 @@ type ETCDSnapshotFile struct {
 
 // ETCDSnapshotSpec is the struct spec representing a k3s ETCDSnapshotFile.
 type ETCDSnapshotSpec struct {
-	SnapshotName string            `json:"snapshotName" column:""`
-	NodeName     string            `json:"nodeName" column:"name=Node"`
-	Location     string            `json:"location" column:""`
+	SnapshotName string            `json:"snapshotName"`
+	NodeName     string            `json:"nodeName"`
+	Location     string            `json:"location"`
 	Metadata     map[string]string `json:"metadata,omitempty"`
 }
 

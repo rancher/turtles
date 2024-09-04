@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	k3sv1 "github.com/rancher/turtles/exp/etcdrestore/api/k3s/v1"
+	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
