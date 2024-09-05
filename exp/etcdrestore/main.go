@@ -24,7 +24,7 @@ import (
 	"time"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
-	k3sv1 "github.com/rancher/turtles/exp/etcdrestore/api/k3s/v1"
+	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	expcontrollers "github.com/rancher/turtles/exp/etcdrestore/controllers"
 	expwebhooks "github.com/rancher/turtles/exp/etcdrestore/webhooks"
