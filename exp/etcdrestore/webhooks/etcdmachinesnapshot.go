@@ -44,7 +44,7 @@ var _ webhook.CustomValidator = &EtcdMachineSnapshotWebhook{}
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *EtcdMachineSnapshotWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&snapshotrestorev1.EtcdMachineSnapshot{}).
+		For(&snapshotrestorev1.ETCDMachineSnapshot{}).
 		WithValidator(r).
 		Complete()
 }
@@ -55,7 +55,7 @@ func (r *EtcdMachineSnapshotWebhook) ValidateCreate(ctx context.Context, obj run
 
 	logger.Info("Validating EtcdMachineSnapshot")
 
-	etcdMachineSnapshot, ok := obj.(*snapshotrestorev1.EtcdMachineSnapshot)
+	etcdMachineSnapshot, ok := obj.(*snapshotrestorev1.ETCDMachineSnapshot)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a EtcdMachineSnapshot but got a %T", obj))
 	}
@@ -69,7 +69,7 @@ func (r *EtcdMachineSnapshotWebhook) ValidateUpdate(ctx context.Context, oldObj,
 
 	logger.Info("Validating EtcdMachineSnapshot")
 
-	etcdMachineSnapshot, ok := newObj.(*snapshotrestorev1.EtcdMachineSnapshot)
+	etcdMachineSnapshot, ok := newObj.(*snapshotrestorev1.ETCDMachineSnapshot)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a EtcdMachineSnapshot but got a %T", newObj))
 	}
@@ -82,7 +82,7 @@ func (r *EtcdMachineSnapshotWebhook) ValidateDelete(_ context.Context, obj runti
 	return nil, nil
 }
 
-func (r *EtcdMachineSnapshotWebhook) validateSpec(ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot) (admission.Warnings, error) {
+func (r *EtcdMachineSnapshotWebhook) validateSpec(ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 
 	if etcdMachineSnapshot.Spec.ClusterName == "" {

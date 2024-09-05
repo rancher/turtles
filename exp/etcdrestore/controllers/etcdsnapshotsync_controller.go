@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -148,13 +147,13 @@ func (r *EtcdSnapshotSyncReconciler) etcdSnapshotFile(ctx context.Context, clust
 		log.Info("Cluster name", "name", cluster.GetName())
 
 		gvk := schema.GroupVersionKind{
-			Group:   "k3s.cattle.io",
+			Group:   k3sv1.GroupVersion.Group,
 			Kind:    "ETCDSnapshotFile",
-			Version: "v1",
+			Version: k3sv1.GroupVersion.Version,
 		}
 
 		if o.GetObjectKind().GroupVersionKind() != gvk {
-			log.Error(errors.New("got a different object"), "objectGVK", o.GetObjectKind().GroupVersionKind())
+			log.Error(fmt.Errorf("got a different object"), "objectGVK", o.GetObjectKind().GroupVersionKind().String())
 			return nil
 		}
 

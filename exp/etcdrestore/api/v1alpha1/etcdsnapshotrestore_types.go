@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -36,6 +35,8 @@ const (
 	ETCDSnapshotRestorePhaseRunning ETCDSnapshotRestorePhase = "Running"
 	// ETCDSnapshotRestorePhaseAgentRestart is the phase when the cluster is being restarted
 	ETCDSnapshotRestorePhaseAgentRestart ETCDSnapshotRestorePhase = "Restart"
+	// ETCDSnapshotRestoreUnpauseCluster is the phase when the cluster can be unpaused
+	ETCDSnapshotRestoreUnpauseCluster ETCDSnapshotRestorePhase = "Unpause"
 	// ETCDSnapshotRestorePhaseJoinAgents is the phase when the snapshot creation has finished
 	ETCDSnapshotRestorePhaseJoinAgents ETCDSnapshotRestorePhase = "Joining"
 	// ETCDSnapshotRestorePhaseFailed is the phase when the snapshot creation has failed
@@ -44,41 +45,53 @@ const (
 	ETCDSnapshotRestorePhaseFinished ETCDSnapshotRestorePhase = "Done"
 )
 
-// EtcdSnapshotRestoreSpec defines the desired state of EtcdSnapshotRestore.
-type EtcdSnapshotRestoreSpec struct {
-	ClusterName             string                 `json:"clusterName"`
-	EtcdMachineSnapshotName string                 `json:"etcdMachineSnapshotName"`
-	TTLSecondsAfterFinished int                    `json:"ttlSecondsAfterFinished"`
-	ConfigRef               corev1.ObjectReference `json:"configRef"`
+// +kubebuilder:validation:XValidation:message="Cluster Name can't be empty.",rule="size(self.clusterName)>0"
+// +kubebuilder:validation:XValidation:message="ETCD machine snapshot name can't be empty.",rule="size(self.etcdMachineSnapshotName)>0"
+//
+// ETCDSnapshotRestoreSpec defines the desired state of EtcdSnapshotRestore.
+type ETCDSnapshotRestoreSpec struct {
+	// +required
+	ClusterName string `json:"clusterName"`
+
+	// +required
+	ETCDMachineSnapshotName string `json:"etcdMachineSnapshotName"`
+
+	// TTLSecondsAfterFinished int `json:"ttlSecondsAfterFinished"`
+
+	// // +required
+	// ConfigRef corev1.LocalObjectReference `json:"configRef"`
 }
 
-// EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore.
-type EtcdSnapshotRestoreStatus struct {
-	Phase      ETCDSnapshotPhase    `json:"phase,omitempty"`
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+// ETCDSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore.
+type ETCDSnapshotRestoreStatus struct {
+	// +kubebuilder:default=Pending
+	Phase      ETCDSnapshotRestorePhase `json:"phase,omitempty"`
+	Conditions clusterv1.Conditions     `json:"conditions,omitempty"`
 }
 
-// EtcdSnapshotRestore is the schema for the EtcdSnapshotRestore API.
+// ETCDSnapshotRestore is the schema for the ETCDSnapshotRestore API.
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-type EtcdSnapshotRestore struct {
+type ETCDSnapshotRestore struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   EtcdSnapshotRestoreSpec   `json:"spec,omitempty"`
-	Status EtcdSnapshotRestoreStatus `json:"status,omitempty"`
+	Spec ETCDSnapshotRestoreSpec `json:"spec,omitempty"`
+
+	// +kubebuilder:default={}
+	Status ETCDSnapshotRestoreStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// EtcdSnapshotRestoreList contains a list of EtcdSnapshotRestores.
-type EtcdSnapshotRestoreList struct {
+// ETCDSnapshotRestoreList contains a list of EtcdSnapshotRestores.
+type ETCDSnapshotRestoreList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []EtcdSnapshotRestore `json:"items"`
+	Items           []ETCDSnapshotRestore `json:"items"`
 }
 
 func init() {
-	objectTypes = append(objectTypes, &EtcdSnapshotRestore{}, &EtcdSnapshotRestoreList{})
+	objectTypes = append(objectTypes, &ETCDSnapshotRestore{}, &ETCDSnapshotRestoreList{})
 }

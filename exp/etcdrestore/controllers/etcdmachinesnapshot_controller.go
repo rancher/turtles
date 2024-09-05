@@ -38,8 +38,8 @@ import (
 
 const snapshotPhaseRequeueDuration = 1 * time.Minute
 
-// EtcdMachineSnapshotReconciler reconciles an EtcdMachineSnapshot object.
-type EtcdMachineSnapshotReconciler struct {
+// ETCDMachineSnapshotReconciler reconciles an EtcdMachineSnapshot object.
+type ETCDMachineSnapshotReconciler struct {
 	client.Client
 	WatchFilterValue string
 
@@ -49,10 +49,10 @@ type EtcdMachineSnapshotReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *EtcdMachineSnapshotReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
+func (r *ETCDMachineSnapshotReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
 	// TODO: Setup predicates for the controller.
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		For(&snapshotrestorev1.EtcdMachineSnapshot{}).
+		For(&snapshotrestorev1.ETCDMachineSnapshot{}).
 		Build(r)
 	if err != nil {
 		return fmt.Errorf("creating etcdMachineSnapshot controller: %w", err)
@@ -68,10 +68,10 @@ func (r *EtcdMachineSnapshotReconciler) SetupWithManager(_ context.Context, mgr 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=etcdmachinesnapshots/finalizers,verbs=update
 
 // Reconcile reconciles the EtcdMachineSnapshot object.
-func (r *EtcdMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+func (r *ETCDMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := log.FromContext(ctx)
 
-	etcdMachineSnapshot := &snapshotrestorev1.EtcdMachineSnapshot{}
+	etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{}
 	if err := r.Client.Get(ctx, req.NamespacedName, etcdMachineSnapshot); apierrors.IsNotFound(err) {
 		// Object not found, return. Created objects are automatically garbage collected.
 		return ctrl.Result{}, nil
@@ -120,8 +120,8 @@ func (r *EtcdMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.
 	return r.reconcileNormal(ctx, etcdMachineSnapshot)
 }
 
-func (r *EtcdMachineSnapshotReconciler) reconcileNormal(
-	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot,
+func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
+	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot,
 ) (ctrl.Result, error) {
 
 	// Handle different phases of the etcdmachinesnapshot creation process
@@ -158,8 +158,8 @@ func (r *EtcdMachineSnapshotReconciler) reconcileNormal(
 	return ctrl.Result{}, nil
 }
 
-func (r *EtcdMachineSnapshotReconciler) reconcileDelete(
-	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot,
+func (r *ETCDMachineSnapshotReconciler) reconcileDelete(
+	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot,
 ) error {
 	log := log.FromContext(ctx)
 
@@ -168,7 +168,7 @@ func (r *EtcdMachineSnapshotReconciler) reconcileDelete(
 
 	// Perform any necessary cleanup of associated resources here
 	// Example: Delete associated snapshot resources
-	snapshotList := &snapshotrestorev1.EtcdMachineSnapshotList{}
+	snapshotList := &snapshotrestorev1.ETCDMachineSnapshotList{}
 	if err := r.Client.List(ctx, snapshotList, client.InNamespace(etcdMachineSnapshot.Namespace)); err != nil {
 		log.Error(err, "Failed to list associated EtcdMachineSnapshots")
 		return err
@@ -194,7 +194,7 @@ func (r *EtcdMachineSnapshotReconciler) reconcileDelete(
 }
 
 // checkSnapshotStatus checks the status of the snapshot creation process.
-func checkSnapshotStatus(ctx context.Context, r *EtcdMachineSnapshotReconciler, etcdMachineSnapshot *snapshotrestorev1.EtcdMachineSnapshot) error {
+func checkSnapshotStatus(ctx context.Context, r *ETCDMachineSnapshotReconciler, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) error {
 	log := log.FromContext(ctx)
 
 	etcdSnapshotFileList := &k3sv1.ETCDSnapshotFileList{}
