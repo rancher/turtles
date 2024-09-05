@@ -39,6 +39,7 @@ type ETCDSnapshotSpec struct {
 	S3           *ETCDSnapshotS3   `json:"s3,omitempty"`
 }
 
+// ETCDSnapshotS3 is the struct representing a k3s ETCDSnapshotFile S3.
 type ETCDSnapshotS3 struct {
 	Endpoint      string `json:"endpoint,omitempty"`
 	EndpointCA    string `json:"endpointCA,omitempty"`

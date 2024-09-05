@@ -64,11 +64,11 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 
 		machineName, err := s.findMachineForSnapshot(ctx, snapshotFile.Spec.NodeName)
 		if err != nil {
-			return fmt.Errorf("failed to find machine for backup: %w", err)
+			return fmt.Errorf("failed to find machine to take a snapshot: %w", err)
 		}
 
 		if machineName == "" {
-			log.V(5).Info("Machine not found for backup, skipping. Will try again later.")
+			log.V(5).Info("Machine not found to take a snapshot, skipping. Will try again later.")
 			continue
 		}
 
