@@ -23,9 +23,8 @@ import (
 
 // RKE2EtcdMachineSnapshotConfigSpec defines the desired state of RKE2EtcdMachineSnapshotConfig
 type RKE2EtcdMachineSnapshotConfigSpec struct {
-	Manual bool        `json:"manual"`
-	S3     S3Config    `json:"s3"`
-	Local  LocalConfig `json:"local"`
+	S3    S3Config    `json:"s3"`
+	Local LocalConfig `json:"local"`
 }
 
 type LocalConfig struct {
@@ -33,13 +32,15 @@ type LocalConfig struct {
 }
 
 type S3Config struct {
-	Endpoint           string                  `json:"endpoint"`
-	EndpointCASecret   *corev1.ObjectReference `json:"endpointCAsecret,omitempty"`
-	EnforceSSLVerify   bool                    `json:"enforceSslVerify,omitempty"`
-	S3CredentialSecret corev1.ObjectReference  `json:"s3CredentialSecret"`
-	Bucket             string                  `json:"bucket,omitempty"`
-	Region             string                  `json:"region,omitempty"`
-	Folder             string                  `json:"folder,omitempty"`
+	Endpoint           string                       `json:"endpoint,omitempty"`
+	EndpointCASecret   *corev1.LocalObjectReference `json:"endpointCAsecret,omitempty"`
+	SkipSSLVerify      bool                         `json:"skipSSLVerify,omitempty"`
+	S3CredentialSecret *corev1.LocalObjectReference `json:"s3CredentialSecret,omitempty"`
+	Bucket             string                       `json:"bucket,omitempty"`
+	Region             string                       `json:"region,omitempty"`
+	Folder             string                       `json:"folder,omitempty"`
+	Insecure           bool                         `json:"insecure,omitempty"`
+	Location           string                       `json:"location,omitempty"`
 }
 
 // RKE2EtcdMachineSnapshotConfig is the schema for the snapshot config.

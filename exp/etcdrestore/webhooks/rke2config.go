@@ -134,8 +134,8 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 	systemAgentVersionSetting := &managementv3.Setting{}
 	if err := r.Get(context.Background(), client.ObjectKey{
 		Name: "system-agent-version",
-	}, caSetting); err != nil {
-		return apierrors.NewBadRequest(fmt.Sprintf("failed to get ca setting: %s", err))
+	}, systemAgentVersionSetting); err != nil {
+		return apierrors.NewBadRequest(fmt.Sprintf("failed to get system agent version setting: %s", err))
 	}
 
 	systemAgentVersion := systemAgentVersionSetting.Value

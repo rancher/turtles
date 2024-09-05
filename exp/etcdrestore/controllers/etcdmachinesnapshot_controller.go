@@ -80,6 +80,11 @@ func (r *EtcdMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
+	if !etcdMachineSnapshot.Spec.Manual {
+		log.V(5).Info("Skipping snapshot creation for non-manual EtcdMachineSnapshot")
+		return ctrl.Result{}, nil
+	}
+
 	// Initialize the patch helper.
 	patchHelper, err := patch.NewHelper(etcdMachineSnapshot, r.Client)
 	if err != nil {
@@ -227,19 +232,19 @@ func checkSnapshotStatus(ctx context.Context, r *EtcdMachineSnapshotReconciler, 
 // validateETCDSnapshotFile validates the fields of an ETCDSnapshotFile resource.
 func validateETCDSnapshotFile(snapshotFile k3sv1.ETCDSnapshotFile) error {
 	if snapshotFile.Spec.SnapshotName == "" {
-		return fmt.Errorf("SnapshotName is empty for etcdsnapshotfile %s", snapshotFile.Name)
+		return fmt.Errorf("snapshotName is empty for etcdsnapshotfile %s", snapshotFile.Name)
 	}
 
 	if snapshotFile.Spec.Location == "" {
-		return fmt.Errorf("Location is empty for etcdsnapshotfile %s", snapshotFile.Name)
+		return fmt.Errorf("location is empty for etcdsnapshotfile %s", snapshotFile.Name)
 	}
 
 	if snapshotFile.Spec.NodeName == "" {
-		return fmt.Errorf("Node name is empty for etcdsnapshotfile %s", snapshotFile.Name)
+		return fmt.Errorf("node name is empty for etcdsnapshotfile %s", snapshotFile.Name)
 	}
 
 	if snapshotFile.Status.ReadyToUse == nil {
-		return fmt.Errorf("ReadyToUse field is nil for etcdsnapshotfile %s", snapshotFile.Name)
+		return fmt.Errorf("readyToUse field is nil for etcdsnapshotfile %s", snapshotFile.Name)
 	}
 
 	return nil

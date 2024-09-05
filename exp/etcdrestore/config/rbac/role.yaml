@@ -134,3 +134,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - rke2etcdmachinesnapshotconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - rke2etcdmachinesnapshotconfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - rke2etcdmachinesnapshotconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
