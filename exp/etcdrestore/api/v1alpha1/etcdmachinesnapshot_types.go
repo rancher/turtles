@@ -46,6 +46,7 @@ type EtcdMachineSnapshotSpec struct {
 	MachineName string                      `json:"machineName"`
 	ConfigRef   corev1.LocalObjectReference `json:"configRef"`
 	Manual      bool                        `json:"manual"`
+	Location    string                      `json:"location"`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
