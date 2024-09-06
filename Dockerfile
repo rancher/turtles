@@ -17,9 +17,6 @@
 # Build the manager binary
 ARG builder_image
 
-# Build architecture
-ARG ARCH
-
 FROM ${builder_image} as builder
 WORKDIR /workspace
 
@@ -41,19 +38,18 @@ COPY ./ ./
 
 # Build
 ARG package=.
-ARG ARCH
 ARG ldflags
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
+    CGO_ENABLED=0 GOOS=linux \
     go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot-${ARCH}
+FROM gcr.io/distroless/static:nonroot
 LABEL org.opencontainers.image.source=https://github.com/rancher/turtles
 WORKDIR /
 COPY --from=builder /workspace/manager .

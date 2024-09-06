@@ -161,6 +161,8 @@ NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
 ALL_ARCH = amd64 arm64
+TARGET_PLATFORMS := linux/amd64,linux/arm64
+MACHINE := rancher-turtles
 REGISTRY ?= ghcr.io
 ORG ?= rancher
 CONTROLLER_IMAGE_NAME ?= turtles
@@ -324,27 +326,13 @@ build: generate fmt vet ## Build manager binary.
 run: generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
+buildx-machine:
+	@docker buildx inspect $(MACHINE) || \
+		docker buildx create --name=$(MACHINE) --platform=$(TARGET_PLATFORMS)
+
 ## --------------------------------------
 ## Docker
 ## --------------------------------------
-
-.PHONY: docker-push
-docker-push: ## Push the docker images
-	docker push $(MANIFEST_IMG):$(TAG)
-
-.PHONY: docker-push-all
-docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))  ## Push all the architecture docker images
-	$(MAKE) docker-push-manifest-rancher-turtles
-
-docker-push-%:
-	$(MAKE) ARCH=$* docker-push
-
-.PHONY: docker-push-manifest-rancher-turtles
-docker-push-manifest-rancher-turtles: ## Push the multiarch manifest for the rancher turtles docker images
-	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
-	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
-	docker manifest push --purge $(CONTROLLER_IMG):$(TAG)
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
@@ -352,15 +340,26 @@ docker-pull-prerequisites:
 	docker pull $(GO_CONTAINER_IMAGE)
 	docker pull gcr.io/distroless/static:latest
 
-.PHONY: docker-build-all
-docker-build-all: $(addprefix docker-build-,$(ALL_ARCH)) ## Build docker images for all architectures
+docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
+	# buildx does not support using local registry for multi-architecture images
+	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+			--platform $(ARCH) \
+			--load \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=. \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
 
-docker-build-%:
-	$(MAKE) ARCH=$* docker-build
-
-.PHONY: docker-build
-docker-build: docker-pull-prerequisites ## Run docker-build-* targets for all providers
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=. --build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
+.PHONY: docker-build-and-push
+docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push targets for all architectures
+	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+			--platform $(TARGET_PLATFORMS) \
+			--push \
+			--attest type=provenance \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=. \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
 
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
