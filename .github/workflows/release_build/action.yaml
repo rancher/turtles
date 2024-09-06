@@ -1,10 +1,6 @@
 name: "Build release"
 description: "Builds release image and pushes to the registry"
 inputs:
-  arch:
-    description: "Architecture of the built image"
-    required: true
-    type: string
   tag:
     description: "Image tag"
     type: string
@@ -47,12 +43,9 @@ runs:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
-    - name: Build docker image
+    - name: Build & Push docker image
       shell: bash
-      run: make docker-build-${{ inputs.arch }} TAG=${{ inputs.tag }} REGISTRY=${{ inputs.registry }} ORG=${{ inputs.org }}
-    - name: Push docker image to registry
-      shell: bash
-      run: make docker-push-${{ inputs.arch }} TAG=${{ inputs.tag }} REGISTRY=${{ inputs.registry }} ORG=${{ inputs.org }}
+      run: make docker-build-and-push TAG=${{ inputs.tag }} REGISTRY=${{ inputs.registry }} ORG=${{ inputs.org }}
     - name: Store image and digest
       shell: bash
       id: image_info

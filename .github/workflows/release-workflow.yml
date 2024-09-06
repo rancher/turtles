@@ -25,15 +25,9 @@ on:
         description: Destination registry for image push
         required: true
 
-
       tag:
         type: string
         description: Tag for the built image
-        required: true
-
-      arch:
-        type: string
-        description: Architecture for the image
         required: true
 
       org:
@@ -62,7 +56,6 @@ jobs:
         id: image
         uses: ./.github/workflows/release_build
         with:
-          arch: ${{ inputs.arch }}
           tag: ${{ inputs.tag }}
           org: ${{ inputs.org }}
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
@@ -85,24 +78,10 @@ jobs:
       - name: Sign image with cosign
         uses: ./.github/workflows/release_sign
         with:
-          image: ${{ format('{0}-{1}', vars[inputs.image], inputs.arch) }}
+          image: ${{ vars[inputs.image] }}
           digest: ${{ needs.build.outputs.digest }}
           identity: https://github.com/${{ inputs.org }}/turtles/.github/workflows/release-workflow.yml@${{ github.ref }}
           oids-issuer: https://token.actions.githubusercontent.com
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
           username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
           password: ${{ secrets[inputs.password] }}
-
-  provenance:
-    needs: [sign, build]
-    permissions:
-      actions: read
-      id-token: write
-      packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
-    with:
-      digest: ${{ needs.build.outputs.digest }}
-      image: ${{ format('{0}-{1}', vars[inputs.image], inputs.arch) }}
-    secrets:
-      registry-username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
-      registry-password: ${{ secrets[inputs.password] }}
