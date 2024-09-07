@@ -55,6 +55,8 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
+              location:
+                type: string
               machineName:
                 type: string
               manual:
@@ -62,6 +64,7 @@ spec:
             required:
             - clusterName
             - configRef
+            - location
             - machineName
             - manual
             type: object
