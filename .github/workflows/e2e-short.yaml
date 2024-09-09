@@ -2,7 +2,7 @@ name: Run short e2e tests
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
 
 env:
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind"
