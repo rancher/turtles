@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -42,11 +41,11 @@ const (
 
 // EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
 type EtcdMachineSnapshotSpec struct {
-	ClusterName string                      `json:"clusterName"`
-	MachineName string                      `json:"machineName"`
-	ConfigRef   corev1.LocalObjectReference `json:"configRef"`
-	Manual      bool                        `json:"manual"`
-	Location    string                      `json:"location"`
+	ClusterName string `json:"clusterName"`
+	MachineName string `json:"machineName"`
+	ConfigRef   string `json:"configRef"`
+	Manual      bool   `json:"manual"`
+	Location    string `json:"location"`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore

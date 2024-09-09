@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,15 +31,15 @@ type LocalConfig struct {
 }
 
 type S3Config struct {
-	Endpoint           string                       `json:"endpoint,omitempty"`
-	EndpointCASecret   *corev1.LocalObjectReference `json:"endpointCAsecret,omitempty"`
-	SkipSSLVerify      bool                         `json:"skipSSLVerify,omitempty"`
-	S3CredentialSecret *corev1.LocalObjectReference `json:"s3CredentialSecret,omitempty"`
-	Bucket             string                       `json:"bucket,omitempty"`
-	Region             string                       `json:"region,omitempty"`
-	Folder             string                       `json:"folder,omitempty"`
-	Insecure           bool                         `json:"insecure,omitempty"`
-	Location           string                       `json:"location,omitempty"`
+	Endpoint           string `json:"endpoint,omitempty"`
+	EndpointCASecret   string `json:"endpointCAsecret,omitempty"`
+	SkipSSLVerify      bool   `json:"skipSSLVerify,omitempty"`
+	S3CredentialSecret string `json:"s3CredentialSecret,omitempty"`
+	Bucket             string `json:"bucket,omitempty"`
+	Region             string `json:"region,omitempty"`
+	Folder             string `json:"folder,omitempty"`
+	Insecure           bool   `json:"insecure,omitempty"`
+	Location           string `json:"location,omitempty"`
 }
 
 // RKE2EtcdMachineSnapshotConfig is the schema for the snapshot config.
