@@ -509,6 +509,13 @@ rules:
   - update
   - watch
 - apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+  - get
+- apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
   - rke2configs
@@ -843,5 +850,57 @@ webhooks:
     - UPDATE
     resources:
     - rke2configs
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+  labels:
+    turtles-capi.cattle.io: etcd-restore
+  name: rancher-turtles-etcdsnapshotrestore-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: rancher-turtles-etcdsnapshotrestore-webhook-service
+      namespace: rancher-turtles-system
+      path: /validate-turtles-capi-cattle-io-v1alpha1-etcdmachinesnapshot
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: etcdmachinesnapshot.kb.io
+  rules:
+  - apiGroups:
+    - turtles-capi.cattle.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - etcdmachinesnapshots
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: rancher-turtles-etcdsnapshotrestore-webhook-service
+      namespace: rancher-turtles-system
+      path: /validate-turtles-capi-cattle-io-v1alpha1-etcdsnapshotrestore
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: etcdsnapshotrestore.kb.io
+  rules:
+  - apiGroups:
+    - turtles-capi.cattle.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - etcdsnapshotrestores
   sideEffects: None
 {{- end }}

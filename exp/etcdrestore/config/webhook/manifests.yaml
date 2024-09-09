@@ -24,3 +24,51 @@ webhooks:
     resources:
     - rke2configs
   sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-turtles-capi-cattle-io-v1alpha1-etcdmachinesnapshot
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: etcdmachinesnapshot.kb.io
+  rules:
+  - apiGroups:
+    - turtles-capi.cattle.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - etcdmachinesnapshots
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-turtles-capi-cattle-io-v1alpha1-etcdsnapshotrestore
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: etcdsnapshotrestore.kb.io
+  rules:
+  - apiGroups:
+    - turtles-capi.cattle.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - etcdsnapshotrestores
+  sideEffects: None
