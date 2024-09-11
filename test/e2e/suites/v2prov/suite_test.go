@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"testing"
 
@@ -160,7 +159,7 @@ var _ = BeforeSuite(func() {
 		TurtlesChartPath:             e2eConfig.GetVariable(e2e.TurtlesPathVar),
 		CAPIProvidersYAML:            e2e.CapiProviders,
 		Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-		Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+		Image:                        "ghcr.io/rancher/turtles-e2e",
 		Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues:             map[string]string{},

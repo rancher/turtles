@@ -159,8 +159,7 @@ NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 
 # Registry / images
 TAG ?= dev
-ARCH ?= $(shell go env GOARCH)
-ALL_ARCH = amd64 arm64
+ARCH ?= linux/$(shell go env GOARCH)
 TARGET_PLATFORMS := linux/amd64,linux/arm64
 MACHINE := rancher-turtles
 REGISTRY ?= ghcr.io
