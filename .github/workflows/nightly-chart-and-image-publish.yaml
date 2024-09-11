@@ -32,9 +32,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build docker image
-      run: make docker-build-all TAG=${{ env.TAG }} ORG=${{ env.PROD_ORG }}
-    - name: Push docker image
-      run: make docker-push-all TAG=${{ env.TAG }} ORG=${{ env.PROD_ORG }}
+      run: make docker-build-and-push TAG=${{ env.TAG }} ORG=${{ env.PROD_ORG }}
 
   publish-helm-chart-ghcr:
     name: Publish Helm chart to GHCR
