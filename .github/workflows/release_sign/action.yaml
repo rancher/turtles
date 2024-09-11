@@ -49,7 +49,7 @@ runs:
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }} --oidc-provider=${{ inputs.oidc-provider }}
+        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }} --oidc-provider=${{ inputs.oidc-provider }} --recursive
     - name: Verify pushed ghcr images
       shell: bash
       env:
