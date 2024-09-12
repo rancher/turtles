@@ -62,6 +62,7 @@ var (
 // AddKnownTypes adds the list of known types to api.Scheme.
 func AddKnownTypes(scheme *runtime.Scheme) {
 	scheme.AddKnownTypes(GroupVersion, &CAPIProvider{}, &CAPIProviderList{})
+	scheme.AddKnownTypes(GroupVersion, &ClusterctlConfig{}, &ClusterctlConfigList{})
 
 	for _, provider := range Providers {
 		if provider, ok := provider.(runtime.Object); ok {

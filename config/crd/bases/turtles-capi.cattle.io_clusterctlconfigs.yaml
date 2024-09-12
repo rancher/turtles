@@ -1,0 +1,108 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: clusterctlconfigs.turtles-capi.cattle.io
+spec:
+  group: turtles-capi.cattle.io
+  names:
+    kind: ClusterctlConfig
+    listKind: ClusterctlConfigList
+    plural: clusterctlconfigs
+    singular: clusterctlconfig
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ClusterctlConfig is the Schema for the CAPI Clusterctl config
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ClusterctlConfigSpec defines the user overrides for images
+              and known providers with sources
+            properties:
+              images:
+                description: Images is a list of image overrided for specified providers
+                items:
+                  description: Image allows to define transformations to apply to
+                    the image contained in the YAML manifests.
+                  properties:
+                    name:
+                      description: Name of the provider image override
+                      example: all
+                      type: string
+                    repository:
+                      description: Repository sets the container registry override
+                        to pull images from.
+                      example: my-registry/my-org
+                      type: string
+                    tag:
+                      description: Tag allows to specify a tag for the images.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              providers:
+                description: Provider overrides
+                items:
+                  description: Provider allows to define providers with known URLs
+                    to pull the components.
+                  properties:
+                    name:
+                      description: Name of the provider
+                      type: string
+                    type:
+                      description: Type is the type of the provider
+                      enum:
+                      - infrastructure
+                      - core
+                      - controlPlane
+                      - bootstrap
+                      - addon
+                      - runtimeextension
+                      - ipam
+                      example: infrastructure
+                      type: string
+                    url:
+                      description: URL of the provider components. Will be used unless
+                        and override is specified
+                      type: string
+                  required:
+                  - name
+                  - type
+                  - url
+                  type: object
+                type: array
+            required:
+            - images
+            - providers
+            type: object
+        type: object
+        x-kubernetes-validations:
+        - message: Clusterctl Config should be named clusterctl-config.
+          rule: self.metadata.name == 'clusterctl-config'
+    served: true
+    storage: true
+    subresources:
+      status: {}

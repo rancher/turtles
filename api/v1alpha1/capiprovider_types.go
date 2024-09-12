@@ -41,8 +41,7 @@ type CAPIProviderSpec struct {
 
 	// Type is the type of the provider to enable
 	// +required
-	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon;runtimeextension;ipam
-	// +kubebuilder:example=infrastructure
+	// +kubebuilder:example=InfrastructureProvider
 	Type Type `json:"type"`
 
 	// Credentials is the structure holding the credentials to use for the provider. Only one credential type could be set at a time.

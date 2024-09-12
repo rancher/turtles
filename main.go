@@ -282,6 +282,18 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		}
 	}
 
+	setupLog.Info("enabling Clusterctl Config synchronization controller")
+
+	if err := (&controllers.ClusterctlConfigReconciler{
+		Client: uncachedClient,
+	}).SetupWithManager(ctx, mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+		CacheSyncTimeout:        maxDuration,
+	}); err != nil {
+		setupLog.Error(err, "unable to create ClusterctlConfig controller")
+		os.Exit(1)
+	}
+
 	setupLog.Info("enabling CAPI Operator synchronization controller")
 
 	if err := (&controllers.CAPIProviderReconciler{
