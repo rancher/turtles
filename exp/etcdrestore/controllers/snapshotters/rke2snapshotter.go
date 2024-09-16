@@ -99,15 +99,13 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 			}
 
 			rke2EtcdMachineSnapshotConfig.Spec.S3 = snapshotrestorev1.S3Config{
-				Endpoint: snapshotFile.Spec.S3.Endpoint,
-				EndpointCASecret: &corev1.LocalObjectReference{
-					Name: s3EndpointCASecret.Name,
-				},
-				SkipSSLVerify: snapshotFile.Spec.S3.SkipSSLVerify,
-				Bucket:        snapshotFile.Spec.S3.Bucket,
-				Region:        snapshotFile.Spec.S3.Region,
-				Insecure:      snapshotFile.Spec.S3.Insecure,
-				Location:      snapshotFile.Spec.Location,
+				Endpoint:         snapshotFile.Spec.S3.Endpoint,
+				EndpointCASecret: s3EndpointCASecret.Name,
+				SkipSSLVerify:    snapshotFile.Spec.S3.SkipSSLVerify,
+				Bucket:           snapshotFile.Spec.S3.Bucket,
+				Region:           snapshotFile.Spec.S3.Region,
+				Insecure:         snapshotFile.Spec.S3.Insecure,
+				Location:         snapshotFile.Spec.Location,
 			}
 		} else {
 			rke2EtcdMachineSnapshotConfig.Spec.Local = snapshotrestorev1.LocalConfig{
@@ -131,9 +129,7 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 			Spec: snapshotrestorev1.EtcdMachineSnapshotSpec{
 				ClusterName: s.cluster.Name,
 				MachineName: machineName,
-				ConfigRef: corev1.LocalObjectReference{
-					Name: snapshotFile.Name,
-				},
+				ConfigRef:   snapshotFile.Name,
 			},
 		}
 
