@@ -275,4 +275,18 @@ func setupWebhooks(mgr ctrl.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "RKE2Config")
 		os.Exit(1)
 	}
+
+	if err := (&expwebhooks.EtcdMachineSnapshotWebhook{
+		Client: mgr.GetClient(),
+	}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "EtcdMachineSnapshot")
+		os.Exit(1)
+	}
+
+	if err := (&expwebhooks.EtcdSnapshotRestoreWebhook{
+		Client: mgr.GetClient(),
+	}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "EtcdSnapshotRestore")
+		os.Exit(1)
+	}
 }

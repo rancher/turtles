@@ -47,11 +47,6 @@ var (
 	token                   []byte
 )
 
-type mockClient struct {
-	client.Client
-	listFunc func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error
-}
-
 var _ = Describe("RKE2ConfigWebhook tests", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
