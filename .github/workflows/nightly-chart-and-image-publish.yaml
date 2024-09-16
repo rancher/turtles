@@ -31,7 +31,7 @@ jobs:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build docker image
+    - name: Build and push docker images
       run: make docker-build-and-push TAG=${{ env.TAG }} ORG=${{ env.PROD_ORG }}
 
   publish-helm-chart-ghcr:

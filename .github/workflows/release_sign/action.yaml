@@ -44,15 +44,10 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
     - uses: sigstore/cosign-installer@v3.4.0
-    - name: Sign manifests
+    - name: Sign and verify manifests
       shell: bash
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }} --oidc-provider=${{ inputs.oidc-provider }}
-    - name: Verify pushed ghcr images
-      shell: bash
-      env:
-        COSIGN_EXPERIMENTAL: 1
-      run: |
+        cosign sign --yes ${{ inputs.image }}@${{ inputs.digest }} --oidc-provider=${{ inputs.oidc-provider }} --recursive
         cosign verify ${{ inputs.image }}@${{ inputs.digest }} --certificate-identity=${{ inputs.identity }} --certificate-oidc-issuer=${{ inputs.oids-issuer }}

@@ -21,8 +21,6 @@ package chart_upgrade
 
 import (
 	_ "embed"
-	"fmt"
-	"runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -77,7 +75,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
-			Image:                        fmt.Sprintf("ghcr.io/rancher/turtles-e2e-%s", runtime.GOARCH),
+			Image:                        "ghcr.io/rancher/turtles-e2e",
 			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 			AdditionalValues:             rtInput.AdditionalValues,

@@ -159,16 +159,15 @@ NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 
 # Registry / images
 TAG ?= dev
-ARCH ?= $(shell go env GOARCH)
-ALL_ARCH = amd64 arm64
+ARCH ?= linux/$(shell go env GOARCH)
 TARGET_PLATFORMS := linux/amd64,linux/arm64
 MACHINE := rancher-turtles
 REGISTRY ?= ghcr.io
 ORG ?= rancher
 CONTROLLER_IMAGE_NAME ?= turtles
 CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
-MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
+IID_FILE ?= $(shell mktemp)
 
 # Release
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
@@ -348,22 +347,23 @@ docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
+			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
 .PHONY: docker-build-and-push
 docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push targets for all architectures
 	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
 			--platform $(TARGET_PLATFORMS) \
 			--push \
-			--attest type=provenance \
+			--sbom=true \
+			--attest type=provenance,mode=max \
+			--iidfile=$(IID_FILE) \
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(MANIFEST_IMG):$(TAG)
+			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
-	@for arch in $(ALL_ARCH); do echo $(CONTROLLER_IMG)-$${arch}:${TAG}; done
 
 ##@ Deployment
 
@@ -546,7 +546,7 @@ test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-en
 .PHONY: e2e-image
 e2e-image: ## Build the image for e2e tests
 	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e-$(ARCH) CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
+	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
 
 .PHONY: e2e-image-push
 e2e-image-push: e2e-image ## Push the image for e2e tests
