@@ -39,6 +39,9 @@ cluster-api-operator:
     - name: clusterctl-config
       configMap:
         name: clusterctl-config
+  image:
+    manager:
+      repository: registry.rancher.com/rancher/cluster-api-operator
   volumeMounts:
     manager:
       - mountPath: /tmp/k8s-webhook-server/serving-certs
