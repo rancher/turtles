@@ -550,7 +550,7 @@ e2e-image: ## Build the image for e2e tests
 
 .PHONY: e2e-image-push
 e2e-image-push: e2e-image ## Push the image for e2e tests
-	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-push
+	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build-and-push
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation
