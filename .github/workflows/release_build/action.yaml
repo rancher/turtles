@@ -45,11 +45,12 @@ runs:
         password: ${{ inputs.password }}
     - name: Build & Push docker image
       shell: bash
+      id: image_info
       run: |
         IID_FILE=$(mktemp)
         make docker-build-and-push TAG=${{ inputs.tag }} REGISTRY=${{ inputs.registry }} ORG=${{ inputs.org }} IID_FILE=${IID_FILE}
 
         digest=$(head -n 1 ${IID_FILE})
-        image=${{ inputs.registry }}/${{ inputs.registry }}/turtles
+        image=${{ inputs.registry }}/${{ inputs.org }}/turtles
         echo "digest=${digest}" >> $GITHUB_OUTPUT
         echo "image=${image}" >> $GITHUB_OUTPUT
