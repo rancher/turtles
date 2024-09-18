@@ -170,9 +170,11 @@ CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
 IID_FILE ?= $(shell mktemp)
 
 # Release
-RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
-PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) 2>/dev/null)
-HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+# Exclude tags with the prefix 'test/'
+RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
+# Exclude the current RELEASE_TAG and any tags with the prefix 'test/'
+PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'test/*' 2>/dev/null)
+HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 CHART_DIR := charts/rancher-turtles
 RELEASE_DIR ?= out
@@ -525,7 +527,7 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	./scripts/process-exp-etcdrestore-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(CONTROLLER_IMAGE_VERSION)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
