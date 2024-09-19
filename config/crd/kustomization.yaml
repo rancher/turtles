@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/turtles-capi.cattle.io_capiproviders.yaml
+- bases/turtles-capi.cattle.io_clusterctlconfigs.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

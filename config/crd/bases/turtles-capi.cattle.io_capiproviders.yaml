@@ -2979,15 +2979,7 @@ spec:
                 type: string
               type:
                 description: Type is the type of the provider to enable
-                enum:
-                - infrastructure
-                - core
-                - controlPlane
-                - bootstrap
-                - addon
-                - runtimeextension
-                - ipam
-                example: infrastructure
+                example: InfrastructureProvider
                 type: string
               variables:
                 additionalProperties:

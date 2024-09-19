@@ -1,9 +1,7 @@
-{{- if index .Values "cluster-api-operator" "enabled" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: clusterctl-config
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
 data:
   clusterctl.yaml: |
     providers:
@@ -49,4 +47,3 @@ data:
     - name:         "fleet"
       url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.3.1/addon-components.yaml"
       type:         "AddonProvider"
-{{- end }}

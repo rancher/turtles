@@ -104,6 +104,8 @@ rules:
   resources:
   - capiproviders
   - capiproviders/status
+  - clusterctlconfigs
+  - clusterctlconfigs/status
   verbs:
   - get
   - list
