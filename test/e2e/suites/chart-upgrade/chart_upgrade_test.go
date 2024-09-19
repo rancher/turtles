@@ -101,6 +101,29 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 		})
 
+		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
+			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Version:   "v1.7.3",
+				Name:      "cluster-api",
+				Namespace: "capi-system",
+			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		}, func() {
+			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Version:   "v1.7.3",
+				Name:      "kubeadm-control-plane",
+				Namespace: "capi-kubeadm-control-plane-system",
+			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		}, func() {
+			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Version:   "v1.7.3",
+				Name:      "docker",
+				Namespace: "capd-system",
+			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		})
+
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 	})
 })

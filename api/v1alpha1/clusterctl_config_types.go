@@ -30,10 +30,12 @@ const (
 //nolint:lll
 type ClusterctlConfigSpec struct {
 	// Images is a list of image overrided for specified providers
-	Images []Image `json:"images"`
+	// +optional
+	Images []Image `json:"images,omitempty"`
 
 	// Provider overrides
-	Providers ProviderList `json:"providers"`
+	// +optional
+	Providers ProviderList `json:"providers,omitempty"`
 }
 
 // Provider allows to define providers with known URLs to pull the components.
@@ -48,9 +50,8 @@ type Provider struct {
 
 	// Type is the type of the provider
 	// +required
-	// +kubebuilder:validation:Enum=infrastructure;core;controlPlane;bootstrap;addon;runtimeextension;ipam
-	// +kubebuilder:example=infrastructure
-	ProviderType Type `json:"type"`
+	// +kubebuilder:example=InfrastructureProvider
+	Type string `json:"type"`
 }
 
 // ProviderList is a list of providers.

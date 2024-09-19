@@ -87,42 +87,20 @@ func (r *ClusterctlConfigReconciler) SetupWithManager(ctx context.Context, mgr c
 	return nil
 }
 
-//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlcofigs,verbs=get;list;watch;patch
-//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlcofigs/status,verbs=get;list;watch;patch
-//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlcofigs/finalizers,verbs=get;list;watch;patch;update
+//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlconfigs,verbs=get;list;watch;patch
+//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlconfigs/status,verbs=get;list;watch;patch
+//+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlconfigs/finalizers,verbs=get;list;watch;patch;update
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;patch
 
 // Reconcile reconciles the EtcdMachineSnapshot object.
-func (r *ClusterctlConfigReconciler) Reconcile(ctx context.Context, req reconcile.Request) (ctrl.Result, error) {
+func (r *ClusterctlConfigReconciler) Reconcile(ctx context.Context, _ reconcile.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	configMap := clusterctl.Config()
-
-	config := &turtlesv1.ClusterctlConfig{}
-	if err := r.Client.Get(ctx, req.NamespacedName, config); client.IgnoreNotFound(err) != nil {
-		log.Error(err, "Unable to collect ClusterctlConfig resource")
+	clusterctlConfig, err := clusterctl.ClusterConfig(ctx, r.Client)
+	if err != nil {
+		log.Error(err, "Unable to serialize updated clusterctl config")
 
 		return ctrl.Result{}, err
-	}
-
-	clusterctlConfig := &Config{}
-	if err := yaml.UnmarshalStrict([]byte(configMap.Data["clusterctl.yaml"]), &clusterctlConfig); err != nil {
-		log.Error(err, "Unable to deserialize initial clusterctl config")
-
-		return ctrl.Result{}, err
-	}
-
-	if clusterctlConfig.Images == nil {
-		clusterctlConfig.Images = map[string]ConfigImage{}
-	}
-
-	clusterctlConfig.Providers = append(clusterctlConfig.Providers, config.Spec.Providers...)
-
-	for _, image := range config.Spec.Images {
-		clusterctlConfig.Images[image.Name] = ConfigImage{
-			Tag:        image.Tag,
-			Repository: image.Repository,
-		}
 	}
 
 	clusterctlYaml, err := yaml.Marshal(clusterctlConfig)
@@ -132,6 +110,7 @@ func (r *ClusterctlConfigReconciler) Reconcile(ctx context.Context, req reconcil
 		return ctrl.Result{}, err
 	}
 
+	configMap := clusterctl.Config()
 	configMap.Data["clusterctl.yaml"] = string(clusterctlYaml)
 
 	if err := r.Client.Patch(ctx, configMap, client.Apply, []client.PatchOption{

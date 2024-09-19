@@ -92,6 +92,7 @@ var _ = Describe("Provider sync", func() {
 			Conditions: clusterv1.Conditions{
 				{
 					Type:               turtlesv1.CheckLatestVersionTime,
+					Message:            "Updated to latest v1.4.6 version",
 					Status:             corev1.ConditionTrue,
 					LastTransitionTime: metav1.NewTime(time.Now().UTC().Truncate(time.Second).Add(-23 * time.Hour)),
 				},
@@ -115,6 +116,9 @@ var _ = Describe("Provider sync", func() {
 	It("Should sync spec down", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
 
+		expected := capiProvider.DeepCopy()
+		expected.Spec.Version = "v1.7.3"
+
 		Eventually(func(g Gomega) {
 			g.Expect(s.Get(ctx)).To(Succeed())
 			g.Expect(s.Sync(ctx)).To(Succeed())
@@ -124,7 +128,7 @@ var _ = Describe("Provider sync", func() {
 		}).Should(Succeed())
 
 		Eventually(Object(infrastructure)).Should(
-			HaveField("Spec.ProviderSpec", Equal(capiProvider.Spec.ProviderSpec)))
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
 	})
 
 	It("Should sync azure spec", func() {
@@ -198,13 +202,10 @@ var _ = Describe("Provider sync", func() {
 			s.Apply(ctx, &err)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
-			g.Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
-			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).LastTransitionTime.Equal(
-				&lastVersionCheckCondition.LastTransitionTime)).To(BeTrue())
+			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).Message).To(Equal("Updated to latest v1.7.3 version"))
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
