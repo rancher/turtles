@@ -44,7 +44,7 @@ var (
 )
 
 const (
-	latest = "latest"
+	latestVersionKey = "latest"
 )
 
 func init() {
@@ -113,14 +113,14 @@ func ClusterConfig(ctx context.Context, c client.Client) (*ConfigRepository, err
 
 // GetProviderVersion collects version of the collected provider overrides state.
 // Returns latest if the version is not found.
-func (r *ConfigRepository) GetProviderVersion(ctx context.Context, name, providerType string) string {
+func (r *ConfigRepository) GetProviderVersion(ctx context.Context, name, providerType string) (version string, providerKnown bool) {
 	for _, provider := range r.Providers {
 		if provider.Name == name && strings.EqualFold(provider.Type, providerType) {
-			return collectVersion(ctx, provider.URL)
+			return collectVersion(ctx, provider.URL), true
 		}
 	}
 
-	return latest
+	return latestVersionKey, false
 }
 
 func collectVersion(ctx context.Context, url string) string {
@@ -130,16 +130,17 @@ func collectVersion(ctx context.Context, url string) string {
 	if len(version) < 2 {
 		log.FromContext(ctx).Info("Provider url is invalid for version resolve, defaulting to latest", "url", url)
 
-		return latest
+		return latestVersionKey
 	}
 
 	return version[1]
 }
 
-// VerifyProviderVersion checks version against the expected max version, and returns false
+// IsLatestVersion checks version against the expected max version, and returns false
 // if the version given is newer then the latest in the clusterctlconfig override.
-func (r *ConfigRepository) VerifyProviderVersion(providerVersion, expected string) (bool, error) {
-	if providerVersion == latest {
+func (r *ConfigRepository) IsLatestVersion(providerVersion, expected string) (bool, error) {
+	// Return true for providers without version boundary or unknown providers
+	if providerVersion == latestVersionKey {
 		return true, nil
 	}
 
@@ -150,18 +151,19 @@ func (r *ConfigRepository) VerifyProviderVersion(providerVersion, expected strin
 		return false, fmt.Errorf("unable to parse default provider version %s: %w", providerVersion, err)
 	}
 
-	if expected == latest {
+	expected = cmp.Or(expected, latestVersionKey)
+	if expected == latestVersionKey {
 		// Latest should be reduced to the actual version set on the clusterctlprovider resource
 		return false, nil
 	}
 
 	version, _ = strings.CutPrefix(expected, "v")
 
-	destinatonVersion, err := semver.Parse(version)
+	desiredVersion, err := semver.Parse(version)
 	if err != nil {
-		return false, fmt.Errorf("unable to parse provider version %s: %w", expected, err)
+		return false, fmt.Errorf("unable to parse desired version %s: %w", expected, err)
 	}
 
-	// Disallow versions beyond clusterctl.yaml default
-	return maxVersion.LTE(destinatonVersion), nil
+	// Disallow versions beyond current clusterctl.yaml override default
+	return maxVersion.LTE(desiredVersion), nil
 }

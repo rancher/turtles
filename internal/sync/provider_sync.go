@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -159,13 +160,6 @@ func (s *ProviderSync) rolloutInfrastructure() {
 }
 
 func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
-	// Skip for user specified versions
-	// TODO: We may potentially need to verify if version specified is built in the override,
-	// and notify user with condition otherwise
-	if s.Source.Spec.Version != "" {
-		return nil
-	}
-
 	log := log.FromContext(ctx)
 
 	config, err := clusterctl.ClusterConfig(ctx, s.client)
@@ -173,17 +167,32 @@ func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
 		return err
 	}
 
-	providerVersion := config.GetProviderVersion(ctx, cmp.Or(s.Source.Spec.Name, s.Source.Name), s.Source.Spec.Type.ToKind())
-	expected := cmp.Or(s.Source.Spec.Version, "latest")
+	providerVersion, knownProvider := config.GetProviderVersion(ctx, cmp.Or(s.Source.Spec.Name, s.Source.Name), s.Source.Spec.Type.ToKind())
 
-	if valid, err := config.VerifyProviderVersion(providerVersion, expected); err != nil {
+	latest, err := config.IsLatestVersion(providerVersion, s.Source.Spec.Version)
+	if err != nil {
 		return err
-	} else if !valid {
+	}
+
+	switch {
+	case !knownProvider:
+		conditions.MarkUnknown(s.Source, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknown, "Provider is unknown")
+	case s.Source.Spec.Version != "" && latest:
+		conditions.MarkTrue(s.Source, turtlesv1.CheckLatestVersionTime)
+	case s.Source.Spec.Version != "" && !latest:
+		conditions.MarkFalse(
+			s.Source,
+			turtlesv1.CheckLatestVersionTime,
+			turtlesv1.CheckLatestUpdateAvailableReason,
+			clusterv1.ConditionSeverityInfo,
+			"Provider version update available. Current latest is %s", providerVersion,
+		)
+	case !latest:
 		lastCheck := conditions.Get(s.Source, turtlesv1.CheckLatestVersionTime)
 		updatedMessage := fmt.Sprintf("Updated to latest %s version", providerVersion)
 
 		if lastCheck == nil || lastCheck.Message != updatedMessage {
-			log.Info(fmt.Sprintf("Version %s is beyound current latest, setting to %s", expected, providerVersion))
+			log.Info(fmt.Sprintf("Version %s is beyound current latest, updated to %s", cmp.Or(s.Source.Spec.Version, "latest"), providerVersion))
 
 			lastCheck = conditions.TrueCondition(turtlesv1.CheckLatestVersionTime)
 			lastCheck.Message = updatedMessage
