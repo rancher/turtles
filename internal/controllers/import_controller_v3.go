@@ -270,7 +270,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		newCluster := &managementv3.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace:    capiCluster.Namespace,
-				GenerateName: "c-",
+				GenerateName: capiCluster.Name,
 				Labels: map[string]string{
 					capiClusterOwner:          capiCluster.Name,
 					capiClusterOwnerNamespace: capiCluster.Namespace,
