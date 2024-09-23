@@ -23,6 +23,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_gcp_janitor:
+        description: "Run the GCP janitor after the test to cleanup"
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -104,6 +109,16 @@ jobs:
           client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
           tenant-id: ${{ secrets.AZURE_TENANT_ID}}
           commit: true
+      - name: Cleanup GCP Resources
+        if: ${{ inputs.run_gcp_janitor && always() }}
+        uses: rancher-sandbox/gcp-janitor@v0.1.0
+        with:
+          credentials-json: ${{ secrets.GCP_CREDENTIALS }}
+          zones: ${{ secrets.GCP_ZONE }}
+          project-id: ${{ secrets.GCP_PROJECT }}
+          age-in-hours: 6
+          resource-label-key: ${{ secrets.GCP_LABEL_KEY }}
+          resource-label-value: ${{ secrets.GCP_LABEL_VALUE }}
       - name: Send failed status to slack
         if: failure()
         uses: slackapi/slack-github-action@v1.26.0
