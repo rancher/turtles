@@ -176,7 +176,7 @@ func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
 
 	switch {
 	case !knownProvider:
-		conditions.MarkUnknown(s.Source, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknown, "Provider is unknown")
+		conditions.MarkUnknown(s.Source, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknownReason, "Provider is unknown")
 	case s.Source.Spec.Version != "" && latest:
 		conditions.MarkTrue(s.Source, turtlesv1.CheckLatestVersionTime)
 	case s.Source.Spec.Version != "" && !latest:
@@ -192,7 +192,7 @@ func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
 		updatedMessage := fmt.Sprintf("Updated to latest %s version", providerVersion)
 
 		if lastCheck == nil || lastCheck.Message != updatedMessage {
-			log.Info(fmt.Sprintf("Version %s is beyound current latest, updated to %s", cmp.Or(s.Source.Spec.Version, "latest"), providerVersion))
+			log.Info(fmt.Sprintf("Version %s is beyond current latest, updated to %s", cmp.Or(s.Source.Spec.Version, "latest"), providerVersion))
 
 			lastCheck = conditions.TrueCondition(turtlesv1.CheckLatestVersionTime)
 			lastCheck.Message = updatedMessage

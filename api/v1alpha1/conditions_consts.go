@@ -39,6 +39,6 @@ const (
 	// CheckLatestUpdateAvailableReason is a reason for a False condition, due to update being available.
 	CheckLatestUpdateAvailableReason = "UpdateAvailable"
 
-	// CheckLatestProviderUnknown is a reason for an Unknown condition, due to provider not being available.
-	CheckLatestProviderUnknown = "ProviderUnknown"
+	// CheckLatestProviderUnknownReason is a reason for an Unknown condition, due to provider not being available.
+	CheckLatestProviderUnknownReason = "ProviderUnknown"
 )

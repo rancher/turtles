@@ -150,6 +150,7 @@ func main() {
 				DisableFor: []client.Object{
 					&corev1.ConfigMap{},
 					&corev1.Secret{},
+					&turtlesv1.ClusterctlConfig{},
 				},
 			},
 		},
