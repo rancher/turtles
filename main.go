@@ -150,6 +150,7 @@ func main() {
 				DisableFor: []client.Object{
 					&corev1.ConfigMap{},
 					&corev1.Secret{},
+					&turtlesv1.ClusterctlConfig{},
 				},
 			},
 		},
@@ -285,7 +286,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 	setupLog.Info("enabling Clusterctl Config synchronization controller")
 
 	if err := (&controllers.ClusterctlConfigReconciler{
-		Client: uncachedClient,
+		Client: mgr.GetClient(),
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
 		CacheSyncTimeout:        maxDuration,

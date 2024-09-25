@@ -47,6 +47,8 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
+
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 var root string
@@ -63,6 +65,7 @@ func init() {
 	utilruntime.Must(apiextensionsv1.AddToScheme(clientgoscheme.Scheme))
 	utilruntime.Must(admissionv1.AddToScheme(clientgoscheme.Scheme))
 	utilruntime.Must(clusterv1.AddToScheme(clientgoscheme.Scheme))
+	utilruntime.Must(turtlesv1.AddToScheme(clientgoscheme.Scheme))
 
 	// Get the root of the current file to use in CRD paths.
 	_, filename, _, _ := goruntime.Caller(0) //nolint
@@ -167,6 +170,13 @@ func (t *TestEnvironmentConfiguration) Build() (*TestEnvironment, error) {
 		Scheme: clientgoscheme.Scheme,
 		Metrics: server.Options{
 			BindAddress: "0",
+		},
+		Client: client.Options{
+			Cache: &client.CacheOptions{
+				DisableFor: []client.Object{
+					&turtlesv1.ClusterctlConfig{},
+				},
+			},
 		},
 	}
 

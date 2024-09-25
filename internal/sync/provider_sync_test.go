@@ -17,6 +17,7 @@ limitations under the License.
 package sync_test
 
 import (
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -40,12 +41,17 @@ var _ = Describe("Provider sync", func() {
 		ns                           *corev1.Namespace
 		otherNs                      *corev1.Namespace
 		capiProvider                 *turtlesv1.CAPIProvider
+		customCAPIProvider           *turtlesv1.CAPIProvider
+		unknownCAPIProvider          *turtlesv1.CAPIProvider
 		capiProviderAzure            *turtlesv1.CAPIProvider
 		capiProviderDuplicate        *turtlesv1.CAPIProvider
 		infrastructure               *operatorv1.InfrastructureProvider
+		customInfrastructure         *operatorv1.InfrastructureProvider
+		unknownInfrastructure        *operatorv1.InfrastructureProvider
 		infrastructureStatusOutdated operatorv1.ProviderStatus
 		infrastructureDuplicate      *operatorv1.InfrastructureProvider
 		infrastructureAzure          *operatorv1.InfrastructureProvider
+		clusterctlconfig             *turtlesv1.ClusterctlConfig
 	)
 
 	BeforeEach(func() {
@@ -70,11 +76,29 @@ var _ = Describe("Provider sync", func() {
 		capiProviderAzure.Spec.Name = "azure"
 		capiProviderAzure.Name = "azure"
 
+		customCAPIProvider = capiProvider.DeepCopy()
+		customCAPIProvider.Name = "custom-provider"
+		customCAPIProvider.Spec.Name = "custom-provider"
+
+		unknownCAPIProvider = capiProvider.DeepCopy()
+		unknownCAPIProvider.Name = "unknown-provider"
+		unknownCAPIProvider.Spec.Name = "unknown-provider"
+
 		capiProviderDuplicate = capiProvider.DeepCopy()
 		capiProviderDuplicate.Namespace = otherNs.Name
 
 		infrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      string(capiProvider.Spec.Name),
+			Namespace: ns.Name,
+		}}
+
+		customInfrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(customCAPIProvider.Spec.Name),
+			Namespace: ns.Name,
+		}}
+
+		unknownInfrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(unknownCAPIProvider.Spec.Name),
 			Namespace: ns.Name,
 		}}
 
@@ -92,6 +116,7 @@ var _ = Describe("Provider sync", func() {
 			Conditions: clusterv1.Conditions{
 				{
 					Type:               turtlesv1.CheckLatestVersionTime,
+					Message:            "Updated to latest v1.4.6 version",
 					Status:             corev1.ConditionTrue,
 					LastTransitionTime: metav1.NewTime(time.Now().UTC().Truncate(time.Second).Add(-23 * time.Hour)),
 				},
@@ -103,17 +128,39 @@ var _ = Describe("Provider sync", func() {
 			},
 		}
 
+		clusterctlconfig = &turtlesv1.ClusterctlConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      turtlesv1.ClusterctlConfigName,
+				Namespace: ns.Name,
+			},
+			Spec: turtlesv1.ClusterctlConfigSpec{
+				Providers: turtlesv1.ProviderList{{
+					Name: "custom-provider",
+					URL:  "https://github.com/org/repo/releases/v1.2.3/components.yaml",
+					Type: "InfrastructureProvider",
+				}},
+			},
+		}
+
+		os.Setenv("POD_NAMESPACE", ns.Name)
+
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProviderDuplicate)).To(Succeed())
 		Expect(testEnv.Client.Create(ctx, capiProviderAzure)).To(Succeed())
+		Expect(testEnv.Client.Create(ctx, customCAPIProvider)).To(Succeed())
+		Expect(testEnv.Client.Create(ctx, unknownCAPIProvider)).To(Succeed())
+		Expect(testEnv.Client.Create(ctx, clusterctlconfig)).To(Succeed())
 	})
 
 	AfterEach(func() {
 		testEnv.Cleanup(ctx, ns, otherNs)
 	})
 
-	It("Should sync spec down", func() {
+	It("Should sync spec down and set version to latest", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
+
+		expected := capiProvider.DeepCopy()
+		expected.Spec.Version = "v1.7.3"
 
 		Eventually(func(g Gomega) {
 			g.Expect(s.Get(ctx)).To(Succeed())
@@ -124,7 +171,101 @@ var _ = Describe("Provider sync", func() {
 		}).Should(Succeed())
 
 		Eventually(Object(infrastructure)).Should(
-			HaveField("Spec.ProviderSpec", Equal(capiProvider.Spec.ProviderSpec)))
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
+	})
+
+	It("Should create unknown provider to clusterctl override with unchanged 'latest' version", func() {
+		s := sync.NewProviderSync(testEnv, unknownCAPIProvider.DeepCopy())
+
+		expected := unknownCAPIProvider.DeepCopy()
+
+		Eventually(func(g Gomega) {
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			var err error = nil
+			s.Apply(ctx, &err)
+			g.Expect(err).To(Succeed())
+			g.Expect(conditions.IsUnknown(expected, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+		}).Should(Succeed())
+
+		Eventually(Object(unknownInfrastructure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
+	})
+
+	It("Should create unknown provider to clusterctl override with unchanged specific version", func() {
+		expected := unknownCAPIProvider.DeepCopy()
+		expected.Spec.Version = "v1.0.0"
+		s := sync.NewProviderSync(testEnv, expected)
+
+		Eventually(func(g Gomega) {
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			var err error = nil
+			s.Apply(ctx, &err)
+			g.Expect(err).To(Succeed())
+			g.Expect(conditions.IsTrue(expected, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(conditions.IsUnknown(expected, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+		}).Should(Succeed())
+
+		Eventually(Object(unknownInfrastructure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
+	})
+
+	It("Should set custom provider version to latest according to clusterctlconfig override", func() {
+		s := sync.NewProviderSync(testEnv, customCAPIProvider.DeepCopy())
+
+		expected := customCAPIProvider.DeepCopy()
+		expected.Spec.Version = "v1.2.3"
+
+		Eventually(func(g Gomega) {
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			var err error = nil
+			s.Apply(ctx, &err)
+			g.Expect(err).To(Succeed())
+		}).Should(Succeed())
+
+		Eventually(Object(customInfrastructure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
+	})
+
+	It("Should not change custom provider version even if it is in the clusterctlconfig override", func() {
+		expected := customCAPIProvider.DeepCopy()
+		expected.Spec.Version = "v1.0.0"
+		s := sync.NewProviderSync(testEnv, expected)
+
+		Eventually(func(g Gomega) {
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			var err error = nil
+			s.Apply(ctx, &err)
+			g.Expect(err).To(Succeed())
+			g.Expect(conditions.IsTrue(expected, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
+			g.Expect(conditions.IsFalse(expected, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+		}).Should(Succeed())
+
+		Eventually(Object(customInfrastructure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
+		Consistently(Object(customInfrastructure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
+	})
+
+	It("Should sync spec down and set version to latest", func() {
+		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
+
+		expected := capiProvider.DeepCopy()
+		expected.Spec.Version = "v1.7.3"
+
+		Eventually(func(g Gomega) {
+			g.Expect(s.Get(ctx)).To(Succeed())
+			g.Expect(s.Sync(ctx)).To(Succeed())
+			var err error = nil
+			s.Apply(ctx, &err)
+			g.Expect(err).To(Succeed())
+		}).Should(Succeed())
+
+		Eventually(Object(infrastructure)).Should(
+			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
 	})
 
 	It("Should sync azure spec", func() {
@@ -198,13 +339,10 @@ var _ = Describe("Provider sync", func() {
 			s.Apply(ctx, &err)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
-			g.Expect(dest.GetAnnotations()).To(HaveKeyWithValue(sync.AppliedSpecHashAnnotation, ""))
-			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), dest)).To(Succeed())
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).LastTransitionTime.Equal(
-				&lastVersionCheckCondition.LastTransitionTime)).To(BeTrue())
+			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).Message).To(Equal("Updated to latest v1.7.3 version"))
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())

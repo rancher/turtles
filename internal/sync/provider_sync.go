@@ -17,19 +17,23 @@ limitations under the License.
 package sync
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/api"
+	"github.com/rancher/turtles/internal/controllers/clusterctl"
 )
 
 // AppliedSpecHashAnnotation is a spec hash annotation set by CAPI Operator,
@@ -91,9 +95,13 @@ func (ProviderSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object
 // Spec -> down
 // up <- Status.
 func (s *ProviderSync) Sync(ctx context.Context) error {
+	if err := s.updateLatestVersion(ctx); err != nil {
+		return err
+	}
+
 	s.SyncObjects()
 
-	return s.updateLatestVersion(ctx)
+	return nil
 }
 
 // SyncObjects updates the Source CAPIProvider object and the destination provider object states.
@@ -152,31 +160,48 @@ func (s *ProviderSync) rolloutInfrastructure() {
 }
 
 func (s *ProviderSync) updateLatestVersion(ctx context.Context) error {
-	// Skip for user specified versions
-	if s.Source.Spec.Version != "" {
-		return nil
-	}
+	log := log.FromContext(ctx)
 
-	now := time.Now().UTC()
-	lastCheck := conditions.Get(s.Source, turtlesv1.CheckLatestVersionTime)
-
-	if lastCheck != nil && lastCheck.Status == corev1.ConditionTrue && lastCheck.LastTransitionTime.Add(24*time.Hour).After(now) {
-		return nil
-	}
-
-	patchBase := client.MergeFrom(s.Destination)
-
-	// Unsetting .spec.version to force latest version rollout
-	spec := s.Destination.GetSpec()
-	spec.Version = ""
-	s.Destination.SetSpec(spec)
-
-	conditions.MarkTrue(s.Source, turtlesv1.CheckLatestVersionTime)
-
-	err := s.client.Patch(ctx, s.Destination, patchBase)
+	config, err := clusterctl.ClusterConfig(ctx, s.client)
 	if err != nil {
-		conditions.MarkUnknown(s.Source, turtlesv1.CheckLatestVersionTime, "Requesting latest version rollout", "")
+		return err
 	}
 
-	return client.IgnoreNotFound(err)
+	providerVersion, knownProvider := config.GetProviderVersion(ctx, cmp.Or(s.Source.Spec.Name, s.Source.Name), s.Source.Spec.Type.ToKind())
+
+	latest, err := config.IsLatestVersion(providerVersion, s.Source.Spec.Version)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case !knownProvider:
+		conditions.MarkUnknown(s.Source, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknownReason, "Provider is unknown")
+	case s.Source.Spec.Version != "" && latest:
+		conditions.MarkTrue(s.Source, turtlesv1.CheckLatestVersionTime)
+	case s.Source.Spec.Version != "" && !latest:
+		conditions.MarkFalse(
+			s.Source,
+			turtlesv1.CheckLatestVersionTime,
+			turtlesv1.CheckLatestUpdateAvailableReason,
+			clusterv1.ConditionSeverityInfo,
+			"Provider version update available. Current latest is %s", providerVersion,
+		)
+	case !latest:
+		lastCheck := conditions.Get(s.Source, turtlesv1.CheckLatestVersionTime)
+		updatedMessage := fmt.Sprintf("Updated to latest %s version", providerVersion)
+
+		if lastCheck == nil || lastCheck.Message != updatedMessage {
+			log.Info(fmt.Sprintf("Version %s is beyond current latest, updated to %s", cmp.Or(s.Source.Spec.Version, "latest"), providerVersion))
+
+			lastCheck = conditions.TrueCondition(turtlesv1.CheckLatestVersionTime)
+			lastCheck.Message = updatedMessage
+
+			conditions.Set(s.Source, lastCheck)
+		}
+
+		s.Source.Spec.Version = providerVersion
+	}
+
+	return nil
 }

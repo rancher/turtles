@@ -3170,15 +3170,7 @@ spec:
                       type: string
                     type:
                       description: Type is the type of the provider
-                      enum:
-                      - infrastructure
-                      - core
-                      - controlPlane
-                      - bootstrap
-                      - addon
-                      - runtimeextension
-                      - ipam
-                      example: infrastructure
+                      example: InfrastructureProvider
                       type: string
                     url:
                       description: URL of the provider components. Will be used unless
@@ -3190,9 +3182,6 @@ spec:
                   - url
                   type: object
                 type: array
-            required:
-            - images
-            - providers
             type: object
         type: object
         x-kubernetes-validations:

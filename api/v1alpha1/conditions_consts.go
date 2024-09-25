@@ -34,3 +34,11 @@ const (
 	// CheckLatestVersionTime is set as a timestamp info of the last timestamp of the latest version being up-to-date for the CAPIProvider.
 	CheckLatestVersionTime = "CheckLatestVersionTime"
 )
+
+const (
+	// CheckLatestUpdateAvailableReason is a reason for a False condition, due to update being available.
+	CheckLatestUpdateAvailableReason = "UpdateAvailable"
+
+	// CheckLatestProviderUnknownReason is a reason for an Unknown condition, due to provider not being available.
+	CheckLatestProviderUnknownReason = "ProviderUnknown"
+)
