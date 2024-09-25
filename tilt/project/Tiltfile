@@ -1,7 +1,7 @@
 # -*- mode: Python -*-
 
 load("../k8s/Tiltfile", "k8s_find_object_name")
-load("../io/Tiltfile", "info", "file_write", "dir_create")
+load("../io/Tiltfile", "info", "file_write", "dir_create", "prepare_file")
 
 def project_enable(name, project, debug):
     """Enable a project in Tilt
@@ -70,7 +70,9 @@ def project_enable(name, project, debug):
         yaml = kustomize(context + '/' + kustomize_dir)
         yaml = update_manager(yaml, "manager", debug, env)
         yaml_path = context + "/.tiltbuild/manifest.yaml"
-        file_write(yaml_path, yaml)
+        prepare_file(yaml_path)
+        for line in str(yaml).splitlines():
+            file_write(yaml_path, line)
         k8s_yaml(yaml)
 
         objs = decode_yaml_stream(yaml)
