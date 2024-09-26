@@ -9,6 +9,11 @@ def dir_create(path):
     """
     local("mkdir -p {}".format(path),echo_off=True,quiet=True)
 
+def prepare_file(path):
+    """Prepare file for writing"""
+    
+    local("echo '' > {}".format(path))
+
 def file_write(path, contents):
     """Write contents to a file
 
@@ -17,7 +22,7 @@ def file_write(path, contents):
         contents: The contents of the file
     
     """
-    local('echo "$CONTENTS" > {}'.format(path),
+    local('echo "$CONTENTS" >> {}'.format(path),
         env={'CONTENTS': str(contents)},
         echo_off=True,
         quiet=True)
