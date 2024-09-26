@@ -54,6 +54,17 @@ func secretFilter(obj client.Object) bool {
 	return found && !owned
 }
 
+func setKind(cl client.Client, obj client.Object) error {
+	kinds, _, err := cl.Scheme().ObjectKinds(obj)
+	if err != nil {
+		return err
+	} else if len(kinds) > 0 {
+		obj.GetObjectKind().SetGroupVersionKind(kinds[0])
+	}
+
+	return nil
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *ETCDSnapshotSecretReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
 	err := ctrl.NewControllerManagedBy(mgr).
@@ -100,7 +111,18 @@ func (r *ETCDSnapshotSecretReconciler) Reconcile(ctx context.Context, secret *co
 		UID:        rke2Config.UID,
 	})
 
-	if err := r.Client.Patch(ctx, secret, client.Apply); err != nil {
+	if err := setKind(r, secret); err != nil {
+		log.Error(err, "Unable to set default secret kind")
+
+		return ctrl.Result{}, err
+	}
+
+	secret.SetManagedFields(nil)
+
+	if err := r.Client.Patch(ctx, secret, client.Apply, []client.PatchOption{
+		client.ForceOwnership,
+		client.FieldOwner("clusterctl-controller"),
+	}...); err != nil {
 		log.Error(err, "Unable to patch Secret with RKE2Config ownership")
 
 		return ctrl.Result{}, err
