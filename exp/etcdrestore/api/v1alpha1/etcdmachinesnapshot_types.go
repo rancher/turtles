@@ -44,7 +44,6 @@ type EtcdMachineSnapshotSpec struct {
 	ClusterName string `json:"clusterName"`
 	MachineName string `json:"machineName"`
 	ConfigRef   string `json:"configRef"`
-	Manual      bool   `json:"manual"`
 	Location    string `json:"location"`
 }
 
@@ -52,6 +51,7 @@ type EtcdMachineSnapshotSpec struct {
 type EtcdMachineSnapshotStatus struct {
 	Phase      ETCDSnapshotPhase    `json:"phase,omitempty"`
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Manual     bool                 `json:"manual,omitempty"`
 }
 
 // EtcdMachineSnapshot is the Schema for the EtcdMachineSnapshot API.
