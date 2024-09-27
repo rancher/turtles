@@ -6,13 +6,17 @@ This is a technical preview of the experimental features that are currently bein
 
 ## Setting up the environment
 
-To set up the environment, first prepare your EC2 SSH Key Pair name, navigate to the root of the repository and run:
+To set up the environment, navigate to the root of the repository and run:
 
 ```bash
-    make dev-env
+export RANCHER_HOSTNAME="<hostname>"
+export NGROK_API_KEY="<api-key>"
+export NGROK_AUTHTOKEN="<api-authtoken>"
+
+make dev-env
 ```
 
-The `Makefile` target sets up the environment by executing the `scripts/etcd-backup-restore-dev.sh` 
+The `Makefile` target sets up the environment by executing the `scripts/etcd-backup-restore-dev.sh`
 script with the `RANCHER_HOSTNAME` argument. Under the hood, it performs the following steps:
 
 1. Creates a kind cluster.
@@ -35,15 +39,20 @@ export CLUSTER_NAME=rke2
 export KUBERNETES_VERSION=v1.30.4
 export RKE2_VERSION=v1.30.4+rke2r1
 
-kubectl apply -f test/e2e/data/cluster-templates/docker-rke2.yaml
+# Prevent replacing lb-config variables by envsubst
+export address='$address'
+export server='$server'
+
+envsubst < test/e2e/data/cluster-templates/docker-rke2.yaml | kubectl apply -f -
 ```
 
 ## Performing the snapshot and restore
 
-When all machine in the cluster are ready, automatic ETCDMachineSnapshot object should appear on the management cluster soon.
+When all machines in the cluster are ready, automatic ETCDMachineSnapshot object should appear on the management cluster soon.
 
 ```bash
-    kubectl get etcdmachinesnapshot -A
+
+kubectl get etcdmachinesnapshot -A
 ```
 
 To perform a restore run the following command:
@@ -53,7 +62,7 @@ export CLUSTER_NAMESPACE=default
 export CLUSTER_NAME=rke2
 export ETCD_MACHINE_SNAPSHOT_NAME="<snapshot_name_from_the_output>"
 
-kubectl apply -f etcdrestore/examples/etcd-restore.yaml
+envsubst < etcdrestore/examples/etcd-restore.yaml | kubectl apply -f -
 ```
 
 ## Cleanup
@@ -61,5 +70,5 @@ kubectl apply -f etcdrestore/examples/etcd-restore.yaml
 To clean up the environment, run the following command from the root of the repo:
 
 ```bash
-    make clean-dev-env
+make clean-dev-env
 ```
