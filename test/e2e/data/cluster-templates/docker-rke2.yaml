@@ -48,7 +48,8 @@ metadata:
 spec:
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${RKE2_VERSION}
-  registrationMethod: control-plane-endpoint
+  registrationMethod: internal-first
+  #registrationMethod: control-plane-endpoint
   rolloutStrategy:
     rollingUpdate:
       maxSurge: 1
