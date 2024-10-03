@@ -1,4 +1,4 @@
-apiversion: turtles-capi.cattle.io/v1alpha1
+apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: ETCDSnapshotRestore
 metadata:
   name: example-restore

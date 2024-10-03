@@ -33,7 +33,9 @@ import (
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -41,9 +43,11 @@ import (
 // Planner is responsible for executing instructions on the underlying machine host
 // in the specified order, and collecting output from executed steps.
 type Planner struct {
+	Name string
 	client.Client
-	machine *clusterv1.Machine
-	secret  *corev1.Secret
+	machine  *clusterv1.Machine
+	machines collections.Machines
+	secret   *corev1.Secret
 }
 
 // Instructions is a one time operation, used to perform shell commands on the host
@@ -64,16 +68,20 @@ type plan struct {
 }
 
 // Plan is initializing Planner, used to perform instructions in a specific order and collect results
-func Plan(ctx context.Context, c client.Client, machine *clusterv1.Machine) *Planner {
+func Plan(ctx context.Context, c client.Client, name string, machine *clusterv1.Machine, machines collections.Machines) *Planner {
 	return &Planner{
-		Client:  c,
-		machine: machine,
-		secret:  initSecret(machine, map[string][]byte{}),
+		Client:   c,
+		Name:     name,
+		machine:  machine,
+		machines: machines,
+		secret:   initSecret(machine, map[string][]byte{}),
 	}
 }
 
 func initSecret(machine *clusterv1.Machine, data map[string][]byte) *corev1.Secret {
-	planSecretName := strings.Join([]string{machine.Spec.Bootstrap.ConfigRef.Name, "rke2config", "plan"}, "-")
+	kind := strings.ToLower(machine.Spec.Bootstrap.ConfigRef.Kind)
+	name := machine.Spec.Bootstrap.ConfigRef.Name
+	planSecretName := strings.Join([]string{name, kind, "plan"}, "-")
 
 	return &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -83,6 +91,12 @@ func initSecret(machine *clusterv1.Machine, data map[string][]byte) *corev1.Secr
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: machine.Namespace,
 			Name:      planSecretName,
+			OwnerReferences: []metav1.OwnerReference{{
+				Name:       machine.Name,
+				Kind:       "Machine",
+				UID:        machine.UID,
+				APIVersion: clusterv1.GroupVersion.String(),
+			}},
 		},
 		Data: data,
 	}
@@ -245,6 +259,76 @@ func (p *Planner) applied(plan, appliedChecksum []byte) bool {
 	planHash := hex.EncodeToString(result[:])
 
 	return planHash == string(appliedChecksum)
+}
+
+// planRole returns the Role for the Plan.
+func (p *Planner) planRole() *rbacv1.Role {
+	secrets := []string{}
+	for _, machine := range p.machines.UnsortedList() {
+		planSecretName := strings.Join([]string{machine.Spec.Bootstrap.ConfigRef.Name, "rke2config", "plan"}, "-")
+		secrets = append(secrets, planSecretName)
+	}
+
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      p.machine.Labels[clusterv1.ClusterNameLabel] + "-" + p.Name,
+			Namespace: p.machine.Namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Verbs:         []string{"watch", "get", "update", "list"},
+				APIGroups:     []string{""},
+				Resources:     []string{"secrets"},
+				ResourceNames: secrets,
+			},
+		},
+	}
+}
+
+// planRoleBinding creates a RoleBinding for the plan.
+func (p *Planner) planRoleBinding() *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      p.machine.Labels[clusterv1.ClusterNameLabel] + "-" + p.Name,
+			Namespace: p.machine.Namespace,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      p.machine.Labels[clusterv1.ClusterNameLabel] + "-system-agent",
+				Namespace: p.machine.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "Role",
+			Name:     p.machine.Labels[clusterv1.ClusterNameLabel] + "-" + p.Name,
+		},
+	}
+}
+
+func (p *Planner) Permit(ctx context.Context) error {
+	if err := p.Create(ctx, p.planRole()); client.IgnoreAlreadyExists(err) != nil {
+		return fmt.Errorf("unable to create plan role: %w", err)
+	}
+
+	if err := p.Create(ctx, p.planRoleBinding()); client.IgnoreAlreadyExists(err) != nil {
+		return fmt.Errorf("unable to create plan role binding: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Planner) Revoke(ctx context.Context) error {
+	if err := p.Delete(ctx, p.planRole()); client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("unable to delete plan role: %w", err)
+	}
+
+	if err := p.Delete(ctx, p.planRoleBinding()); client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("unable to delete plan role binding: %w", err)
+	}
+
+	return nil
 }
 
 func (p *Planner) updatePlanSecret(ctx context.Context, data []byte) error {

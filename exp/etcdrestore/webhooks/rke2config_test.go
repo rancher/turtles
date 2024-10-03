@@ -167,7 +167,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 	})
 
 	It("Should return service account token when secret is present and populated", func() {
-		token, err := r.ensureServiceAccountSecretPopulated(ctx, planSecretName)
+		token, err := r.fetchBootstrapToken(ctx, planSecretName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(token).To(Equal([]byte("test-token")))
 	})
