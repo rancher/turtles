@@ -24,14 +24,16 @@ import (
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -51,7 +53,8 @@ const (
 )
 
 const (
-	SystemAgentAnnotation = "cluster-api.cattle.io/turtles-system-agent"
+	SystemAgentAnnotation       = "cluster-api.cattle.io/turtles-system-agent"
+	maxExpiration         int64 = 4294967295
 )
 
 var (
@@ -95,15 +98,8 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 
 	rke2Config.Annotations[SystemAgentAnnotation] = ""
 
-	planSecretName := strings.Join([]string{rke2Config.Name, "rke2config", "plan"}, "-")
-
-	if err := r.createSecretPlanResources(ctx, planSecretName, rke2Config); err != nil {
+	if err := r.createSecretPlanResources(ctx, rke2Config); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create secret plan resources: %s", err))
-	}
-
-	serviceAccountToken, err := r.ensureServiceAccountSecretPopulated(ctx, planSecretName)
-	if err != nil {
-		return apierrors.NewBadRequest(fmt.Sprintf("failed to ensure service account secret is populated: %s", err))
 	}
 
 	logger.Info("Service account secret is populated")
@@ -144,7 +140,9 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 		return apierrors.NewBadRequest("system agent version setting is empty")
 	}
 
-	if err := r.createConnectInfoJson(ctx, rke2Config, planSecretName, serverUrl, pem, serviceAccountToken); err != nil {
+	planSecretName := strings.Join([]string{rke2Config.Name, "rke2config", "plan"}, "-")
+
+	if err := r.createConnectInfoJson(ctx, rke2Config, planSecretName, serverUrl, pem); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create connect info json: %s", err))
 	}
 
@@ -162,7 +160,7 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 }
 
 // createSecretPlanResources creates the secret, role, rolebinding, and service account for the plan.
-func (r *RKE2ConfigWebhook) createSecretPlanResources(ctx context.Context, planSecretName string, rke2Config *bootstrapv1.RKE2Config) error {
+func (r *RKE2ConfigWebhook) createSecretPlanResources(ctx context.Context, rke2Config *bootstrapv1.RKE2Config) error {
 	logger := log.FromContext(ctx)
 
 	logger.Info("Creating secret plan resources")
@@ -170,18 +168,12 @@ func (r *RKE2ConfigWebhook) createSecretPlanResources(ctx context.Context, planS
 	var errs []error
 
 	resources := []client.Object{
-		r.createServiceAccount(planSecretName, rke2Config),
-		r.createSecret(planSecretName, rke2Config),
-		r.createRole(planSecretName, rke2Config),
-		r.createRoleBinding(planSecretName, rke2Config),
-		r.createServiceAccountSecret(planSecretName, rke2Config),
+		r.createServiceAccount(rke2Config),
 	}
 
 	for _, resource := range resources {
-		if err := r.Create(ctx, resource); err != nil {
-			if !apierrors.IsAlreadyExists(err) {
-				errs = append(errs, fmt.Errorf("failed to create %s %s: %w", resource.GetObjectKind().GroupVersionKind().String(), resource.GetName(), err))
-			}
+		if err := r.Create(ctx, resource); client.IgnoreAlreadyExists(err) != nil {
+			errs = append(errs, fmt.Errorf("failed to create %s %s: %w", resource.GetObjectKind().GroupVersionKind().String(), resource.GetName(), err))
 		}
 	}
 
@@ -193,135 +185,71 @@ func (r *RKE2ConfigWebhook) createSecretPlanResources(ctx context.Context, planS
 }
 
 // createServiceAccount creates a ServiceAccount for the plan.
-func (r *RKE2ConfigWebhook) createServiceAccount(planSecretName string, rke2Config *bootstrapv1.RKE2Config) *corev1.ServiceAccount {
+func (r *RKE2ConfigWebhook) createServiceAccount(rke2Config *bootstrapv1.RKE2Config) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      planSecretName,
+			Name:      rke2Config.Labels[clusterv1.ClusterNameLabel] + "-system-agent",
 			Namespace: rke2Config.Namespace,
-			Labels: map[string]string{
-				RKE2ConfigNameLabel: rke2Config.Name,
-				planSecretNameLabel: planSecretName,
-			},
 		},
 	}
 }
 
-// createSecret creates a Secret for the plan.
-func (r *RKE2ConfigWebhook) createSecret(planSecretName string, rke2Config *bootstrapv1.RKE2Config) *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      planSecretName,
-			Namespace: rke2Config.Namespace,
-			Labels: map[string]string{
-				RKE2ConfigNameLabel: rke2Config.Name,
-			},
-		},
-		Type: secretTypeMachinePlan,
-	}
-}
-
-// createRole creates a Role for the plan.
-func (r *RKE2ConfigWebhook) createRole(planSecretName string, rke2Config *bootstrapv1.RKE2Config) *rbacv1.Role {
-	return &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      planSecretName,
-			Namespace: rke2Config.Namespace,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				Verbs:         []string{"watch", "get", "update", "list"},
-				APIGroups:     []string{""},
-				Resources:     []string{"secrets"},
-				ResourceNames: []string{planSecretName},
-			},
-		},
-	}
-}
-
-// createRoleBinding creates a RoleBinding for the plan.
-func (r *RKE2ConfigWebhook) createRoleBinding(planSecretName string, rke2Config *bootstrapv1.RKE2Config) *rbacv1.RoleBinding {
-	return &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      planSecretName,
-			Namespace: rke2Config.Namespace,
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      planSecretName,
-				Namespace: rke2Config.Namespace,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: rbacv1.GroupName,
-			Kind:     "Role",
-			Name:     planSecretName,
-		},
-	}
-}
-
-// createServiceAccountSecret creates a Secret for the ServiceAccount token.
-func (r *RKE2ConfigWebhook) createServiceAccountSecret(planSecretName string, rke2Config *bootstrapv1.RKE2Config) *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-token", planSecretName),
-			Namespace: rke2Config.Namespace,
-			Annotations: map[string]string{
-				"kubernetes.io/service-account.name": planSecretName,
-			},
-			Labels: map[string]string{
-				serviceAccountSecretLabel: planSecretName,
-			},
-		},
-		Type: corev1.SecretTypeServiceAccountToken,
-	}
-}
-
-// ensureServiceAccountSecretPopulated ensures the ServiceAccount secret is populated.
-func (r *RKE2ConfigWebhook) ensureServiceAccountSecretPopulated(ctx context.Context, planSecretName string) ([]byte, error) {
+// issueBootstrapToken creates the token for the ServiceAccount.
+func (r *RKE2ConfigWebhook) issueBootstrapToken(ctx context.Context, rke2Config *bootstrapv1.RKE2Config) (string, error) {
 	logger := log.FromContext(ctx)
 
-	logger.Info("Ensuring service account secret is populated")
+	logger.Info("Ensuring service account token is collected")
 
-	serviceAccountToken := []byte{}
+	secret := connectInfoTemplate(rke2Config)
 
-	if err := retry.OnError(retry.DefaultRetry, func(err error) bool {
-		return true
-	}, func() error {
-		secretList := &corev1.SecretList{}
-
-		if err := r.List(ctx, secretList, client.MatchingLabels{serviceAccountSecretLabel: planSecretName}); err != nil {
-			err = fmt.Errorf("failed to list secrets: %w", err)
-			logger.Error(err, "failed to list secrets")
-			return err
-		}
-
-		if len(secretList.Items) == 0 || len(secretList.Items) > 1 {
-			err := fmt.Errorf("secret for %s doesn't exist, or more than one secret exists", planSecretName)
-			logger.Error(err, "secret for %s doesn't exist, or more than one secret exists", "secret", planSecretName)
-			return err
-		}
-
-		saSecret := secretList.Items[0]
-
-		if len(saSecret.Data[corev1.ServiceAccountTokenKey]) == 0 {
-			err := fmt.Errorf("secret %s not yet populated", planSecretName)
-			logger.Error(err, "Secret not yet populated", "secret", planSecretName)
-			return err
-		}
-
-		serviceAccountToken = saSecret.Data[corev1.ServiceAccountTokenKey]
-
-		return nil
-	}); err != nil {
-		return nil, err
+	token := &authenticationv1.TokenRequest{
+		Spec: authenticationv1.TokenRequestSpec{
+			ExpirationSeconds: ptr.To(maxExpiration),
+			BoundObjectRef: &authenticationv1.BoundObjectReference{
+				Kind:       secret.Kind,
+				APIVersion: secret.APIVersion,
+				Name:       secret.Name,
+			},
+		},
 	}
-	return serviceAccountToken, nil
+
+	if err := r.SubResource("token").Create(ctx, r.createServiceAccount(rke2Config), token); err != nil {
+		logger.Error(err, "failed to issue a token")
+
+		return "", err
+	}
+
+	return token.Status.Token, nil
+}
+
+func connectInfoTemplate(rke2Config *bootstrapv1.RKE2Config) *corev1.Secret {
+	connectInfoConfigSecretName := fmt.Sprintf("%s-system-agent-connect-info-config", rke2Config.Name)
+
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      connectInfoConfigSecretName,
+			Namespace: rke2Config.Namespace,
+			Labels: map[string]string{
+				RKE2ConfigNameLabel: rke2Config.Name,
+			},
+		},
+	}
 }
 
 // createConnectInfoJson creates the connect-info-config.json file.
-func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Config *bootstrapv1.RKE2Config, planSecretName, serverUrl, pem string, serviceAccountToken []byte) error {
+func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Config *bootstrapv1.RKE2Config, planSecretName, serverUrl, pem string) error {
 	logger := log.FromContext(ctx)
+
+	secret := connectInfoTemplate(rke2Config)
+	if err := r.Create(ctx, secret); client.IgnoreAlreadyExists(err) != nil {
+		return apierrors.NewBadRequest(fmt.Sprintf("failed to init connect info secret: %s", err))
+	} else if err != nil {
+		return nil
+	}
 
 	connectInfoJsonPath := "/etc/rancher/agent/connect-info-config.json"
 
@@ -334,6 +262,11 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		return nil
 	}
 
+	serviceAccountToken, err := r.issueBootstrapToken(ctx, rke2Config)
+	if err != nil {
+		return apierrors.NewBadRequest(fmt.Sprintf("failed to reqeuest a token: %s", err))
+	}
+
 	kubeConfig := clientcmdapi.Config{
 		Clusters: map[string]*clientcmdapi.Cluster{
 			"agent": {
@@ -343,7 +276,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		},
 		AuthInfos: map[string]*clientcmdapi.AuthInfo{
 			"agent": {
-				Token: string(serviceAccountToken),
+				Token: serviceAccountToken,
 			},
 		},
 		Contexts: map[string]*clientcmdapi.Context{
@@ -382,25 +315,13 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		return err
 	}
 
-	connectInfoConfigSecretName := fmt.Sprintf("%s-system-agent-connect-info-config", rke2Config.Name)
 	connectInfoConfigKey := "connect-info-config.json"
+	secret.Data = map[string][]byte{
+		connectInfoConfigKey: connectInfoConfigJson,
+	}
 
-	if err := r.Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      connectInfoConfigSecretName,
-			Namespace: rke2Config.Namespace,
-			Labels: map[string]string{
-				RKE2ConfigNameLabel: rke2Config.Name,
-			},
-		},
-		Data: map[string][]byte{
-			connectInfoConfigKey: connectInfoConfigJson,
-		},
-	},
-	); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
+	if err := r.Update(ctx, secret); err != nil {
+		return apierrors.NewBadRequest(fmt.Sprintf("failed to populate connect info secret: %s", err))
 	}
 
 	rke2Config.Spec.Files = append(rke2Config.Spec.Files, bootstrapv1.File{
@@ -409,7 +330,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		Permissions: "0600",
 		ContentFrom: &bootstrapv1.FileSource{
 			Secret: bootstrapv1.SecretFileSource{
-				Name: connectInfoConfigSecretName,
+				Name: secret.Name,
 				Key:  connectInfoConfigKey,
 			},
 		},
