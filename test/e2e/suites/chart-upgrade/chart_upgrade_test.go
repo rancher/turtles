@@ -36,7 +36,8 @@ import (
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 )
 
-var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestLabel), func() {
+// var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("Chart upgrade functionality should work", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)
