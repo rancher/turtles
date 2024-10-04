@@ -23,7 +23,6 @@ import (
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +43,7 @@ var _ webhook.CustomValidator = &EtcdSnapshotRestoreWebhook{}
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *EtcdSnapshotRestoreWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&snapshotrestorev1.EtcdSnapshotRestore{}).
+		For(&snapshotrestorev1.ETCDSnapshotRestore{}).
 		WithValidator(r).
 		Complete()
 }
@@ -55,7 +54,7 @@ func (r *EtcdSnapshotRestoreWebhook) ValidateCreate(ctx context.Context, obj run
 
 	logger.Info("Validating EtcdSnapshotRestore")
 
-	etcdSnapshotRestore, ok := obj.(*snapshotrestorev1.EtcdSnapshotRestore)
+	etcdSnapshotRestore, ok := obj.(*snapshotrestorev1.ETCDSnapshotRestore)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a EtcdSnapshotRestore but got a %T", obj))
 	}
@@ -73,17 +72,7 @@ func (r *EtcdSnapshotRestoreWebhook) ValidateDelete(_ context.Context, obj runti
 	return nil, nil
 }
 
-func (r *EtcdSnapshotRestoreWebhook) validateSpec(ctx context.Context, etcdSnapshotRestore *snapshotrestorev1.EtcdSnapshotRestore) (admission.Warnings, error) {
-	var allErrs field.ErrorList
-
-	if etcdSnapshotRestore.Spec.ClusterName == "" {
-		allErrs = append(allErrs, field.Required(field.NewPath("spec.clusterName"), "clusterName is required"))
-	}
-
-	if len(allErrs) > 0 {
-		return nil, apierrors.NewInvalid(snapshotrestorev1.GroupVersion.WithKind("EtcdSnapshotRestore").GroupKind(), etcdSnapshotRestore.Name, allErrs)
-	}
-
+func (r *EtcdSnapshotRestoreWebhook) validateSpec(ctx context.Context, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (admission.Warnings, error) {
 	if err := validateRBAC(ctx, r.Client, etcdSnapshotRestore.Spec.ClusterName, etcdSnapshotRestore.Namespace); err != nil {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("failed to validate RBAC: %v", err))
 	}

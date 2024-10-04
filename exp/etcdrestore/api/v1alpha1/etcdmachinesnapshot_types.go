@@ -39,8 +39,10 @@ const (
 	ETCDMachineSnapshotFinalizer = "etcdmachinesnapshot.turtles.cattle.io"
 )
 
-// EtcdMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
-type EtcdMachineSnapshotSpec struct {
+// +kubebuilder:validation:XValidation:message="ETCD snapshot location can't be empty.",rule="size(self.location)>0"
+//
+// ETCDMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
+type ETCDMachineSnapshotSpec struct {
 	ClusterName string `json:"clusterName"`
 	MachineName string `json:"machineName"`
 	ConfigRef   string `json:"configRef"`
@@ -49,32 +51,32 @@ type EtcdMachineSnapshotSpec struct {
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
-type EtcdMachineSnapshotStatus struct {
+type ETCDMachineSnapshotStatus struct {
 	Phase      ETCDSnapshotPhase    `json:"phase,omitempty"`
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
-// EtcdMachineSnapshot is the Schema for the EtcdMachineSnapshot API.
+// ETCDMachineSnapshot is the Schema for the ETCDMachineSnapshot API.
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-type EtcdMachineSnapshot struct {
+type ETCDMachineSnapshot struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   EtcdMachineSnapshotSpec   `json:"spec,omitempty"`
-	Status EtcdMachineSnapshotStatus `json:"status,omitempty"`
+	Spec   ETCDMachineSnapshotSpec   `json:"spec,omitempty"`
+	Status ETCDMachineSnapshotStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// EtcdMachineSnapshotList contains a list of EtcdMachineSnapshots.
-type EtcdMachineSnapshotList struct {
+// ETCDMachineSnapshotList contains a list of EtcdMachineSnapshots.
+type ETCDMachineSnapshotList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []EtcdMachineSnapshot `json:"items"`
+	Items           []ETCDMachineSnapshot `json:"items"`
 }
 
 func init() {
-	objectTypes = append(objectTypes, &EtcdMachineSnapshot{}, &EtcdMachineSnapshotList{})
+	objectTypes = append(objectTypes, &ETCDMachineSnapshot{}, &ETCDMachineSnapshotList{})
 }

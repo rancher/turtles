@@ -224,9 +224,9 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	setupLog.Info("enabling EtcdMachineSnapshot controller")
+	setupLog.Info("enabling ETCDMachineSnapshot controller")
 
-	if err := (&expcontrollers.EtcdMachineSnapshotReconciler{
+	if err := (&expcontrollers.ETCDMachineSnapshotReconciler{
 		Client:           mgr.GetClient(),
 		Tracker:          tracker,
 		WatchFilterValue: watchFilterValue,
@@ -237,10 +237,8 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 	setupLog.Info("enabling EtcdSnapshotRestore controller")
 
-	if err := (&expcontrollers.EtcdSnapshotRestoreReconciler{
-		Client:           mgr.GetClient(),
-		Tracker:          tracker,
-		WatchFilterValue: watchFilterValue,
+	if err := (&expcontrollers.ETCDSnapshotRestoreReconciler{
+		Client: mgr.GetClient(),
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
 		setupLog.Error(err, "unable to create EtcdSnapshotRestore controller")
 		os.Exit(1)

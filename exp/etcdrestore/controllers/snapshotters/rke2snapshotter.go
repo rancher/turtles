@@ -121,15 +121,16 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 			}
 		}
 
-		etcdMachineSnapshot := &snapshotrestorev1.EtcdMachineSnapshot{
+		etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      snapshotFile.Name,
 				Namespace: s.cluster.Namespace,
 			},
-			Spec: snapshotrestorev1.EtcdMachineSnapshotSpec{
+			Spec: snapshotrestorev1.ETCDMachineSnapshotSpec{
 				ClusterName: s.cluster.Name,
 				MachineName: machineName,
 				ConfigRef:   snapshotFile.Name,
+				Location:    snapshotFile.Spec.Location,
 			},
 		}
 

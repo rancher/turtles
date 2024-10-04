@@ -27,6 +27,7 @@ import (
 	"io"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
@@ -65,7 +66,25 @@ type plan struct {
 // Plan is initializing Planner, used to perform instructions in a specific order and collect results
 func Plan(ctx context.Context, c client.Client, machine *clusterv1.Machine) *Planner {
 	return &Planner{
-		Client: c,
+		Client:  c,
+		machine: machine,
+		secret:  initSecret(machine, map[string][]byte{}),
+	}
+}
+
+func initSecret(machine *clusterv1.Machine, data map[string][]byte) *corev1.Secret {
+	planSecretName := strings.Join([]string{machine.Spec.Bootstrap.ConfigRef.Name, "rke2config", "plan"}, "-")
+
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: machine.Namespace,
+			Name:      planSecretName,
+		},
+		Data: data,
 	}
 }
 
@@ -75,10 +94,15 @@ func (p *Planner) Apply(ctx context.Context, instructions ...Instruction) (Outpu
 	var err error
 	errs := []error{}
 
-	data, err := json.Marshal(plan{Instructions: instructions})
-	errs = append(errs, err)
+	if err := p.refresh(ctx); err != nil {
+		return Output{}, err
+	}
 
-	errs = append(errs, p.refresh(ctx))
+	data, err := json.Marshal(plan{Instructions: instructions})
+	if err != nil {
+		return Output{}, err
+	}
+
 	errs = append(errs, p.updatePlanSecret(ctx, data))
 	errs = append(errs, p.refresh(ctx))
 
@@ -137,7 +161,7 @@ func RKE2KillAll() Instruction {
 }
 
 // ETCDRestore performs restore form a snapshot path on the init node
-func ETCDRestore(snapshot *snapshotrestorev1.EtcdMachineSnapshot) Instruction {
+func ETCDRestore(snapshot *snapshotrestorev1.ETCDMachineSnapshot) Instruction {
 	return Instruction{
 		Name:    "etcd-restore",
 		Command: "/bin/sh",
@@ -226,15 +250,21 @@ func (p *Planner) applied(plan, appliedChecksum []byte) bool {
 func (p *Planner) updatePlanSecret(ctx context.Context, data []byte) error {
 	log := log.FromContext(ctx)
 
+	if p.secret.Data == nil {
+		p.secret.Data = map[string][]byte{}
+	}
+
 	if !bytes.Equal(p.secret.Data["plan"], data) {
 		log.Info("Plan secret not filled with proper plan", "machine", p.machine.Name)
 	}
 
-	patchBase := client.MergeFromWithOptions(p.secret.DeepCopy(), client.MergeFromWithOptimisticLock{})
-
 	p.secret.Data["plan"] = []byte(data)
+	p.secret = initSecret(p.machine, p.secret.Data)
 
-	if err := p.Client.Patch(ctx, p.secret, patchBase); err != nil {
+	if err := p.Client.Patch(ctx, p.secret, client.Apply, []client.PatchOption{
+		client.ForceOwnership,
+		client.FieldOwner("etcdrestore-controller"),
+	}...); err != nil {
 		return fmt.Errorf("failed to patch plan secret: %w", err)
 	}
 
@@ -247,19 +277,18 @@ func (p *Planner) updatePlanSecret(ctx context.Context, data []byte) error {
 
 func (p *Planner) refresh(ctx context.Context) error {
 	rke2Config := &bootstrapv1.RKE2Config{}
-	if err := p.Client.Get(ctx, client.ObjectKey{Namespace: p.machine.Namespace, Name: p.machine.Spec.Bootstrap.ConfigRef.Name}, rke2Config); err != nil {
+	if err := p.Client.Get(ctx, client.ObjectKey{
+		Namespace: p.machine.Namespace,
+		Name:      p.machine.Spec.Bootstrap.ConfigRef.Name,
+	}, rke2Config); err != nil {
 		return fmt.Errorf("failed to get RKE2Config: %w", err)
 	}
 
-	planSecretName := strings.Join([]string{rke2Config.Name, "rke2config", "plan"}, "-")
-
 	secret := &corev1.Secret{}
-	if err := p.Client.Get(ctx, client.ObjectKey{Namespace: p.machine.Namespace, Name: planSecretName}, secret); err != nil {
+	if err := p.Client.Get(ctx, client.ObjectKeyFromObject(p.secret), secret); client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to get plan secret: %w", err)
-	}
-
-	if secret.Data == nil {
-		secret.Data = map[string][]byte{}
+	} else if err == nil {
+		p.secret = secret
 	}
 
 	return nil

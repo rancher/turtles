@@ -61,7 +61,7 @@ type RKE2EtcdMachineSnapshotConfig struct {
 type RKE2EtcdMachineSnapshotConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []EtcdSnapshotRestore `json:"items"`
+	Items           []ETCDSnapshotRestore `json:"items"`
 }
 
 func init() {
