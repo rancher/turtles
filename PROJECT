@@ -23,7 +23,7 @@ resources:
   controller: true
   domain: cattle.io
   group: turtles-capi
-  kind: EtcdMachineSnapshot
+  kind: ETCDMachineSnapshot
   path: github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1
   version: v1alpha1
 - api:
@@ -32,7 +32,7 @@ resources:
   controller: true
   domain: cattle.io
   group: turtles-capi
-  kind: EtcdSnapshotRestore
+  kind: ETCDSnapshotRestore
   path: github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1
   version: v1alpha1
 - api:
