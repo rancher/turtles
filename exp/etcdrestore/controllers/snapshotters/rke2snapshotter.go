@@ -22,6 +22,7 @@ import (
 
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,6 +126,9 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      snapshotFile.Name,
 				Namespace: s.cluster.Namespace,
+				Annotations: map[string]string{
+					turtlesannotations.EtcdAutomaticSnapshot: "true",
+				},
 			},
 			Spec: snapshotrestorev1.ETCDMachineSnapshotSpec{
 				ClusterName: s.cluster.Name,

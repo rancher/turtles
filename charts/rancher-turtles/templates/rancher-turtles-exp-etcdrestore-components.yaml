@@ -51,14 +51,11 @@ spec:
                 type: string
               machineName:
                 type: string
-              manual:
-                type: boolean
             required:
             - clusterName
             - configRef
             - location
             - machineName
-            - manual
             type: object
             x-kubernetes-validations:
             - message: ETCD snapshot location can't be empty.
@@ -113,6 +110,8 @@ spec:
                   - type
                   type: object
                 type: array
+              manual:
+                type: boolean
               phase:
                 description: ETCDSnapshotPhase is a string representation of the phase
                   of the etcd snapshot

@@ -24,6 +24,7 @@ import (
 
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -80,7 +81,7 @@ func (r *ETCDMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	if !etcdMachineSnapshot.Spec.Manual {
+	if turtlesannotations.HasAnnotation(etcdMachineSnapshot, turtlesannotations.EtcdAutomaticSnapshot) {
 		log.V(5).Info("Skipping snapshot creation for non-manual EtcdMachineSnapshot")
 		return ctrl.Result{}, nil
 	}
@@ -123,7 +124,6 @@ func (r *ETCDMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.
 func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
 	ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot,
 ) (ctrl.Result, error) {
-
 	// Handle different phases of the etcdmachinesnapshot creation process
 	switch etcdMachineSnapshot.Status.Phase {
 	case "":

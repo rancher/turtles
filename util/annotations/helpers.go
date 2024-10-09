@@ -23,6 +23,8 @@ import (
 const (
 	// ClusterImportedAnnotation represents cluster imported annotation.
 	ClusterImportedAnnotation = "imported"
+	// EtcdAutomaticSnapshot represents automatically generated etcd snapshot.
+	EtcdAutomaticSnapshot = "etcd.turtles.cattle.io/automatic-snapshot"
 )
 
 // HasClusterImportAnnotation returns true if the object has the `imported` annotation.
