@@ -20,7 +20,10 @@ if [ -z "$RANCHER_HOSTNAME" ]; then
 	exit 1
 fi
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.9.0}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.9.1}
+CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
+ETCD_CONTROLLER_IMAGE=${ETCD_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles-etcd-snapshot-restore}
+ETCD_CONTROLLER_IMAGE_TAG=${ETCD_CONTROLLER_IMAGE_TAG:-dev}
 
 BASEDIR=$(dirname "$0")
 
@@ -77,4 +80,32 @@ kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 kubectl apply -f test/e2e/data/rancher/rancher-service-patch.yaml
 envsubst < test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 
-tilt up
+# Install the locally build chart of Rancher Turtles
+install_local_rancher_turtles_chart() {
+	# Remove the previous chart directory
+	rm -rf out
+	# Build the chart locally
+	make build-chart
+	# Build the etcdrestore controller image
+	make docker-build-etcdrestore
+	# Load the etcdrestore controller image into the kind cluster
+	kind load docker-image $ETCD_CONTROLLER_IMAGE:$ETCD_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
+	# Install the Rancher Turtles using a local chart with 'etcd-snapshot-restore' feature flag enabled
+	# to run etcdrestore controller
+	helm install rancher-turtles out/charts/rancher-turtles \
+		-n rancher-turtles-system \
+		--set cluster-api-operator.enabled=false \
+		--set cluster-api-operator.cluster-api.enabled=false \
+		--set rancherTurtles.features.etcd-snapshot-restore.enabled=true \
+		--dependency-update \
+		--create-namespace --wait \
+		--timeout 180s
+}
+
+if [ "$USE_TILT_DEV" == "true" ]; then
+	echo "Using Tilt for development..."
+	tilt up
+else
+	echo "Installing local Rancher Turtles chart for development..."
+	install_local_rancher_turtles_chart
+fi
