@@ -500,7 +500,7 @@ preserveWorkDirectory: true`,
 
 // addPostInstallCommands adds the post install command to the RKE2Config.
 func (r *RKE2ConfigWebhook) AddPostInstallCommands(rke2Config *bootstrapv1.RKE2Config) {
-	postInstallCommand := "sudo sh /opt/system-agent-install.sh"
+	postInstallCommand := "sh /opt/system-agent-install.sh"
 
 	for _, cmd := range rke2Config.Spec.PostRKE2Commands {
 		if cmd == postInstallCommand {
