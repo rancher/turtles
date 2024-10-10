@@ -115,6 +115,9 @@ type CAPIProviderStatus struct {
 	// +kubebuilder:default={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
 
+	// Name reflects actual provider name, which will be visible to users in 'kubectl get capiproviders -A -o wide'
+	Name string `json:"name,omitempty"`
+
 	operatorv1.ProviderStatus `json:",inline"`
 }
 
@@ -123,7 +126,7 @@ type CAPIProviderStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type"
-// +kubebuilder:printcolumn:name="ProviderName",type="string",JSONPath=".spec.name"
+// +kubebuilder:printcolumn:name="ProviderName",type="string",JSONPath=".status.name"
 // +kubebuilder:printcolumn:name="InstalledVersion",type="string",JSONPath=".status.installedVersion"
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
 // +kubebuilder:validation:XValidation:message="CAPI Provider type should always be set.",rule="has(self.spec.type)"

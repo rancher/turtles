@@ -76,6 +76,33 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 		})))
 	})
 
+	It("Should inherit docker provider name", func() {
+		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      "docker",
+			Namespace: ns.Name,
+		}, Spec: turtlesv1.CAPIProviderSpec{
+			Type: turtlesv1.Infrastructure,
+		}}
+		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
+
+		Eventually(Object(provider)).Should(
+			HaveField("Status.Name", Equal(provider.Name)))
+	})
+
+	It("Should inherit docker provider name from the spec", func() {
+		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: ns.Name,
+		}, Spec: turtlesv1.CAPIProviderSpec{
+			Name: "docker",
+			Type: turtlesv1.Infrastructure,
+		}}
+		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
+
+		Eventually(Object(provider)).Should(
+			HaveField("Status.Name", Equal(provider.Spec.Name)))
+	})
+
 	It("Should update infrastructure docker provider version and secret content from CAPI Provider change", func() {
 		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      "docker",

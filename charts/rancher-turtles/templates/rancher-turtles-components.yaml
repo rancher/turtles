@@ -18,7 +18,7 @@ spec:
     - jsonPath: .spec.type
       name: Type
       type: string
-    - jsonPath: .spec.name
+    - jsonPath: .status.name
       name: ProviderName
       type: string
     - jsonPath: .status.installedVersion
@@ -3064,6 +3064,10 @@ spec:
               installedVersion:
                 description: InstalledVersion is the version of the provider that
                   is installed.
+                type: string
+              name:
+                description: Name reflects actual provider name, which will be visible
+                  to users in 'kubectl get capiproviders -A -o wide'
                 type: string
               observedGeneration:
                 description: ObservedGeneration is the latest generation observed
