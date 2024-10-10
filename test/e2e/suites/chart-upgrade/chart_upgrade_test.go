@@ -104,21 +104,21 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
-				Version:   "v1.7.3",
+				Version:   "v1.7.7",
 				Name:      "cluster-api",
 				Namespace: "capi-system",
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
-				Version:   "v1.7.3",
+				Version:   "v1.7.7",
 				Name:      "kubeadm-control-plane",
 				Namespace: "capi-kubeadm-control-plane-system",
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
-				Version:   "v1.7.3",
+				Version:   "v1.7.7",
 				Name:      "docker",
 				Namespace: "capd-system",
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)

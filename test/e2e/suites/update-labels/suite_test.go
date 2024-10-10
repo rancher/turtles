@@ -161,7 +161,7 @@ var _ = BeforeSuite(func() {
 		Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		AdditionalValues: map[string]string{
-			"cluster-api-operator.cluster-api.version":          "v1.7.3",
+			"cluster-api-operator.cluster-api.version":          "v1.7.7",
 			"rancherTurtles.features.rancher-kubeconfigs.label": "true", // force to be true even if the default in the chart changes
 		},
 	}
