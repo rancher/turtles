@@ -57,6 +57,10 @@ spec:
     disableComponents:
       kubernetesComponents:
       - cloudController
+    etcd:
+      backupConfig:
+        scheduleCron: '*/5 * * * *'
+        retention: "1"
   agentConfig:
     nodeAnnotations:
       test: "true"
