@@ -229,6 +229,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 
 		additionalVars := map[string]string{
 			"CLUSTER_NAME":                input.ClusterName,
+			"CLUSTER_CLASS_NAME":          fmt.Sprintf("%s-class", input.ClusterName),
 			"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
 			"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
 		}
