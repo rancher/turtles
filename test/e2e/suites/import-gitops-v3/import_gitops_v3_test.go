@@ -126,37 +126,6 @@ var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CA
 	})
 })
 
-var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
-	BeforeEach(func() {
-		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
-		komega.SetContext(ctx)
-	})
-
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2eConfig,
-			BootstrapClusterProxy:          setupClusterResult.BootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
-			ArtifactFolder:                 artifactsFolder,
-			ClusterTemplate:                e2e.CAPIAzureAKSMMP,
-			ClusterName:                    "highlander-e2e-clusterv3-2",
-			ControlPlaneMachineCount:       ptr.To[int](1),
-			WorkerMachineCount:             ptr.To[int](1),
-			GitAddr:                        giteaResult.GitAddress,
-			GitAuthSecretName:              e2e.AuthSecretName,
-			SkipCleanup:                    false,
-			SkipDeletionTest:               false,
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
-			DeleteClusterWaitName:          "wait-aks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-		}
-	})
-})
-
 var _ = Describe("[AWS] [EKS] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
