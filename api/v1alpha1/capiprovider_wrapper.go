@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"cmp"
+
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -72,6 +74,11 @@ func (b *CAPIProviderList) GetItems() []operatorv1.GenericProvider {
 // SetVariables updates the Variables field in the CAPIProvider status.
 func (b *CAPIProvider) SetVariables(v map[string]string) {
 	b.Status.Variables = v
+}
+
+// SetProviderName updates provider name based on spec field or metadata.name.
+func (b *CAPIProvider) SetProviderName() {
+	b.Status.Name = cmp.Or(b.Spec.Name, b.Name)
 }
 
 // SetPhase updates the Phase field in the CAPIProvider status.

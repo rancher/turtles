@@ -125,6 +125,8 @@ func (s *ProviderSync) SyncObjects() {
 }
 
 func (s *ProviderSync) syncStatus() {
+	s.DefaultSynchronizer.Source.SetProviderName()
+
 	switch {
 	case conditions.IsTrue(s.Source, operatorv1.ProviderInstalledCondition):
 		s.Source.SetPhase(turtlesv1.Ready)
