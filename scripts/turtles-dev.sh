@@ -44,8 +44,8 @@ export CLUSTER_TOPOLOGY=true
 
 helm install capi-operator capi-operator/cluster-api-operator \
 	--create-namespace -n capi-operator-system \
-	--set infrastructure=docker:v1.7.3 \
-	--set core=cluster-api:v1.7.3 \
+	--set infrastructure=docker:v1.7.7 \
+	--set core=cluster-api:v1.7.7 \
 	--set controlPlane=rke2:v0.7.0 \
 	--set bootstrap=rke2:v0.7.0 \
 	--timeout 90s --wait
