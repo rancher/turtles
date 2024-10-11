@@ -259,11 +259,11 @@ preserveWorkDirectory: true`,
 	It("Should add post-install command when it's not present", func() {
 		r.AddPostInstallCommands(rke2Config)
 
-		Expect(rke2Config.Spec.PostRKE2Commands).To(ContainElement("sudo sh /opt/system-agent-install.sh"))
+		Expect(rke2Config.Spec.PostRKE2Commands).To(ContainElement("sh /opt/system-agent-install.sh"))
 	})
 
 	It("Should not add post-install command when it's already present", func() {
-		rke2Config.Spec.PostRKE2Commands = append(rke2Config.Spec.PostRKE2Commands, "sudo sh /opt/system-agent-install.sh")
+		rke2Config.Spec.PostRKE2Commands = append(rke2Config.Spec.PostRKE2Commands, "sh /opt/system-agent-install.sh")
 
 		r.AddPostInstallCommands(rke2Config)
 
