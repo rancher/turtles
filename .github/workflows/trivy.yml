@@ -26,7 +26,7 @@ jobs:
         run: |
           TAG=${{ github.sha }} make docker-build
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d
+        uses: aquasecurity/trivy-action@5681af892cd0f4997658e2bacc62bd0a894cf564
         with:
           image-ref: 'ghcr.io/rancher/turtles:${{ github.sha }}'
           format: 'sarif'
