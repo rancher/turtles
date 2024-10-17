@@ -75,8 +75,8 @@ var (
 	//go:embed data/cluster-templates/aws-eks-mmp.yaml
 	CAPIAwsEKSMMP []byte
 
-	//go:embed data/cluster-templates/azure-aks-mmp.yaml
-	CAPIAzureAKSMMP []byte
+	//go:embed data/cluster-templates/azure-aks-topology.yaml
+	CAPIAzureAKSTopology []byte
 
 	//go:embed data/cluster-templates/vsphere-kubeadm.yaml
 	CAPIvSphereKubeadm []byte
