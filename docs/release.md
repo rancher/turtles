@@ -6,6 +6,8 @@
 
 ## Release Process
 
+### Cutting a release
+
 1. Clone the repository locally: 
 
 ```bash
@@ -67,11 +69,13 @@ Hi all! We are happy to announce a new release of Rancher Turtles - vx.x.x! With
 Please, take a look at the release notes <here link to GitHub release notes>.
 ```
 
-## Post-release steps in Rancher Turtles Docs
+## Mandatory Post-release steps
 
-If a new minor/major branch was created, there are some post-release actions that need to be taken.
+If a new minor/major branch was created, there are some post-release actions that need to be taken. If you cut a patch release before, please disregard
+[publish a new Turtles Community Documentation version](#publish-a-new-rancher-turtles-community-docs-version) and [create a JIRA ticket for Documentation syncing](#create-a-jira-ticket-for-syncing-turtles-community-docs-with-product-docs) steps below.
 
-### Create a new tag for Rancher Turtles Docs repo
+
+### Publish a new Rancher Turtles Community Docs version
 
 1. Clone the Rancher Turtles Docs repository locally:
 
@@ -93,11 +97,20 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-3. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/110). Merging it would result in automatic documentation publishing using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
+3. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/160). Label the PR with `area/documentation`, review and merge. 
+Merging it would result in automatic documentation being published using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
 
 The resulting state after the version publish workflow for the released tag is also stored under the `release-${RELEASE_TAG}` branch in the origin repository, which is consistent with the [branching strategy](#branches) for turtles.
 
-Once all steps above are completed, a new version of Rancher Turtles Docs should be available at [https://turtles.docs.rancher.com].
+Once all steps above are completed, a new version of Rancher Turtles Community Docs should be available at [https://turtles.docs.rancher.com].
+
+### Create a JIRA ticket for syncing Turtles Community Docs with Product Docs
+
+Follow the steps below to create a JIRA ticket:
+
+- navigate to [JIRA](https://jira.suse.com/secure/Dashboard).
+- take a look at reference [issue](https://jira.suse.com/browse/SURE-9171) and create a similar ticket for syncing the new Turtles Community Docs version that was published in [previous](#publish-a-new-rancher-turtles-community-docs-version) step with Turtles Product Docs.
+In the ticket description, make sure to include the reference to latest published version of Rancher Turtles Community Docs and PR created automatically by GitHub Actions bot.
 
 ## Versioning
 
