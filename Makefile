@@ -349,7 +349,7 @@ docker-pull-prerequisites:
 docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
 ## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
 	# buildx does not support using local registry for multi-architecture images
-	cat ./exp/etcdrestore/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
 			--platform $(ARCH) \
 			--load \
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
@@ -359,7 +359,7 @@ docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build dock
 
 .PHONY: docker-build-and-push-etcdrestore
 docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
-	cat ./exp/etcdrestore/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
 			--platform $(TARGET_PLATFORMS) \
 			--push \
 			--sbom=true \
