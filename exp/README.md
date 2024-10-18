@@ -66,7 +66,7 @@ export CLUSTER_NAMESPACE=default
 export CLUSTER_NAME=rke2
 export ETCD_MACHINE_SNAPSHOT_NAME="<snapshot_name_from_the_output>"
 
-envsubst < etcdrestore/examples/etcd-restore.yaml | kubectl apply -f -
+envsubst < exp/etcdrestore/examples/etcd-restore.yaml | kubectl apply -f -
 ```
 
 ## Cleanup
