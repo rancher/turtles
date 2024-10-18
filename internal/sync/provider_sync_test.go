@@ -160,7 +160,7 @@ var _ = Describe("Provider sync", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
 
 		expected := capiProvider.DeepCopy()
-		expected.Spec.Version = "v1.7.3"
+		expected.Spec.Version = "v1.7.7"
 
 		Eventually(func(g Gomega) {
 			g.Expect(s.Get(ctx)).To(Succeed())
@@ -254,7 +254,7 @@ var _ = Describe("Provider sync", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
 
 		expected := capiProvider.DeepCopy()
-		expected.Spec.Version = "v1.7.3"
+		expected.Spec.Version = "v1.7.7"
 
 		Eventually(func(g Gomega) {
 			g.Expect(s.Get(ctx)).To(Succeed())
@@ -342,7 +342,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).Message).To(Equal("Updated to latest v1.7.3 version"))
+			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).Message).To(Equal("Updated to latest v1.7.7 version"))
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
