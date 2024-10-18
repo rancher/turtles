@@ -67,6 +67,12 @@ func NewAzureProviderSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider
 
 	capiProvider.SetSpec(spec)
 
+	if capiProvider.Spec.Variables == nil {
+		capiProvider.Spec.Variables = map[string]string{}
+	}
+
+	capiProvider.Spec.Variables["EXP_AKS_RESOURCE_HEALTH"] = "true"
+
 	return &ProviderSync{
 		DefaultSynchronizer: NewDefaultSynchronizer(cl, capiProvider, template),
 		Destination:         destination,

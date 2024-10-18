@@ -22,6 +22,7 @@ import (
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,10 +31,11 @@ import (
 
 var _ = Describe("Provider sync", func() {
 	var (
-		err          error
-		ns           *corev1.Namespace
-		capiProvider *turtlesv1.CAPIProvider
-		secret       *corev1.Secret
+		err            error
+		ns             *corev1.Namespace
+		capiProvider   *turtlesv1.CAPIProvider
+		infrastructure *operatorv1.InfrastructureProvider
+		secret         *corev1.Secret
 	)
 
 	BeforeEach(func() {
@@ -67,6 +69,11 @@ var _ = Describe("Provider sync", func() {
 			Namespace: capiProvider.Namespace,
 		}}
 
+		infrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
+			Name:      string(capiProvider.Spec.Name),
+			Namespace: ns.Name,
+		}}
+
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
 	})
 
@@ -86,7 +93,33 @@ var _ = Describe("Provider sync", func() {
 
 		Eventually(Object(secret)).Should(
 			HaveField("Data", HaveKey("variable")))
+
+		// Defaults expectations
+		Eventually(Object(secret)).Should(
+			HaveField("Data", HaveKey("EXP_MACHINE_POOL")))
 		Eventually(Object(secret)).Should(
 			HaveField("Data", HaveKey("CLUSTER_TOPOLOGY")))
+		Eventually(Object(secret)).Should(
+			HaveField("Data", HaveKey("EXP_CLUSTER_RESOURCE_SET")))
+	})
+
+	It("Should sync the configSecret default", func() {
+		capiProvider := capiProvider.DeepCopy()
+
+		s := sync.NewList(
+			sync.NewSecretSync(testEnv, capiProvider),
+			sync.NewProviderSync(testEnv, capiProvider),
+		)
+
+		Eventually(func(g Gomega) {
+			g.Expect(s.Sync(ctx)).To(Succeed())
+
+			err = nil
+			s.Apply(ctx, &err)
+			g.Expect(err).To(Succeed())
+
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), infrastructure)).ToNot(HaveOccurred())
+			g.Expect(infrastructure.Spec.ConfigSecret).ToNot(BeNil())
+		}).Should(Succeed())
 	})
 })
