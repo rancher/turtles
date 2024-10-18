@@ -169,6 +169,10 @@ CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
 IID_FILE ?= $(shell mktemp)
 
+# etcdrestore
+ETCDRESTORE_IMAGE_NAME ?= turtles-etcd-snapshot-restore
+ETCDRESTORE_IMG ?= $(REGISTRY)/$(ORG)/$(ETCDRESTORE_IMAGE_NAME)
+
 # Release
 # Exclude tags with the prefix 'test/'
 RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
@@ -341,6 +345,32 @@ docker-pull-prerequisites:
 	docker pull $(GO_CONTAINER_IMAGE)
 	docker pull gcr.io/distroless/static:latest
 
+.PHONY: docker-build-etcdrestore ## Build the docker image for etcdrestore
+docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
+## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
+	# buildx does not support using local registry for multi-architecture images
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+			--platform $(ARCH) \
+			--load \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/etcdrestore \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
+
+.PHONY: docker-build-and-push-etcdrestore
+docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+			--platform $(TARGET_PLATFORMS) \
+			--push \
+			--sbom=true \
+			--attest type=provenance,mode=max \
+			--iidfile=$(IID_FILE) \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/etcdrestore \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
+
+.PHONY: docker-build
 docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
 	# buildx does not support using local registry for multi-architecture images
 	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
