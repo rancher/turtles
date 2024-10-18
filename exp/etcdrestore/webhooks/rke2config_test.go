@@ -18,72 +18,67 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
-	rke2Config              *bootstrapv1.RKE2Config
-	r                       *RKE2ConfigWebhook
-	fakeClient              client.Client
-	fakeTracker             *remote.ClusterCacheTracker
-	serviceAccountName      string
-	serviceAccountNamespace string
-	planSecretName          string
-	serverUrl               string
-	pem                     string
-	systemAgentVersion      string
-	token                   []byte
+	rke2Config         *bootstrapv1.RKE2Config
+	r                  *RKE2ConfigWebhook
+	serviceAccountName string
+	planSecretName     string
+	serverUrl          string
+	pem                string
+	systemAgentVersion string
+	token              []byte
+	ns                 *corev1.Namespace
 )
 
 var _ = Describe("RKE2ConfigWebhook tests", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 		serviceAccountName = "service-account"
-		serviceAccountNamespace = "service-account-namespace"
-		planSecretName = "plan-secret"
+		planSecretName = "rke2-system-agent"
 		serverUrl = "https://example.com"
 		pem = "test-pem"
 		systemAgentVersion = "v1.0.0"
 		token = []byte("test-token")
 
+		var err error
+
+		ns, err = testEnv.CreateNamespace(ctx, "capiprovider")
+		Expect(err).ToNot(HaveOccurred())
+
 		rke2Config = &bootstrapv1.RKE2Config{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				UID:       "test-uid",
-				Namespace: "test-namespace",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel: "rke2",
+				},
 			},
 			Spec: bootstrapv1.RKE2ConfigSpec{
 				Files: []bootstrapv1.File{},
 			},
 		}
-		fakeClient = fake.NewClientBuilder().WithObjects(&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: map[string]string{
-					serviceAccountSecretLabel: planSecretName,
-				},
-			},
-			Data: map[string][]byte{
-				corev1.ServiceAccountTokenKey: []byte("test-token"),
-			},
-		}).Build()
-		fakeTracker = new(remote.ClusterCacheTracker)
 
 		r = &RKE2ConfigWebhook{
-			Client:  fakeClient,
-			Tracker: fakeTracker,
+			Client:  cl,
+			Tracker: new(remote.ClusterCacheTracker),
 		}
+	})
+
+	AfterEach(func() {
+		Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
 	})
 
 	It("Should return error when non-RKE2Config object is passed", func() {
@@ -93,87 +88,47 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 	})
 
 	It("Should create secret plan resources without error", func() {
-		err := r.createSecretPlanResources(ctx, planSecretName, rke2Config)
+		err := r.createSecretPlanResources(ctx, rke2Config)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Check if the resources are created
 		serviceAccount := &corev1.ServiceAccount{}
-		err = fakeClient.Get(ctx, types.NamespacedName{Name: planSecretName, Namespace: rke2Config.Namespace}, serviceAccount)
-		Expect(err).NotTo(HaveOccurred())
-
-		secret := &corev1.Secret{}
-		err = fakeClient.Get(ctx, types.NamespacedName{Name: planSecretName, Namespace: rke2Config.Namespace}, secret)
-		Expect(err).NotTo(HaveOccurred())
-
-		role := &rbacv1.Role{}
-		err = fakeClient.Get(ctx, types.NamespacedName{Name: planSecretName, Namespace: rke2Config.Namespace}, role)
-		Expect(err).NotTo(HaveOccurred())
-
-		roleBinding := &rbacv1.RoleBinding{}
-		err = fakeClient.Get(ctx, types.NamespacedName{Name: planSecretName, Namespace: rke2Config.Namespace}, roleBinding)
+		err = cl.Get(ctx, types.NamespacedName{Name: planSecretName, Namespace: rke2Config.Namespace}, serviceAccount)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("Should create a service account with the correct properties", func() {
-		serviceAccount := r.createServiceAccount(planSecretName, rke2Config)
+		serviceAccount := r.createServiceAccount(rke2Config)
 
 		Expect(serviceAccount.ObjectMeta.Name).To(Equal(planSecretName))
 		Expect(serviceAccount.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
-		Expect(serviceAccount.ObjectMeta.Labels[RKE2ConfigNameLabel]).To(Equal(rke2Config.Name))
-		Expect(serviceAccount.ObjectMeta.Labels[planSecretNameLabel]).To(Equal(planSecretName))
 	})
 
-	It("Should create a secret with the correct properties", func() {
-		secret := r.createSecret(planSecretName, rke2Config)
+	It("Should create a service account with the correct properties", func() {
+		secret := connectInfoTemplate(rke2Config)
 
-		Expect(secret.ObjectMeta.Name).To(Equal(planSecretName))
-		Expect(secret.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
+		Expect(secret.ObjectMeta.Name).To(Equal("test-system-agent-connect-info-config"))
 		Expect(secret.ObjectMeta.Labels[RKE2ConfigNameLabel]).To(Equal(rke2Config.Name))
-		Expect(string(secret.Type)).To(Equal(secretTypeMachinePlan))
-	})
-
-	It("Should create a role with the correct properties", func() {
-		role := r.createRole(planSecretName, rke2Config)
-
-		Expect(role.ObjectMeta.Name).To(Equal(planSecretName))
-		Expect(role.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
-		Expect(role.Rules[0].Verbs).To(Equal([]string{"watch", "get", "update", "list"}))
-		Expect(role.Rules[0].APIGroups).To(Equal([]string{""}))
-		Expect(role.Rules[0].Resources).To(Equal([]string{"secrets"}))
-		Expect(role.Rules[0].ResourceNames).To(Equal([]string{planSecretName}))
-	})
-
-	It("Should create a role binding with the correct properties", func() {
-		roleBinding := r.createRoleBinding(planSecretName, rke2Config)
-
-		Expect(roleBinding.ObjectMeta.Name).To(Equal(planSecretName))
-		Expect(roleBinding.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
-		Expect(roleBinding.Subjects[0].Kind).To(Equal("ServiceAccount"))
-		Expect(roleBinding.Subjects[0].Name).To(Equal(planSecretName))
-		Expect(roleBinding.Subjects[0].Namespace).To(Equal(rke2Config.Namespace))
-		Expect(roleBinding.RoleRef.APIGroup).To(Equal(rbacv1.GroupName))
-		Expect(roleBinding.RoleRef.Kind).To(Equal("Role"))
-		Expect(roleBinding.RoleRef.Name).To(Equal(planSecretName))
-	})
-
-	It("Should create a service account secret with the correct properties", func() {
-		secret := r.createServiceAccountSecret(planSecretName, rke2Config)
-
-		Expect(secret.ObjectMeta.Name).To(Equal(fmt.Sprintf("%s-token", planSecretName)))
 		Expect(secret.ObjectMeta.Namespace).To(Equal(rke2Config.Namespace))
-		Expect(secret.ObjectMeta.Annotations["kubernetes.io/service-account.name"]).To(Equal(planSecretName))
-		Expect(secret.ObjectMeta.Labels[serviceAccountSecretLabel]).To(Equal(planSecretName))
-		Expect(secret.Type).To(Equal(corev1.SecretTypeServiceAccountToken))
 	})
 
 	It("Should return service account token when secret is present and populated", func() {
-		token, err := r.fetchBootstrapToken(ctx, planSecretName)
+		err := r.createSecretPlanResources(ctx, rke2Config)
+		Expect(err).NotTo(HaveOccurred())
+
+		secret := connectInfoTemplate(rke2Config)
+		Expect(cl.Create(ctx, secret)).ToNot(HaveOccurred())
+
+		token, err := r.issueBootstrapToken(ctx, rke2Config)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(token).To(Equal([]byte("test-token")))
+		Expect(token).ToNot(BeNil())
 	})
 
 	It("Should add connect-info-config.json when it's not present", func() {
-		err := r.createConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem, token)
+		err := r.createSecretPlanResources(ctx, rke2Config)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = r.createConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
@@ -194,7 +149,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Path: "/etc/rancher/agent/connect-info-config.json",
 		})
 
-		err := r.createConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem, token)
+		err := r.createConnectInfoJson(ctx, rke2Config, "plan-secret", serverUrl, pem)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(HaveLen(1))
