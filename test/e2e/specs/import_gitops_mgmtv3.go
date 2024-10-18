@@ -130,6 +130,8 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		By("Waiting for the rancher cluster to be ready")
 		Eventually(func() bool {
 			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			fmt.Println("Cluster: ", rancherCluster)
+			fmt.Println("Cluster conditions: ", rancherCluster.Status.Conditions)
 			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
