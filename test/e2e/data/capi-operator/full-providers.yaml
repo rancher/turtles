@@ -6,9 +6,6 @@ metadata:
   namespace: capa-system
 spec:
   type: infrastructure
-  name: aws
-  configSecret:
-    name: full-variables
   variables:
     EXP_MACHINE_POOL: "true"
     EXP_EXTERNAL_RESOURCE_GC: "true"
@@ -23,11 +20,3 @@ metadata:
   namespace: capz-system
 spec:
   type: infrastructure
-  name: azure
-  configSecret:
-    name: azure-variables
-  variables:
-    CLUSTER_TOPOLOGY: "true"
-    EXP_CLUSTER_RESOURCE_SET: "true"
-    EXP_MACHINE_POOL: "true"
-    EXP_AKS_RESOURCE_HEALTH: "true"

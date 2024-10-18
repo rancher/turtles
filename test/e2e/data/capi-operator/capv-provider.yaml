@@ -5,11 +5,4 @@ metadata:
   name: vsphere
   namespace: capv-system
 spec:
-  name: vsphere
   type: infrastructure
-  configSecret:
-    name: vsphere-variables
-  variables:
-    CLUSTER_TOPOLOGY: "true"
-    EXP_CLUSTER_RESOURCE_SET: "true"
-    EXP_MACHINE_POOL: "true"
