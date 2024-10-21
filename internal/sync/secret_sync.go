@@ -20,6 +20,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/base64"
+	"maps"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
@@ -106,7 +107,7 @@ func (s *SecretSync) SyncObjects() {
 
 func setVariables(capiProvider *turtlesv1.CAPIProvider) {
 	if capiProvider.Spec.Variables != nil {
-		capiProvider.Status.Variables = capiProvider.Spec.Variables
+		maps.Copy(capiProvider.Status.Variables, capiProvider.Spec.Variables)
 	}
 }
 
