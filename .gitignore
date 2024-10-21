@@ -38,3 +38,5 @@ hack/crd/bases/*
 
 # helm
 **/Chart.lock
+
+.buildx-cache/
