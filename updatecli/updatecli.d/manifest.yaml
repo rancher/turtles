@@ -1,0 +1,165 @@
+name: Bump CAPI providers version
+
+# define scm for turtles
+scms:
+  turtles:
+    kind: github
+    spec:
+      user: turtles-bot
+      email: turtles@suse.de
+      owner: rancher
+      repository: turtles
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      branch: main
+
+# retrieve latest provider release
+sources:
+  capirelease:
+    kind: githubrelease
+    name: Get the latest core CAPI release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  caprke2release:
+    kind: githubrelease
+    name: Get the latest CAPI RKE2 bootstrap/control plane provider release
+    spec:
+      owner: "rancher"
+      repository: "cluster-api-provider-rke2"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  capzrelease:
+    kind: githubrelease
+    name: Get the latest CAPI Azure infrastructure provider release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-provider-azure"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  caparelease:
+    kind: githubrelease
+    name: Get the latest CAPI AWS infrastructure provider release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-provider-aws"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  capvrelease:
+    kind: githubrelease
+    name: Get the latest CAPI vSphere infrastructure provider release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-provider-vsphere"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  capielementalrelease:
+    kind: githubrelease
+    name: Get the latest CAPI Elemental infrastructure provider release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-provider-elemental"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  capifleetrelease:
+    kind: githubrelease
+    name: Get the latest CAPI add-on provider Fleet release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-addon-provider-fleet"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+
+# update config.yaml accordingly
+targets:
+  bumpcapi:
+    name: bump core capi
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
+    scmid: turtles
+    sourceid: capirelease # Will be ignored as `replacepattern` is specified
+  bumpcaprke2:
+    name: bump caprke2 provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/{{ source "caprke2release" }}/'
+    scmid: turtles
+    sourceid: caprke2release # Will be ignored as `replacepattern` is specified
+  bumpcapz:
+    name: bump capz provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/{{ source "capzrelease" }}/'
+    scmid: turtles
+    sourceid: capzrelease # Will be ignored as `replacepattern` is specified
+  bumpcapa:
+    name: bump capa provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/{{ source "caparelease" }}/'
+    scmid: turtles
+    sourceid: caparelease # Will be ignored as `replacepattern` is specified
+  bumpcapv:
+    name: bump capv provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
+    scmid: turtles
+    sourceid: capvrelease # Will be ignored as `replacepattern` is specified
+  bumpcapielemental:
+    name: bump capi elemental provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-elemental/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-elemental/releases/{{ source "capielementalrelease" }}/'
+    scmid: turtles
+    sourceid: capielementalrelease # Will be ignored as `replacepattern` is specified
+  bumpcapifleet:
+    name: bump capi fleet addon provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
+    scmid: turtles
+    sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
+
+# create a pr with the changes
+actions:
+  default:
+    title: '[updatecli] Bump CAPI Providers versions'
+    kind: github/pullrequest
+    scmid: turtles
+    spec:
+      automerge: false
+      mergemethod: squash
+      labels:
+        - capiproviders
