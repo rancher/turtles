@@ -17,13 +17,17 @@ limitations under the License.
 package sync
 
 import (
+	"cmp"
 	"context"
 	"encoding/base64"
+	"maps"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
@@ -71,6 +75,10 @@ func (SecretSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object {
 func (s *SecretSync) Sync(_ context.Context) error {
 	s.SyncObjects()
 
+	s.Source.Spec.ProviderSpec.ConfigSecret = cmp.Or(s.Source.Spec.ProviderSpec.ConfigSecret, &operatorv1.SecretReference{
+		Name: s.Source.Name,
+	})
+
 	return nil
 }
 
@@ -99,7 +107,7 @@ func (s *SecretSync) SyncObjects() {
 
 func setVariables(capiProvider *turtlesv1.CAPIProvider) {
 	if capiProvider.Spec.Variables != nil {
-		capiProvider.Status.Variables = capiProvider.Spec.Variables
+		maps.Copy(capiProvider.Status.Variables, capiProvider.Spec.Variables)
 	}
 }
 

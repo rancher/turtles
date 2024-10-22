@@ -55,7 +55,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
 			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			TurtlesChartPath:             "https://rancher.github.io/turtles",
-			CAPIProvidersYAML:            e2e.CapiProviders,
+			CAPIProvidersYAML:            e2e.CapiProvidersLegacy,
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
 			Version:                      "v0.6.0",
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),

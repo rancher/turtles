@@ -10,7 +10,10 @@ metadata:
   name: docker
   namespace: capd-system
 spec:
+  name: docker
   type: infrastructure
+  configSecret:
+    name: variables
 ---
 apiVersion: v1
 kind: Namespace
@@ -25,6 +28,8 @@ metadata:
 spec:
   name: kubeadm
   type: bootstrap
+  configSecret:
+    name: variables
 ---
 apiVersion: v1
 kind: Namespace
@@ -39,3 +44,5 @@ metadata:
 spec:
   name: kubeadm
   type: controlPlane
+  configSecret:
+    name: variables
