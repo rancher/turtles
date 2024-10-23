@@ -10,10 +10,10 @@ body:
       required: true
 
   - type: textarea
-    id: repository
+    id: provider_repository
     attributes:
       label: What is the repository URL?
-      placeholder: "Link to GitHub repository where the provider's source code is hosted."
+      placeholder: "Link to Git repository where the provider's source code is hosted."
     validations:
       required: true
 
