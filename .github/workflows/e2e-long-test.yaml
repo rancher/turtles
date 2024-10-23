@@ -61,7 +61,7 @@ jobs:
         path: _artifacts
     - name: Cleanup Azure Resources
       if: always()
-      uses: rancher-sandbox/azure-janitor@v0.1.2
+      uses: rancher/azure-janitor@v0.1.2
       with:
         resource-groups: highlander-e2e*
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
@@ -101,7 +101,7 @@ jobs:
         path: _artifacts
     - name: Cleanup Azure Resources
       if: always()
-      uses: rancher-sandbox/azure-janitor@v0.1.2
+      uses: rancher/azure-janitor@v0.1.2
       with:
         resource-groups: highlander-e2e*
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
@@ -141,7 +141,7 @@ jobs:
         path: _artifacts
     - name: Cleanup Azure Resources
       if: always()
-      uses: rancher-sandbox/azure-janitor@v0.1.2
+      uses: rancher/azure-janitor@v0.1.2
       with:
         resource-groups: highlander-e2e*
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
@@ -181,7 +181,7 @@ jobs:
         path: _artifacts
     - name: Cleanup Azure Resources
       if: always()
-      uses: rancher-sandbox/azure-janitor@v0.1.2
+      uses: rancher/azure-janitor@v0.1.2
       with:
         resource-groups: highlander-e2e*
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
