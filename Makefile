@@ -196,6 +196,8 @@ PULL_POLICY ?= IfNotPresent
 # Development config
 RANCHER_HOSTNAME ?= my.hostname.dev
 
+CACHE_DIR ?= .buildx-cache/
+CACHE_COMMANDS = "--cache-from type=local,src=$(CACHE_DIR) --cache-to type=local,dest=$(CACHE_DIR),mode=max"
 
 .PHONY: all
 all: build
@@ -349,7 +351,7 @@ docker-pull-prerequisites:
 docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
 ## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
 	# buildx does not support using local registry for multi-architecture images
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
 			--platform $(ARCH) \
 			--load \
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
@@ -359,7 +361,7 @@ docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build dock
 
 .PHONY: docker-build-and-push-etcdrestore
 docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
 			--platform $(TARGET_PLATFORMS) \
 			--push \
 			--sbom=true \
@@ -373,7 +375,7 @@ docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## R
 .PHONY: docker-build
 docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
 	# buildx does not support using local registry for multi-architecture images
-	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
 			--platform $(ARCH) \
 			--load \
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
@@ -383,7 +385,7 @@ docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for
 
 .PHONY: docker-build-and-push
 docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push targets for all architectures
-	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
 			--platform $(TARGET_PLATFORMS) \
 			--push \
 			--sbom=true \
@@ -567,22 +569,37 @@ release-chart: $(HELM) $(NOTES) build-chart verify-gen
 	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
-.PHONY: test-e2e
-test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-end tests
-	$(E2ECONFIG_VARS) $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+
+## --------------------------------------
+## E2E Tests
+## --------------------------------------
+
+$(CACHE_DIR):
+	mkdir -p $(CACHE_DIR)/
+
+E2E_RUN_COMMAND=$(E2ECONFIG_VARS) $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --label-filter="$(GINKGO_LABEL_FILTER)" \
 		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
 		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(GINKGO_TESTS) -- \
 	    -e2e.config="$(E2E_CONF_FILE)"
 
+.PHONY: test-e2e
+test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-end tests
+	$(E2E_RUN_COMMAND)
+
+.PHONY: test-e2e-push-image
+test-e2e-push-image: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image-push
+	$(E2E_RUN_COMMAND)
+
 .PHONY: e2e-image
-e2e-image: ## Build the image for e2e tests
-	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build
+e2e-image: $(CACHE_DIR) ## Build the image for e2e tests
+	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build
 	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
 
 .PHONY: e2e-image-push
-e2e-image-push: e2e-image ## Push the image for e2e tests
-	TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build-and-push
+e2e-image-push: $(CACHE_DIR) ## Push the image for e2e tests
+	TARGET_PLATFORMS=$(ARCH) TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e \
+	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) $(MAKE) docker-build-and-push
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation

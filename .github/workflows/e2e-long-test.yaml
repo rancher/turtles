@@ -42,8 +42,15 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '=1.22.0'
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
     - name: Run e2e tests
-      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/import-gitops make test-e2e
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/import-gitops CACHE_DIR=/tmp/.buildx-cache make test-e2e
       env:
         GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
@@ -75,8 +82,15 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '=1.22.0'
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
     - name: Run e2e tests
-      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/v2prov make test-e2e
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/v2prov CACHE_DIR=/tmp/.buildx-cache make test-e2e
       env:
         GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
@@ -108,8 +122,15 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '=1.22.0'
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
     - name: Run e2e tests
-      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/update-labels make test-e2e
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/update-labels CACHE_DIR=/tmp/.buildx-cache make test-e2e
       env:
         GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts
@@ -141,8 +162,15 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '=1.22.0'
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
     - name: Run e2e tests
-      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/embedded-capi-disabled make test-e2e
+      run: GINKGO_TESTS=$(pwd)/test/e2e/suites/embedded-capi-disabled CACHE_DIR=/tmp/.buildx-cache make test-e2e
       env:
         GINKGO_LABEL_FILTER: ${{ inputs.labels }}
     - name: Collect run artifacts

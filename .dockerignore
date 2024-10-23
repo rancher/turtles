@@ -39,3 +39,6 @@ cmd/clusterctl/clusterctl/**
 
 # Ignore go.work files
 go.work*
+
+# Ignore the buildx cache directory
+.buildx-cache/

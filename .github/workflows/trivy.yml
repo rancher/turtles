@@ -20,6 +20,12 @@ jobs:
     name: Scan
     runs-on: "ubuntu-20.04"
     steps:
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout code
         uses: actions/checkout@v4.1.7
       - name: Build an image

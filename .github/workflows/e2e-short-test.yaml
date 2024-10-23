@@ -20,8 +20,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "=1.22.0"
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       - name: Run e2e tests
-        run: make test-e2e
+        run: CACHE_DIR=/tmp/.buildx-cache make test-e2e
       - name: Collect run artifacts
         if: always()
         uses: actions/upload-artifact@v4
