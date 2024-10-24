@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # tag=v3.5.0
+      uses: actions/setup-go@941977282cd715ac8e0b3adc8555bef6dc794b7e # tag=v3.5.0
       with:
         go-version: 1.22.0
       id: go
