@@ -39,8 +39,8 @@ import (
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 )
 
-// InitMachine is a filter matching on init machine of the ETCD snapshot
-func InitMachine(etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) collections.Func {
+// initMachine is a filter matching on init machine of the ETCD snapshot
+func initMachine(etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) collections.Func {
 	return func(machine *clusterv1.Machine) bool {
 		return machine.Name == etcdMachineSnapshot.Spec.MachineName
 	}
@@ -104,6 +104,7 @@ type scope struct {
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters/status,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=secrets;events;configmaps;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=serviceaccounts/token,verbs=create
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="management.cattle.io",resources=*,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=rke2configs;rke2configs/status;rke2configs/finalizers,verbs=get;list;watch;create;update;patch;delete
@@ -159,7 +160,7 @@ func (r *ETCDSnapshotRestoreReconciler) reconcileNormal(ctx context.Context, etc
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	if scope.machines.Filter(InitMachine(scope.etcdMachineSnapshot)).Len() != 1 {
+	if scope.machines.Filter(initMachine(scope.etcdMachineSnapshot)).Len() != 1 {
 		return ctrl.Result{}, fmt.Errorf(
 			"init machine %s for snapshot %s is not found",
 			scope.etcdMachineSnapshot.Spec.MachineName,
@@ -191,15 +192,13 @@ func (r *ETCDSnapshotRestoreReconciler) reconcileNormal(ctx context.Context, etc
 
 		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotRestorePhaseStarted:
-		etcdSnapshotRestore.Status.Phase = snapshotrestorev1.ETCDSnapshotRestorePhaseShutdown
-
-		return ctrl.Result{}, nil
+		return r.preparePlanPermissions(ctx, scope, etcdSnapshotRestore)
 	case snapshotrestorev1.ETCDSnapshotRestorePhaseShutdown:
 		// Stop RKE2 on all the machines.
 		return r.stopRKE2OnAllMachines(ctx, scope, etcdSnapshotRestore)
 	case snapshotrestorev1.ETCDSnapshotRestorePhaseRunning:
 		// Restore the etcd snapshot on the init machine.
-		return r.restoreSnaphotOnInitMachine(ctx, scope, etcdSnapshotRestore)
+		return r.restoreSnapshotOnInitMachine(ctx, scope, etcdSnapshotRestore)
 	case snapshotrestorev1.ETCDSnapshotRestorePhaseAgentRestart:
 		// Start RKE2 on all the machines.
 		return r.startRKE2OnAllMachines(ctx, scope, etcdSnapshotRestore)
@@ -212,7 +211,7 @@ func (r *ETCDSnapshotRestoreReconciler) reconcileNormal(ctx context.Context, etc
 	case snapshotrestorev1.ETCDSnapshotRestorePhaseJoinAgents:
 		return r.waitForMachinesToJoin(ctx, scope, etcdSnapshotRestore)
 	case snapshotrestorev1.ETCDSnapshotRestorePhaseFinished, snapshotrestorev1.ETCDSnapshotRestorePhaseFailed:
-		return ctrl.Result{}, nil
+		return r.revokePlanPermissions(ctx, scope, etcdSnapshotRestore)
 	}
 
 	return ctrl.Result{}, nil
@@ -251,6 +250,24 @@ func initScope(ctx context.Context, c client.Client, etcdSnapshotRestore *snapsh
 	}, nil
 }
 
+func (r *ETCDSnapshotRestoreReconciler) preparePlanPermissions(ctx context.Context, scope *scope, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (ctrl.Result, error) {
+	if err := Plan(ctx, r.Client, "restore"+etcdSnapshotRestore.Name, scope.machines.Newest(), scope.machines).Permit(ctx); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	etcdSnapshotRestore.Status.Phase = snapshotrestorev1.ETCDSnapshotRestorePhaseShutdown
+
+	return ctrl.Result{}, nil
+}
+
+func (r *ETCDSnapshotRestoreReconciler) revokePlanPermissions(ctx context.Context, scope *scope, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (ctrl.Result, error) {
+	if err := Plan(ctx, r.Client, "restore"+etcdSnapshotRestore.Name, scope.machines.Newest(), scope.machines).Revoke(ctx); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
 func (r *ETCDSnapshotRestoreReconciler) stopRKE2OnAllMachines(ctx context.Context, scope *scope, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
@@ -259,7 +276,7 @@ func (r *ETCDSnapshotRestoreReconciler) stopRKE2OnAllMachines(ctx context.Contex
 		log.Info("Stopping RKE2 on machine", "machine", machine.Name)
 
 		// Get the plan secret for the machine.
-		applied, err := Plan(ctx, r.Client, machine).Apply(ctx, RKE2KillAll())
+		applied, err := Plan(ctx, r.Client, "restore"+etcdSnapshotRestore.Name, machine, scope.machines).Apply(ctx, RKE2KillAll())
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get plan secret for machine: %w", err)
 		}
@@ -286,15 +303,15 @@ func (r *ETCDSnapshotRestoreReconciler) stopRKE2OnAllMachines(ctx context.Contex
 	return ctrl.Result{}, nil
 }
 
-func (r *ETCDSnapshotRestoreReconciler) restoreSnaphotOnInitMachine(ctx context.Context, scope *scope, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (ctrl.Result, error) {
+func (r *ETCDSnapshotRestoreReconciler) restoreSnapshotOnInitMachine(ctx context.Context, scope *scope, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	initMachine := scope.machines.Filter(InitMachine(scope.etcdMachineSnapshot)).UnsortedList()[0]
+	initMachine := scope.machines.Filter(initMachine(scope.etcdMachineSnapshot)).UnsortedList()[0]
 
 	log.Info("Filling plan secret with etcd restore instructions", "machine", initMachine.Name)
 
 	// Get the plan secret for the machine.
-	applied, err := Plan(ctx, r.Client, initMachine).Apply(
+	applied, err := Plan(ctx, r.Client, "restore"+etcdSnapshotRestore.Name, initMachine, scope.machines).Apply(
 		ctx,
 		RemoveServerURL(),
 		ManifestRemoval(),
@@ -318,7 +335,7 @@ func (r *ETCDSnapshotRestoreReconciler) restoreSnaphotOnInitMachine(ctx context.
 func (r *ETCDSnapshotRestoreReconciler) startRKE2OnAllMachines(ctx context.Context, scope *scope, etcdSnapshotRestore *snapshotrestorev1.ETCDSnapshotRestore) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	initMachine := scope.machines.Filter(InitMachine(scope.etcdMachineSnapshot)).UnsortedList()[0]
+	initMachine := scope.machines.Filter(initMachine(scope.etcdMachineSnapshot)).UnsortedList()[0]
 
 	// TODO: other registration methods
 	initMachineIP := getInternalMachineIP(initMachine)
@@ -350,7 +367,7 @@ func (r *ETCDSnapshotRestoreReconciler) startRKE2OnAllMachines(ctx context.Conte
 				StartRKE2())
 		}
 
-		applied, err := Plan(ctx, r.Client, machine).Apply(ctx, instructions...)
+		applied, err := Plan(ctx, r.Client, "restore"+etcdSnapshotRestore.Name, machine, scope.machines).Apply(ctx, instructions...)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to patch plan secret: %w", err)
 		} else if !applied.Finished {
