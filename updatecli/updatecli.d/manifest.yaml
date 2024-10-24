@@ -12,6 +12,7 @@ scms:
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       branch: main
+      commitusingapi: true
 
 # retrieve latest provider release
 sources:
