@@ -103,4 +103,14 @@ var _ = Describe("RBAC tests", func() {
 			},
 		}), cl, "test-cluster", namespace)).ToNot(Succeed())
 	})
+
+	It("should allow turtles controller to access cluster", func() {
+		Expect(validateRBAC(admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "system:serviceaccount:rancher-turtles-system:rancher-turtles-etcdsnapshotrestore-manager",
+				},
+			},
+		}), cl, "test-cluster", namespace)).To(Succeed())
+	})
 })
