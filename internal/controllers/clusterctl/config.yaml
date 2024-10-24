@@ -36,7 +36,7 @@ data:
       url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.7/bootstrap-components.yaml"
       type:         "BootstrapProvider"
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.7.0/bootstrap-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.8.0/bootstrap-components.yaml"
       type:         "BootstrapProvider"
 
     # ControlPlane providers
@@ -44,7 +44,7 @@ data:
       url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.7/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.7.0/control-plane-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.8.0/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
 
     # Addon providers
