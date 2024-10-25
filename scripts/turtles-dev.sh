@@ -46,12 +46,12 @@ export EXP_CLUSTER_RESOURCE_SET=true
 export CLUSTER_TOPOLOGY=true
 
 helm install capi-operator capi-operator/cluster-api-operator \
-	--create-namespace -n capi-operator-system \
-	--set infrastructure=docker:v1.7.7 \
-	--set core=cluster-api:v1.7.7 \
-	--set controlPlane=rke2:v0.7.0 \
-	--set bootstrap=rke2:v0.7.0 \
-	--timeout 90s --wait
+    --create-namespace -n capi-operator-system \
+    --set infrastructure=docker:v1.7.7 \
+    --set core=cluster-api:v1.7.7 \
+    --set controlPlane=rke2:v0.8.0 \
+    --set bootstrap=rke2:v0.8.0 \
+    --timeout 90s --wait
 
 kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
 
