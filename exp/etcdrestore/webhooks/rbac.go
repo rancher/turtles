@@ -17,8 +17,10 @@ limitations under the License.
 package webhooks
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"os"
 
 	authv1 "k8s.io/api/authorization/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -30,6 +32,13 @@ func validateRBAC(ctx context.Context, cl client.Client, clusterName, clusterNam
 	admissionRequest, err := admission.RequestFromContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get admission request from context: %w", err)
+	}
+
+	namespace := cmp.Or(os.Getenv("POD_NAMESPACE"), "rancher-turtles-system")
+
+	turtlesController := fmt.Sprintf("system:serviceaccount:%s:rancher-turtles-etcdsnapshotrestore-manager", namespace)
+	if admissionRequest.UserInfo.Username == turtlesController {
+		return nil
 	}
 
 	sar := authv1.SubjectAccessReview{
