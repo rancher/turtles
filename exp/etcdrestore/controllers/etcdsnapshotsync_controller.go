@@ -87,7 +87,7 @@ func (r *EtcdSnapshotSyncReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Only reconcile RKE2 clusters
-	if cluster.Spec.ControlPlaneRef.Kind != RKE2ControlPlaneKind { // TODO: Move to predicate
+	if cluster.Spec.ControlPlaneRef == nil || cluster.Spec.ControlPlaneRef.Kind != RKE2ControlPlaneKind { // TODO: Move to predicate
 		log.Info("Cluster is not an RKE2 cluster, skipping reconciliation")
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
