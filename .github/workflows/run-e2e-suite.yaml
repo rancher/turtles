@@ -115,7 +115,7 @@ jobs:
           commit: true
       - name: Cleanup GCP Resources
         if: ${{ inputs.run_gcp_janitor && always() }}
-        uses: rancher-sandbox/gcp-janitor@v0.1.0
+        uses: rancher/gcp-janitor@v0.1.0
         with:
           credentials-json: ${{ secrets.GCP_CREDENTIALS }}
           zones: ${{ secrets.GCP_ZONE }}
