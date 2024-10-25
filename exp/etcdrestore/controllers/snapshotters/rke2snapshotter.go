@@ -23,8 +23,6 @@ import (
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +52,9 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 		return fmt.Errorf("failed to list etcd snapshot files: %w", err)
 	}
 
+	snapshots := []snapshotrestorev1.ETCDMachineSnapshotFile{}
+	s3Snapshots := []snapshotrestorev1.S3SnapshotFile{}
+
 	for _, snapshotFile := range etcdnapshotFileList.Items {
 		log.V(5).Info("Found etcd snapshot file", "name", snapshotFile.GetName())
 
@@ -73,78 +74,54 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 			continue
 		}
 
-		rke2EtcdMachineSnapshotConfig := &snapshotrestorev1.RKE2EtcdMachineSnapshotConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      snapshotFile.Name,
-				Namespace: s.cluster.Namespace,
-			},
-		}
-
 		if snapshotFile.Spec.S3 != nil {
-			s3EndpointCASecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      snapshotFile.Name + "-s3-endpoint-ca",
-					Namespace: s.cluster.Namespace,
-				},
-				StringData: map[string]string{
-					"ca.crt": snapshotFile.Spec.S3.EndpointCA,
-				},
-			}
-
-			if err := s.Create(ctx, s3EndpointCASecret); err != nil {
-				if apierrors.IsAlreadyExists(err) {
-					log.V(5).Info("S3 endpoint CA secret already exists")
-				} else {
-					return fmt.Errorf("failed to create S3 endpoint CA secret: %w", err)
-				}
-			}
-
-			rke2EtcdMachineSnapshotConfig.Spec.S3 = snapshotrestorev1.S3Config{
-				Endpoint:         snapshotFile.Spec.S3.Endpoint,
-				EndpointCASecret: s3EndpointCASecret.Name,
-				SkipSSLVerify:    snapshotFile.Spec.S3.SkipSSLVerify,
-				Bucket:           snapshotFile.Spec.S3.Bucket,
-				Region:           snapshotFile.Spec.S3.Region,
-				Insecure:         snapshotFile.Spec.S3.Insecure,
-				Location:         snapshotFile.Spec.Location,
-			}
+			s3Snapshots = append(s3Snapshots, snapshotrestorev1.S3SnapshotFile{
+				Name:     snapshotFile.Name,
+				Location: snapshotFile.Spec.Location,
+			})
 		} else {
-			rke2EtcdMachineSnapshotConfig.Spec.Local = snapshotrestorev1.LocalConfig{
-				DataDir: snapshotFile.Spec.Location,
-			}
-		}
-
-		if err := s.Create(ctx, rke2EtcdMachineSnapshotConfig); err != nil {
-			if apierrors.IsAlreadyExists(err) {
-				log.V(5).Info("RKE2EtcdMachineSnapshotConfig already exists")
-			} else {
-				return fmt.Errorf("failed to create RKE2EtcdMachineSnapshotConfig: %w", err)
-			}
-		}
-
-		etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      snapshotFile.Name,
-				Namespace: s.cluster.Namespace,
-				Annotations: map[string]string{
-					turtlesannotations.EtcdAutomaticSnapshot: "true",
-				},
-			},
-			Spec: snapshotrestorev1.ETCDMachineSnapshotSpec{
-				ClusterName: s.cluster.Name,
-				MachineName: machineName,
-				ConfigRef:   snapshotFile.Name,
+			snapshots = append(snapshots, snapshotrestorev1.ETCDMachineSnapshotFile{
+				Name:        snapshotFile.Name,
 				Location:    snapshotFile.Spec.Location,
-			},
+				MachineName: machineName,
+			})
 		}
 
-		if err := s.Create(ctx, etcdMachineSnapshot); err != nil {
-			if apierrors.IsAlreadyExists(err) {
-				log.V(5).Info("EtcdMachineSnapshot already exists")
-			} else {
-				return fmt.Errorf("failed to create EtcdMachineSnapshot: %w", err)
-			}
-		}
+	}
+
+	etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ETCDMachineSnapshot",
+			APIVersion: snapshotrestorev1.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s.cluster.Name,
+			Namespace: s.cluster.Namespace,
+			Annotations: map[string]string{
+				turtlesannotations.EtcdAutomaticSnapshot: "true",
+			},
+		},
+		Spec: snapshotrestorev1.ETCDMachineSnapshotSpec{
+			ClusterName: s.cluster.Name,
+		},
+		Status: snapshotrestorev1.ETCDMachineSnapshotStatus{
+			Snapshots:   snapshots,
+			S3Snapshots: s3Snapshots,
+		},
+	}
+
+	if err := s.Patch(ctx, etcdMachineSnapshot.DeepCopy(), client.Apply, []client.PatchOption{
+		client.ForceOwnership,
+		client.FieldOwner("turtles-snapshot-controller"),
+	}...); err != nil {
+		return fmt.Errorf("failed to create/modify EtcdMachineSnapshot: %w", err)
+	}
+
+	if err := s.Status().Patch(ctx, etcdMachineSnapshot, client.Apply, []client.SubResourcePatchOption{
+		client.ForceOwnership,
+		client.FieldOwner("turtles-snapshot-controller"),
+	}...); err != nil {
+		return fmt.Errorf("failed to create/modify EtcdMachineSnapshot status: %w", err)
 	}
 
 	return nil

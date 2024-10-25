@@ -166,24 +166,6 @@ func (r *ETCDMachineSnapshotReconciler) reconcileDelete(
 	// Log the start of the deletion process
 	log.Info("Starting deletion of EtcdMachineSnapshot", "name", etcdMachineSnapshot.Name)
 
-	// Perform any necessary cleanup of associated resources here
-	// Example: Delete associated snapshot resources
-	snapshotList := &snapshotrestorev1.ETCDMachineSnapshotList{}
-	if err := r.Client.List(ctx, snapshotList, client.InNamespace(etcdMachineSnapshot.Namespace)); err != nil {
-		log.Error(err, "Failed to list associated EtcdMachineSnapshots")
-		return err
-	}
-
-	for _, snapshot := range snapshotList.Items {
-		if snapshot.Spec.MachineName == etcdMachineSnapshot.Spec.MachineName {
-			if err := r.Client.Delete(ctx, &snapshot); err != nil {
-				log.Error(err, "Failed to delete associated EtcdMachineSnapshot", "snapshotName", snapshot.Name)
-				return err
-			}
-			log.Info("Deleted associated EtcdMachineSnapshot", "snapshotName", snapshot.Name)
-		}
-	}
-
 	// Remove the finalizer so the EtcdMachineSnapshot can be garbage collected by Kubernetes.
 	controllerutil.RemoveFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer)
 

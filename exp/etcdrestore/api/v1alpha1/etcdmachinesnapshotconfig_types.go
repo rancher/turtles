@@ -39,7 +39,6 @@ type S3Config struct {
 	Region             string `json:"region,omitempty"`
 	Folder             string `json:"folder,omitempty"`
 	Insecure           bool   `json:"insecure,omitempty"`
-	Location           string `json:"location,omitempty"`
 }
 
 // RKE2EtcdMachineSnapshotConfig is the schema for the snapshot config.
