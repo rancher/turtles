@@ -27,7 +27,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
       - name: Build an image
         run: |
           TAG=${{ github.sha }} make docker-build

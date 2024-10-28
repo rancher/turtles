@@ -35,7 +35,7 @@ jobs:
     runs-on: [self-hosted, linux]
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: setupGo
@@ -75,7 +75,7 @@ jobs:
     needs: e2e_import_gitops
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: setupGo
@@ -115,7 +115,7 @@ jobs:
     needs: e2e_v2prov
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: setupGo
@@ -155,7 +155,7 @@ jobs:
     needs: e2e_update_labels
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: setupGo
