@@ -163,5 +163,5 @@ actions:
       automerge: true
       mergemethod: squash
       labels:
-        - area/dependency
+        - area/update
         - kind/chore
