@@ -160,7 +160,8 @@ actions:
     kind: github/pullrequest
     scmid: turtles
     spec:
-      automerge: false
+      automerge: true
       mergemethod: squash
       labels:
-        - capiproviders
+        - area/dependency
+        - kind/chore
