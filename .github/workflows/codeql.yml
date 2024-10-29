@@ -5,9 +5,13 @@ on:
     branches: [ "main", "release-*" ]
   pull_request:
     branches: [ "main" ]
-    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   schedule:
     - cron: '45 15 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   analyze:

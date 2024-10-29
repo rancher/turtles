@@ -2,7 +2,11 @@ name: Run short e2e tests
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 env:
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind"

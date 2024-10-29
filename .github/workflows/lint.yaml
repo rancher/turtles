@@ -2,7 +2,11 @@ name: Lint
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 # Remove all permissions from GITHUB_TOKEN except metadata.
 permissions: {}
