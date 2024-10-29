@@ -71,7 +71,7 @@ jobs:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v5.0.2
+        uses: actions/setup-go@v5.1.0
         with:
           go-version: '=1.22.0'
       - name: Package operator chart
