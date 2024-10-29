@@ -97,8 +97,7 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-3. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/160). Label the PR with `area/documentation`, review and merge. 
-Merging it would result in automatic documentation being published using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
+3. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/160). Merging it would result in automatic documentation being published using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
 
 The resulting state after the version publish workflow for the released tag is also stored under the `release-${RELEASE_TAG}` branch in the origin repository, which is consistent with the [branching strategy](#branches) for turtles.
 
@@ -108,7 +107,7 @@ Once all steps above are completed, a new version of Rancher Turtles Community D
 
 Follow the steps below to create a JIRA ticket:
 
-- navigate to [JIRA](https://jira.suse.com/secure/Dashboard).
+- navigate to [JIRA](https://jira.suse.com/secure/Dashboard.jspa).
 - take a look at reference [issue](https://jira.suse.com/browse/SURE-9171) and create a similar ticket for syncing the new Turtles Community Docs version that was published in [previous](#publish-a-new-rancher-turtles-community-docs-version) step with Turtles Product Docs.
 In the ticket description, make sure to include the reference to latest published version of Rancher Turtles Community Docs and PR created automatically by GitHub Actions bot.
 
