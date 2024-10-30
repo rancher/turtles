@@ -1,0 +1,4 @@
+area/providers:
+- changed-files:
+  - any-glob-to-any-file:
+    - 'internal/controllers/clusterctl/config.yaml'
