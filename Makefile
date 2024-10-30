@@ -360,30 +360,9 @@ docker-pull-prerequisites:
 	docker pull $(GO_CONTAINER_IMAGE)
 	docker pull gcr.io/distroless/static:latest
 
-.PHONY: docker-build-etcdrestore ## Build the docker image for etcdrestore
-docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
-## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
-	# buildx does not support using local registry for multi-architecture images
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(ARCH) \
-			--load \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/etcdrestore \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
-
-.PHONY: docker-build-and-push-etcdrestore
-docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(TARGET_PLATFORMS) \
-			--push \
-			--sbom=true \
-			--attest type=provenance,mode=max \
-			--iidfile=$(IID_FILE) \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/etcdrestore \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
+## --------------------------------------
+## Docker - turtles
+## --------------------------------------
 
 .PHONY: docker-build
 docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
@@ -408,6 +387,35 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
+
+## --------------------------------------
+## Docker - etcdrestore
+## --------------------------------------
+
+.PHONY: docker-build-etcdrestore ## Build the docker image for etcdrestore
+docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
+	## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
+	# buildx does not support using local registry for multi-architecture images
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
+			--platform $(ARCH) \
+			--load \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/etcdrestore \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
+
+.PHONY: docker-build-and-push-etcdrestore
+docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
+			--platform $(TARGET_PLATFORMS) \
+			--push \
+			--sbom=true \
+			--attest type=provenance,mode=max \
+			--iidfile=$(IID_FILE) \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/etcdrestore \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
 
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
