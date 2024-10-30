@@ -87,7 +87,6 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/operator.yaml
 GINKGO_ARGS ?=
 SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
-GITEA_CUSTOM_INGRESS ?= false
 GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
@@ -195,16 +194,10 @@ RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
 # Exclude the current RELEASE_TAG and any tags with the prefix 'test/'
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'test/*' 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
-RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 CHART_DIR := charts/rancher-turtles
 RELEASE_DIR ?= out
 CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
 CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
-
-# Repo
-GH_ORG_NAME ?= $ORG
-GH_REPO_NAME ?= turtles
-GH_REPO ?= $(GH_ORG_NAME)/$(GH_REPO_NAME)
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= IfNotPresent
