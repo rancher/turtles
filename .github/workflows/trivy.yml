@@ -22,7 +22,8 @@ jobs:
       contents: read
       security-events: write
     name: Scan
-    runs-on: "ubuntu-20.04"
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
+    container: ubuntu:22.04
     steps:
       - name: Docker login
         uses: docker/login-action@v3
