@@ -31,7 +31,7 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to management v3 cluster functionality should work", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Migrate v1 to management v3 cluster functionality should work", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -46,7 +46,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
-			ClusterTemplate:                e2e.CAPIDockerKubeadm,
+			ClusterTemplate:                e2e.CAPIDockerRKE2,
 			ClusterName:                    "clusterv3-migrated",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
