@@ -35,6 +35,10 @@ import (
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 )
 
+const (
+	CAPIVersion = "v1.7.7"
+)
+
 var _ = Describe("Provider sync", func() {
 	var (
 		err                          error
@@ -160,7 +164,7 @@ var _ = Describe("Provider sync", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
 
 		expected := capiProvider.DeepCopy()
-		expected.Spec.Version = "v1.7.7"
+		expected.Spec.Version = CAPIVersion
 
 		Eventually(func(g Gomega) {
 			g.Expect(s.Get(ctx)).To(Succeed())
@@ -254,7 +258,7 @@ var _ = Describe("Provider sync", func() {
 		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
 
 		expected := capiProvider.DeepCopy()
-		expected.Spec.Version = "v1.7.7"
+		expected.Spec.Version = CAPIVersion
 
 		Eventually(func(g Gomega) {
 			g.Expect(s.Get(ctx)).To(Succeed())
