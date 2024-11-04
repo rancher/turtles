@@ -87,7 +87,6 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/operator.yaml
 GINKGO_ARGS ?=
 SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
-GITEA_CUSTOM_INGRESS ?= false
 GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
@@ -195,16 +194,10 @@ RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
 # Exclude the current RELEASE_TAG and any tags with the prefix 'test/'
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'test/*' 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
-RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 CHART_DIR := charts/rancher-turtles
 RELEASE_DIR ?= out
 CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
 CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
-
-# Repo
-GH_ORG_NAME ?= $ORG
-GH_REPO_NAME ?= turtles
-GH_REPO ?= $(GH_ORG_NAME)/$(GH_REPO_NAME)
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= IfNotPresent
@@ -367,30 +360,9 @@ docker-pull-prerequisites:
 	docker pull $(GO_CONTAINER_IMAGE)
 	docker pull gcr.io/distroless/static:latest
 
-.PHONY: docker-build-etcdrestore ## Build the docker image for etcdrestore
-docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
-## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
-	# buildx does not support using local registry for multi-architecture images
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(ARCH) \
-			--load \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/etcdrestore \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
-
-.PHONY: docker-build-and-push-etcdrestore
-docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(TARGET_PLATFORMS) \
-			--push \
-			--sbom=true \
-			--attest type=provenance,mode=max \
-			--iidfile=$(IID_FILE) \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/etcdrestore \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
+## --------------------------------------
+## Docker - turtles
+## --------------------------------------
 
 .PHONY: docker-build
 docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
@@ -415,6 +387,35 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
+
+## --------------------------------------
+## Docker - etcdrestore
+## --------------------------------------
+
+.PHONY: docker-build-etcdrestore ## Build the docker image for etcdrestore
+docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
+	## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
+	# buildx does not support using local registry for multi-architecture images
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
+			--platform $(ARCH) \
+			--load \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/etcdrestore \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
+
+.PHONY: docker-build-and-push-etcdrestore
+docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
+	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
+			--platform $(TARGET_PLATFORMS) \
+			--push \
+			--sbom=true \
+			--attest type=provenance,mode=max \
+			--iidfile=$(IID_FILE) \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/etcdrestore \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
 
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}

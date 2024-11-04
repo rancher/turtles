@@ -18,9 +18,6 @@
 # Run this with docker build --build-arg builder_image=<golang:x.y.z>
 ARG builder_image
 
-# Build architecture
-ARG ARCH
-
 # Ignore Hadolint rule "Always tag the version of an image explicitly."
 # It's an invalid finding since the image is explicitly set in the Makefile.
 # https://github.com/hadolint/hadolint/wiki/DL3006
@@ -38,13 +35,12 @@ ENV GOPROXY=$goproxy
 COPY ./ ./
 
 # Build
-ARG ARCH
 ARG ldflags
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
+    CGO_ENABLED=0 GOOS=linux \
     sh -c "cd exp/etcdrestore && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
 
 # Production image
