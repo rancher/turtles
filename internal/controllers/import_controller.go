@@ -355,7 +355,7 @@ func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster 
 		annotations = map[string]string{}
 	}
 
-	annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
+	annotations[turtlesannotations.ClusterImportedAnnotation] = trueAnnotationValue
 	capiCluster.SetAnnotations(annotations)
 
 	return ctrl.Result{}, nil

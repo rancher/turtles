@@ -276,6 +276,9 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 					capiClusterOwnerNamespace: capiCluster.Namespace,
 					ownedLabelName:            "",
 				},
+				Annotations: map[string]string{
+					turtlesannotations.NoCreatorRBACAnnotation: trueAnnotationValue,
+				},
 				Finalizers: []string{
 					managementv3.CapiClusterFinalizer,
 				},
@@ -303,6 +306,10 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
 
 		return ctrl.Result{}, err
+	}
+
+	if err := r.optOutOfClusterOwner(ctx, rancherCluster); err != nil {
+		return ctrl.Result{}, fmt.Errorf("error annotating rancher cluster %s to opt out of cluster owner: %w", rancherCluster.Name, err)
 	}
 
 	patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
@@ -479,7 +486,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, 
 		annotations = map[string]string{}
 	}
 
-	annotations[turtlesannotations.ClusterImportedAnnotation] = "true"
+	annotations[turtlesannotations.ClusterImportedAnnotation] = trueAnnotationValue
 	capiCluster.SetAnnotations(annotations)
 	controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
 
@@ -537,4 +544,32 @@ func (r *CAPIImportManagementV3Reconciler) verifyV1ClusterMigration(ctx context.
 	}
 
 	return true, nil
+}
+
+// optOutOfClusterOwner annotates the cluster with the opt-out annotation.
+// Rancher will detect this annotation and it won't create ProjectOwner or ClusterOwner roles.
+func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Context, rancherCluster *managementv3.Cluster) error {
+	log := log.FromContext(ctx)
+
+	annotations := rancherCluster.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+
+	if _, ok := annotations[turtlesannotations.NoCreatorRBACAnnotation]; !ok {
+		log.Info(fmt.Sprintf("Rancher cluster '%s' does not have the NoCreatorRBACAnnotation annotation: '%s', annotating it",
+			rancherCluster.Name,
+			turtlesannotations.ClusterImportedAnnotation))
+
+		patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
+		annotations[turtlesannotations.NoCreatorRBACAnnotation] = trueAnnotationValue
+		rancherCluster.SetAnnotations(annotations)
+
+		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
+			return fmt.Errorf("error patching rancher cluster: %w", err)
+		}
+	}
+
+	return nil
 }
