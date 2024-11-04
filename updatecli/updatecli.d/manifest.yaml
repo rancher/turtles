@@ -98,6 +98,24 @@ targets:
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
+  bumpcapi-tests:
+    name: bump core capi in tests package
+    kind: file
+    spec:
+      file: ./internal/sync/provider_sync_test.go
+      matchpattern: 'CAPIVersion = .*'
+      replacepattern: CAPIVersion = "{{ source "capirelease" }}"
+    scmid: turtles
+    sourceid: capirelease # Will be ignored as `replacepattern` is specified
+  bumpcapi-e2e:
+    name: bump core capi in e2e package
+    kind: file
+    spec:
+      file: ./test/e2e/const.go
+      matchpattern: 'CAPIVersion = .*'
+      replacepattern: CAPIVersion = "{{ source "capirelease" }}"
+    scmid: turtles
+    sourceid: capirelease # Will be ignored as `replacepattern` is specified
   bumpcaprke2:
     name: bump caprke2 provider
     kind: file
