@@ -29,6 +29,8 @@ import (
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/internal/controllers/testdata"
 	"github.com/rancher/turtles/internal/test"
+
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -198,6 +200,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 			g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
+			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}).Should(Succeed())
 
@@ -547,5 +550,4 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			Expect(rancherClusters.Items).To(HaveLen(0))
 		}).Should(Succeed())
 	})
-
 })
