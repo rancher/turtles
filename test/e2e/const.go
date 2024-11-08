@@ -173,3 +173,7 @@ const (
 	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
 	OwnedLabelName                 = "cluster-api.cattle.io/owned"
 )
+
+const (
+	CAPIVersion = "v1.7.7"
+)
