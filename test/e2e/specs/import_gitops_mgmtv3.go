@@ -84,6 +84,9 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 	CapiClusterOwnerLabel          string
 	CapiClusterOwnerNamespaceLabel string
 	OwnedLabelName                 string
+
+	// IsGCPCluster is used to substitute GCP-specific values from secrets
+	IsGCPCluster bool
 }
 
 // CreateMgmtV3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -233,6 +236,12 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
 			"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
 		}
+
+		// These variables (secrets) are not accessible when using the pr webhook (aka `ShortTestLabel`)
+		if input.IsGCPCluster {
+			additionalVars["GCP_PROJECT"] = input.E2EConfig.GetVariable(e2e.GCPProjectVar)
+		}
+
 		for k, v := range input.AdditionalTemplateVariables {
 			additionalVars[k] = v
 		}
