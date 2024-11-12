@@ -175,14 +175,14 @@ func RKE2KillAll() Instruction {
 }
 
 // ETCDRestore performs restore form a snapshot path on the init node
-func ETCDRestore(snapshot *snapshotrestorev1.ETCDMachineSnapshot) Instruction {
+func ETCDRestore(snapshot *snapshotrestorev1.ETCDMachineSnapshotFile) Instruction {
 	return Instruction{
 		Name:    "etcd-restore",
 		Command: "/bin/sh",
 		Args: []string{
 			"-c",
 			"rke2 server --cluster-reset",
-			fmt.Sprintf("--cluster-reset-restore-path=%s", strings.TrimPrefix(snapshot.Spec.Location, "file://")),
+			fmt.Sprintf("--cluster-reset-restore-path=%s", strings.TrimPrefix(snapshot.Location, "file://")),
 		},
 		SaveOutput: true,
 	}

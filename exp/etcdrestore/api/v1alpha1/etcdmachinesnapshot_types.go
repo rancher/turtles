@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // ETCDSnapshotPhase is a string representation of the phase of the etcd snapshot
@@ -39,21 +37,35 @@ const (
 	ETCDMachineSnapshotFinalizer = "etcdmachinesnapshot.turtles.cattle.io"
 )
 
-// +kubebuilder:validation:XValidation:message="ETCD snapshot location can't be empty.",rule="size(self.location)>0"
+// +kubebuilder:validation:XValidation:message="ETCD snapshot location can't be empty.",rule="size(self.clusterName)>0"
 //
 // ETCDMachineSnapshotSpec defines the desired state of EtcdMachineSnapshot
 type ETCDMachineSnapshotSpec struct {
 	ClusterName string `json:"clusterName"`
-	MachineName string `json:"machineName"`
-	ConfigRef   string `json:"configRef"`
-	Location    string `json:"location"`
+	MachineName string `json:"machineName,omitempty"`
+	Location    string `json:"location,omitempty"`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
 type ETCDMachineSnapshotStatus struct {
-	Phase      ETCDSnapshotPhase    `json:"phase,omitempty"`
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-	Manual     bool                 `json:"manual,omitempty"`
+	Phase ETCDSnapshotPhase `json:"phase,omitempty"`
+
+	// +optional
+	Snapshots []ETCDMachineSnapshotFile `json:"snapshots,omitempty"`
+
+	// +optional
+	S3Snapshots []S3SnapshotFile `json:"s3Snapshots,omitempty"`
+}
+
+type ETCDMachineSnapshotFile struct {
+	Name        string `json:"name"`
+	MachineName string `json:"machineName"`
+	Location    string `json:"location"`
+}
+
+type S3SnapshotFile struct {
+	Name     string `json:"name"`
+	Location string `json:"location"`
 }
 
 // ETCDMachineSnapshot is the Schema for the ETCDMachineSnapshot API.

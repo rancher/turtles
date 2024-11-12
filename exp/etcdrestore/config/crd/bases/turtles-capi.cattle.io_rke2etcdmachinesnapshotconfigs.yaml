@@ -60,8 +60,6 @@ spec:
                     type: string
                   insecure:
                     type: boolean
-                  location:
-                    type: string
                   region:
                     type: string
                   s3CredentialSecret:

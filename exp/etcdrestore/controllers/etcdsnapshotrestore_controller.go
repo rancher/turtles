@@ -40,9 +40,9 @@ import (
 )
 
 // initMachine is a filter matching on init machine of the ETCD snapshot
-func initMachine(etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) collections.Func {
+func initMachine(etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshotFile) collections.Func {
 	return func(machine *clusterv1.Machine) bool {
-		return machine.Name == etcdMachineSnapshot.Spec.MachineName
+		return machine.Name == etcdMachineSnapshot.MachineName
 	}
 }
 
@@ -94,7 +94,7 @@ type scope struct {
 	machines collections.Machines
 
 	// etcdMachineSnapshot is the EtcdMachineSnapshot object.
-	etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot
+	etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshotFile
 }
 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=etcdsnapshotrestores,verbs=get;list;watch;create;update;patch;delete
@@ -163,7 +163,7 @@ func (r *ETCDSnapshotRestoreReconciler) reconcileNormal(ctx context.Context, etc
 	if scope.machines.Filter(initMachine(scope.etcdMachineSnapshot)).Len() != 1 {
 		return ctrl.Result{}, fmt.Errorf(
 			"init machine %s for snapshot %s is not found",
-			scope.etcdMachineSnapshot.Spec.MachineName,
+			scope.etcdMachineSnapshot.MachineName,
 			etcdSnapshotRestore.Spec.ETCDMachineSnapshotName)
 	}
 
@@ -238,15 +238,29 @@ func initScope(ctx context.Context, c client.Client, etcdSnapshotRestore *snapsh
 	etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{}
 	if err := c.Get(ctx, client.ObjectKey{
 		Namespace: etcdSnapshotRestore.Namespace,
-		Name:      etcdSnapshotRestore.Spec.ETCDMachineSnapshotName,
+		Name:      etcdSnapshotRestore.Spec.ClusterName,
 	}, etcdMachineSnapshot); err != nil {
 		return nil, fmt.Errorf("failed to get etcd machine backup: %w", err)
+	}
+
+	var machineSnapshot *snapshotrestorev1.ETCDMachineSnapshotFile
+
+	for _, snapshot := range etcdMachineSnapshot.Status.Snapshots {
+		if snapshot.Name != etcdSnapshotRestore.Spec.ETCDMachineSnapshotName {
+			continue
+		}
+
+		machineSnapshot = &snapshot
+	}
+
+	if machineSnapshot == nil {
+		return nil, fmt.Errorf("failed to locate snapshot named %s", etcdSnapshotRestore.Spec.ETCDMachineSnapshotName)
 	}
 
 	return &scope{
 		cluster:             cluster,
 		machines:            machines.Filter(collections.ControlPlaneMachines(cluster.Name)),
-		etcdMachineSnapshot: etcdMachineSnapshot,
+		etcdMachineSnapshot: machineSnapshot,
 	}, nil
 }
 
