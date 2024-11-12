@@ -71,6 +71,8 @@ func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtles
 	switch cmp.Or(capiProvider.Spec.Name, capiProvider.GetName()) {
 	case "azure":
 		s = append(s, sync.NewAzureProviderSync(r.Client, capiProvider))
+	case "gcp":
+		s = append(s, sync.NewGCPProviderSync(r.Client, capiProvider))
 	default:
 		s = append(s, sync.NewProviderSync(r.Client, capiProvider))
 	}
