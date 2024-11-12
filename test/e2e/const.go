@@ -42,6 +42,9 @@ var (
 	//go:embed data/capi-operator/capz-identity-secret.yaml
 	AzureIdentitySecret []byte
 
+	//go:embed data/capi-operator/capg-variables.yaml
+	GCPProviderSecret []byte
+
 	//go:embed data/capi-operator/capv-variables.yaml
 	VSphereProviderSecret []byte
 
@@ -77,6 +80,9 @@ var (
 
 	//go:embed data/cluster-templates/aws-eks-mmp.yaml
 	CAPIAwsEKSMMP []byte
+
+	//go:embed data/cluster-templates/gcp-gke.yaml
+	CAPIGCPGKE []byte
 
 	//go:embed data/cluster-templates/azure-aks-topology.yaml
 	CAPIAzureAKSTopology []byte
@@ -158,6 +164,8 @@ const (
 	RKE2VersionVar = "RKE2_VERSION"
 
 	CapaEncodedCredentialsVar = "CAPA_ENCODED_CREDS"
+	CapgEncodedCredentialsVar = "CAPG_ENCODED_CREDS"
+	GCPProjectVar             = "GCP_PROJECT"
 	AzureSubIDVar             = "AZURE_SUBSCRIPTION_ID"
 	AzureClientIDVar          = "AZURE_CLIENT_ID"
 	AzureClientSecretVar      = "AZURE_CLIENT_SECRET"
