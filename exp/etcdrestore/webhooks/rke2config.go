@@ -92,6 +92,11 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a RKE2Config but got a %T", obj))
 	}
 
+	// Deploy agent only on CP machines
+	if _, found := rke2Config.Labels[clusterv1.MachineControlPlaneLabel]; !found {
+		return nil
+	}
+
 	if rke2Config.Annotations == nil {
 		rke2Config.Annotations = map[string]string{}
 	}
