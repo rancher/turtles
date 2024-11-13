@@ -63,7 +63,8 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 				UID:       "test-uid",
 				Namespace: ns.Name,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel: "rke2",
+					clusterv1.ClusterNameLabel:         "rke2",
+					clusterv1.MachineControlPlaneLabel: "",
 				},
 			},
 			Spec: bootstrapv1.RKE2ConfigSpec{
@@ -85,6 +86,12 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 		err := r.Default(ctx, &corev1.Pod{})
 		Expect(err).To(HaveOccurred())
 		Expect(apierrors.IsBadRequest(err)).To(BeTrue())
+	})
+
+	It("Should skip defaulting for non CP machines", func() {
+		delete(rke2Config.Labels, clusterv1.MachineControlPlaneLabel)
+		err := r.Default(ctx, rke2Config)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should create secret plan resources without error", func() {
