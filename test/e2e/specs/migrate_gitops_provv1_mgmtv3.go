@@ -46,6 +46,7 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 )
 
@@ -175,6 +176,9 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+
+		By("Rancher cluster should have the 'NoCreatorRBAC' annotation")
+		Expect(rancherCluster.Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{

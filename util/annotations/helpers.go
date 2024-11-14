@@ -23,6 +23,12 @@ import (
 const (
 	// ClusterImportedAnnotation represents cluster imported annotation.
 	ClusterImportedAnnotation = "imported"
+	// NoCreatorRBACAnnotation represents no creator rbac annotation.
+	// When it is set the webhook does not set the `field.cattle.io/creatorId` annotation
+	// to clusters because the controllers will no longer be creating RBAC for the creator of the cluster.
+	// This is required so that logs don't get flooded with errors when project handler and cluster handler
+	// attempt to create `ClusterOwner` and `ProjectOwner` roles.
+	NoCreatorRBACAnnotation = "field.cattle.io/no-creator-rbac"
 	// EtcdAutomaticSnapshot represents automatically generated etcd snapshot.
 	EtcdAutomaticSnapshot = "etcd.turtles.cattle.io/automatic-snapshot"
 )

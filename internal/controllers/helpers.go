@@ -53,6 +53,7 @@ const (
 	v1ClusterMigrated         = "cluster-api.cattle.io/migrated"
 
 	defaultRequeueDuration = 1 * time.Minute
+	trueAnnotationValue    = "true"
 )
 
 func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string, cl client.Client,
