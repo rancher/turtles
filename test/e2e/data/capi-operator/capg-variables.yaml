@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capg-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gcp
+  namespace: capg-system
+type: Opaque
+stringData:
+  GCP_B64ENCODED_CREDENTIALS: "{{ .GCPEncodedCredentials }}"

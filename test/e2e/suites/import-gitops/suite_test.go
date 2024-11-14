@@ -215,17 +215,21 @@ var _ = BeforeSuite(func() {
 	if !shortTestOnly() && !localTestOnly() {
 		By("Running full tests, deploying additional infrastructure providers")
 		awsCreds := e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar)
+		gcpCreds := e2eConfig.GetVariable(e2e.CapgEncodedCredentialsVar)
 		Expect(awsCreds).ToNot(BeEmpty(), "AWS creds required for full test")
+		Expect(gcpCreds).ToNot(BeEmpty(), "GCP creds required for full test")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
 				e2e.AWSProviderSecret,
 				e2e.AzureIdentitySecret,
+				e2e.GCPProviderSecret,
 			},
 			CAPIProvidersYAML: e2e.FullProviders,
 			TemplateData: map[string]string{
 				"AWSEncodedCredentials": e2eConfig.GetVariable(e2e.CapaEncodedCredentialsVar),
+				"GCPEncodedCredentials": gcpCreds,
 			},
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
 			WaitForDeployments: []testenv.NamespaceName{
@@ -236,6 +240,10 @@ var _ = BeforeSuite(func() {
 				{
 					Name:      "capz-controller-manager",
 					Namespace: "capz-system",
+				},
+				{
+					Name:      "capg-controller-manager",
+					Namespace: "capg-system",
 				},
 			},
 		})
