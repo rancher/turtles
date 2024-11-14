@@ -25,6 +25,9 @@ rancherTurtles:
       enabled: false
     etcd-snapshot-restore:
       enabled: false
+      image: controller
+      imageVersion: v0.0.0
+      imagePullPolicy: IfNotPresent
     addon-provider-fleet:
       enabled: false
 cluster-api-operator:
