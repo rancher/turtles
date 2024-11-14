@@ -55,6 +55,8 @@ spec:
           status:
             description: EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
             properties:
+              error:
+                type: string
               phase:
                 description: ETCDSnapshotPhase is a string representation of the phase
                   of the etcd snapshot
@@ -62,6 +64,11 @@ spec:
               s3Snapshots:
                 items:
                   properties:
+                    creationTime:
+                      description: CreationTime is the timestamp when the snapshot
+                        was taken by etcd.
+                      format: date-time
+                      type: string
                     location:
                       type: string
                     name:
@@ -74,6 +81,11 @@ spec:
               snapshots:
                 items:
                   properties:
+                    creationTime:
+                      description: CreationTime is the timestamp when the snapshot
+                        was taken by etcd.
+                      format: date-time
+                      type: string
                     location:
                       type: string
                     machineName:

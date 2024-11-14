@@ -76,17 +76,18 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 
 		if snapshotFile.Spec.S3 != nil {
 			s3Snapshots = append(s3Snapshots, snapshotrestorev1.S3SnapshotFile{
-				Name:     snapshotFile.Name,
-				Location: snapshotFile.Spec.Location,
+				Name:         snapshotFile.Name,
+				Location:     snapshotFile.Spec.Location,
+				CreationTime: snapshotFile.Status.CreationTime,
 			})
 		} else {
 			snapshots = append(snapshots, snapshotrestorev1.ETCDMachineSnapshotFile{
-				Name:        snapshotFile.Name,
-				Location:    snapshotFile.Spec.Location,
-				MachineName: machineName,
+				Name:         snapshotFile.Name,
+				Location:     snapshotFile.Spec.Location,
+				MachineName:  machineName,
+				CreationTime: snapshotFile.Status.CreationTime,
 			})
 		}
-
 	}
 
 	etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{

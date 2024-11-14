@@ -51,7 +51,22 @@ type ETCDSnapshotS3 struct {
 
 // ETCDSnapshotStatus is the status of the k3s ETCDSnapshotFile.
 type ETCDSnapshotStatus struct {
+	// CreationTime is the timestamp when the snapshot was taken by etcd.
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
+	// ReadyToUse indicates that the snapshot is available to be restored.
 	ReadyToUse *bool `json:"readyToUse,omitempty"`
+	// Error is the last observed error during snapshot creation, if any.
+	// If the snapshot is retried, this field will be cleared on success.
+	Error *ETCDSnapshotError `json:"error,omitempty"`
+}
+
+// ETCDSnapshotError describes an error encountered during snapshot creation.
+type ETCDSnapshotError struct {
+	// Time is the timestamp when the error was encountered.
+	Time *metav1.Time `json:"time,omitempty"`
+	// Message is a string detailing the encountered error during snapshot creation if specified.
+	// NOTE: message may be logged, and it should not contain sensitive information.
+	Message *string `json:"message,omitempty"`
 }
 
 // ETCDSnapshotFileList contains a list of the k3s ETCDSnapshotFiles.

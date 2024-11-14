@@ -18,16 +18,16 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -35,9 +35,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const snapshotPhaseRequeueDuration = 1 * time.Minute
+const snapshotPhaseRequeueDuration = 30 * time.Second
 
 // ETCDMachineSnapshotReconciler reconciles an EtcdMachineSnapshot object.
 type ETCDMachineSnapshotReconciler struct {
@@ -50,11 +52,21 @@ type ETCDMachineSnapshotReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ETCDMachineSnapshotReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
-	// TODO: Setup predicates for the controller.
+func (r *ETCDMachineSnapshotReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, _ controller.Options) error {
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&snapshotrestorev1.ETCDMachineSnapshot{}).
-		Build(r)
+		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
+			log := log.FromContext(ctx)
+
+			if turtlesannotations.HasAnnotation(object, turtlesannotations.EtcdAutomaticSnapshot) {
+				log.V(5).Info("Skipping snapshot creation for non-manual EtcdMachineSnapshot")
+
+				return false
+			}
+
+			return true
+		})).
+		Build(reconcile.AsReconciler(r.Client, r))
 	if err != nil {
 		return fmt.Errorf("creating etcdMachineSnapshot controller: %w", err)
 	}
@@ -69,23 +81,7 @@ func (r *ETCDMachineSnapshotReconciler) SetupWithManager(_ context.Context, mgr 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=etcdmachinesnapshots/finalizers,verbs=update
 
 // Reconcile reconciles the EtcdMachineSnapshot object.
-func (r *ETCDMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	log := log.FromContext(ctx)
-
-	etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{}
-	if err := r.Client.Get(ctx, req.NamespacedName, etcdMachineSnapshot); apierrors.IsNotFound(err) {
-		// Object not found, return. Created objects are automatically garbage collected.
-		return ctrl.Result{}, nil
-	} else if err != nil {
-		log.Error(err, fmt.Sprintf("Unable to get etcdMachineSnapshot resource: %s", req.String()))
-		return ctrl.Result{}, err
-	}
-
-	if turtlesannotations.HasAnnotation(etcdMachineSnapshot, turtlesannotations.EtcdAutomaticSnapshot) {
-		log.V(5).Info("Skipping snapshot creation for non-manual EtcdMachineSnapshot")
-		return ctrl.Result{}, nil
-	}
-
+func (r *ETCDMachineSnapshotReconciler) Reconcile(ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) (_ ctrl.Result, reterr error) {
 	// Initialize the patch helper.
 	patchHelper, err := patch.NewHelper(etcdMachineSnapshot, r.Client)
 	if err != nil {
@@ -110,13 +106,7 @@ func (r *ETCDMachineSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	// Ensure the finalizer is present
-	if !controllerutil.ContainsFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer) {
-		controllerutil.AddFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer)
-		if err := r.Client.Update(ctx, etcdMachineSnapshot); err != nil {
-			log.Error(err, "Failed to add finalizer to EtcdMachineSnapshot")
-			return ctrl.Result{}, err
-		}
-	}
+	controllerutil.AddFinalizer(etcdMachineSnapshot, snapshotrestorev1.ETCDMachineSnapshotFinalizer)
 
 	return r.reconcileNormal(ctx, etcdMachineSnapshot)
 }
@@ -132,30 +122,31 @@ func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
 		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhasePending:
 		// Transition to Running
+		if finished, err := r.createMachineSnapshot(ctx, etcdMachineSnapshot); err != nil {
+			return ctrl.Result{}, err
+		} else if !finished {
+			return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
+		}
+
 		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseRunning
+
 		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhaseRunning:
 		// Check the status of the snapshot creation process
-		// List ETCDSnapshotFile resources to determine if the snapshot is complete
-		if err := checkSnapshotStatus(ctx, r, etcdMachineSnapshot); err != nil {
-			// If no matching ready snapshot is found, requeue the request
+		// Fetch ETCDSnapshotFile resource to determine if the snapshot is complete
+		if finished, err := r.checkSnapshotStatus(ctx, etcdMachineSnapshot); err != nil {
+			return ctrl.Result{}, err
+		} else if !finished {
 			return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
 		}
+
 		return ctrl.Result{}, nil
-	case snapshotrestorev1.ETCDSnapshotPhaseFailed:
-		// If the snapshot creation failed, requeue the request
-		return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
-	case snapshotrestorev1.ETCDSnapshotPhaseDone:
-		// Snapshot creation is complete, no further action needed
+	case snapshotrestorev1.ETCDSnapshotPhaseFailed, snapshotrestorev1.ETCDSnapshotPhaseDone:
+		// If the snapshot creation failed or completed, do nothing
+		return ctrl.Result{}, nil
+	default:
 		return ctrl.Result{}, nil
 	}
-
-	// Requeue the request if necessary
-	if etcdMachineSnapshot.Status.Phase != snapshotrestorev1.ETCDSnapshotPhaseDone {
-		return ctrl.Result{RequeueAfter: snapshotPhaseRequeueDuration}, nil
-	}
-
-	return ctrl.Result{}, nil
 }
 
 func (r *ETCDMachineSnapshotReconciler) reconcileDelete(
@@ -175,59 +166,101 @@ func (r *ETCDMachineSnapshotReconciler) reconcileDelete(
 	return nil
 }
 
-// checkSnapshotStatus checks the status of the snapshot creation process.
-func checkSnapshotStatus(ctx context.Context, r *ETCDMachineSnapshotReconciler, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) error {
+// createMachineSnapshot generates ETCDSnapshotFile on the child cluster.
+func (r *ETCDMachineSnapshotReconciler) createMachineSnapshot(ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) (bool, error) {
 	log := log.FromContext(ctx)
 
-	etcdSnapshotFileList := &k3sv1.ETCDSnapshotFileList{}
-
-	if err := r.Client.List(ctx, etcdSnapshotFileList); err != nil {
-		log.Error(err, "Failed to list ETCDSnapshotFile resources")
-		return err
+	machineKey := client.ObjectKey{
+		Name:      etcdMachineSnapshot.Spec.MachineName,
+		Namespace: etcdMachineSnapshot.Namespace,
 	}
 
-	// Iterate through the list of ETCDSnapshotFile resources
-	for _, snapshotFile := range etcdSnapshotFileList.Items {
-		// Validate the snapshotFile fields
-		if err := validateETCDSnapshotFile(snapshotFile); err != nil {
-			// Log the error and continue to the next snapshotFile
-			log.Error(err, "Failed to validate ETCDSnapshotFile")
-			continue
-		}
+	machine := &clusterv1.Machine{}
+	if err := r.Client.Get(ctx, machineKey, machine); err != nil {
+		log.Error(err, "Failed to find machine", "machine", machineKey.String())
 
-		// Extract fields directly after validation
-		snapshotName := snapshotFile.Spec.SnapshotName
-		readyToUse := *snapshotFile.Status.ReadyToUse
+		return false, err
+	} else if machine.Status.NodeRef == nil {
+		log.Info("Machine has no node ref yet", "machine", machineKey.String())
 
-		// Check if the snapshot is ready to use and matches the machine snapshot name
-		if readyToUse && snapshotName == etcdMachineSnapshot.Name {
-			// Update the status to Done
-			etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseDone
-			return nil
-		}
+		return false, nil
+	}
+
+	clusterKey := client.ObjectKey{
+		Name:      etcdMachineSnapshot.Spec.ClusterName,
+		Namespace: etcdMachineSnapshot.Namespace,
+	}
+
+	remoteClient, err := r.Tracker.GetClient(ctx, clusterKey)
+	if err != nil {
+		log.Error(err, "Failed to open remote client to cluster", "cluster", clusterKey.String())
+
+		return false, err
+	}
+
+	etcdSnapshotFile := &k3sv1.ETCDSnapshotFile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      etcdMachineSnapshot.Name,
+			Namespace: "default",
+		},
+		Spec: k3sv1.ETCDSnapshotSpec{
+			SnapshotName: etcdMachineSnapshot.Name,
+			NodeName:     machine.Status.NodeRef.Name,
+			Location:     etcdMachineSnapshot.Spec.Location,
+		},
+	}
+
+	if err := remoteClient.Create(ctx, etcdSnapshotFile); err != nil {
+		log.Error(err, "Failed to create ETCDSnapshotFile", "snapshot", client.ObjectKeyFromObject(etcdSnapshotFile))
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+// checkSnapshotStatus checks the status of the snapshot creation process.
+func (r *ETCDMachineSnapshotReconciler) checkSnapshotStatus(ctx context.Context, etcdMachineSnapshot *snapshotrestorev1.ETCDMachineSnapshot) (bool, error) {
+	log := log.FromContext(ctx)
+
+	etcdSnapshotFile := &k3sv1.ETCDSnapshotFile{}
+
+	clusterKey := client.ObjectKey{
+		Name:      etcdMachineSnapshot.Spec.ClusterName,
+		Namespace: etcdMachineSnapshot.Namespace,
+	}
+
+	remoteClient, err := r.Tracker.GetClient(ctx, clusterKey)
+	if err != nil {
+		log.Error(err, "Failed to open remote client to cluster", "cluster", clusterKey.String())
+
+		return false, err
+	}
+
+	snapshotKey := client.ObjectKey{
+		Name:      etcdMachineSnapshot.Name,
+		Namespace: "default",
+	}
+	if err := remoteClient.Get(ctx, snapshotKey, etcdSnapshotFile); err != nil {
+		log.Error(err, "Failed to get ETCDSnapshotFile", "snapshot", snapshotKey.String())
+
+		return false, err
+	}
+
+	// Check if the snapshot is ready to use and matches the machine snapshot name
+	if *etcdSnapshotFile.Status.ReadyToUse {
+		// Update the status to Done
+		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseDone
+		return true, nil
+	}
+
+	if etcdSnapshotFile.Status.Error != nil {
+		etcdMachineSnapshot.Status.Error = etcdSnapshotFile.Status.Error.Message
+		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhaseFailed
+
+		return true, nil
 	}
 
 	// If no matching ready snapshot is found, return an error to retry
-	return errors.New("snapshot not ready")
-}
-
-// validateETCDSnapshotFile validates the fields of an ETCDSnapshotFile resource.
-func validateETCDSnapshotFile(snapshotFile k3sv1.ETCDSnapshotFile) error {
-	if snapshotFile.Spec.SnapshotName == "" {
-		return fmt.Errorf("snapshotName is empty for etcdsnapshotfile %s", snapshotFile.Name)
-	}
-
-	if snapshotFile.Spec.Location == "" {
-		return fmt.Errorf("location is empty for etcdsnapshotfile %s", snapshotFile.Name)
-	}
-
-	if snapshotFile.Spec.NodeName == "" {
-		return fmt.Errorf("node name is empty for etcdsnapshotfile %s", snapshotFile.Name)
-	}
-
-	if snapshotFile.Status.ReadyToUse == nil {
-		return fmt.Errorf("readyToUse field is nil for etcdsnapshotfile %s", snapshotFile.Name)
-	}
-
-	return nil
+	return false, nil
 }
