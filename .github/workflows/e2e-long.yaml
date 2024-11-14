@@ -62,3 +62,12 @@ jobs:
       artifact_name: artifacts_embedded_capi_v3
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
+  e2e_etcd_snapshot_restore:
+    uses: ./.github/workflows/run-e2e-suite.yaml
+    with:
+      test_suite: test/e2e/suites/etcd-snapshot-restore
+      test_name: Etcd snapshot restore
+      run_azure_janitor: false
+      artifact_name: artifacts_etcd_snapshot_restore
+      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
+    secrets: inherit
