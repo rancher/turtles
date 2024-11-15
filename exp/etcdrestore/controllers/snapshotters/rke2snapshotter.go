@@ -58,8 +58,8 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 	for _, snapshotFile := range etcdnapshotFileList.Items {
 		log.V(5).Info("Found etcd snapshot file", "name", snapshotFile.GetName())
 
-		readyToUse := *snapshotFile.Status.ReadyToUse
-		if !readyToUse {
+		readyToUse := snapshotFile.Status.ReadyToUse
+		if readyToUse == nil || !*readyToUse {
 			log.V(5).Info("Snapshot is not ready to use, skipping")
 			continue
 		}

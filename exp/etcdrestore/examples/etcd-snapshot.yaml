@@ -5,5 +5,4 @@ metadata:
   name: ${ETCD_MACHINE_SNAPSHOT_NAME}
 spec:
   clusterName: ${CLUSTER_NAME}
-  location: ${LOCATION}
   machineName: ${MACHINE_NAME}

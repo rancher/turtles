@@ -26,6 +26,8 @@ type ETCDSnapshotPhase string
 const (
 	// ETCDSnapshotPhasePending is the phase when the snapshot was submitted but was not registered
 	ETCDSnapshotPhasePending ETCDSnapshotPhase = "Pending"
+	// ETCDSnapshotPhasePlanning is the phase when the snapshot was submitted to the planner, but was not registered
+	ETCDSnapshotPhasePlanning ETCDSnapshotPhase = "Planning"
 	// ETCDSnapshotPhaseRunning is the phase when the snapshot creation has started
 	ETCDSnapshotPhaseRunning ETCDSnapshotPhase = "Running"
 	// ETCDSnapshotPhaseFailed is the phase when the snapshot creation has failed

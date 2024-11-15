@@ -56,7 +56,6 @@ envsubst < test/e2e/data/cluster-templates/docker-rke2.yaml | kubectl apply -f -
 export CLUSTER_NAMESPACE=default
 export CLUSTER_NAME=rke2
 export ETCD_MACHINE_SNAPSHOT_NAME="manual-snapshot"
-export LOCATION="file:///var/lib/rancher/rke2/server/db/snapshots/manual-snapshot"
 export MACHINE_NAME=$(kubectl get machines -l cluster.x-k8s.io/control-plane  -o jsonpath='{.items[0].metadata.name}')
 
 envsubst < exp/etcdrestore/examples/etcd-snapshot.yaml | kubectl apply -f -
