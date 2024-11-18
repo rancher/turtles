@@ -125,7 +125,7 @@ jobs:
           resource-label-value: ${{ secrets.GCP_LABEL_VALUE }}
       - name: Send failed status to slack
         if: failure()
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         with:
           payload: |
             {
