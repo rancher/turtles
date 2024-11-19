@@ -92,7 +92,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		rancherCluster = &managementv3.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace:    capiCluster.Namespace,
-				GenerateName: "c-",
+				GenerateName: capiCluster.Name,
 				Labels: map[string]string{
 					capiClusterOwner:          capiCluster.Name,
 					capiClusterOwnerNamespace: capiCluster.Namespace,
@@ -198,7 +198,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
-			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring(capiCluster.Name))
 			g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
@@ -230,7 +230,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
-		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+		Expect(rancherClusters.Items[0].Name).To(ContainSubstring(capiCluster.Name))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists, and have finalizers set", func() {
@@ -257,7 +257,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items[0].Finalizers).ToNot(ContainElement(managementv3.CapiClusterFinalizer))
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Name).To(ContainSubstring(capiCluster.Name))
 
 		clusterRegistrationToken.Name = cluster.Name
 		clusterRegistrationToken.Namespace = cluster.Name
@@ -300,7 +300,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
-			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring(capiCluster.Name))
 			g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}, 10*time.Second).Should(Succeed())
@@ -317,7 +317,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Name).To(ContainSubstring(capiCluster.Name))
 
 		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
 		Expect(err).ToNot(HaveOccurred())
@@ -346,7 +346,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Name).To(ContainSubstring(capiCluster.Name))
 
 		conditions.Set(&cluster, conditions.TrueCondition(managementv3.ClusterConditionReady))
 		Expect(conditions.IsTrue(&cluster, managementv3.ClusterConditionReady)).To(BeTrue())
@@ -381,7 +381,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Name).To(ContainSubstring(capiCluster.Name))
 
 		clusterRegistrationToken.Name = cluster.Name
 		clusterRegistrationToken.Namespace = cluster.Name
@@ -424,7 +424,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Name).To(ContainSubstring(capiCluster.Name))
 
 		clusterRegistrationToken.Name = cluster.Name
 		clusterRegistrationToken.Namespace = cluster.Name
@@ -458,7 +458,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Name).To(ContainSubstring(capiCluster.Name))
 
 		clusterRegistrationToken.Name = cluster.Name
 		clusterRegistrationToken.Namespace = cluster.Name
@@ -517,7 +517,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
-		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+		Expect(rancherClusters.Items[0].Name).To(ContainSubstring(capiCluster.Name))
 		Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 	})
 
