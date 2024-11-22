@@ -1,0 +1,62 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusterclasses
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - clusters/status
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - fleet.cattle.io
+  resources:
+  - clustergroups
+  - clustergroups/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rollout.turtles-capi.cattle.io
+  resources:
+  - clusterupgradegroups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rollout.turtles-capi.cattle.io
+  resources:
+  - clusterupgradegroups/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rollout.turtles-capi.cattle.io
+  resources:
+  - clusterupgradegroupss/finalizers
+  verbs:
+  - update
