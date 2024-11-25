@@ -1,0 +1,5 @@
+resources:
+- core.yaml
+- docker.yaml
+- bootstrap.yaml
+- controlplane.yaml

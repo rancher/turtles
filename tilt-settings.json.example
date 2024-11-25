@@ -5,11 +5,6 @@
             "continue": true,
             "port": 40000,
             "insecure_skip_verify": "true"
-        },
-        "turtles-etcdsnapshotrestore": {
-            "continue": true,
-            "port": 40000,
-            "insecure_skip_verify": "true"
         }
     }
 }
