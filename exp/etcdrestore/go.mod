@@ -5,7 +5,7 @@ go 1.22.0
 replace github.com/rancher/turtles => ../..
 
 require (
-	github.com/onsi/ginkgo/v2 v2.21.0
+	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.35.1
 	github.com/rancher/cluster-api-provider-rke2 v0.8.0
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
