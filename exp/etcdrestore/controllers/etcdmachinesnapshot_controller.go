@@ -321,7 +321,8 @@ func (r *ETCDMachineSnapshotReconciler) checkSnapshotStatus(ctx context.Context,
 	var etcdSnapshotFile *k3sv1.ETCDSnapshotFile
 
 	for _, snapshot := range etcdSnapshotFiles.Items {
-		if strings.Contains(snapshot.Name, scope.snapshot.Name) {
+		snapshotName := fmt.Sprintf("%s-%s", scope.snapshot.Name, scope.snapshot.Spec.MachineName)
+		if strings.Contains(snapshot.Name, snapshotName) {
 			etcdSnapshotFile = &snapshot
 			break
 		}
