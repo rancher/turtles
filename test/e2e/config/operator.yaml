@@ -30,7 +30,7 @@ intervals:
 
 variables:
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # supported options are eks, isolated-kind, kind
-  RANCHER_ALPHA_VERSION: "v2.9.1-alpha1"
+  RANCHER_ALPHA_VERSION: "v2.10.0-alpha1"
   CLUSTERCTL_BINARY_PATH: ""
   USE_EXISTING_CLUSTER: "false"
   SKIP_RESOURCE_CLEANUP: "false"
@@ -46,7 +46,7 @@ variables:
   RANCHER_PATH: "rancher-latest/rancher"
   RANCHER_ALPHA_PATH: "rancher-alpha/rancher"
   RANCHER_ALPHA_URL: "https://releases.rancher.com/server-charts/alpha"
-  RANCHER_VERSION: "v2.9.0"
+  RANCHER_VERSION: "v2.10.0"
   TURTLES_VERSION: "v0.0.1"
   TURTLES_PATH: "turtles/rancher-turtles"
   TURTLES_REPO_NAME: "turtles"
