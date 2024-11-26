@@ -56,6 +56,9 @@ type ETCDMachineSnapshotStatus struct {
 	Error *string `json:"error,omitempty"`
 
 	// +optional
+	SnapshotFileName *string `json:"snapshotFileName,omitempty"`
+
+	// +optional
 	Snapshots []ETCDMachineSnapshotFile `json:"snapshots,omitempty"`
 
 	// +optional

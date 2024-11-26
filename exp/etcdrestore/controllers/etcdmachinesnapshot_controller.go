@@ -334,6 +334,8 @@ func (r *ETCDMachineSnapshotReconciler) checkSnapshotStatus(ctx context.Context,
 		return false, nil
 	}
 
+	scope.snapshot.Status.SnapshotFileName = &etcdSnapshotFile.Name
+
 	// Check if the snapshot is ready to use and matches the machine snapshot name
 	if etcdSnapshotFile.Status.ReadyToUse != nil && *etcdSnapshotFile.Status.ReadyToUse {
 		// Update the status to Done

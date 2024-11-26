@@ -126,6 +126,11 @@ func (in *ETCDMachineSnapshotStatus) DeepCopyInto(out *ETCDMachineSnapshotStatus
 		*out = new(string)
 		**out = **in
 	}
+	if in.SnapshotFileName != nil {
+		in, out := &in.SnapshotFileName, &out.SnapshotFileName
+		*out = new(string)
+		**out = **in
+	}
 	if in.Snapshots != nil {
 		in, out := &in.Snapshots, &out.Snapshots
 		*out = make([]ETCDMachineSnapshotFile, len(*in))
