@@ -54,3 +54,20 @@ data:
     - name:         "fleet"
       url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.3.1/addon-components.yaml"
       type:         "AddonProvider"
+
+    # Image overrides
+    images:
+      cluster-api:
+        repository: "registry.suse.com/rancher"
+      control-plane-rke2:
+        repository: "registry.suse.com/rancher"
+      bootstrap-rke2:
+        repository: "registry.suse.com/rancher"
+      infrastructure-aws:
+        repository: "registry.suse.com/rancher"
+      infrastructure-gcp:
+        repository: "registry.suse.com/rancher"
+      infrastructure-azure:
+        repository: "registry.suse.com/rancher"
+      infrastructure-vsphere:
+        repository: "registry.suse.com/rancher"
