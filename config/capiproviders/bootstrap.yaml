@@ -1,0 +1,7 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: rke2-bootstrap
+spec:
+  type: bootstrap
+  name: rke2

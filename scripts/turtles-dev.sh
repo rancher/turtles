@@ -43,19 +43,6 @@ helm install cert-manager jetstack/cert-manager \
 	--create-namespace \
 	--set crds.enabled=true
 
-export EXP_CLUSTER_RESOURCE_SET=true
-export CLUSTER_TOPOLOGY=true
-
-helm install capi-operator capi-operator/cluster-api-operator \
-    --create-namespace -n capi-operator-system \
-    --set infrastructure=docker:v1.7.7 \
-    --set core=cluster-api:v1.7.7 \
-    --set controlPlane=rke2:v0.8.0 \
-    --set bootstrap=rke2:v0.8.0 \
-    --timeout 90s --wait
-
-kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
-
 helm upgrade ngrok ngrok/kubernetes-ingress-controller \
 	--install \
 	--wait \
@@ -71,8 +58,6 @@ helm install rancher rancher-latest/rancher \
 	--set bootstrapPassword=rancheradmin \
 	--set replicas=1 \
 	--set hostname="$RANCHER_HOSTNAME" \
-	--set 'extraEnv[0].name=CATTLE_FEATURES' \
-	--set 'extraEnv[0].value=embedded-cluster-api=false' \
 	--version="$RANCHER_VERSION" \
 	--wait
 
@@ -93,9 +78,9 @@ install_local_rancher_turtles_chart() {
 	kind load docker-image $ETCD_CONTROLLER_IMAGE:$ETCD_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
 	# Install the Rancher Turtles using a local chart with 'etcd-snapshot-restore' feature flag enabled
 	# to run etcdrestore controller
-	helm install rancher-turtles out/charts/rancher-turtles \
+	helm upgrade --install rancher-turtles out/charts/rancher-turtles \
 		-n rancher-turtles-system \
-		--set cluster-api-operator.enabled=false \
+		--set cluster-api-operator.enabled=true \
 		--set cluster-api-operator.cluster-api.enabled=false \
 		--set rancherTurtles.features.etcd-snapshot-restore.enabled=true \
 		--dependency-update \
@@ -103,10 +88,10 @@ install_local_rancher_turtles_chart() {
 		--timeout 180s
 }
 
+echo "Installing local Rancher Turtles chart for development..."
+install_local_rancher_turtles_chart
+
 if [ "$USE_TILT_DEV" == "true" ]; then
 	echo "Using Tilt for development..."
 	tilt up
-else
-	echo "Installing local Rancher Turtles chart for development..."
-	install_local_rancher_turtles_chart
 fi

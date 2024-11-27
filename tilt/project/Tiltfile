@@ -3,6 +3,18 @@
 load("../k8s/Tiltfile", "k8s_find_object_name")
 load("../io/Tiltfile", "info", "file_write", "dir_create", "prepare_file")
 
+def apply_files(name, project, debug):
+    kustomize_dir = project.get("kustomize_dir", "")
+    if kustomize_dir != "":
+        info("doing kustomization")
+        context = project.get("context")
+        yaml = kustomize(context + '/' + kustomize_dir)
+        yaml_path = context + "/.tiltbuild/files.yaml"
+        prepare_file(yaml_path)
+        for line in str(yaml).splitlines():
+            file_write(yaml_path, line)
+        k8s_yaml(yaml)
+
 def project_enable(name, project, debug):
     """Enable a project in Tilt
 
@@ -36,6 +48,9 @@ def project_enable(name, project, debug):
         fail("you must supply the project name")
     if not project:
         fail("you must supply a project configuration")
+
+    if project.get("op") == "apply":
+        return apply_files(name, project, debug)
 
     label = project.get("label")
     env = project.get("env", {})
