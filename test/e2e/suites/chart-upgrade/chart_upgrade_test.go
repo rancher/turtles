@@ -103,8 +103,13 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
-				Version:   e2e.CAPIVersion,
+				Getter:  setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Version: e2e.CAPIVersion,
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "capi-controller-manager",
+					Namespace: "capi-system",
+				}},
+				Image:     "registry.suse.com/rancher/cluster-api-controller:",
 				Name:      "cluster-api",
 				Namespace: "capi-system",
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
@@ -114,6 +119,28 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 				Version:   e2e.CAPIVersion,
 				Name:      "kubeadm-control-plane",
 				Namespace: "capi-kubeadm-control-plane-system",
+			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		}, func() {
+			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+				Getter:  setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "rke2-bootstrap-controller-manager",
+					Namespace: "rke2-bootstrap-system",
+				}},
+				Image:     "registry.suse.com/rancher/cluster-api-provider-rke2-bootstrap:",
+				Name:      "rke2-bootstrap",
+				Namespace: "rke2-bootstrap-system",
+			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		}, func() {
+			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+				Getter:  setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "rke2-control-plane-controller-manager",
+					Namespace: "rke2-control-plane-system",
+				}},
+				Image:     "registry.suse.com/rancher/cluster-api-provider-rke2-controlplane:",
+				Name:      "rke2-control-plane",
+				Namespace: "rke2-control-plane-system",
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
