@@ -56,7 +56,7 @@ func WaitForCAPIProviderRollout(ctx context.Context, input WaitForCAPIProviderRo
 	}
 
 	if input.Deployment != nil && input.Image != "" {
-		Byf("Waiting for Deployemnt %s to contain image %s", client.ObjectKeyFromObject(input.Deployment).String(), input.Image)
+		Byf("Waiting for Deployment %s to contain image %s", client.ObjectKeyFromObject(input.Deployment).String(), input.Image)
 		Eventually(func(g Gomega) {
 			g.Expect(input.Getter.Get(ctx, client.ObjectKeyFromObject(input.Deployment), input.Deployment)).To(Succeed())
 			found := false
@@ -67,7 +67,7 @@ func WaitForCAPIProviderRollout(ctx context.Context, input WaitForCAPIProviderRo
 			}
 			g.Expect(found).To(BeTrue())
 		}, intervals...).Should(Succeed(),
-			"Failed to get Deployemnt %s with image %s. Last observed: %s",
+			"Failed to get Deployment %s with image %s. Last observed: %s",
 			client.ObjectKeyFromObject(input.Deployment).String(), input.Image, klog.KObj(input.Deployment))
 	}
 }
