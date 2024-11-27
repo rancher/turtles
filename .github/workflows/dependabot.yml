@@ -32,5 +32,5 @@ jobs:
         git config --local user.email "49699333+dependabot[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add .
-        [[ -z "$(git status -s)" ]] || git commit -m "Update generated code"
+        [[ -z "$(git status -s)" ]] || git commit -m "Update generated code" -s
         git push
