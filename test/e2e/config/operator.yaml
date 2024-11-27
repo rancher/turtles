@@ -2,7 +2,9 @@ managementClusterName: rancher-turtles-e2e
 
 images:
 # Use local dev images built source tree;
-- name: ghcr.io/rancher/turtles-e2e:v0.0.1 # This should be substituted with operator image
+- name: ghcr.io/rancher/turtles-e2e:v0.0.1
+  loadBehavior: tryLoad
+- name: ghcr.io/rancher/turtles-etcd-snapshot-restore-e2e:v0.0.1
   loadBehavior: tryLoad
 
 intervals:

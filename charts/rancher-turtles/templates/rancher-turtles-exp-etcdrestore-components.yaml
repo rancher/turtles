@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+    cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
     controller-gen.kubebuilder.io/version: v0.14.0
   labels:
     turtles-capi.cattle.io: etcd-restore
@@ -101,7 +101,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+    cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
     controller-gen.kubebuilder.io/version: v0.14.0
   labels:
     turtles-capi.cattle.io: etcd-restore
@@ -220,7 +220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+    cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
     controller-gen.kubebuilder.io/version: v0.14.0
   labels:
     turtles-capi.cattle.io: etcd-restore
@@ -309,7 +309,7 @@ metadata:
     app.kubernetes.io/part-of: rancher-turtles
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-manager
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -323,7 +323,7 @@ metadata:
     app.kubernetes.io/part-of: rancher-turtles
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-leader-election-role
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 rules:
 - apiGroups:
   - ""
@@ -572,7 +572,7 @@ metadata:
     app.kubernetes.io/part-of: rancher-turtles
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-leader-election-rolebinding
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -580,7 +580,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rancher-turtles-etcdsnapshotrestore-manager
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -601,7 +601,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rancher-turtles-etcdsnapshotrestore-manager
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 ---
 apiVersion: v1
 kind: Service
@@ -609,7 +609,7 @@ metadata:
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-webhook-service
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 spec:
   ports:
   - port: 443
@@ -624,7 +624,7 @@ metadata:
     control-plane: controller-manager
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-controller-manager
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 spec:
   replicas: 1
   selector:
@@ -657,8 +657,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
-        image: ghcr.io/rancher/turtles-etcd-snapshot-restore:dev
-        imagePullPolicy: IfNotPresent
+        {{- $imageVersion := index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imageVersion" -}}
+        {{- if contains "sha256:" $imageVersion }}
+        image: {{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "image" }}@{{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imageVersion" }}
+        {{- else }}
+        image: {{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "image" }}:{{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imageVersion" }}
+        {{- end }}
+        imagePullPolicy: '{{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imagePullPolicy" }}'
         livenessProbe:
           httpGet:
             path: /healthz
@@ -705,11 +710,11 @@ metadata:
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-serving-cert
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 spec:
   dnsNames:
-  - rancher-turtles-etcdsnapshotrestore-webhook-service.rancher-turtles-system.svc
-  - rancher-turtles-etcdsnapshotrestore-webhook-service.rancher-turtles-system.svc.cluster.local
+  - rancher-turtles-etcdsnapshotrestore-webhook-service.{{ index .Values "rancherTurtles" "namespace" }}.svc
+  - rancher-turtles-etcdsnapshotrestore-webhook-service.{{ index .Values "rancherTurtles" "namespace" }}.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: rancher-turtles-etcdsnapshotrestore-selfsigned-issuer
@@ -721,7 +726,7 @@ metadata:
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-selfsigned-issuer
-  namespace: rancher-turtles-system
+  namespace: {{ index .Values "rancherTurtles" "namespace" }}
 spec:
   selfSigned: {}
 ---
@@ -729,7 +734,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+    cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-mutating-webhook-configuration
@@ -739,7 +744,7 @@ webhooks:
   clientConfig:
     service:
       name: rancher-turtles-etcdsnapshotrestore-webhook-service
-      namespace: rancher-turtles-system
+      namespace: {{ index .Values "rancherTurtles" "namespace" }}
       path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-rke2config
   failurePolicy: Fail
   name: systemagentrke2config.kb.io
@@ -759,7 +764,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: rancher-turtles-system/rancher-turtles-etcdsnapshotrestore-serving-cert
+    cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: rancher-turtles-etcdsnapshotrestore-validating-webhook-configuration
@@ -769,7 +774,7 @@ webhooks:
   clientConfig:
     service:
       name: rancher-turtles-etcdsnapshotrestore-webhook-service
-      namespace: rancher-turtles-system
+      namespace: {{ index .Values "rancherTurtles" "namespace" }}
       path: /validate-turtles-capi-cattle-io-v1alpha1-etcdmachinesnapshot
   failurePolicy: Fail
   matchPolicy: Equivalent
@@ -790,7 +795,7 @@ webhooks:
   clientConfig:
     service:
       name: rancher-turtles-etcdsnapshotrestore-webhook-service
-      namespace: rancher-turtles-system
+      namespace: {{ index .Values "rancherTurtles" "namespace" }}
       path: /validate-turtles-capi-cattle-io-v1alpha1-etcdsnapshotrestore
   failurePolicy: Fail
   matchPolicy: Equivalent

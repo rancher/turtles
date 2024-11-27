@@ -585,9 +585,15 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	$(KUSTOMIZE) build ./exp/etcdrestore/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	./scripts/process-exp-etcdrestore-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
+	
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+
+	sed -i'' -e '/etcd-snapshot-restore:/,/image:/ s@image: .*@image: '"$(ETCDRESTORE_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/etcd-snapshot-restore:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/etcd-snapshot-restore:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
@@ -621,12 +627,17 @@ test-e2e-push-image: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image-push
 .PHONY: e2e-image
 e2e-image: $(CACHE_DIR) ## Build the image for e2e tests
 	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e CONTROLLER_IMAGE_VERSION=v0.0.1 $(MAKE) build-chart
+	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) TAG=v0.0.1 ETCDRESTORE_IMAGE_NAME=turtles-etcd-snapshot-restore-e2e $(MAKE) docker-build-etcdrestore
+	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e ETCDRESTORE_IMG=$(REGISTRY)/$(ORG)/turtles-etcd-snapshot-restore-e2e \
+	CONTROLLER_IMAGE_VERSION=v0.0.1 \
+	$(MAKE) build-chart
 
 .PHONY: e2e-image-push
 e2e-image-push: $(CACHE_DIR) ## Push the image for e2e tests
 	TARGET_PLATFORMS=$(ARCH) TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e \
 	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) $(MAKE) docker-build-and-push
+	TARGET_PLATFORMS=$(ARCH) TAG=v0.0.1 ETCDRESTORE_IMAGE_NAME=turtles-etcd-snapshot-restore-e2e \
+	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) $(MAKE) docker-build-and-push-etcdrestore
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation
