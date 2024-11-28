@@ -11,7 +11,7 @@ data:
     providers:
     # Cluster API core provider
     - name:         "cluster-api"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.7/core-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.8.4/core-components.yaml"
       type:         "CoreProvider"
 
     # Infrastructure providers
@@ -31,28 +31,28 @@ data:
       url:          "https://github.com/rancher-sandbox/cluster-api-provider-elemental/releases/v0.7.0/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "docker"
-      url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.7.7/infrastructure-components-development.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.8.4/infrastructure-components-development.yaml"
       type:         "InfrastructureProvider"
 
     # Bootstrap providers
     - name:         "kubeadm"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.7/bootstrap-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.8.4/bootstrap-components.yaml"
       type:         "BootstrapProvider"
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.8.0/bootstrap-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.9.0/bootstrap-components.yaml"
       type:         "BootstrapProvider"
 
     # ControlPlane providers
     - name:         "kubeadm"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.7.7/control-plane-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.8.4/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.8.0/control-plane-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.9.0/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
 
     # Addon providers
     - name:         "fleet"
-      url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.3.1/addon-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.4.0/addon-components.yaml"
       type:         "AddonProvider"
 
     # Image overrides
