@@ -136,9 +136,14 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+		By("Waiting for the rancher cluster to be ready")
 
 		By("Rancher cluster should have the 'NoCreatorRBAC' annotation")
-		Expect(rancherCluster.Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			_, found := rancherCluster.Annotations[turtlesannotations.NoCreatorRBACAnnotation]
+			return found
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
