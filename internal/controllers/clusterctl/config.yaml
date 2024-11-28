@@ -52,7 +52,7 @@ data:
 
     # Addon providers
     - name:         "fleet"
-      url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.3.1/addon-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.4.0/addon-components.yaml"
       type:         "AddonProvider"
 
     # Image overrides
