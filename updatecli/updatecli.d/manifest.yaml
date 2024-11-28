@@ -98,6 +98,15 @@ targets:
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
+  bumpcapd:
+    name: bump docker capi
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/(.*)/'
+      replacepattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/{{ source "capirelease" }}/'
+    scmid: turtles
+    sourceid: capirelease # Will be ignored as `replacepattern` is specified
   bumpcapi-tests:
     name: bump core capi in tests package
     kind: file
