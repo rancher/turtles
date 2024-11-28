@@ -216,7 +216,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			SecretCachingClient: secretCachingClient,
 			ControllerName:      "etcd-restore-controller",
 			Log:                 &ctrl.Log,
-			Indexes:             []remote.Index{remote.NodeProviderIDIndex},
 		},
 	)
 	if err != nil {

@@ -26,6 +26,8 @@ type ETCDSnapshotPhase string
 const (
 	// ETCDSnapshotPhasePending is the phase when the snapshot was submitted but was not registered
 	ETCDSnapshotPhasePending ETCDSnapshotPhase = "Pending"
+	// ETCDSnapshotPhasePlanning is the phase when the snapshot was submitted to the planner, but was not registered
+	ETCDSnapshotPhasePlanning ETCDSnapshotPhase = "Planning"
 	// ETCDSnapshotPhaseRunning is the phase when the snapshot creation has started
 	ETCDSnapshotPhaseRunning ETCDSnapshotPhase = "Running"
 	// ETCDSnapshotPhaseFailed is the phase when the snapshot creation has failed
@@ -51,6 +53,9 @@ type ETCDMachineSnapshotStatus struct {
 	Phase ETCDSnapshotPhase `json:"phase,omitempty"`
 
 	// +optional
+	Error *string `json:"error,omitempty"`
+
+	// +optional
 	Snapshots []ETCDMachineSnapshotFile `json:"snapshots,omitempty"`
 
 	// +optional
@@ -61,11 +66,15 @@ type ETCDMachineSnapshotFile struct {
 	Name        string `json:"name"`
 	MachineName string `json:"machineName"`
 	Location    string `json:"location"`
+	// CreationTime is the timestamp when the snapshot was taken by etcd.
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 }
 
 type S3SnapshotFile struct {
 	Name     string `json:"name"`
 	Location string `json:"location"`
+	// CreationTime is the timestamp when the snapshot was taken by etcd.
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 }
 
 // ETCDMachineSnapshot is the Schema for the ETCDMachineSnapshot API.

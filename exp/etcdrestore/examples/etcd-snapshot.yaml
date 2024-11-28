@@ -1,0 +1,8 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: ETCDMachineSnapshot
+metadata:
+  namespace: ${CLUSTER_NAMESPACE}
+  name: ${ETCD_MACHINE_SNAPSHOT_NAME}
+spec:
+  clusterName: ${CLUSTER_NAME}
+  machineName: ${MACHINE_NAME}

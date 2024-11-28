@@ -58,8 +58,8 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 	for _, snapshotFile := range etcdnapshotFileList.Items {
 		log.V(5).Info("Found etcd snapshot file", "name", snapshotFile.GetName())
 
-		readyToUse := *snapshotFile.Status.ReadyToUse
-		if !readyToUse {
+		readyToUse := snapshotFile.Status.ReadyToUse
+		if readyToUse == nil || !*readyToUse {
 			log.V(5).Info("Snapshot is not ready to use, skipping")
 			continue
 		}
@@ -76,17 +76,18 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 
 		if snapshotFile.Spec.S3 != nil {
 			s3Snapshots = append(s3Snapshots, snapshotrestorev1.S3SnapshotFile{
-				Name:     snapshotFile.Name,
-				Location: snapshotFile.Spec.Location,
+				Name:         snapshotFile.Name,
+				Location:     snapshotFile.Spec.Location,
+				CreationTime: snapshotFile.Status.CreationTime,
 			})
 		} else {
 			snapshots = append(snapshots, snapshotrestorev1.ETCDMachineSnapshotFile{
-				Name:        snapshotFile.Name,
-				Location:    snapshotFile.Spec.Location,
-				MachineName: machineName,
+				Name:         snapshotFile.Name,
+				Location:     snapshotFile.Spec.Location,
+				MachineName:  machineName,
+				CreationTime: snapshotFile.Status.CreationTime,
 			})
 		}
-
 	}
 
 	etcdMachineSnapshot := &snapshotrestorev1.ETCDMachineSnapshot{
