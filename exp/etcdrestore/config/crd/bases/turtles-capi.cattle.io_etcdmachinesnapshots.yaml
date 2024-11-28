@@ -78,6 +78,8 @@ spec:
                   - name
                   type: object
                 type: array
+              snapshotFileName:
+                type: string
               snapshots:
                 items:
                   properties:

@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	etcdrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -91,6 +92,7 @@ func InitScheme() *runtime.Scheme {
 	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
 	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 	Expect(networkingv1.AddToScheme(scheme)).To(Succeed())
+	Expect(etcdrestorev1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
