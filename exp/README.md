@@ -40,7 +40,7 @@ To deploy an RKE2 cluster with automatic snapshots enabled:
 export CONTROL_PLANE_MACHINE_COUNT=1
 export WORKER_MACHINE_COUNT=1
 export CLUSTER_NAME=rke2
-export KUBERNETES_VERSION=v1.31.0
+export KUBERNETES_VERSION=v1.30.0
 export RKE2_VERSION=v1.31.0+rke2r1
 
 # Prevent replacing lb-config variables by envsubst

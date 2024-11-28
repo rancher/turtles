@@ -39,7 +39,7 @@ make test-e2e
 This will consequently:
 1. Build a docker image with the current repository code using `docker-build` Makefile target.
 2. Generate a test release chart containing docker image tag built in the previous step
-3. Install all prerequisite dependencies, like `helm`, `kubectl>=v1.31.0`, download `cluster-api-operator` helm release file from pre-specified URL.
+3. Install all prerequisite dependencies, like `helm`, `kubectl>=v1.30.0`, download `cluster-api-operator` helm release file from pre-specified URL.
 4. Create the test cluster, run the test suite, cleanup all test resourses.
 5. Collect the [artifacts](#artifacts)
 

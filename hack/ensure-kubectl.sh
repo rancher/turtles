@@ -26,7 +26,7 @@ fi
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
 GOPATH_BIN="$(go env GOPATH)/bin/"
-MINIMUM_KUBECTL_VERSION=v1.31.0
+MINIMUM_KUBECTL_VERSION=v1.30.0
 goarch="$(go env GOARCH)"
 goos="$(go env GOOS)"
 
