@@ -155,13 +155,18 @@ var _ = BeforeSuite(func() {
 	testenv.DeployRancher(ctx, rancherInput)
 
 	if shortTestOnly() {
-		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
+		chartMuseumDeployInput := testenv.DeployChartMuseumInput{
 			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
 			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		})
+			Variables:             e2eConfig.Variables,
+		}
+
+		testenv.PreChartMuseumInstallHook(&chartMuseumDeployInput, e2eConfig)
+
+		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
 		rtInput := testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,

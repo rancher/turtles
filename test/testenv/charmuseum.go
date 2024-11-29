@@ -24,6 +24,7 @@ import (
 
 	"github.com/rancher/turtles/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
@@ -44,6 +45,12 @@ type DeployChartMuseumInput struct {
 
 	// WaitInterval is the interval to wait for.
 	WaitInterval []interface{}
+
+	// CustomIngressConfig is the custom ingress configuration.
+	CustomIngressConfig []byte
+
+	// Variables is the collection of variables.
+	Variables turtlesframework.VariableCollection
 }
 
 // DeployChartMuseum installs ChartMuseum to the Kubernetes cluster using the provided input parameters.
@@ -66,5 +73,17 @@ func DeployChartMuseum(ctx context.Context, input DeployChartMuseumInput) {
 		DeploymentName:       "chartmuseum",
 		ServiceName:          "chartmuseum-service",
 		PortName:             "http",
+		CustomIngressConfig:  input.CustomIngressConfig,
+		Variables:            input.Variables,
 	})
+}
+
+// PreChartMuseumInstallHook is a pre-install hook for ChartMuseum.
+func PreChartMuseumInstallHook(chartMuseumInput *DeployChartMuseumInput, e2eConfig *clusterctl.E2EConfig) {
+	infrastructureType := e2e.ManagementClusterEnvironmentType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
+
+	switch infrastructureType {
+	case e2e.ManagementClusterEnvironmentKind:
+		chartMuseumInput.CustomIngressConfig = e2e.ChartMuseumIngress
+	}
 }

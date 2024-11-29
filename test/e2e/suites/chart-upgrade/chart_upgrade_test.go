@@ -41,13 +41,6 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 
-		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
-			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
-			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		})
 	})
 
 	It("Should perform upgrade from GA version to latest", func() {
@@ -63,13 +56,18 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
 
-		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
+		chartMuseumDeployInput := testenv.DeployChartMuseumInput{
 			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
 			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		})
+			Variables:             e2eConfig.Variables,
+		}
+
+		testenv.PreChartMuseumInstallHook(&chartMuseumDeployInput, e2eConfig)
+
+		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
 			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
@@ -122,7 +120,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter:  setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
 				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 					Name:      "rke2-bootstrap-controller-manager",
 					Namespace: "rke2-bootstrap-system",
@@ -133,7 +131,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter:  setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
 				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 					Name:      "rke2-control-plane-controller-manager",
 					Namespace: "rke2-control-plane-system",
