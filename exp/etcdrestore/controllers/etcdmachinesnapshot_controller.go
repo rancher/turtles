@@ -68,6 +68,9 @@ type snapshotScope struct {
 
 	// snapshot is the snapshot object which is used for reconcile
 	snapshot *snapshotrestorev1.ETCDMachineSnapshot
+
+	// controlPlaneVersion is lowest found kubernetes version among the Control plane machines
+	controlPlaneVersion *string
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -144,6 +147,10 @@ func (r *ETCDMachineSnapshotReconciler) newScope(ctx context.Context, etcdMachin
 	}
 
 	controlPlaneMachines := machines.Filter(collections.ControlPlaneMachines(cluster.Name))
+	if len(controlPlaneMachines) == 0 {
+		return nil, fmt.Errorf("no control plane machines found for cluster: %s", cluster.Name)
+	}
+
 	targetMachineCandidates := controlPlaneMachines.Filter(func(machine *clusterv1.Machine) bool {
 		return machine.Name == etcdMachineSnapshot.Spec.MachineName
 	}).UnsortedList()
@@ -156,10 +163,11 @@ func (r *ETCDMachineSnapshotReconciler) newScope(ctx context.Context, etcdMachin
 	}
 
 	return &snapshotScope{
-		cluster:  cluster,
-		machines: controlPlaneMachines,
-		machine:  targetMachineCandidates[0],
-		snapshot: etcdMachineSnapshot,
+		cluster:             cluster,
+		machines:            controlPlaneMachines,
+		machine:             targetMachineCandidates[0],
+		snapshot:            etcdMachineSnapshot,
+		controlPlaneVersion: controlPlaneMachines.LowestVersion(),
 	}, nil
 }
 
@@ -189,6 +197,10 @@ func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
 
 		// Initial phase, set to Pending
 		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhasePending
+
+		// Set the Version field as k8s version of the cluster
+		fmt.Printf("\nsetting control-plane version as: %v\n", *scope.controlPlaneVersion)
+		etcdMachineSnapshot.Spec.Version = *scope.controlPlaneVersion
 
 		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhasePending, snapshotrestorev1.ETCDSnapshotPhasePlanning:
