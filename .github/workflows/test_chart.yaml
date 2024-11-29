@@ -84,13 +84,13 @@ jobs:
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
-        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=180s
+        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system
 
       - name: Wait for RKE2 bootstrap provider rollout
-        run: sleep 30 && kubectl rollout status deployment rke2-bootstrap-controller-manager -n rke2-bootstrap-system --timeout=180s
+        run: sleep 30 && kubectl rollout status deployment rke2-bootstrap-controller-manager -n rke2-bootstrap-system
 
       - name: Wait for RKE2 control plane provider rollout
-        run: sleep 30 && kubectl rollout status deployment rke2-control-plane-controller-manager -n rke2-control-plane-system --timeout=180s
+        run: sleep 30 && kubectl rollout status deployment rke2-control-plane-controller-manager -n rke2-control-plane-system
 
       - name: Run chart-testing (un-install)
         run: helm uninstall rancher-turtles -n rancher-turtles-system --cascade foreground --wait --debug --timeout=10m
