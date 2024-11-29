@@ -67,7 +67,5 @@ data:
         repository: "registry.suse.com/rancher"
       infrastructure-gcp:
         repository: "registry.suse.com/rancher"
-      infrastructure-azure:
-        repository: "registry.suse.com/rancher"
       infrastructure-vsphere:
         repository: "registry.suse.com/rancher"
