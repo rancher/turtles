@@ -190,6 +190,10 @@ func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
 		// Initial phase, set to Pending
 		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhasePending
 
+		log.Info("\n\n\nCluster version is: %v\n\n\n", scope.cluster.Spec.Topology.Version)
+		// Set the Version field as k8s version of the cluster
+		//etcdMachineSnapshot.Spec.Version = scope.cluster.Spec.Topology.Version
+
 		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhasePending, snapshotrestorev1.ETCDSnapshotPhasePlanning:
 		// Transition to Running
