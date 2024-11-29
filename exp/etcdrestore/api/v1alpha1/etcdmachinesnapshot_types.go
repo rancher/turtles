@@ -46,6 +46,7 @@ type ETCDMachineSnapshotSpec struct {
 	ClusterName string `json:"clusterName"`
 	MachineName string `json:"machineName,omitempty"`
 	Location    string `json:"location,omitempty"`
+	Version     string `json:"version,omitempty"`
 }
 
 // EtcdSnapshotRestoreStatus defines observed state of EtcdSnapshotRestore
