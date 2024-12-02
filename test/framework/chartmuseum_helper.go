@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -58,6 +59,12 @@ type ChartMuseumInput struct {
 
 	// WaitInterval is the wait interval.
 	WaitInterval []interface{}
+
+	// CustomIngressConfig is the custom ingress configuration.
+	CustomIngressConfig []byte
+
+	// Variables is the collection of variables.
+	Variables VariableCollection
 }
 
 // DeployChartMuseum will create a new repo in the Gitea server.
@@ -103,17 +110,41 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 		AddressIndex: 0,
 	})
 
+	path := fmt.Sprintf("http://%s:%d", addr, port.NodePort)
+
+	if input.CustomIngressConfig != nil {
+		By("Creating custom ingress for chartmuseum")
+		variableGetter := GetVariable(input.Variables)
+		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), variableGetter)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(input.Proxy.Apply(ctx, []byte(ingress))).To(Succeed())
+
+		By("Getting git server ingress address")
+		host := GetIngressHost(ctx, GetIngressHostInput{
+			GetLister:        input.Proxy.GetClient(),
+			IngressRuleIndex: 0,
+			IngressName:      "chart-museum-http",
+			IngressNamespace: "default",
+		})
+
+		path = fmt.Sprintf("http://%s", host)
+	}
+
 	By("Adding local rancher turtles chart repo")
 	addChart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Name:            "rancher-turtles-local",
-		Path:            fmt.Sprintf("http://%s:%d", addr, port.NodePort),
+		Path:            path,
 		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
 		AdditionalFlags: opframework.Flags("--force-update"),
 		Kubeconfig:      input.Proxy.GetKubeconfigPath(),
 	}
-	_, err := addChart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
+
+	Eventually(func() error {
+		_, err := addChart.Run(nil)
+
+		return err
+	}, input.WaitInterval...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 	By("Pushing local chart to chartmuseum")
 	exec.Command(

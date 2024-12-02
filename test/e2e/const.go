@@ -66,6 +66,9 @@ var (
 	//go:embed data/chartmuseum/deployment.yaml
 	ChartMuseum []byte
 
+	//go:embed data/chartmuseum/ingress.yaml
+	ChartMuseumIngress []byte
+
 	//go:embed data/rancher/azure-rke-config.yaml
 	V2ProvAzureRkeConfig []byte
 

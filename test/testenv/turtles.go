@@ -157,7 +157,7 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		AdditionalFlags: opframework.Flags(
 			"--dependency-update",
 			"-n", namespace,
-			"--create-namespace", "--wait"),
+			"--create-namespace", "--wait", "--timeout", "10m"),
 	}
 
 	values := map[string]string{
@@ -325,6 +325,7 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 		"upgrade", "rancher-turtles", "rancher-turtles-local/rancher-turtles",
 		"-n", input.Namespace,
 		"--wait",
+		"--timeout", "10m",
 		"--kubeconfig", input.BootstrapClusterProxy.GetKubeconfigPath(),
 		"--set", "rancherTurtles.managerArguments[0]=--insecure-skip-verify=true",
 		"--set", fmt.Sprintf("rancherTurtles.image=%s", input.Image),
