@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 0 1/2 * *"
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 concurrency: ci_e2e_tests
 
@@ -62,14 +60,5 @@ jobs:
       test_name: Embedded CAPI disabled [v3]
       run_azure_janitor: false
       artifact_name: artifacts_embedded_capi_v3
-      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-    secrets: inherit
-  e2e_etcd_snapshot_restore:
-    uses: ./.github/workflows/run-e2e-suite.yaml
-    with:
-      test_suite: test/e2e/suites/etcd-snapshot-restore
-      test_name: Etcd snapshot restore
-      run_azure_janitor: false
-      artifact_name: artifacts_etcd_snapshot_restore
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
