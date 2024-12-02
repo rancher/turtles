@@ -66,16 +66,6 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
-  capielementalrelease:
-    kind: githubrelease
-    name: Get the latest CAPI Elemental infrastructure provider release
-    spec:
-      owner: "rancher-sandbox"
-      repository: "cluster-api-provider-elemental"
-      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
-      typeFilter:
-        latest: true
   capifleetrelease:
     kind: githubrelease
     name: Get the latest CAPI add-on provider Fleet release
@@ -161,15 +151,6 @@ targets:
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
     scmid: turtles
     sourceid: capvrelease # Will be ignored as `replacepattern` is specified
-  bumpcapielemental:
-    name: bump capi elemental provider
-    kind: file
-    spec:
-      file: ./internal/controllers/clusterctl/config.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-elemental/releases/(.*)/'
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-elemental/releases/{{ source "capielementalrelease" }}/'
-    scmid: turtles
-    sourceid: capielementalrelease # Will be ignored as `replacepattern` is specified
   bumpcapifleet:
     name: bump capi fleet addon provider
     kind: file
