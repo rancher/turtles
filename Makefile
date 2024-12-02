@@ -184,10 +184,6 @@ CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
 IID_FILE ?= $(shell mktemp)
 
-# etcdrestore
-ETCDRESTORE_IMAGE_NAME ?= turtles-etcd-snapshot-restore
-ETCDRESTORE_IMG ?= $(REGISTRY)/$(ORG)/$(ETCDRESTORE_IMAGE_NAME)
-
 # Release
 # Exclude tags with the prefix 'test/'
 RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
@@ -388,35 +384,6 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg package=. \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
-## --------------------------------------
-## Docker - etcdrestore
-## --------------------------------------
-
-.PHONY: docker-build-etcdrestore ## Build the docker image for etcdrestore
-docker-build-etcdrestore: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
-	## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
-	# buildx does not support using local registry for multi-architecture images
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(ARCH) \
-			--load \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/etcdrestore \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
-
-.PHONY: docker-build-and-push-etcdrestore
-docker-build-and-push-etcdrestore: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-etcdrestore targets for all architectures
-	cat $(EXP_ETCDRESTORE_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(TARGET_PLATFORMS) \
-			--push \
-			--sbom=true \
-			--attest type=provenance,mode=max \
-			--iidfile=$(IID_FILE) \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/etcdrestore \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(ETCDRESTORE_IMG):$(TAG) --file - --progress=plain
-
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
 
@@ -585,12 +552,12 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	$(KUSTOMIZE) build ./exp/etcdrestore/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	./scripts/process-exp-etcdrestore-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-etcdrestore-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
-	
+
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 
-	sed -i'' -e '/etcd-snapshot-restore:/,/image:/ s@image: .*@image: '"$(ETCDRESTORE_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/etcd-snapshot-restore:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e '/etcd-snapshot-restore:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e '/etcd-snapshot-restore:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 
@@ -627,8 +594,7 @@ test-e2e-push-image: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image-push
 .PHONY: e2e-image
 e2e-image: $(CACHE_DIR) ## Build the image for e2e tests
 	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e $(MAKE) docker-build
-	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) TAG=v0.0.1 ETCDRESTORE_IMAGE_NAME=turtles-etcd-snapshot-restore-e2e $(MAKE) docker-build-etcdrestore
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e ETCDRESTORE_IMG=$(REGISTRY)/$(ORG)/turtles-etcd-snapshot-restore-e2e \
+	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e \
 	CONTROLLER_IMAGE_VERSION=v0.0.1 \
 	$(MAKE) build-chart
 
@@ -636,8 +602,6 @@ e2e-image: $(CACHE_DIR) ## Build the image for e2e tests
 e2e-image-push: $(CACHE_DIR) ## Push the image for e2e tests
 	TARGET_PLATFORMS=$(ARCH) TAG=v0.0.1 CONTROLLER_IMAGE_NAME=turtles-e2e \
 	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) $(MAKE) docker-build-and-push
-	TARGET_PLATFORMS=$(ARCH) TAG=v0.0.1 ETCDRESTORE_IMAGE_NAME=turtles-etcd-snapshot-restore-e2e \
-	ADDITIONAL_COMMANDS=$(CACHE_COMMANDS) $(MAKE) docker-build-and-push-etcdrestore
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation
