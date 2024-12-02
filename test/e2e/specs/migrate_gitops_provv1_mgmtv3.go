@@ -46,6 +46,7 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 )
 
@@ -176,13 +177,12 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
-		// TODO: re-enable the check after rancher 2.10 update and verified existence of the annotation
-		// By("Rancher cluster should have the 'NoCreatorRBAC' annotation")
-		// Eventually(func() bool {
-		// 	Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-		// 	_, found := rancherCluster.Annotations[turtlesannotations.NoCreatorRBACAnnotation]
-		// 	return found
-		// }, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+		By("Rancher cluster should have the 'NoCreatorRBAC' annotation")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			_, found := rancherCluster.Annotations[turtlesannotations.NoCreatorRBACAnnotation]
+			return found
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
