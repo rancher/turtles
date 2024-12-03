@@ -9,3 +9,4 @@ spec:
       containers:
         - image: ghcr.io/rancher/turtles-etcd-snapshot-restore:dev
           name: manager
+          command: ["./etcd-snapshot-restore"]
