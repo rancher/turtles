@@ -92,7 +92,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push e2e image
         if: ${{ inputs.MANAGEMENT_CLUSTER_ENVIRONMENT == 'eks' }}
-        run: make e2e-image-push
+        run: make e2e-image
       - name: Run e2e tests
         run: make test-e2e
       - name: Collect run artifacts
