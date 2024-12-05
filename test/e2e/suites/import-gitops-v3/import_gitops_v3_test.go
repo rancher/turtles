@@ -29,7 +29,7 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -42,8 +42,8 @@ var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete 
 			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
-			ClusterTemplate:                e2e.CAPIDockerRKE2,
-			ClusterName:                    "clusterv3-auto-import-rke2",
+			ClusterTemplate:                e2e.CAPIDockerKubeadm,
+			ClusterName:                    "clusterv3-auto-import-kubeadm",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        giteaResult.GitAddress,
@@ -62,7 +62,7 @@ var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete 
 	})
 })
 
-var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -75,8 +75,8 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
-			ClusterTemplate:                e2e.CAPIDockerKubeadm,
-			ClusterName:                    "clusterv3-auto-import-kubeadm",
+			ClusterTemplate:                e2e.CAPIDockerRKE2,
+			ClusterName:                    "clusterv3-auto-import-rke2",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        giteaResult.GitAddress,
