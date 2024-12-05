@@ -16,7 +16,8 @@ concurrency:
 jobs:
   analyze:
     name: Analyze
-    runs-on: 'ubuntu-latest'
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
+    container: ubuntu:22.04
     permissions:
       actions: read
       contents: read

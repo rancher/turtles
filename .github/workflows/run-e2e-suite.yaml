@@ -56,7 +56,8 @@ env:
 
 jobs:
   run_e2e_tests:
-    runs-on: [self-hosted, linux]
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
+    container: ubuntu:22.04
     steps:
       - name: Install eksctl
         run: |

@@ -20,7 +20,8 @@ env:
 
 jobs:
   lint-test:
-    runs-on: ubuntu-latest
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
+    container: ubuntu:22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
