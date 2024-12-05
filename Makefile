@@ -592,11 +592,15 @@ test-e2e-push-image: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image-push
 	$(E2E_RUN_COMMAND)
 
 .PHONY: e2e-image
-e2e-image: ## Build the image for e2e tests
+e2e-image: ## Build and push the image for e2e tests
 	CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-build
 	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e \
 	CONTROLLER_IMAGE_VERSION=v0.0.1 \
 	$(MAKE) build-chart
+
+.PHONY: e2e-image-build-and-push
+e2e-image-build-and-push: e2e-image
+	CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-push
 
 .PHONY: e2e-image-build
 e2e-image-build: ## Build the image for e2e tests
