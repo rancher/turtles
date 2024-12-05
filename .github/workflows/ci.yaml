@@ -15,6 +15,10 @@ jobs:
     runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
     container: ubuntu:22.04
     steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          apt update && apt-get install make -y      
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5.1.0
         with:

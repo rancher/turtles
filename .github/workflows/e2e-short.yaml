@@ -17,6 +17,10 @@ jobs:
     runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
     container: ubuntu:22.04
     steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          apt update && apt-get install make -y
       - name: Cleanup space
         run: |
           sudo apt-get remove -y '^aspnetcore-.*' || echo "::warning::The command [sudo apt-get remove -y '^aspnetcore-.*'] failed to complete successfully. Proceeding..."

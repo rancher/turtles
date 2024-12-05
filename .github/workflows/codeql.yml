@@ -23,6 +23,10 @@ jobs:
       contents: read
       security-events: write
     steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        apt update && apt-get install make -y
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: setupGo

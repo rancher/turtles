@@ -23,8 +23,27 @@ jobs:
       security-events: write
     name: Scan
     runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
-    container: ubuntu:22.04
+    container: registry.suse.com/bci/bci-base:latest
     steps:
+      # - name: Install dependencies
+      #   shell: bash
+      #   run: |
+      #     apt update && apt-get install make ca-certificates curl -y 
+      #     install -m 0755 -d /etc/apt/keyrings
+      #     curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      #     chmod a+r /etc/apt/keyrings/docker.asc
+      #     echo \
+      #       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      #       $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      #       tee /etc/apt/sources.list.d/docker.list > /dev/null
+      #     apt-get update && apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+      #     systemctl start docker
+      - name: Install dependencies
+        shell: bash
+        run: |
+          zypper install -y git make
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Docker login
         uses: docker/login-action@v3
         with:
