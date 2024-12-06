@@ -22,6 +22,8 @@ import (
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,5 +90,20 @@ var _ = Describe("Core provider", func() {
 			HaveField("Data", HaveKey("removed")))
 		Eventually(Object(secret)).Should(
 			HaveField("OwnerReferences", HaveLen(1)))
+	})
+
+	It("Should create not-found mirrored manifest", func() {
+		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: ns.Name,
+		}}
+
+		err := testEnv.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
+
+		s := sync.NewDefaultSynchronizer(testEnv, capiProvider, secret)
+		Expect(s.Get(ctx)).To(Succeed())
+
+		Expect(testEnv.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)).Should(Succeed())
 	})
 })
