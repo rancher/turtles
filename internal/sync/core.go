@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/util/retry"
@@ -50,8 +51,21 @@ func NewDefaultSynchronizer(cl client.Client, capiProvider *turtlesv1.CAPIProvid
 func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
-	if err := s.client.Get(ctx, client.ObjectKeyFromObject(s.Destination), s.Destination); client.IgnoreNotFound(err) != nil {
-		log.Error(err, "Unable to get mirrored manifest: "+client.ObjectKeyFromObject(s.Destination).String())
+	objKey := client.ObjectKeyFromObject(s.Destination)
+
+	err := s.client.Get(ctx, objKey, s.Destination)
+	if apierrors.IsNotFound(err) {
+		log.Info("Mirrored manifest is missing. Creating a new one.")
+
+		if err := s.client.Create(ctx, s.Destination); err != nil {
+			return fmt.Errorf("creating mirrored manifest: %w", err)
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		log.Error(err, "Unable to get mirrored manifest: "+objKey.String())
 
 		return err
 	}
@@ -64,6 +78,7 @@ func (s *DefaultSynchronizer) Apply(ctx context.Context, reterr *error) {
 	log := log.FromContext(ctx)
 	uid := s.Destination.GetUID()
 
+	setFinalizers(s.Destination)
 	setOwnerReference(s.Source, s.Destination)
 
 	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
@@ -78,8 +93,24 @@ func (s *DefaultSynchronizer) Apply(ctx context.Context, reterr *error) {
 	}
 }
 
+func setFinalizers(obj client.Object) {
+	finalizers := obj.GetFinalizers()
+	if finalizers == nil {
+		finalizers = []string{}
+	}
+
+	// Only append the desired finalizer if it doesn't exist
+	for _, finalizer := range finalizers {
+		if finalizer == metav1.FinalizerDeleteDependents {
+			return
+		}
+	}
+
+	finalizers = append(finalizers, metav1.FinalizerDeleteDependents)
+	obj.SetFinalizers(finalizers)
+}
+
 func setOwnerReference(owner, obj client.Object) {
-	obj.SetFinalizers([]string{metav1.FinalizerDeleteDependents})
 	obj.SetOwnerReferences([]metav1.OwnerReference{{
 		APIVersion:         turtlesv1.GroupVersion.String(),
 		Kind:               turtlesv1.Kind,
