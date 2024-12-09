@@ -66,11 +66,11 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 		Args: []string{
 			"create",
 			"cluster",
-			"--Name",
+			"--name",
 			k.Name,
-			"--Version",
+			"--version",
 			eksVersion,
-			"--nodegroup-Name",
+			"--nodegroup-name",
 			"ng1",
 			"--nodes",
 			numWorkerNodes,
@@ -110,7 +110,7 @@ func (k *EKSClusterProvider) Dispose(ctx context.Context) {
 		Args: []string{
 			"delete",
 			"cluster",
-			"--Name",
+			"--name",
 			k.Name,
 			"--wait",
 		},
