@@ -17,60 +17,60 @@ import (
 
 // NewEKSClusterProvider creates a new instance of EKSClusterProvider.
 // It expects the required input parameters to be non-nil.
-func NewEKSClusterProvider(name, version, region string, numWorkers int) bootstrap.ClusterProvider {
-	Expect(name).ToNot(BeEmpty(), "name is required for NewEKSClusterProvider")
-	Expect(version).ToNot(BeEmpty(), "version is required for NewEKSClusterProvider")
-	Expect(numWorkers).To(BeNumerically(">", 0), "numWorkers must be greater than 0 for NewEKSClusterProvider")
+func NewEKSClusterProvider(Name, Version, region string, NumWorkers int) bootstrap.ClusterProvider {
+	Expect(Name).ToNot(BeEmpty(), "Name is required for NewEKSClusterProvider")
+	Expect(Version).ToNot(BeEmpty(), "Version is required for NewEKSClusterProvider")
+	Expect(NumWorkers).To(BeNumerically(">", 0), "NumWorkers must be greater than 0 for NewEKSClusterProvider")
 	Expect(region).ToNot(BeEmpty(), "region is required for NewEKSClusterProvider")
 
 	return &EKSClusterProvider{
-		name:       name,
-		version:    version,
-		numWorkers: numWorkers,
-		region:     region,
+		Name:       Name,
+		Version:    Version,
+		NumWorkers: NumWorkers,
+		Region:     region,
 	}
 }
 
 // EKSClusterProvider represents a provider for managing EKS clusters.
 // EKSClusterProvider represents a provider for managing EKS clusters.
 type EKSClusterProvider struct {
-	// name of the EKS cluster.
-	name string
-	// version of the EKS cluster.
-	version string
+	// Name of the EKS cluster.
+	Name string
+	// Version of the EKS cluster.
+	Version string
 	// region where the EKS cluster is located.
-	region string
+	Region string
 	// number of worker nodes in the EKS cluster.
-	numWorkers int
+	NumWorkers int
 	// path to the kubeconfig file for the EKS cluster.
-	kubeconfigPath string
+	KubeconfigPath string
 }
 
 // Create creates an EKS cluster using eksctl.
 // It creates a temporary file for kubeconfig and writes the EKS kubeconfig to it.
-// The cluster is created with the specified name, version, number of worker nodes, region, and tags.
+// The cluster is created with the specified Name, Version, number of worker nodes, region, and tags.
 // The kubeconfig path is set to the path of the temporary file.
 func (k *EKSClusterProvider) Create(ctx context.Context) {
 	tempFile, err := os.CreateTemp("", "kubeconfig")
 	Expect(err).NotTo(HaveOccurred(), "Failed to create temp file for kubeconfig")
 	turtlesframework.Byf("EKS kubeconfig will be written to temp file %s", tempFile.Name())
 
-	eksVersion := versionToEKS(parseEKSVersion(k.version))
+	eksVersion := VersionToEKS(parseEKSVersion(k.Version))
 
-	turtlesframework.Byf("Creating cluster using eksctl (version %s)", eksVersion)
+	turtlesframework.Byf("Creating cluster using eksctl (Version %s)", eksVersion)
 
 	createClusterRes := &turtlesframework.RunCommandResult{}
-	numWorkerNodes := strconv.Itoa(k.numWorkers)
+	numWorkerNodes := strconv.Itoa(k.NumWorkers)
 	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 		Command: "eksctl",
 		Args: []string{
 			"create",
 			"cluster",
-			"--name",
-			k.name,
-			"--version",
+			"--Name",
+			k.Name,
+			"--Version",
 			eksVersion,
-			"--nodegroup-name",
+			"--nodegroup-Name",
 			"ng1",
 			"--nodes",
 			numWorkerNodes,
@@ -80,7 +80,7 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 			numWorkerNodes,
 			"--managed",
 			"--region",
-			k.region,
+			k.Region,
 			"--kubeconfig",
 			tempFile.Name(),
 			"--tags",
@@ -90,12 +90,12 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 	Expect(createClusterRes.Error).NotTo(HaveOccurred(), "Failed to create cluster using eksctl: %s", createClusterRes.Stderr)
 	Expect(createClusterRes.ExitCode).To(Equal(0), "Creating cluster returned non-zero exit code")
 
-	k.kubeconfigPath = tempFile.Name()
+	k.KubeconfigPath = tempFile.Name()
 }
 
 // GetKubeconfigPath returns the path to the kubeconfig file for the cluster.
 func (k *EKSClusterProvider) GetKubeconfigPath() string {
-	return k.kubeconfigPath
+	return k.KubeconfigPath
 }
 
 // Dispose the EKS cluster and its kubeconfig file.
@@ -110,16 +110,16 @@ func (k *EKSClusterProvider) Dispose(ctx context.Context) {
 		Args: []string{
 			"delete",
 			"cluster",
-			"--name",
-			k.name,
+			"--Name",
+			k.Name,
 			"--wait",
 		},
 	}, deleteClusterRes)
 	Expect(deleteClusterRes.Error).NotTo(HaveOccurred(), "Failed to delete cluster using eksctl")
 	Expect(deleteClusterRes.ExitCode).To(Equal(0), "Deleting cluster returned non-zero exit code")
 
-	if err := os.Remove(k.kubeconfigPath); err != nil {
-		framework.Byf("Error deleting the kubeconfig file %q file. You may need to remove this by hand.", k.kubeconfigPath)
+	if err := os.Remove(k.KubeconfigPath); err != nil {
+		framework.Byf("Error deleting the kubeconfig file %q file. You may need to remove this by hand.", k.KubeconfigPath)
 	}
 }
 
@@ -128,6 +128,6 @@ func parseEKSVersion(raw string) *version.Version {
 	return version.MustParseGeneric(fmt.Sprintf("%d.%d", v.Major(), v.Minor()))
 }
 
-func versionToEKS(v *version.Version) string {
+func VersionToEKS(v *version.Version) string {
 	return fmt.Sprintf("%d.%d", v.Major(), v.Minor())
 }
