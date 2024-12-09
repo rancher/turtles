@@ -20,7 +20,9 @@ limitations under the License.
 package migrate_gitops
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -68,6 +70,8 @@ var (
 func init() {
 	flagVals = &e2e.FlagValues{}
 	e2e.InitFlags(flagVals)
+
+	gob.Register(testenv.EKSClusterProvider{})
 }
 
 func TestE2E(t *testing.T) {
@@ -78,177 +82,196 @@ func TestE2E(t *testing.T) {
 	RunSpecs(t, "rancher-turtles-e2e-migrate-gitops")
 }
 
-var _ = BeforeSuite(func() {
-	By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
-	Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
-	e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
-	e2e.ValidateE2EConfig(e2eConfig)
+var _ = SynchronizedBeforeSuite(
+	func() []byte {
+		By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
+		Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
+		e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
+		e2e.ValidateE2EConfig(e2eConfig)
 
-	artifactsFolder = e2eConfig.GetVariable(e2e.ArtifactsFolderVar)
+		artifactsFolder = e2eConfig.GetVariable(e2e.ArtifactsFolderVar)
 
-	preSetupOutput := testenv.PreManagementClusterSetupHook(e2eConfig)
+		preSetupOutput := testenv.PreManagementClusterSetupHook(e2eConfig)
 
-	By(fmt.Sprintf("Creating a clusterctl config into %q", artifactsFolder))
-	clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(artifactsFolder, "repository"))
+		By(fmt.Sprintf("Creating a clusterctl config into %q", artifactsFolder))
+		clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(artifactsFolder, "repository"))
 
-	useExistingCluter, err := strconv.ParseBool(e2eConfig.GetVariable(e2e.UseExistingClusterVar))
-	Expect(err).ToNot(HaveOccurred(), "Failed to parse the USE_EXISTING_CLUSTER variable")
+		useExistingCluter, err := strconv.ParseBool(e2eConfig.GetVariable(e2e.UseExistingClusterVar))
+		Expect(err).ToNot(HaveOccurred(), "Failed to parse the USE_EXISTING_CLUSTER variable")
 
-	setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-		UseExistingCluster:    useExistingCluter,
-		E2EConfig:             e2eConfig,
-		ClusterctlConfigPath:  clusterctlConfigPath,
-		Scheme:                e2e.InitScheme(),
-		ArtifactFolder:        artifactsFolder,
-		KubernetesVersion:     e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
-		HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		CustomClusterProvider: preSetupOutput.CustomClusterProvider,
-	})
-
-	testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
-		BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:           e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		HelmExtraValuesPath:      filepath.Join(e2eConfig.GetVariable(e2e.HelmExtraValuesFolderVar), "deploy-rancher-ingress.yaml"),
-		IngressType:              preSetupOutput.IngressType,
-		CustomIngress:            e2e.NginxIngress,
-		CustomIngressNamespace:   e2e.NginxIngressNamespace,
-		CustomIngressDeployment:  e2e.NginxIngressDeployment,
-		IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		NgrokApiKey:              e2eConfig.GetVariable(e2e.NgrokApiKeyVar),
-		NgrokAuthToken:           e2eConfig.GetVariable(e2e.NgrokAuthTokenVar),
-		NgrokPath:                e2eConfig.GetVariable(e2e.NgrokPathVar),
-		NgrokRepoName:            e2eConfig.GetVariable(e2e.NgrokRepoNameVar),
-		NgrokRepoURL:             e2eConfig.GetVariable(e2e.NgrokUrlVar),
-		DefaultIngressClassPatch: e2e.IngressClassPatch,
-	})
-
-	rancherInput := testenv.DeployRancherInput{
-		BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:         e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		HelmExtraValuesPath:    filepath.Join(e2eConfig.GetVariable(e2e.HelmExtraValuesFolderVar), "deploy-rancher.yaml"),
-		InstallCertManager:     true,
-		CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
-		CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
-		CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
-		RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherAlphaRepoNameVar),
-		RancherChartURL:        e2eConfig.GetVariable(e2e.RancherAlphaUrlVar),
-		RancherChartPath:       e2eConfig.GetVariable(e2e.RancherAlphaPathVar),
-		RancherVersion:         e2eConfig.GetVariable(e2e.RancherAlphaVersionVar),
-		RancherHost:            hostName,
-		RancherNamespace:       e2e.RancherNamespace,
-		RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
-		RancherPatches:         [][]byte{e2e.RancherSettingPatch},
-		RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		Variables:              e2eConfig.Variables,
-	}
-
-	rancherHookResult := testenv.PreRancherInstallHook(
-		&testenv.PreRancherInstallHookInput{
-			Ctx:                ctx,
-			RancherInput:       &rancherInput,
-			E2EConfig:          e2eConfig,
-			SetupClusterResult: setupClusterResult,
-			PreSetupOutput:     preSetupOutput,
+		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
+			UseExistingCluster:    useExistingCluter,
+			E2EConfig:             e2eConfig,
+			ClusterctlConfigPath:  clusterctlConfigPath,
+			Scheme:                e2e.InitScheme(),
+			ArtifactFolder:        artifactsFolder,
+			KubernetesVersion:     e2eConfig.GetVariable(e2e.KubernetesManagementVersionVar),
+			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			CustomClusterProvider: preSetupOutput.CustomClusterProvider,
 		})
 
-	hostName = rancherHookResult.HostName
+		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
+			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:           e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			HelmExtraValuesPath:      filepath.Join(e2eConfig.GetVariable(e2e.HelmExtraValuesFolderVar), "deploy-rancher-ingress.yaml"),
+			IngressType:              preSetupOutput.IngressType,
+			CustomIngress:            e2e.NginxIngress,
+			CustomIngressNamespace:   e2e.NginxIngressNamespace,
+			CustomIngressDeployment:  e2e.NginxIngressDeployment,
+			IngressWaitInterval:      e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			NgrokApiKey:              e2eConfig.GetVariable(e2e.NgrokApiKeyVar),
+			NgrokAuthToken:           e2eConfig.GetVariable(e2e.NgrokAuthTokenVar),
+			NgrokPath:                e2eConfig.GetVariable(e2e.NgrokPathVar),
+			NgrokRepoName:            e2eConfig.GetVariable(e2e.NgrokRepoNameVar),
+			NgrokRepoURL:             e2eConfig.GetVariable(e2e.NgrokUrlVar),
+			DefaultIngressClassPatch: e2e.IngressClassPatch,
+		})
 
-	testenv.DeployRancher(ctx, rancherInput)
+		rancherInput := testenv.DeployRancherInput{
+			BootstrapClusterProxy:  setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:         e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			HelmExtraValuesPath:    filepath.Join(e2eConfig.GetVariable(e2e.HelmExtraValuesFolderVar), "deploy-rancher.yaml"),
+			InstallCertManager:     true,
+			CertManagerChartPath:   e2eConfig.GetVariable(e2e.CertManagerPathVar),
+			CertManagerUrl:         e2eConfig.GetVariable(e2e.CertManagerUrlVar),
+			CertManagerRepoName:    e2eConfig.GetVariable(e2e.CertManagerRepoNameVar),
+			RancherChartRepoName:   e2eConfig.GetVariable(e2e.RancherAlphaRepoNameVar),
+			RancherChartURL:        e2eConfig.GetVariable(e2e.RancherAlphaUrlVar),
+			RancherChartPath:       e2eConfig.GetVariable(e2e.RancherAlphaPathVar),
+			RancherVersion:         e2eConfig.GetVariable(e2e.RancherAlphaVersionVar),
+			RancherHost:            hostName,
+			RancherNamespace:       e2e.RancherNamespace,
+			RancherPassword:        e2eConfig.GetVariable(e2e.RancherPasswordVar),
+			RancherPatches:         [][]byte{e2e.RancherSettingPatch},
+			RancherWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			ControllerWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			Variables:              e2eConfig.Variables,
+		}
 
-	chartMuseumDeployInput := testenv.DeployChartMuseumInput{
-		HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
-		ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		Variables:             e2eConfig.Variables,
-	}
+		rancherHookResult := testenv.PreRancherInstallHook(
+			&testenv.PreRancherInstallHookInput{
+				Ctx:                ctx,
+				RancherInput:       &rancherInput,
+				E2EConfig:          e2eConfig,
+				SetupClusterResult: setupClusterResult,
+				PreSetupOutput:     preSetupOutput,
+			})
 
-	testenv.PreChartMuseumInstallHook(&chartMuseumDeployInput, e2eConfig)
+		hostName = rancherHookResult.HostName
 
-	testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
+		testenv.DeployRancher(ctx, rancherInput)
 
-	rtInput := testenv.DeployRancherTurtlesInput{
-		BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		TurtlesChartPath:             e2eConfig.GetVariable(e2e.TurtlesPathVar),
-		CAPIProvidersYAML:            e2e.CapiProviders,
-		Namespace:                    framework.DefaultRancherTurtlesNamespace,
-		Image:                        "ghcr.io/rancher/turtles-e2e",
-		Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-		WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
-		AdditionalValues:             map[string]string{},
-	}
+		chartMuseumDeployInput := testenv.DeployChartMuseumInput{
+			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
+			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			Variables:             e2eConfig.Variables,
+		}
 
-	rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
-	rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
+		testenv.PreChartMuseumInstallHook(&chartMuseumDeployInput, e2eConfig)
 
-	testenv.PreRancherTurtlesInstallHook(&rtInput, e2eConfig)
+		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
-	testenv.DeployRancherTurtles(ctx, rtInput)
+		rtInput := testenv.DeployRancherTurtlesInput{
+			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			TurtlesChartPath:             e2eConfig.GetVariable(e2e.TurtlesPathVar),
+			CAPIProvidersYAML:            e2e.CapiProviders,
+			Namespace:                    framework.DefaultRancherTurtlesNamespace,
+			Image:                        "ghcr.io/rancher/turtles-e2e",
+			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			AdditionalValues:             map[string]string{},
+		}
 
-	By("Waiting for CAAPF deployment to be available")
-	capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-		Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-			Name:      "caapf-controller-manager",
-			Namespace: e2e.RancherTurtlesNamespace,
-		}},
-	}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
+		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
 
-	By("Setting the CAAPF config to use hostNetwork")
-	Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
+		testenv.PreRancherTurtlesInstallHook(&rtInput, e2eConfig)
 
-	giteaInput := testenv.DeployGiteaInput{
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		ChartRepoName:         e2eConfig.GetVariable(e2e.GiteaRepoNameVar),
-		ChartRepoURL:          e2eConfig.GetVariable(e2e.GiteaRepoURLVar),
-		ChartName:             e2eConfig.GetVariable(e2e.GiteaChartNameVar),
-		ChartVersion:          e2eConfig.GetVariable(e2e.GiteaChartVersionVar),
-		ValuesFilePath:        "../../data/gitea/values.yaml",
-		Values: map[string]string{
-			"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-			"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
-		},
-		RolloutWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
-		ServiceWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-service"),
-		AuthSecretName:      e2e.AuthSecretName,
-		Username:            e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-		Password:            e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
-		CustomIngressConfig: e2e.GiteaIngress,
-		Variables:           e2eConfig.Variables,
-	}
+		testenv.DeployRancherTurtles(ctx, rtInput)
 
-	testenv.PreGiteaInstallHook(&giteaInput, e2eConfig)
+		By("Waiting for CAAPF deployment to be available")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "caapf-controller-manager",
+				Namespace: e2e.RancherTurtlesNamespace,
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-	giteaResult = testenv.DeployGitea(ctx, giteaInput)
-})
+		By("Setting the CAAPF config to use hostNetwork")
+		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 
-var _ = AfterSuite(func() {
-	testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-uninstall"),
-	})
+		giteaInput := testenv.DeployGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			ChartRepoName:         e2eConfig.GetVariable(e2e.GiteaRepoNameVar),
+			ChartRepoURL:          e2eConfig.GetVariable(e2e.GiteaRepoURLVar),
+			ChartName:             e2eConfig.GetVariable(e2e.GiteaChartNameVar),
+			ChartVersion:          e2eConfig.GetVariable(e2e.GiteaChartVersionVar),
+			ValuesFilePath:        "../../data/gitea/values.yaml",
+			Values: map[string]string{
+				"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
+				"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
+			},
+			RolloutWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea"),
+			ServiceWaitInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-service"),
+			AuthSecretName:      e2e.AuthSecretName,
+			Username:            e2eConfig.GetVariable(e2e.GiteaUserNameVar),
+			Password:            e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
+			CustomIngressConfig: e2e.GiteaIngress,
+			Variables:           e2eConfig.Variables,
+		}
 
-	testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
-		BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-		Namespace:             framework.DefaultRancherTurtlesNamespace,
-		DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-turtles-uninstall"),
-	})
+		testenv.PreGiteaInstallHook(&giteaInput, e2eConfig)
 
-	skipCleanup, err := strconv.ParseBool(e2eConfig.GetVariable(e2e.SkipResourceCleanupVar))
-	Expect(err).ToNot(HaveOccurred(), "Failed to parse the SKIP_RESOURCE_CLEANUP variable")
+		giteaResult = testenv.DeployGitea(ctx, giteaInput)
 
-	testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
-		SetupTestClusterResult: *setupClusterResult,
-		SkipCleanup:            skipCleanup,
-		ArtifactFolder:         artifactsFolder,
-	})
-})
+		// Serialize using Gob
+		var buf bytes.Buffer
+		encoder := gob.NewEncoder(&buf)
+		Expect(encoder.Encode(setupClusterResult)).ToNot(HaveOccurred(), "Failed to serialize setupClusterResult using gob")
+
+		return buf.Bytes()
+	},
+	func(sharedData []byte) {
+		buf := bytes.NewBuffer(sharedData)
+		decoder := gob.NewDecoder(buf)
+		err := decoder.Decode(&setupClusterResult)
+		Expect(err).ToNot(HaveOccurred(), "Failed to deserialize setupClusterResult using gob")
+	},
+)
+
+var _ = SynchronizedAfterSuite(
+	func() {
+		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-gitea-uninstall"),
+		})
+
+		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
+			Namespace:             framework.DefaultRancherTurtlesNamespace,
+			DeleteWaitInterval:    e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-turtles-uninstall"),
+		})
+
+		skipCleanup, err := strconv.ParseBool(e2eConfig.GetVariable(e2e.SkipResourceCleanupVar))
+		Expect(err).ToNot(HaveOccurred(), "Failed to parse the SKIP_RESOURCE_CLEANUP variable")
+
+		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
+			SetupTestClusterResult: *setupClusterResult,
+			SkipCleanup:            skipCleanup,
+			ArtifactFolder:         artifactsFolder,
+		})
+	},
+	func() {
+	},
+)
 
 func shortTestOnly() bool {
 	return GinkgoLabelFilter() == e2e.ShortTestLabel

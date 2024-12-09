@@ -21,6 +21,7 @@ package chart_upgrade
 
 import (
 	"context"
+	"encoding/gob"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -64,6 +65,8 @@ var (
 func init() {
 	flagVals = &e2e.FlagValues{}
 	e2e.InitFlags(flagVals)
+
+	gob.Register(testenv.EKSClusterProvider{})
 }
 
 func TestE2E(t *testing.T) {
