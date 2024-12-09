@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/ptr"
@@ -49,8 +50,21 @@ func NewDefaultSynchronizer(cl client.Client, capiProvider *turtlesv1.CAPIProvid
 func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
-	if err := s.client.Get(ctx, client.ObjectKeyFromObject(s.Destination), s.Destination); client.IgnoreNotFound(err) != nil {
-		log.Error(err, "Unable to get mirrored manifest: "+client.ObjectKeyFromObject(s.Destination).String())
+	objKey := client.ObjectKeyFromObject(s.Destination)
+
+	err := s.client.Get(ctx, objKey, s.Destination)
+	if apierrors.IsNotFound(err) {
+		log.Info("Mirrored manifest is missing. Creating a new one.")
+
+		if err := s.client.Create(ctx, s.Destination); err != nil {
+			return fmt.Errorf("creating mirrored manifest: %w", err)
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		log.Error(err, "Unable to get mirrored manifest: "+objKey.String())
 
 		return err
 	}
