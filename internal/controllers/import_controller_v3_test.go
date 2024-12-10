@@ -233,6 +233,29 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 	})
 
+	It("should set fleet annotation on a freshly imported rancher cluster", func() {
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Eventually(ctx, func(g Gomega) {
+			res, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res.Requeue).To(BeTrue())
+		}).Should(Succeed())
+
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		Expect(rancherClusters.Items[0].Annotations).To(HaveKeyWithValue(externalFleetAnnotation, testLabelVal))
+	})
+
 	It("should reconcile a CAPI cluster when rancher cluster exists, and have finalizers set", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -402,6 +425,51 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
+	})
+
+	It("should set the fleet annotation on an already imported cluster", func() {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(sampleTemplate))
+		}))
+		defer server.Close()
+
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
+
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		Eventually(ctx, func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		clusterRegistrationToken.Name = cluster.Name
+		clusterRegistrationToken.Namespace = cluster.Name
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
+		token := clusterRegistrationToken.DeepCopy()
+		token.Status.ManifestURL = server.URL
+		Expect(cl.Status().Update(ctx, token)).To(Succeed())
+
+		Eventually(ctx, func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			rancherCluster := cluster.DeepCopy()
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), rancherCluster)).To(Succeed())
+			g.Expect(rancherCluster.Annotations).To(HaveKeyWithValue(externalFleetAnnotation, testLabelVal))
+		}, 5*time.Second).Should(Succeed())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists and a cluster registration token does not exist", func() {
