@@ -61,6 +61,10 @@ func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 
 // Apply applies the destination object to the cluster.
 func (s *DefaultSynchronizer) Apply(ctx context.Context, reterr *error) {
+	if s.Destination == nil {
+		return
+	}
+
 	log := log.FromContext(ctx)
 	uid := s.Destination.GetUID()
 

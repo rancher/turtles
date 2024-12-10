@@ -19,7 +19,6 @@ package sync
 import (
 	"cmp"
 	"context"
-	"encoding/base64"
 	"maps"
 	"strconv"
 
@@ -94,14 +93,14 @@ func (s *SecretSync) SyncObjects() {
 	allSet := true
 
 	for k, v := range s.DefaultSynchronizer.Source.Status.Variables {
-		if b64value, found := s.Secret.Data[k]; !found || base64.StdEncoding.EncodeToString([]byte(v)) != string(b64value) {
+		if value, found := s.Secret.Data[k]; !found || v != string(value) {
 			allSet = false
 			break
 		}
 	}
 
 	if allSet {
-		s.Secret.StringData = map[string]string{}
+		s.Destination = nil
 	}
 }
 
