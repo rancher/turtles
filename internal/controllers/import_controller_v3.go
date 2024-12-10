@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	errorutils "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -184,13 +183,8 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 		errs = append(errs, fmt.Errorf("error reconciling cluster: %w", err))
 	}
 
-	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
-			errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
-		}
-		return nil
-	}); err != nil {
-		return ctrl.Result{}, err
+	if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
+		errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
 	}
 
 	if len(errs) > 0 {

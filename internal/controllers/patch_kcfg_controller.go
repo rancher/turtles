@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -113,25 +112,20 @@ func (r *RancherKubeconfigSecretReconciler) Reconcile(ctx context.Context, req c
 		return ctrl.Result{}, nil
 	}
 
-	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		secretCopy := secret.DeepCopy()
-		if secretCopy.Labels == nil {
-			secretCopy.Labels = map[string]string{}
-		}
-		secretCopy.Labels[clusterv1.ClusterNameLabel] = clusterName
-
-		patchBase := client.MergeFromWithOptions(secret, client.MergeFromWithOptimisticLock{})
-
-		if err := r.Client.Patch(ctx, secretCopy, patchBase); err != nil {
-			return fmt.Errorf("failed to patch secret: %w", err)
-		}
-
-		log.V(4).Info("patched kubeconfig secret", "name", secret.Name, "namespace", secret.Namespace, "cluster", clusterName)
-
-		return nil
-	}); err != nil {
-		return ctrl.Result{}, err
+	secretCopy := secret.DeepCopy()
+	if secretCopy.Labels == nil {
+		secretCopy.Labels = map[string]string{}
 	}
+
+	secretCopy.Labels[clusterv1.ClusterNameLabel] = clusterName
+
+	patchBase := client.MergeFromWithOptions(secret, client.MergeFromWithOptimisticLock{})
+
+	if err := r.Client.Patch(ctx, secretCopy, patchBase); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to patch secret: %w", err)
+	}
+
+	log.V(4).Info("patched kubeconfig secret", "name", secret.Name, "namespace", secret.Namespace, "cluster", clusterName)
 
 	return ctrl.Result{}, nil
 }
