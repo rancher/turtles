@@ -19,7 +19,6 @@ package sync
 import (
 	"cmp"
 	"context"
-	"encoding/base64"
 	"maps"
 	"strconv"
 
@@ -90,19 +89,6 @@ func (s *SecretSync) SyncObjects() {
 	setFeatures(s.DefaultSynchronizer.Source)
 
 	s.Secret.StringData = s.DefaultSynchronizer.Source.Status.Variables
-
-	allSet := true
-
-	for k, v := range s.DefaultSynchronizer.Source.Status.Variables {
-		if b64value, found := s.Secret.Data[k]; !found || base64.StdEncoding.EncodeToString([]byte(v)) != string(b64value) {
-			allSet = false
-			break
-		}
-	}
-
-	if allSet {
-		s.Secret.StringData = map[string]string{}
-	}
 }
 
 func setVariables(capiProvider *turtlesv1.CAPIProvider) {

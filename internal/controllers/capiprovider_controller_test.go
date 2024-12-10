@@ -17,6 +17,8 @@ limitations under the License.
 package controllers
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -187,6 +189,14 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(provider), provider)).ToNot(HaveOccurred())
 			g.Expect(conditions.IsTrue(provider, turtlesv1.RancherCredentialsSecretCondition))
 		}).Should(Succeed())
+
+		resourceVersion := ""
+		Eventually(func(g Gomega) {
+			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(doSecret), doSecret)).ToNot(HaveOccurred())
+			previousVersion := resourceVersion
+			resourceVersion = doSecret.GetResourceVersion()
+			g.Expect(previousVersion).To(Equal(resourceVersion))
+		}, time.Minute, 10*time.Second).Should(Succeed())
 	})
 
 	It("Should reflect missing infrastructure digitalocean provider credential secret in the status", func() {

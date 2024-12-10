@@ -39,7 +39,7 @@ func setKind(cl client.Client, obj client.Object) error {
 }
 
 // Patch will only patch mirror object in the cluster.
-func Patch(ctx context.Context, cl client.Client, obj client.Object) error {
+func Patch(ctx context.Context, cl client.Client, obj client.Object, options ...client.PatchOption) error {
 	log := log.FromContext(ctx)
 
 	obj.SetManagedFields(nil)
@@ -50,10 +50,13 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object) error {
 
 	log.Info(fmt.Sprintf("Updating %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, client.ObjectKeyFromObject(obj)))
 
-	return cl.Patch(ctx, obj, client.Apply, []client.PatchOption{
+	patchOptions := []client.PatchOption{
 		client.ForceOwnership,
 		client.FieldOwner(fieldOwner),
-	}...)
+	}
+	patchOptions = append(patchOptions, options...)
+
+	return cl.Patch(ctx, obj, client.Apply, patchOptions...)
 }
 
 // PatchStatus will only patch the status subresource of the provided object.
