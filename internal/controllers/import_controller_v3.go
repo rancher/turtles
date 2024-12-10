@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"strings"
@@ -27,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	errorutils "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -184,13 +184,8 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 		errs = append(errs, fmt.Errorf("error reconciling cluster: %w", err))
 	}
 
-	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
-			errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
-		}
-		return nil
-	}); err != nil {
-		return ctrl.Result{}, err
+	if err := r.Client.Patch(ctx, capiCluster, patchBase); err != nil {
+		errs = append(errs, fmt.Errorf("failed to patch cluster: %w", err))
 	}
 
 	if len(errs) > 0 {
@@ -200,7 +195,7 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 	return result, nil
 }
 
-func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (res ctrl.Result, reterr error) {
 	log := log.FromContext(ctx)
 
 	migrated, err := r.verifyV1ClusterMigration(ctx, capiCluster)
@@ -214,7 +209,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		ownedLabelName:            "",
 	}
 
-	rancherCluster := &managementv3.Cluster{}
+	var rancherCluster *managementv3.Cluster
 
 	rancherClusterList := &managementv3.ClusterList{}
 	selectors := []client.ListOption{
@@ -234,7 +229,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		rancherCluster = &rancherClusterList.Items[0]
 	}
 
-	if !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
+	if rancherCluster != nil && !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err := r.reconcileDelete(ctx, capiCluster); err != nil {
 			log.Error(err, "Removing CAPI Cluster failed, retrying")
 			return ctrl.Result{}, err
@@ -253,7 +248,23 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		}
 	}
 
-	return r.reconcileNormal(ctx, capiCluster, rancherCluster)
+	patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
+
+	defer func() {
+		// As the rancherCluster is created inside reconcileNormal, we can only patch existing object
+		// Skipping non-existent cluster or returnted error
+		if reterr != nil || rancherCluster == nil {
+			return
+		}
+
+		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
+			reterr = fmt.Errorf("failed to patch Rancher cluster: %w", err)
+		}
+	}()
+
+	res, reterr = r.reconcileNormal(ctx, capiCluster, rancherCluster)
+
+	return res, reterr
 }
 
 func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, capiCluster *clusterv1.Cluster,
@@ -261,78 +272,48 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 ) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
-	if apierrors.IsNotFound(err) {
+	clusterMissing := rancherCluster == nil
+
+	updatedCluster := &managementv3.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:    capiCluster.Namespace,
+			GenerateName: "c-",
+			Labels: map[string]string{
+				capiClusterOwner:          capiCluster.Name,
+				capiClusterOwnerNamespace: capiCluster.Namespace,
+				ownedLabelName:            "",
+			},
+			Finalizers: []string{
+				managementv3.CapiClusterFinalizer,
+			},
+		},
+		Spec: managementv3.ClusterSpec{
+			DisplayName: capiCluster.Name,
+			Description: "CAPI cluster imported to Rancher",
+		},
+	}
+
+	rancherCluster = cmp.Or(rancherCluster, updatedCluster)
+
+	r.optOutOfClusterOwner(ctx, rancherCluster)
+	r.optOutOfFleetManagement(ctx, rancherCluster)
+	r.propagateLabels(ctx, capiCluster, rancherCluster)
+
+	addedFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
+	if addedFinalizer {
+		log.Info("Successfully added capicluster.turtles.cattle.io finalizer to Rancher cluster")
+	}
+
+	if clusterMissing {
 		if autoImport, err := r.shouldAutoImportUncached(ctx, capiCluster); err != nil || !autoImport {
 			return ctrl.Result{}, err
 		}
 
-		newCluster := &managementv3.Cluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:    capiCluster.Namespace,
-				GenerateName: "c-",
-				Labels: map[string]string{
-					capiClusterOwner:          capiCluster.Name,
-					capiClusterOwnerNamespace: capiCluster.Namespace,
-					ownedLabelName:            "",
-				},
-				Annotations: map[string]string{
-					turtlesannotations.NoCreatorRBACAnnotation: trueAnnotationValue,
-				},
-				Finalizers: []string{
-					managementv3.CapiClusterFinalizer,
-				},
-			},
-			Spec: managementv3.ClusterSpec{
-				DisplayName: capiCluster.Name,
-				Description: "CAPI cluster imported to Rancher",
-			},
-		}
-
-		if feature.Gates.Enabled(feature.PropagateLabels) {
-			for labelKey, labelVal := range capiCluster.Labels {
-				newCluster.Labels[labelKey] = labelVal
-			}
-		}
-
-		if err := r.RancherClient.Create(ctx, newCluster); err != nil {
+		if err := r.RancherClient.Create(ctx, rancherCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
 		return ctrl.Result{Requeue: true}, nil
-	}
-
-	if err != nil {
-		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
-
-		return ctrl.Result{}, err
-	}
-
-	if err := r.optOutOfClusterOwner(ctx, rancherCluster); err != nil {
-		return ctrl.Result{}, fmt.Errorf("error annotating rancher cluster %s to opt out of cluster owner: %w", rancherCluster.Name, err)
-	}
-
-	patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
-	needsFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
-
-	if feature.Gates.Enabled(feature.PropagateLabels) {
-		if rancherCluster.Labels == nil {
-			rancherCluster.Labels = map[string]string{}
-		}
-
-		for labelKey, labelVal := range capiCluster.Labels {
-			rancherCluster.Labels[labelKey] = labelVal
-		}
-
-		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to patch Rancher cluster: %w", err)
-		}
-
-		log.Info("Successfully propagated labels to Rancher cluster")
-	} else if needsFinalizer {
-		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to patch Rancher cluster: %w", err)
-		}
 	}
 
 	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
@@ -548,7 +529,7 @@ func (r *CAPIImportManagementV3Reconciler) verifyV1ClusterMigration(ctx context.
 
 // optOutOfClusterOwner annotates the cluster with the opt-out annotation.
 // Rancher will detect this annotation and it won't create ProjectOwner or ClusterOwner roles.
-func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Context, rancherCluster *managementv3.Cluster) error {
+func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Context, rancherCluster *managementv3.Cluster) {
 	log := log.FromContext(ctx)
 
 	annotations := rancherCluster.GetAnnotations()
@@ -561,15 +542,48 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Cont
 			rancherCluster.Name,
 			turtlesannotations.ClusterImportedAnnotation))
 
-		patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
-
 		annotations[turtlesannotations.NoCreatorRBACAnnotation] = trueAnnotationValue
 		rancherCluster.SetAnnotations(annotations)
+	}
+}
 
-		if err := r.Client.Patch(ctx, rancherCluster, patchBase); err != nil {
-			return fmt.Errorf("error patching rancher cluster: %w", err)
-		}
+// optOutOfFleetManagement annotates the cluster with the fleet provisioning opt-out annotation,
+// allowing external fleet cluster management.
+func (r *CAPIImportManagementV3Reconciler) optOutOfFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster) {
+	log := log.FromContext(ctx)
+
+	annotations := rancherCluster.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
 	}
 
-	return nil
+	if _, found := annotations[externalFleetAnnotation]; !found && feature.Gates.Enabled(feature.ExternalFleet) {
+		annotations[externalFleetAnnotation] = "true"
+		rancherCluster.SetAnnotations(annotations)
+
+		log.Info("Added fleet annotation to Rancher cluster")
+	}
+}
+
+func (r *CAPIImportManagementV3Reconciler) propagateLabels(
+	ctx context.Context,
+	capiCluster *clusterv1.Cluster,
+	rancherCluster *managementv3.Cluster,
+) {
+	log := log.FromContext(ctx)
+
+	labels := rancherCluster.GetLabels()
+	if rancherCluster.Labels == nil {
+		labels = map[string]string{}
+	}
+
+	if feature.Gates.Enabled(feature.PropagateLabels) {
+		for labelKey, labelVal := range capiCluster.Labels {
+			labels[labelKey] = labelVal
+		}
+
+		rancherCluster.SetLabels(labels)
+
+		log.V(5).Info("Propagated labels to Rancher cluster")
+	}
 }
