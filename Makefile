@@ -32,7 +32,7 @@ else
 UPDATECLI_OS = Darwin
 endif
 
-GO_VERSION ?= 1.22.0
+GO_VERSION ?= 1.22.10
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 

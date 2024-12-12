@@ -1,6 +1,6 @@
 module github.com/rancher/turtles/exp/etcdrestore
 
-go 1.22.0
+go 1.22.10
 
 replace github.com/rancher/turtles => ../..
 
