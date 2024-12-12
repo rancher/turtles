@@ -32,14 +32,14 @@ import (
 
 var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the cluster", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 	})
 
 	specs.ETCDSnapshotRestore(ctx, func() specs.ETCDSnapshotRestoreInput {
 		return specs.ETCDSnapshotRestoreInput{
 			E2EConfig:                   e2eConfig,
-			BootstrapClusterProxy:       setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:       bootstrapClusterProxy,
 			ClusterctlConfigPath:        flagVals.ConfigPath,
 			ClusterctlBinaryPath:        e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:              artifactsFolder,
@@ -47,7 +47,7 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 			ClusterName:                 "etcd-snapshot-restore",
 			ControlPlaneMachineCount:    ptr.To[int](1),
 			WorkerMachineCount:          ptr.To[int](0),
-			GitAddr:                     giteaResult.GitAddress,
+			GitAddr:                     gitAddress,
 			GitAuthSecretName:           e2e.AuthSecretName,
 			SkipCleanup:                 false,
 			SkipDeletionTest:            false,

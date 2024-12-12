@@ -38,20 +38,20 @@ import (
 
 var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 
 	})
 
 	It("Should perform upgrade from GA version to latest", func() {
 		rtInput := testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:        bootstrapClusterProxy,
 			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			TurtlesChartPath:             "https://rancher.github.io/turtles",
 			CAPIProvidersYAML:            e2e.CapiProvidersLegacy,
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
 			Version:                      "v0.6.0",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
 			AdditionalValues:             map[string]string{},
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
@@ -60,8 +60,8 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
 			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			WaitInterval:          e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			WaitInterval:          e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
 			Variables:             e2eConfig.Variables,
 		}
 
@@ -70,12 +70,12 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
-			BootstrapClusterProxy:        setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:        bootstrapClusterProxy,
 			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			Namespace:                    framework.DefaultRancherTurtlesNamespace,
 			Image:                        "ghcr.io/rancher/turtles-e2e",
 			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers"),
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
 			AdditionalValues:             rtInput.AdditionalValues,
 			PostUpgradeSteps:             []func(){},
 		}
@@ -88,20 +88,20 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			By("Waiting for CAAPF deployment to be available")
 			capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-				Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter: bootstrapClusterProxy.GetClient(),
 				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 					Name:      "caapf-controller-manager",
 					Namespace: e2e.RancherTurtlesNamespace,
 				}},
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 			By("Setting the CAAPF config to use hostNetwork")
-			Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
+			Expect(bootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 		})
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter:  setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter:  bootstrapClusterProxy.GetClient(),
 				Version: e2e.CAPIVersion,
 				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 					Name:      "capi-controller-manager",
@@ -110,17 +110,17 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 				Image:     "registry.suse.com/rancher/cluster-api-controller:",
 				Name:      "cluster-api",
 				Namespace: "capi-system",
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter:    bootstrapClusterProxy.GetClient(),
 				Version:   e2e.CAPIVersion,
 				Name:      "kubeadm-control-plane",
 				Namespace: "capi-kubeadm-control-plane-system",
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter: bootstrapClusterProxy.GetClient(),
 				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 					Name:      "rke2-bootstrap-controller-manager",
 					Namespace: "rke2-bootstrap-system",
@@ -128,10 +128,10 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 				Image:     "registry.suse.com/rancher/cluster-api-provider-rke2-bootstrap:",
 				Name:      "rke2-bootstrap",
 				Namespace: "rke2-bootstrap-system",
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter: bootstrapClusterProxy.GetClient(),
 				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 					Name:      "rke2-control-plane-controller-manager",
 					Namespace: "rke2-control-plane-system",
@@ -139,14 +139,14 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 				Image:     "registry.suse.com/rancher/cluster-api-provider-rke2-controlplane:",
 				Name:      "rke2-control-plane",
 				Namespace: "rke2-control-plane-system",
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-				Getter:    setupClusterResult.BootstrapClusterProxy.GetClient(),
+				Getter:    bootstrapClusterProxy.GetClient(),
 				Version:   e2e.CAPIVersion,
 				Name:      "docker",
 				Namespace: "capd-system",
-			}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		})
 
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)

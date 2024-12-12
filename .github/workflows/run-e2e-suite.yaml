@@ -53,6 +53,7 @@ env:
   MANAGEMENT_CLUSTER_ENVIRONMENT: ${{ inputs.MANAGEMENT_CLUSTER_ENVIRONMENT }}
   GINKGO_LABEL_FILTER: full 
   GINKGO_TESTS: ${{ github.workspace }}/${{ inputs.test_suite }}
+  GINKGO_NODES: 5
 
 jobs:
   run_e2e_tests:

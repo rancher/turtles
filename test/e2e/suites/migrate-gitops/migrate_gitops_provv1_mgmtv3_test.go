@@ -33,7 +33,7 @@ import (
 
 var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to management v3 cluster functionality should work", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
-		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
 	})
 
@@ -42,7 +42,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 			HelmBinaryPath:                 e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
 			ChartPath:                      e2eConfig.GetVariable(e2e.TurtlesPathVar),
 			E2EConfig:                      e2eConfig,
-			BootstrapClusterProxy:          setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
@@ -50,7 +50,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 			ClusterName:                    "clusterv3-migrated",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
-			GitAddr:                        giteaResult.GitAddress,
+			GitAddr:                        gitAddress,
 			GitAuthSecretName:              e2e.AuthSecretName,
 			SkipCleanup:                    false,
 			SkipDeletionTest:               false,

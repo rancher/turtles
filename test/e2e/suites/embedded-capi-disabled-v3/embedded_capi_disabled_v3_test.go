@@ -31,14 +31,14 @@ import (
 
 var _ = Describe("[AWS] [EKS] [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import (embedded capi disabled from start)", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
-			BootstrapClusterProxy:          setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
@@ -46,7 +46,7 @@ var _ = Describe("[AWS] [EKS] [management.cattle.io/v3] Create and delete CAPI c
 			ClusterName:                    "highlander-e2e-cluster1",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
-			GitAddr:                        giteaResult.GitAddress,
+			GitAddr:                        gitAddress,
 			GitAuthSecretName:              e2e.AuthSecretName,
 			SkipCleanup:                    false,
 			SkipDeletionTest:               false,
