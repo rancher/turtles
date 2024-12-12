@@ -42,7 +42,7 @@ func (m *MockSynchronizer) Sync(ctx context.Context) error {
 	return m.syncronizerr
 }
 
-func (m *MockSynchronizer) Apply(ctx context.Context, reterr *error) {
+func (m *MockSynchronizer) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
 	*reterr = m.applyErr
 }
 
