@@ -252,7 +252,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 
 	defer func() {
 		// As the rancherCluster is created inside reconcileNormal, we can only patch existing object
-		// Skipping non-existent cluster or returnted error
+		// Skipping non-existent cluster or returned error
 		if reterr != nil || rancherCluster == nil {
 			return
 		}
