@@ -304,19 +304,6 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 		return nil
 	}
 
-	allSet := true
-
-	for k, v := range s.SecretSync.Secret.StringData {
-		if b64value, found := s.RancherSecret.Data[k]; !found || base64.StdEncoding.EncodeToString([]byte(v)) != string(b64value) {
-			allSet = false
-			break
-		}
-	}
-
-	if allSet {
-		s.SecretSync.Secret.StringData = map[string]string{}
-	}
-
 	log.Info(fmt.Sprintf("Credential keys from %s (%s) are successfully mapped to secret %s",
 		client.ObjectKeyFromObject(s.RancherSecret).String(),
 		cmp.Or(s.Source.Spec.Credentials.RancherCloudCredential, s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName),
@@ -327,6 +314,12 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 	))
 
 	return nil
+}
+
+// Apply performs SSA patch of the secret mapper resources, using different FieldOwner from default
+// to avoid collisions with patches performed by variable syncer on the same secret resource.
+func (s *SecretMapperSync) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
+	s.DefaultSynchronizer.Apply(ctx, reterr, append(options, client.FieldOwner("secret-mapper-sync"))...)
 }
 
 // Into maps the secret keys from source secret data according to credentials map.

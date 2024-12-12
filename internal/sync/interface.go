@@ -31,7 +31,7 @@ type Sync interface {
 	Template(source *turtlesv1.CAPIProvider) client.Object
 	Get(ctx context.Context) error
 	Sync(ctx context.Context) error
-	Apply(ctx context.Context, reterr *error)
+	Apply(ctx context.Context, reterr *error, options ...client.PatchOption)
 }
 
 // List contains a list of syncers to apply the syncing logic.
