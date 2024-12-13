@@ -109,7 +109,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			}
 		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(bootstrapClusterProxy.Apply(ctx, []byte(rkeConfig))).To(Succeed(), "Failed apply Digital Ocean RKE config")
+		Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, []byte(rkeConfig))).To(Succeed(), "Failed apply Digital Ocean RKE config")
 
 		cluster, err := envsubst.Eval(string(e2e.V2ProvAzureCluster), func(s string) string {
 			switch s {
@@ -128,7 +128,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			}
 		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(bootstrapClusterProxy.Apply(ctx, []byte(cluster))).To(Succeed(), "Failed apply Digital Ocean cluster config")
+		Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, []byte(cluster))).To(Succeed(), "Failed apply Digital Ocean cluster config")
 
 		By("Waiting for the rancher cluster record to appear")
 		rancherCluster = &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{

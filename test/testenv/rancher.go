@@ -278,11 +278,11 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 		By("Setting up ingress")
 		ingress, err := envsubst.Eval(string(input.RancherIngressConfig), os.Getenv)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
 	}
 	if len(input.RancherServicePatch) > 0 {
 		By("Updating rancher svc")
-		Expect(input.BootstrapClusterProxy.Apply(ctx, input.RancherServicePatch, "--server-side")).To(Succeed())
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.RancherServicePatch)).To(Succeed())
 	}
 
 	By("Waiting for rancher webhook rollout")
@@ -432,7 +432,7 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 
 func deployIsolatedModeIngress(ctx context.Context, input RancherDeployIngressInput) {
 	By("Deploying custom ingress")
-	Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(input.CustomIngress))).To(Succeed())
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(input.CustomIngress))).To(Succeed())
 
 	By("Getting custom ingress deployment")
 	ingressDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: input.CustomIngressDeployment, Namespace: input.CustomIngressNamespace}}
@@ -525,7 +525,7 @@ func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Setting up default ingress class")
-	Expect(input.BootstrapClusterProxy.Apply(ctx, input.DefaultIngressClassPatch, "--server-side")).To(Succeed())
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.DefaultIngressClassPatch)).To(Succeed())
 }
 
 // PreRancherInstallHookInput represents the input parameters for the pre-Rancher install hook.

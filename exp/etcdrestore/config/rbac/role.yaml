@@ -50,29 +50,7 @@ rules:
   - cluster.x-k8s.io
   resources:
   - clusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cluster.x-k8s.io
-  resources:
   - clusters/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cluster.x-k8s.io
-  resources:
   - machines
   verbs:
   - create
@@ -111,57 +89,7 @@ rules:
   - turtles-capi.cattle.io
   resources:
   - etcdmachinesnapshots
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdmachinesnapshots/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdmachinesnapshots/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
   - etcdsnapshotrestores
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdsnapshotrestores/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdsnapshotrestores/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
   - rke2etcdmachinesnapshotconfigs
   verbs:
   - create
@@ -174,12 +102,16 @@ rules:
 - apiGroups:
   - turtles-capi.cattle.io
   resources:
+  - etcdmachinesnapshots/finalizers
+  - etcdsnapshotrestores/finalizers
   - rke2etcdmachinesnapshotconfigs/finalizers
   verbs:
   - update
 - apiGroups:
   - turtles-capi.cattle.io
   resources:
+  - etcdmachinesnapshots/status
+  - etcdsnapshotrestores/status
   - rke2etcdmachinesnapshotconfigs/status
   verbs:
   - get

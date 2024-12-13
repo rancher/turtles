@@ -33,6 +33,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	turtlesframework "github.com/rancher/turtles/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -96,7 +97,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 			By("Setting the CAAPF config to use hostNetwork")
-			Expect(bootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
+			Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 		})
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {

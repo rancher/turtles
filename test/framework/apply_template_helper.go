@@ -76,5 +76,5 @@ func ApplyFromTemplate(ctx context.Context, input ApplyFromTemplateInput) error 
 		return os.WriteFile(input.OutputFilePath, []byte(template), os.ModePerm)
 	}
 
-	return input.Proxy.Apply(ctx, []byte(template))
+	return Apply(ctx, input.Proxy, []byte(template))
 }

@@ -230,6 +230,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 		if err := (&controllers.CAPIImportManagementV3Reconciler{
 			Client:             mgr.GetClient(),
+			Scheme:             mgr.GetScheme(),
 			UncachedClient:     uncachedClient,
 			RancherClient:      rancherClient,
 			WatchFilterValue:   watchFilterValue,
@@ -246,6 +247,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 		if err := (&controllers.CAPIImportReconciler{
 			Client:             mgr.GetClient(),
+			Scheme:             mgr.GetScheme(),
 			RancherClient:      rancherClient,
 			WatchFilterValue:   watchFilterValue,
 			InsecureSkipVerify: insecureSkipVerify,
@@ -273,6 +275,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 		if err := (&controllers.RancherKubeconfigSecretReconciler{
 			Client:           mgr.GetClient(),
+			Scheme:           mgr.GetScheme(),
 			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr, controller.Options{
 			MaxConcurrentReconciles: concurrencyNumber,
