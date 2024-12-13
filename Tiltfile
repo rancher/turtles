@@ -35,7 +35,7 @@ if settings.get("trigger_mode") == "manual":
 if settings.get("default_registry") != "":
     default_registry(settings.get("default_registry"))
 
-always_enable_projects = ["turtles", "turtles-capiproviders"]
+always_enable_projects = ["turtles", "turtles-capiproviders", "turtles-etcdsnapshotrestore"]
 
 projects = {
     "turtles": {
@@ -49,7 +49,22 @@ projects = {
             "features",
         ],
         "kustomize_dir": "config/default",
-        "label": "turtles"
+        "label": "turtles",
+        "binary_name" : "manager"
+    },
+    "turtles-etcdsnapshotrestore": {
+        "context": "exp/etcdrestore",
+        "image": "ghcr.io/rancher/turtles-etcd-restore:dev",
+        "live_reload_deps": [
+            "main.go",
+            "go.mod",
+            "go.sum",
+            "controllers",
+            "webhooks",
+        ],
+        "kustomize_dir": "config/default",
+        "label": "turtles-etcdsnapshotrestore",
+        "binary_name" : "etcd-snapshot-restore"
     },
     "turtles-capiproviders": {
         "context": ".",

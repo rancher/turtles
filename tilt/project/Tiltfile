@@ -83,7 +83,7 @@ def project_enable(name, project, debug):
     if kustomize_dir != "":
         info("doing kustomization")
         yaml = kustomize(context + '/' + kustomize_dir)
-        yaml = update_manager(yaml, "manager", debug, env)
+        yaml = update_manager(yaml, "manager", debug, env, name, project)
         yaml_path = context + "/.tiltbuild/manifest.yaml"
         prepare_file(yaml_path)
         for line in str(yaml).splitlines():
@@ -102,7 +102,7 @@ def project_enable(name, project, debug):
         )
     info("finished adding project")
 
-def update_manager(yaml, containerName, debug, env):
+def update_manager(yaml, containerName, debug, env, name, project):
     """Enable a project in Tilt
 
     *****TODO: change this so the deployment is passed in
@@ -129,43 +129,30 @@ def update_manager(yaml, containerName, debug, env):
             for c in containers:
                 if c["name"] != containerName:
                     continue
+                if name != "turtles": # use custom image for projects except turtles
+                    c["image"] = project.get("image")
 
                 cmd = ["sh", "/start.sh", "/manager"]
                 if debug != {}:
-                    cmd = ["sh", "/start.sh", "/dlv", "--accept-multiclient", "--api-version=2", "--headless=true", "exec"]
-                    if debug_port != 0:
-                        # The debug port
-                        ports = c.get("ports")
-                        if ports  == None:
-                            info("no ports, creating new")
-                            c["ports"] = []
-                        ports = c["ports"]
-                        ports.append({"containerPort": 30000})
-                        cmd.append("--listen=:30000")
-                        if debug_continue:
-                            cmd.append("--continue")
-                        cmd.append("--")
-                        cmd.append("/manager")
-
-                        debugArgs = []
-                        containerArgs = c.get("args")
-                        if containerArgs  != None:
-                            for arg in c["args"]:
-                                if arg == "--leader-elect" or arg == "--leader-elect=true":
-                                    continue
-                                debugArgs.append(arg)
-                        if debug_insecure_skip_verify:
-                            debugArgs.append("--insecure-skip-verify=true")
-                            debugArgs.append("--v=5")
-                        c["command"] = cmd
-                        print(cmd)
-                        if len(debugArgs) == 0:
-                            c.pop("args",{})
-                        else:
-                            c["args"] = debugArgs
-                        c.pop("readinessProbe",{})
-                        c.pop("livenessProbe",{})
-                        c.pop("resources", {})
+                    debugArgs = []
+                    containerArgs = c.get("args")
+                    if containerArgs  != None:
+                        for arg in c["args"]:
+                            if arg == "--leader-elect" or arg == "--leader-elect=true":
+                                continue
+                            debugArgs.append(arg)
+                    if debug_insecure_skip_verify:
+                        debugArgs.append("--insecure-skip-verify=true")
+                        debugArgs.append("--v=5")
+                    c["command"] = cmd
+                    print(cmd)
+                    if len(debugArgs) == 0:
+                        c.pop("args",{})
+                    else:
+                        c["args"] = debugArgs
+                    c.pop("readinessProbe",{})
+                    c.pop("livenessProbe",{})
+                    c.pop("resources", {})
                 if env != {}:
                     debugEnv = dict([])
                     containerEnvVars = c.get("env")
