@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -51,29 +50,20 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object, options ...
 	log.Info(fmt.Sprintf("Updating %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, client.ObjectKeyFromObject(obj)))
 
 	patchOptions := []client.PatchOption{
-		client.ForceOwnership,
 		client.FieldOwner(fieldOwner),
 	}
 	patchOptions = append(patchOptions, options...)
 
-	return cl.Patch(ctx, obj, client.Apply, patchOptions...)
+	return cl.Patch(ctx, obj, client.Merge, patchOptions...)
 }
 
 // PatchStatus will only patch the status subresource of the provided object.
 func PatchStatus(ctx context.Context, cl client.Client, obj client.Object) error {
 	log := log.FromContext(ctx)
 
-	obj.SetManagedFields(nil)
-	obj.SetFinalizers([]string{metav1.FinalizerDeleteDependents})
-
-	if err := setKind(cl, obj); err != nil {
-		return err
-	}
-
 	log.Info(fmt.Sprintf("Patching status %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, client.ObjectKeyFromObject(obj)))
 
-	return cl.Status().Patch(ctx, obj, client.Apply, []client.SubResourcePatchOption{
-		client.ForceOwnership,
+	return cl.Status().Patch(ctx, obj, client.Merge, []client.SubResourcePatchOption{
 		client.FieldOwner(fieldOwner),
 	}...)
 }

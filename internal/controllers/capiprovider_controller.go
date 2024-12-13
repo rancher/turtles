@@ -48,6 +48,7 @@ type CAPIProviderReconciler struct {
 // Reconcile reconciles the CAPIProvider object.
 func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, capiProvider *turtlesv1.CAPIProvider) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
+	log.Info("Reconciling CAPIProvider")
 
 	if !capiProvider.DeletionTimestamp.IsZero() {
 		log.Info("Provider is in the process of deletion, skipping reconcile...")
