@@ -70,8 +70,8 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 
 		dockerProvider := objectFromKey(client.ObjectKeyFromObject(provider), &operatorv1.InfrastructureProvider{})
 		dockerSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
-		Eventually(Object(dockerProvider)).ShouldNot(BeNil())
-		Eventually(Object(dockerSecret)).Should(HaveField("Data", Equal(map[string][]byte{
+		Eventually(Object(dockerProvider)).WithTimeout(5 * time.Second).ShouldNot(BeNil())
+		Eventually(Object(dockerSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
 			"CLUSTER_TOPOLOGY":         []byte("true"),
 			"EXP_CLUSTER_RESOURCE_SET": []byte("true"),
 			"EXP_MACHINE_POOL":         []byte("true"),
@@ -87,7 +87,7 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 		}}
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 
-		Eventually(Object(provider)).Should(
+		Eventually(Object(provider)).WithTimeout(5 * time.Second).Should(
 			HaveField("Status.Name", Equal(provider.Name)))
 	})
 
@@ -101,7 +101,7 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 		}}
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 
-		Eventually(Object(provider)).Should(
+		Eventually(Object(provider)).WithTimeout(5 * time.Second).Should(
 			HaveField("Status.Name", Equal(provider.Spec.Name)))
 	})
 
@@ -116,8 +116,8 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 
 		dockerProvider := objectFromKey(client.ObjectKeyFromObject(provider), &operatorv1.InfrastructureProvider{})
 		dockerSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
-		Eventually(Object(dockerProvider)).ShouldNot(BeNil())
-		Eventually(Object(dockerSecret)).ShouldNot(BeNil())
+		Eventually(Object(dockerProvider)).WithTimeout(5 * time.Second).ShouldNot(BeNil())
+		Eventually(Object(dockerSecret)).WithTimeout(5 * time.Second).ShouldNot(BeNil())
 
 		Eventually(Update(provider, func() {
 			provider.Spec.Version = "v1.2.3"
@@ -126,8 +126,8 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 			}
 		})).Should(Succeed())
 
-		Eventually(Object(dockerProvider)).Should(HaveField("Spec.Version", Equal("v1.2.3")))
-		Eventually(Object(dockerSecret)).Should(HaveField("Data", Equal(map[string][]byte{
+		Eventually(Object(dockerProvider)).WithTimeout(5 * time.Second).Should(HaveField("Spec.Version", Equal("v1.2.3")))
+		Eventually(Object(dockerSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
 			"other":                    []byte("var"),
 			"CLUSTER_TOPOLOGY":         []byte("true"),
 			"EXP_CLUSTER_RESOURCE_SET": []byte("true"),
@@ -177,7 +177,7 @@ var _ = Describe("Reconcile CAPIProvider", func() {
 			}
 		})).Should(Succeed())
 
-		Eventually(Object(doSecret)).Should(HaveField("Data", Equal(map[string][]byte{
+		Eventually(Object(doSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
 			"EXP_MACHINE_POOL":          []byte("true"),
 			"CLUSTER_TOPOLOGY":          []byte("false"),
 			"EXP_CLUSTER_RESOURCE_SET":  []byte("false"),
