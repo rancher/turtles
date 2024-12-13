@@ -54,6 +54,7 @@ var (
 func init() {
 	utilruntime.Must(feature.MutableGates.SetFromMap(map[string]bool{
 		string(feature.PropagateLabels): true,
+		string(feature.ExternalFleet):   true,
 	}))
 }
 

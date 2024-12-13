@@ -51,6 +51,7 @@ const (
 	capiClusterOwner          = "cluster-api.cattle.io/capi-cluster-owner"
 	capiClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
 	v1ClusterMigrated         = "cluster-api.cattle.io/migrated"
+	externalFleetAnnotation   = "provisioning.cattle.io/externally-managed"
 
 	defaultRequeueDuration = 1 * time.Minute
 	trueAnnotationValue    = "true"

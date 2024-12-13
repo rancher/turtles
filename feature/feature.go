@@ -32,6 +32,11 @@ const (
 	// PropagateLabels is used to enable copying the labels from the CAPI cluster
 	// to the Rancher cluster.
 	PropagateLabels featuregate.Feature = "propagate-labels"
+
+	// ExternalFleet allows to disable in-tree management of the Fleet clusters
+	// in the imported rancher clusters, by setting "provisioning.cattle.io/externally-managed"
+	// annotation.
+	ExternalFleet featuregate.Feature = "addon-provider-fleet"
 )
 
 func init() {
@@ -42,4 +47,5 @@ var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	RancherKubeSecretPatch: {Default: false, PreRelease: featuregate.Beta},
 	ManagementV3Cluster:    {Default: false, PreRelease: featuregate.Beta},
 	PropagateLabels:        {Default: false, PreRelease: featuregate.Beta},
+	ExternalFleet:          {Default: false, PreRelease: featuregate.Beta},
 }
