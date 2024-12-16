@@ -11,7 +11,7 @@ require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/onsi/ginkgo/v2 v2.22.0
-	github.com/onsi/gomega v1.36.0
+	github.com/onsi/gomega v1.36.1
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
 	github.com/rancher/turtles/exp/etcdrestore v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.29.9
