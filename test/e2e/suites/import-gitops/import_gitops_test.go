@@ -34,14 +34,14 @@ import (
 
 var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:            artifactsFolder,
@@ -49,7 +49,7 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 			ClusterName:               "clusterv1-docker-kubeadm",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   giteaResult.GitAddress,
+			GitAddr:                   gitAddress,
 			GitAuthSecretName:         e2e.AuthSecretName,
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,
@@ -64,14 +64,14 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
-		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:            artifactsFolder,
@@ -79,7 +79,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 			ClusterName:               "clusterv1-eks",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   giteaResult.GitAddress,
+			GitAddr:                   gitAddress,
 			GitAuthSecretName:         e2e.AuthSecretName,
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,
@@ -93,14 +93,14 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 
 var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:            artifactsFolder,
@@ -108,7 +108,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 			ClusterName:               "cluster-vsphere-kubeadm",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   giteaResult.GitAddress,
+			GitAddr:                   gitAddress,
 			GitAuthSecretName:         e2e.AuthSecretName,
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,
@@ -126,14 +126,14 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 
 var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
-		SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
-			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:            artifactsFolder,
@@ -141,7 +141,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			ClusterName:               "cluster-vsphere-rke2",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   giteaResult.GitAddress,
+			GitAddr:                   gitAddress,
 			GitAuthSecretName:         e2e.AuthSecretName,
 			SkipCleanup:               false,
 			SkipDeletionTest:          false,

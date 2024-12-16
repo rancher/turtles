@@ -48,7 +48,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	)
 
 	BeforeEach(func() {
-		komega.SetClient(setupClusterResult.BootstrapClusterProxy.GetClient())
+		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
 
 		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
@@ -73,11 +73,11 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		lookupResult := &turtlesframework.RancherLookupUserResult{}
 		turtlesframework.RancherLookupUser(ctx, turtlesframework.RancherLookupUserInput{
 			Username:     "admin",
-			ClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			ClusterProxy: bootstrapClusterProxy,
 		}, lookupResult)
 
 		turtlesframework.CreateSecret(ctx, turtlesframework.CreateSecretInput{
-			Creator:   setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Creator:   bootstrapClusterProxy.GetClient(),
 			Name:      credsSecretName,
 			Namespace: "cattle-global-data",
 			Type:      corev1.SecretTypeOpaque,
@@ -109,7 +109,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			}
 		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, []byte(rkeConfig))).To(Succeed(), "Failed apply Digital Ocean RKE config")
+		Expect(bootstrapClusterProxy.Apply(ctx, []byte(rkeConfig))).To(Succeed(), "Failed apply Digital Ocean RKE config")
 
 		cluster, err := envsubst.Eval(string(e2e.V2ProvAzureCluster), func(s string) string {
 			switch s {
@@ -128,24 +128,24 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			}
 		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, []byte(cluster))).To(Succeed(), "Failed apply Digital Ocean cluster config")
+		Expect(bootstrapClusterProxy.Apply(ctx, []byte(cluster))).To(Succeed(), "Failed apply Digital Ocean cluster config")
 
 		By("Waiting for the rancher cluster record to appear")
 		rancherCluster = &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
 			Namespace: "fleet-default",
 			Name:      clusterName,
 		}}
-		Eventually(komega.Get(rancherCluster), e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		Eventually(komega.Get(rancherCluster), e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
 		By("Waiting for the rancher cluster to have a deployed agent")
-		Eventually(komega.Object(rancherCluster), e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-v2prov-create")...).Should(HaveField("Status.AgentDeployed", BeTrue()))
+		Eventually(komega.Object(rancherCluster), e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-v2prov-create")...).Should(HaveField("Status.AgentDeployed", BeTrue()))
 
 		By("Waiting for the rancher cluster to be ready")
-		Eventually(komega.Object(rancherCluster), e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.Ready", BeTrue()))
+		Eventually(komega.Object(rancherCluster), e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.Ready", BeTrue()))
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:           setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Getter:           bootstrapClusterProxy.GetClient(),
 			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
 			Namespace:        rancherCluster.Namespace,
 			RancherServerURL: hostName,
@@ -168,21 +168,21 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, setupClusterResult.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactsFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+"bootstrap"+specName))
+		err := testenv.CollectArtifacts(ctx, bootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactsFolder, bootstrapClusterProxy.GetName(), clusterName+"bootstrap"+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
 		}
 
-		err = testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(artifactsFolder, setupClusterResult.BootstrapClusterProxy.GetName(), clusterName+specName))
+		err = testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(artifactsFolder, bootstrapClusterProxy.GetName(), clusterName+specName))
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}
 
 		By("Deleting cluster from Rancher")
-		err = setupClusterResult.BootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
+		err = bootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
 		Expect(err).NotTo(HaveOccurred(), "Failed to delete rancher cluster")
 
 		By("Waiting for the rancher cluster record to be removed")
-		Eventually(komega.Get(rancherCluster), e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-azure-delete")...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+		Eventually(komega.Get(rancherCluster), e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-azure-delete")...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
 	})
 })

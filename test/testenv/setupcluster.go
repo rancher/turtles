@@ -76,6 +76,9 @@ type SetupTestClusterResult struct {
 
 	// IsolatedHostName is the hostname to use for Rancher in isolated mode
 	IsolatedHostName string
+
+	ClusterName    string
+	KubeconfigPath string
 }
 
 // SetupTestCluster sets up a test cluster for running tests.
@@ -92,8 +95,7 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	result := &SetupTestClusterResult{}
 
 	By("Setting up the bootstrap cluster")
-	result.BootstrapClusterProvider, result.BootstrapClusterProxy = setupCluster(
-		ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion, input.CustomClusterProvider)
+	result.setupCluster(ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion, input.CustomClusterProvider)
 
 	if input.UseExistingCluster {
 		return result
@@ -109,7 +111,7 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	return result
 }
 
-func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster bool, kubernetesVersion string, customClusterProvider CustomClusterProvider) (bootstrap.ClusterProvider, framework.ClusterProxy) {
+func (r *SetupTestClusterResult) setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster bool, kubernetesVersion string, customClusterProvider CustomClusterProvider) {
 	var clusterProvider bootstrap.ClusterProvider
 	kubeconfigPath := ""
 
@@ -134,7 +136,10 @@ func setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *run
 	proxy := framework.NewClusterProxy(clusterName, kubeconfigPath, scheme, framework.WithMachineLogCollector(framework.DockerLogCollector{}))
 	Expect(proxy).ToNot(BeNil(), "Cluster proxy should not be nil")
 
-	return clusterProvider, proxy
+	r.ClusterName = clusterName
+	r.BootstrapClusterProxy = proxy
+	r.BootstrapClusterProvider = clusterProvider
+	r.KubeconfigPath = kubeconfigPath
 }
 
 // getInternalClusterHostname gets the internal by setting it to the IP of the first and only node in the boostrap cluster. Labels the node with
