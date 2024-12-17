@@ -88,7 +88,7 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	).CombinedOutput()
 
 	By("Creating chartmuseum manifests")
-	Expect(input.Proxy.Apply(ctx, input.ChartMuseumManifests)).ShouldNot(HaveOccurred())
+	Expect(Apply(ctx, input.Proxy, input.ChartMuseumManifests)).ShouldNot(HaveOccurred())
 
 	By("Waiting for chartmuseum rollout")
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
@@ -117,7 +117,7 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 		variableGetter := GetVariable(input.Variables)
 		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), variableGetter)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(input.Proxy.Apply(ctx, []byte(ingress))).To(Succeed())
+		Expect(Apply(ctx, input.Proxy, []byte(ingress))).To(Succeed())
 
 		By("Getting git server ingress address")
 		host := GetIngressHost(ctx, GetIngressHostInput{
@@ -136,7 +136,7 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 		Name:            "rancher-turtles-local",
 		Path:            path,
 		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
-		AdditionalFlags: opframework.Flags("--force-update"),
+		AdditionalFlags: opframework.Flags("--force-update", "--insecure-skip-tls-verify"),
 		Kubeconfig:      input.Proxy.GetKubeconfigPath(),
 	}
 

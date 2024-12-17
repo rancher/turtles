@@ -83,7 +83,7 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 	}
 
 	By("Adding CAPI Operator providers")
-	Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersYAML)).To(Succeed(), "Failed to add CAPI operator providers")
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersYAML)).To(Succeed(), "Failed to add CAPI operator providers")
 
 	if len(input.WaitForDeployments) == 0 {
 		By("No deployments to wait for")

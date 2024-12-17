@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: etcdmachinesnapshots.turtles-capi.cattle.io
@@ -116,7 +116,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: etcdsnapshotrestores.turtles-capi.cattle.io
@@ -195,20 +195,20 @@ spec:
                       description: |-
                         The reason for the condition's last transition in CamelCase.
                         The specific API may choose whether or not this field is considered a guaranteed API.
-                        This field may not be empty.
+                        This field may be empty.
                       type: string
                     severity:
                       description: |-
-                        Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        severity provides an explicit classification of Reason code, so the users or machines can immediately
                         understand the current situation and act accordingly.
                         The Severity field MUST be set only when Status=False.
                       type: string
                     status:
-                      description: Status of the condition, one of True, False, Unknown.
+                      description: status of the condition, one of True, False, Unknown.
                       type: string
                     type:
                       description: |-
-                        Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
                         Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
                         can be useful (see .node.status.conditions), the ability to deconflict is important.
                       type: string
@@ -235,7 +235,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-etcdsnapshotrestore-serving-cert
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     turtles-capi.cattle.io: etcd-restore
   name: rke2etcdmachinesnapshotconfigs.turtles-capi.cattle.io
@@ -438,29 +438,7 @@ rules:
   - cluster.x-k8s.io
   resources:
   - clusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cluster.x-k8s.io
-  resources:
   - clusters/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cluster.x-k8s.io
-  resources:
   - machines
   verbs:
   - create
@@ -499,57 +477,7 @@ rules:
   - turtles-capi.cattle.io
   resources:
   - etcdmachinesnapshots
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdmachinesnapshots/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdmachinesnapshots/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
   - etcdsnapshotrestores
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdsnapshotrestores/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
-  - etcdsnapshotrestores/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - turtles-capi.cattle.io
-  resources:
   - rke2etcdmachinesnapshotconfigs
   verbs:
   - create
@@ -562,12 +490,16 @@ rules:
 - apiGroups:
   - turtles-capi.cattle.io
   resources:
+  - etcdmachinesnapshots/finalizers
+  - etcdsnapshotrestores/finalizers
   - rke2etcdmachinesnapshotconfigs/finalizers
   verbs:
   - update
 - apiGroups:
   - turtles-capi.cattle.io
   resources:
+  - etcdmachinesnapshots/status
+  - etcdsnapshotrestores/status
   - rke2etcdmachinesnapshotconfigs/status
   verbs:
   - get

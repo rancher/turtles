@@ -80,8 +80,8 @@ func (r *CAPIImportManagementV3Reconciler) SetupWithManager(ctx context.Context,
 		r.remoteClientGetter = remote.NewClusterClient
 	}
 
-	capiPredicates := predicates.All(log,
-		predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+	capiPredicates := predicates.All(r.Scheme, log,
+		predicates.ResourceHasFilterLabel(r.Scheme, log, r.WatchFilterValue),
 		turtlespredicates.ClusterWithoutImportedAnnotation(log),
 		turtlespredicates.ClusterWithReadyControlPlane(log),
 		turtlespredicates.ClusterOrNamespaceWithImportLabel(ctx, log, r.Client, importLabelName),
@@ -98,25 +98,25 @@ func (r *CAPIImportManagementV3Reconciler) SetupWithManager(ctx context.Context,
 
 	// Watch Rancher managementv3 clusters
 	if err := c.Watch(
-		source.Kind(mgr.GetCache(), &managementv3.Cluster{}),
-		handler.EnqueueRequestsFromMapFunc(r.rancherV3ClusterToCapiCluster(ctx, capiPredicates)),
-	); err != nil {
+		source.Kind[client.Object](mgr.GetCache(), &managementv3.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.rancherV3ClusterToCapiCluster(ctx, capiPredicates)),
+		)); err != nil {
 		return fmt.Errorf("adding watch for Rancher cluster: %w", err)
 	}
 
 	// Watch Rancher provisioningv1 clusters that don't have the migrated annotation and are related to a CAPI cluster
 	if err := c.Watch(
-		source.Kind(mgr.GetCache(), &provisioningv1.Cluster{}),
-		handler.EnqueueRequestsFromMapFunc(r.rancherV1ClusterToCapiCluster(ctx, capiPredicates)),
-	); err != nil {
+		source.Kind[client.Object](mgr.GetCache(), &provisioningv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.rancherV1ClusterToCapiCluster(ctx, capiPredicates)),
+		)); err != nil {
 		return fmt.Errorf("adding watch for Rancher cluster: %w", err)
 	}
 
 	ns := &corev1.Namespace{}
 	if err = c.Watch(
-		source.Kind(mgr.GetCache(), ns),
-		handler.EnqueueRequestsFromMapFunc(namespaceToCapiClusters(ctx, capiPredicates, r.Client)),
-	); err != nil {
+		source.Kind[client.Object](mgr.GetCache(), ns,
+			handler.EnqueueRequestsFromMapFunc(namespaceToCapiClusters(ctx, capiPredicates, r.Client)),
+		)); err != nil {
 		return fmt.Errorf("adding watch for namespaces: %w", err)
 	}
 

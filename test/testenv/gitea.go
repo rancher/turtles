@@ -207,7 +207,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		variableGetter := turtlesframework.GetVariable(input.Variables)
 		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), variableGetter)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(input.BootstrapClusterProxy.Apply(ctx, []byte(ingress))).To(Succeed())
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
 
 		By("Getting git server ingress address")
 		host := turtlesframework.GetIngressHost(ctx, turtlesframework.GetIngressHostInput{

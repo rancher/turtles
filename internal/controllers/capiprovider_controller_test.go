@@ -39,24 +39,25 @@ func objectFromKey(key client.ObjectKey, obj client.Object) client.Object {
 	return obj
 }
 
-var _ = Describe("Reconcile CAPIProvider", func() {
+var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 	var (
 		ns *corev1.Namespace
 	)
 
-	BeforeEach(func() {
-		var err error
-
-		ns, err = testEnv.CreateNamespace(ctx, "capiprovider")
-		Expect(err).ToNot(HaveOccurred())
-		_ = ns
-
+	BeforeAll(func() {
 		r := &CAPIProviderReconciler{
 			Client: testEnv.GetClient(),
 			Scheme: testEnv.GetScheme(),
 		}
 
 		Expect(r.SetupWithManager(ctx, testEnv.Manager, controller.Options{})).ToNot(HaveOccurred())
+	})
+
+	BeforeEach(func() {
+		var err error
+
+		ns, err = testEnv.CreateNamespace(ctx, "capiprovider")
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should create infrastructure docker provider and secret", func() {

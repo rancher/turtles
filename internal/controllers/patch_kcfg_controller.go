@@ -54,7 +54,7 @@ type RancherKubeconfigSecretReconciler struct {
 func (r *RancherKubeconfigSecretReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := log.FromContext(ctx)
 
-	capiPredicates := predicates.All(log,
+	capiPredicates := predicates.All(r.Scheme, log,
 		turtlespredicates.V2ProvClusterOwned(log),
 		turtlespredicates.NameHasSuffix(log, "-kubeconfig"),
 	)

@@ -75,8 +75,8 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		r.remoteClientGetter = remote.NewClusterClient
 	}
 
-	capiPredicates := predicates.All(log,
-		predicates.ResourceHasFilterLabel(log, r.WatchFilterValue),
+	capiPredicates := predicates.All(r.Scheme, log,
+		predicates.ResourceHasFilterLabel(r.Scheme, log, r.WatchFilterValue),
 		turtlespredicates.ClusterWithoutImportedAnnotation(log),
 		turtlespredicates.ClusterWithReadyControlPlane(log),
 		turtlespredicates.ClusterOrNamespaceWithImportLabel(ctx, log, r.Client, importLabelName),
@@ -94,9 +94,9 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	// Watch Rancher provisioningv1 clusters
 	// NOTE: we will import the types from rancher in the future
 	err = c.Watch(
-		source.Kind(mgr.GetCache(), &provisioningv1.Cluster{}),
-		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
-	)
+		source.Kind[client.Object](mgr.GetCache(), &provisioningv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
+		))
 	if err != nil {
 		return fmt.Errorf("adding watch for Rancher cluster: %w", err)
 	}
@@ -104,9 +104,9 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	ns := &corev1.Namespace{}
 
 	err = c.Watch(
-		source.Kind(mgr.GetCache(), ns),
-		handler.EnqueueRequestsFromMapFunc(namespaceToCapiClusters(ctx, capiPredicates, r.Client)),
-	)
+		source.Kind[client.Object](mgr.GetCache(), ns,
+			handler.EnqueueRequestsFromMapFunc(namespaceToCapiClusters(ctx, capiPredicates, r.Client)),
+		))
 	if err != nil {
 		return fmt.Errorf("adding watch for namespaces: %w", err)
 	}
@@ -370,6 +370,7 @@ type CAPICleanupReconciler struct {
 // SetupWithManager sets up reconciler with manager.
 func (r *CAPICleanupReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
+		Named("cleanup").
 		For(&managementv3.Cluster{}).
 		WithOptions(options).
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {

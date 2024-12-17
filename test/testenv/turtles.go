@@ -114,7 +114,7 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 
 	if input.CAPIProvidersSecretYAML != nil {
 		By("Adding CAPI variables secret")
-		Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersSecretYAML)).To(Succeed())
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersSecretYAML)).To(Succeed())
 	}
 
 	chartPath := input.TurtlesChartPath
@@ -185,7 +185,7 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	// TODO: this can probably be covered by the Operator helper
 
 	By("Adding CAPI infrastructure providers")
-	Expect(input.BootstrapClusterProxy.Apply(ctx, input.CAPIProvidersYAML)).To(Succeed())
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersYAML)).To(Succeed())
 
 	By("Waiting for CAPI deployment to be available")
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{

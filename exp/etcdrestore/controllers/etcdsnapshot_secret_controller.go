@@ -68,6 +68,7 @@ func setKind(cl client.Client, obj client.Object) error {
 // SetupWithManager sets up the controller with the Manager.
 func (r *ETCDSnapshotSecretReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
 	err := ctrl.NewControllerManagedBy(mgr).
+		Named("etcdsnapshot-secret").
 		For(&corev1.Secret{}).
 		WithEventFilter(predicate.NewPredicateFuncs(secretFilter)).
 		Complete(reconcile.AsReconciler(mgr.GetClient(), r))

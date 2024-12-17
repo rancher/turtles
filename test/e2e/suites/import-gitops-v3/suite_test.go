@@ -35,6 +35,7 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/framework"
 
+	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -187,7 +188,7 @@ var _ = SynchronizedBeforeSuite(
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Setting the CAAPF config to use hostNetwork")
-		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
+		Expect(turtlesframework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 
 		if !shortTestOnly() && !localTestOnly() {
 			By("Running full tests, deploying additional infrastructure providers")

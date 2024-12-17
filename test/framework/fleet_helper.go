@@ -88,7 +88,7 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	By("Applying GitRepo")
 
 	Eventually(func() error {
-		return input.ClusterProxy.Apply(ctx, renderedTemplate.Bytes())
+		return Apply(ctx, input.ClusterProxy, renderedTemplate.Bytes())
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to appl GitRepo")
 }
 

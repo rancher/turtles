@@ -37,6 +37,7 @@ import (
 	"github.com/rancher/turtles/test/testenv"
 	appsv1 "k8s.io/api/apps/v1"
 
+	turtlesframework "github.com/rancher/turtles/test/framework"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
@@ -202,7 +203,7 @@ var _ = SynchronizedBeforeSuite(
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Setting the CAAPF config to use hostNetwork")
-		Expect(setupClusterResult.BootstrapClusterProxy.Apply(ctx, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
+		Expect(turtlesframework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 
 		giteaInput := testenv.DeployGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
