@@ -46,7 +46,7 @@ jobs:
           password: GITHUB_TOKEN
           image: GHCR_IMAGE
           secret_registry: false
-    uses: ./.github/workflows/release-workflow.yml
+    uses: ./.github/workflows/release.yml
     with:
       password: ${{ matrix.password }}
       username: ${{ matrix.username }}
@@ -56,9 +56,33 @@ jobs:
       secret_registry: ${{ matrix.secret_registry }}
     secrets: inherit
 
+  sign:
+    runs-on: ubuntu-latest
+    needs: [build-push-services]
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+      - name: Sign image with cosign
+        uses: ./.github/workflows/release_sign
+        with:
+          image: ${{ vars[inputs.image] }}
+          digest: ${{ needs.build.outputs.digest }}
+          identity: https://github.com/${{ inputs.org }}/turtles/.github/workflows/nightly-test-release.yml@${{ github.ref }}
+          oids-issuer: https://token.actions.githubusercontent.com
+          registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
+          password: ${{ secrets[inputs.password] }}
+
   release:
     name: Create helm release
-    needs: [build-push-services]
+    needs: [sign]
     runs-on: ubuntu-latest
     env:
       PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
