@@ -26,15 +26,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - fleet.cattle.io
-  resources:
-  - clustergroups
-  - clustergroups/status
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - rollout.turtles-capi.cattle.io
   resources:
   - clusterupgradegroups

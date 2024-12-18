@@ -39,7 +39,6 @@ import (
 	"github.com/go-logr/logr"
 	clusterclassv1 "github.com/rancher/turtles/exp/clusterclass/api/v1alpha1"
 
-	clusterclassv1 "github.com/rancher/turtles/exp/clusterclass/api/v1alpha1"
 	"github.com/rancher/turtles/exp/clusterclass/internal/matcher"
 )
 
@@ -93,7 +92,6 @@ func (r *ClusterUpgradeReconciler) SetupWithManager(ctx context.Context, mgr ctr
 //+kubebuilder:rbac:groups=rollout.turtles-capi.cattle.io,resources=clusterupgradegroupss/finalizers,verbs=update
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusterclasses,verbs=get;list;watch;update;patch
-//+kubebuilder:rbac:groups=fleet.cattle.io,resources=clustergroups;clustergroups/status,verbs=get;list;watch
 
 // Reconcile is used
 func (r *ClusterUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, reterr error) {
@@ -233,14 +231,14 @@ func (r *ClusterUpgradeReconciler) rollout(ctx context.Context, upgradeGroup *cl
 
 	maxUpdates := -1
 	if upgradeGroup.Spec.RolloutStrategy != nil {
-		maxUnavailable := upgradeGroup.Spec.RolloutStrategy.MaxUnavailable.IntVal
+		// TODO: add other scenarios: for now only RollingUpdate is valid
+		maxUnavailable := upgradeGroup.Spec.RolloutStrategy.RollingUpdate.MaxRollouts.IntVal
 		if numNotReady >= int(maxUnavailable) {
 			log.Info("maximum clusters unavailable, no rollout allowed", "maxunavialable", maxUnavailable, "needrebase", numNeedUpdate, "notready", numNotReady)
 
 			return true, nil
 		}
 		maxUpdates = int(maxUnavailable) - numNotReady
-		// TODO: check the other scenarios
 	}
 
 	numUpdated := 0

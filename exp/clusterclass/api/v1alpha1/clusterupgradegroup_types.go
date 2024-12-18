@@ -17,13 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	fleetv1 "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // ClusterUpgradeGroupSpec defines the desired state of ClusterUpgradeGroup
 type ClusterUpgradeGroupSpec struct {
@@ -33,10 +29,51 @@ type ClusterUpgradeGroupSpec struct {
 	// RolloutStrategy controls the rollout of bundles, by defining
 	// partitions, canaries and percentages for cluster availability.
 	// +optional
-	RolloutStrategy *fleetv1.RolloutStrategy `json:"rolloutStrategy,omitempty"`
+	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
 
 	// Targets refer to the clusters that should be upgraded.
 	Targets []ClusterTargets `json:"targets,omitempty"`
+}
+
+type RolloutStrategyType string
+
+const (
+	// RollingUpdateStrategyType updates clusters by using rolling update
+	RollingUpdateStrategyType RolloutStrategyType = "RollingUpdate"
+)
+
+// RolloutStrategy describes how to replace existing machines
+// with new ones.
+type RolloutStrategy struct {
+	// Type of rollout.
+	// Default is RollingUpdate.
+	// +optional
+	Type RolloutStrategyType `json:"type,omitempty"`
+
+	// Rolling update config params. Present only if
+	// RolloutStrategyType = RollingUpdate.
+	// +optional
+	RollingUpdate *RollingUpdate `json:"rollingUpdate,omitempty"`
+}
+
+// RollingUpdate is used to control the desired behavior of rolling update.
+type RollingUpdate struct {
+	// The maximum number of clusters that can be in update state (non-active) during a
+	// rolling update.
+	// +optional
+	MaxRollouts *intstr.IntOrString `json:"maxRollouts,omitempty"`
+	// The delay between subsequent cluster rollouts.
+	// +optional
+	RolloutDelay *intstr.IntOrString `json:"rolloutDelay,omitempty"`
+	// The maximum number of failed attempts before skipping the update for a given
+	// cluster.
+	// +optional
+	MaxFailures *intstr.IntOrString `json:"maxFailures,omitempty"`
+	// NOTE: in future iterations we add a `FailureAction` field here to control the behavior
+	// The action to perform when a cluster rollout is considered a failure.
+	// Defaults is Skip.
+	// +optional
+	// FailureAction FailureActionType `json:"failureAction,omitempty"`
 }
 
 type ClusterTargets struct {

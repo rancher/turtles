@@ -46,156 +46,39 @@ spec:
                   RolloutStrategy controls the rollout of bundles, by defining
                   partitions, canaries and percentages for cluster availability.
                 properties:
-                  autoPartitionSize:
-                    anyOf:
-                    - type: integer
-                    - type: string
+                  rollingUpdate:
                     description: |-
-                      A number or percentage of how to automatically partition clusters if no
-                      specific partitioning strategy is configured.
-                      default: 25%
-                    x-kubernetes-int-or-string: true
-                  maxUnavailable:
-                    anyOf:
-                    - type: integer
-                    - type: string
+                      Rolling update config params. Present only if
+                      RolloutStrategyType = RollingUpdate.
+                    properties:
+                      maxFailures:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        description: |-
+                          The maximum number of failed attempts before skipping the update for a given
+                          cluster.
+                        x-kubernetes-int-or-string: true
+                      maxRollouts:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        description: |-
+                          The maximum number of clusters that can be in update state (non-active) during a
+                          rolling update.
+                        x-kubernetes-int-or-string: true
+                      rolloutDelay:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        description: The delay between subsequent cluster rollouts.
+                        x-kubernetes-int-or-string: true
+                    type: object
+                  type:
                     description: |-
-                      A number or percentage of clusters that can be unavailable during an update
-                      of a bundle. This follows the same basic approach as a deployment rollout
-                      strategy. Once the number of clusters meets unavailable state update will be
-                      paused. Default value is 100% which doesn't take effect on update.
-                      default: 100%
-                    x-kubernetes-int-or-string: true
-                  maxUnavailablePartitions:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: |-
-                      A number or percentage of cluster partitions that can be unavailable during
-                      an update of a bundle.
-                      default: 0
-                    x-kubernetes-int-or-string: true
-                  partitions:
-                    description: |-
-                      A list of definitions of partitions.  If any target clusters do not match
-                      the configuration they are added to partitions at the end following the
-                      autoPartitionSize.
-                    items:
-                      description: Partition defines a separate rollout strategy for
-                        a set of clusters.
-                      properties:
-                        clusterGroup:
-                          description: A cluster group name to include in this partition
-                          type: string
-                        clusterGroupSelector:
-                          description: Selector matching cluster group labels to include
-                            in this partition
-                          properties:
-                            matchExpressions:
-                              description: matchExpressions is a list of label selector
-                                requirements. The requirements are ANDed.
-                              items:
-                                description: |-
-                                  A label selector requirement is a selector that contains values, a key, and an operator that
-                                  relates the key and values.
-                                properties:
-                                  key:
-                                    description: key is the label key that the selector
-                                      applies to.
-                                    type: string
-                                  operator:
-                                    description: |-
-                                      operator represents a key's relationship to a set of values.
-                                      Valid operators are In, NotIn, Exists and DoesNotExist.
-                                    type: string
-                                  values:
-                                    description: |-
-                                      values is an array of string values. If the operator is In or NotIn,
-                                      the values array must be non-empty. If the operator is Exists or DoesNotExist,
-                                      the values array must be empty. This array is replaced during a strategic
-                                      merge patch.
-                                    items:
-                                      type: string
-                                    type: array
-                                required:
-                                - key
-                                - operator
-                                type: object
-                              type: array
-                            matchLabels:
-                              additionalProperties:
-                                type: string
-                              description: |-
-                                matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-                                map is equivalent to an element of matchExpressions, whose key field is "key", the
-                                operator is "In", and the values array contains only "value". The requirements are ANDed.
-                              type: object
-                          type: object
-                          x-kubernetes-map-type: atomic
-                        clusterName:
-                          description: ClusterName is the name of a cluster to include
-                            in this partition
-                          type: string
-                        clusterSelector:
-                          description: Selector matching cluster labels to include
-                            in this partition
-                          properties:
-                            matchExpressions:
-                              description: matchExpressions is a list of label selector
-                                requirements. The requirements are ANDed.
-                              items:
-                                description: |-
-                                  A label selector requirement is a selector that contains values, a key, and an operator that
-                                  relates the key and values.
-                                properties:
-                                  key:
-                                    description: key is the label key that the selector
-                                      applies to.
-                                    type: string
-                                  operator:
-                                    description: |-
-                                      operator represents a key's relationship to a set of values.
-                                      Valid operators are In, NotIn, Exists and DoesNotExist.
-                                    type: string
-                                  values:
-                                    description: |-
-                                      values is an array of string values. If the operator is In or NotIn,
-                                      the values array must be non-empty. If the operator is Exists or DoesNotExist,
-                                      the values array must be empty. This array is replaced during a strategic
-                                      merge patch.
-                                    items:
-                                      type: string
-                                    type: array
-                                required:
-                                - key
-                                - operator
-                                type: object
-                              type: array
-                            matchLabels:
-                              additionalProperties:
-                                type: string
-                              description: |-
-                                matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-                                map is equivalent to an element of matchExpressions, whose key field is "key", the
-                                operator is "In", and the values array contains only "value". The requirements are ANDed.
-                              type: object
-                          type: object
-                          x-kubernetes-map-type: atomic
-                        maxUnavailable:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          description: |-
-                            A number or percentage of clusters that can be unavailable in this
-                            partition before this partition is treated as done.
-                            default: 10%
-                          x-kubernetes-int-or-string: true
-                        name:
-                          description: A user-friendly name given to the partition
-                            used for Display (optional).
-                          type: string
-                      type: object
-                    type: array
+                      Type of rollout.
+                      Default is RollingUpdate.
+                    type: string
                 type: object
               targets:
                 description: Targets refer to the clusters that should be upgraded.

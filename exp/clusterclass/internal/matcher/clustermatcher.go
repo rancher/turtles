@@ -1,7 +1,5 @@
 package matcher
 
-// NOTE: taken from fleet: https://github.com/rancher/fleet/blob/ad2d2d829a122d4203abb02c8fd7a9956b42f497/internal/cmd/controller/target/matcher/clustermatcher.go
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
