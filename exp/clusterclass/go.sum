@@ -103,10 +103,6 @@ github.com/prometheus/common v0.44.0 h1:+5BrQJwiBB9xsMygAB3TNvpQKOwlkc25LbISbrdO
 github.com/prometheus/common v0.44.0/go.mod h1:ofAIvZbQ1e/nugmZGz4/qCb9Ap1VoSTIO7x0VV9VvuY=
 github.com/prometheus/procfs v0.11.1 h1:xRC8Iq1yyca5ypa9n1EZnWZkt7dwcoRPQwX/5gwaUuI=
 github.com/prometheus/procfs v0.11.1/go.mod h1:eesXgaPo1q7lBpVMoMy0ZOFTth9hBn4W/y0/p/ScXhY=
-github.com/rancher/fleet/pkg/apis v0.9.1-rc.2 h1:PbHpCHFQ8Aun8jpxa6zjzy8f6JF/DC+H2Dpiozu7h0Y=
-github.com/rancher/fleet/pkg/apis v0.9.1-rc.2/go.mod h1:FlcdaY4uaK3UkV+9Uz+tjcBNorJJWmlPlW1aJpX8KLs=
-github.com/rancher/wrangler/v2 v2.1.3-0.20240111151217-130953826241 h1:ovXJrygFlpiemr5zsupEN5lhM5nslWXlggRQWLvXJb4=
-github.com/rancher/wrangler/v2 v2.1.3-0.20240111151217-130953826241/go.mod h1:LgpEqT2ATL0MevUsL5rohrAEU419MIPeswsMNHw35d4=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
@@ -231,8 +227,6 @@ k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 h1:LyMgNKD2P8Wn1iAwQU5Ohx
 k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9/go.mod h1:wZK2AVp1uHCp4VamDVgBP2COHZjqD1T68Rf0CM3YjSM=
 k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 h1:qY1Ad8PODbnymg2pRbkyMT/ylpTrCM8P2RJ0yroCyIk=
 k8s.io/utils v0.0.0-20230406110748-d93618cff8a2/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-sigs.k8s.io/cli-utils v0.28.0 h1:gsvwqygoXlW2y8CmKdflQJNZp1Yhi4geATW3/Ei7oYc=
-sigs.k8s.io/cli-utils v0.28.0/go.mod h1:WDVRa5/eQBKntG++uyKdyT+xU7MLdCR4XsgseqL5uX4=
 sigs.k8s.io/cluster-api v1.6.1 h1:I34p/fwgRlEhs+o9cUhKXDwNNfPS3no0yJsd2bJyQVc=
 sigs.k8s.io/cluster-api v1.6.1/go.mod h1:DaxwruDvSaEYq5q6FREDaGzX6UsAVUCA99Sp8vfMHyQ=
 sigs.k8s.io/controller-runtime v0.16.3 h1:2TuvuokmfXvDUamSx1SuAOO3eTyye+47mJCigwG62c4=
