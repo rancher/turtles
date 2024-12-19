@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-        - image: controller
+        - image: ghcr.io/rancher/turtles-clusterclass-operations:dev
           name: manager
