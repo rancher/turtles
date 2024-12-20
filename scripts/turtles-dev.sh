@@ -16,14 +16,18 @@
 
 RANCHER_HOSTNAME=$1
 if [ -z "$RANCHER_HOSTNAME" ]; then
-	echo "You must pass a rancher host name"
-	exit 1
+    echo "You must pass a rancher host name"
+    exit 1
 fi
 
 RANCHER_VERSION=${RANCHER_VERSION:-v2.10.0}
+CAPI_VERSION=${CAPI_VERSION:-v1.8.5}
+CAPRKE2_VERSION=${CAPRKE2_VERSION:-v0.9.0}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 ETCD_CONTROLLER_IMAGE=${ETCD_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
 ETCD_CONTROLLER_IMAGE_TAG=${ETCD_CONTROLLER_IMAGE_TAG:-dev}
+CC_CONTROLLER_IMAGE=${CC_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles-clusterclass-operations}
+CC_CONTROLLER_IMAGE_TAG=${CC_CONTROLLER_IMAGE_TAG:-dev}
 USE_TILT_DEV=${USE_TILT_DEV:-true}
 
 BASEDIR=$(dirname "$0")
@@ -39,61 +43,65 @@ helm repo add ngrok https://charts.ngrok.com
 helm repo update
 
 helm install cert-manager jetstack/cert-manager \
-	--namespace cert-manager \
-	--create-namespace \
-	--set crds.enabled=true
+    --namespace cert-manager \
+    --create-namespace \
+    --set crds.enabled=true
 
 helm upgrade ngrok ngrok/kubernetes-ingress-controller \
-	--install \
-	--wait \
-	--timeout 5m \
-	--set credentials.apiKey=$NGROK_API_KEY \
-	--set credentials.authtoken=$NGROK_AUTHTOKEN
+    --install \
+    --wait \
+    --timeout 5m \
+    --set credentials.apiKey=$NGROK_API_KEY \
+    --set credentials.authtoken=$NGROK_AUTHTOKEN
 
 kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
 
 helm install rancher rancher-latest/rancher \
-	--namespace cattle-system \
-	--create-namespace \
-	--set bootstrapPassword=rancheradmin \
-	--set replicas=1 \
-	--set hostname="$RANCHER_HOSTNAME" \
-	--version="$RANCHER_VERSION" \
-	--wait
+    --namespace cattle-system \
+    --create-namespace \
+    --set bootstrapPassword=rancheradmin \
+    --set replicas=1 \
+    --set hostname="$RANCHER_HOSTNAME" \
+    --version="$RANCHER_VERSION" \
+    --wait
 
 kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 
 kubectl apply -f test/e2e/data/rancher/rancher-service-patch.yaml
-envsubst < test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
+envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 
 # Install the locally build chart of Rancher Turtles
 install_local_rancher_turtles_chart() {
-	# Remove the previous chart directory
-	rm -rf out
-	# Build the chart locally
-	make build-chart
-	# Build the etcdrestore controller image
-	make docker-build
-	# Load the etcdrestore controller image into the kind cluster
-	kind load docker-image $ETCD_CONTROLLER_IMAGE:$ETCD_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
-	# Install the Rancher Turtles using a local chart with 'etcd-snapshot-restore' feature flag enabled
-	# to run etcdrestore controller
-	helm upgrade --install rancher-turtles out/charts/rancher-turtles \
-		-n rancher-turtles-system \
-		--set cluster-api-operator.enabled=true \
-		--set cluster-api-operator.cluster-api.enabled=false \
-		--set rancherTurtles.features.etcd-snapshot-restore.enabled=true \
-		--set rancherTurtles.features.etcd-snapshot-restore.imageVersion=dev \
-		--set rancherTurtles.imageVersion=dev \
-		--dependency-update \
-		--create-namespace --wait \
-		--timeout 180s
+    # Remove the previous chart directory
+    rm -rf out
+    # Build the chart locally
+    make build-chart
+    # Build the etcdrestore controller image
+    make docker-build
+    # Load the etcdrestore controller image into the kind cluster
+    kind load docker-image $ETCD_CONTROLLER_IMAGE:$ETCD_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
+    # Build the clusterclass controller image
+    make docker-build-clusterclass
+    # Load the clusterclass controller image into the kind cluster
+    kind load docker-image $CC_CONTROLLER_IMAGE:$CC_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
+    # Install the Rancher Turtles using a local chart with 'etcd-snapshot-restore' feature flag enabled
+    # to run etcdrestore controller
+    helm upgrade --install rancher-turtles out/charts/rancher-turtles \
+        -n rancher-turtles-system \
+        --set cluster-api-operator.enabled=true \
+        --set cluster-api-operator.cluster-api.enabled=false \
+        --set rancherTurtles.features.etcd-snapshot-restore.enabled=true \
+        --set rancherTurtles.features.etcd-snapshot-restore.imageVersion=dev \
+        --set rancherTurtles.imageVersion=dev \
+        --dependency-update \
+        --create-namespace --wait \
+        --timeout 180s
 }
 
 echo "Installing local Rancher Turtles chart for development..."
 install_local_rancher_turtles_chart
 
 if [ "$USE_TILT_DEV" == "true" ]; then
-	echo "Using Tilt for development..."
-	tilt up
+    echo "Using Tilt for development..."
+    tilt up
 fi
