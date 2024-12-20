@@ -268,7 +268,7 @@ generate-exp-etcdrestore-manifests-api: controller-gen ## Generate ClusterRole a
 
 .PHONY: generate-exp-clusterclass-manifests-api
 generate-exp-clusterclass-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects for experimental API.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/etcdrestore/api/v1alpha1/..." \
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/clusterclass/api/v1alpha1/..." \
 			paths=./exp/clusterclass/internal/controller/... \
 			output:crd:artifacts:config=./exp/clusterclass/config/crd/bases \
 			output:rbac:dir=./exp/clusterclass/config/rbac

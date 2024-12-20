@@ -93,7 +93,7 @@ func (r *ClusterUpgradeReconciler) SetupWithManager(ctx context.Context, mgr ctr
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusterclasses,verbs=get;list;watch;update;patch
 
-// Reconcile is used
+// Reconcile reconciles the ClusterUpgradeGroup object.
 func (r *ClusterUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, reterr error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling ClusterUpgradeGroup")

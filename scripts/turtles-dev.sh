@@ -47,19 +47,6 @@ helm install cert-manager jetstack/cert-manager \
     --create-namespace \
     --set crds.enabled=true
 
-export EXP_CLUSTER_RESOURCE_SET=true
-export CLUSTER_TOPOLOGY=true
-
-helm install capi-operator capi-operator/cluster-api-operator \
-    --create-namespace -n capi-operator-system \
-    --set infrastructure=docker:$CAPI_VERSION \
-    --set core=cluster-api:$CAPI_VERSION \
-    --set controlPlane=rke2:$CAPRKE2_VERSION \
-    --set bootstrap=rke2:$CAPRKE2_VERSION \
-    --timeout 90s --wait
-
-kubectl rollout status deployment capi-operator-cluster-api-operator -n capi-operator-system --timeout=180s
-
 helm upgrade ngrok ngrok/kubernetes-ingress-controller \
     --install \
     --wait \
