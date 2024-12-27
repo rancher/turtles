@@ -589,7 +589,7 @@ spec:
       - args:
         - --leader-elect
         command:
-        - ./etcd-snapshot-restore
+        - /manager
         env:
         - name: POD_NAMESPACE
           valueFrom:
