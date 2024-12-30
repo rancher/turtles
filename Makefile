@@ -594,8 +594,8 @@ test-e2e-push-image: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image-push
 .PHONY: e2e-image
 e2e-image: ## Build and push the image for e2e tests
 	CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-build
-	RELEASE_TAG=v0.0.1 CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e \
-	CONTROLLER_IMAGE_VERSION=v0.0.1 \
+	RELEASE_TAG=$(TAG) CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e \
+	CONTROLLER_IMAGE_VERSION=$(TAG) \
 	$(MAKE) build-chart
 
 .PHONY: e2e-image-build-and-push
@@ -608,11 +608,11 @@ e2e-image-build: ## Build the image for e2e tests
 		--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 		--build-arg goproxy=$(GOPROXY) \
 		--build-arg package=. \
-		--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):v0.0.1
+		--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
 .PHONY: e2e-image-push
 e2e-image-push: ## Push the image for e2e tests
-	docker push $(CONTROLLER_IMG):v0.0.1
+	docker push $(CONTROLLER_IMG):$(TAG)
 
 .PHONY: compile-e2e
 e2e-compile: ## Test e2e compilation
