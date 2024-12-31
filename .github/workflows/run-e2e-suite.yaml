@@ -126,8 +126,8 @@ jobs:
       - name: Cleanup e2e test image
         if: always()
         run: |
-        IMAGE_URL="$(gh api /orgs/rancher/packages/container/turtles-e2e/versions | jq ".[] | select( .metadata.container.tags | contains([\"$TAG\"])) | .url" | sed 's/\"//g')"
-        gh api -X DELETE "$IMAGE_URL"
+          IMAGE_URL="$(gh api /orgs/rancher/packages/container/turtles-e2e/versions | jq ".[] | select( .metadata.container.tags | contains([\"$TAG\"])) | .url" | sed 's/\"//g')"
+          gh api -X DELETE "$IMAGE_URL"
       - name: Send failed status to slack
         if: failure()
         uses: slackapi/slack-github-action@v2.0.0
