@@ -1,10 +1,10 @@
 # Options for analysis running.
 run:
   go: "1.22"
-  skip-files:
-    - ".*_test\\.go$"
   allow-parallel-runners: true
 issues:
+  exclude-files:
+    - ".*_test\\.go$"
   include:
     - EXC0012
     - EXC0014
@@ -137,33 +137,22 @@ linters:
     - tagliatelle
     - exhaustruct
     - exhaustive
-    - exhaustivestruct
-    - maligned
     - funlen
     - wrapcheck
-    - goerr113  
+    - err113
     - paralleltest
     - varnamelen
     - cyclop
     - gochecknoglobals
     - gochecknoinits
+    - mnd
     - nonamedreturns
     - gocritic
     - nlreturn
-    - gomnd
     - ireturn
     - depguard
     - containedctx 
     - godox
-    # The following are all deprecated linters
-    - deadcode
-    - ifshort
-    - varcheck
-    - scopelint
-    - interfacer
-    - structcheck
-    - golint
-    - nosnakecase
     # Disabled because of generics
     - rowserrcheck
     - sqlclosecheck
