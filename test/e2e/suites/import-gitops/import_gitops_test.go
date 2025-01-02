@@ -46,6 +46,7 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:            artifactsFolder,
 			ClusterTemplate:           e2e.CAPIDockerKubeadm,
+			AdditionalTemplates:       [][]byte{e2e.CAPIKindnet},
 			ClusterName:               "clusterv1-docker-kubeadm",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),

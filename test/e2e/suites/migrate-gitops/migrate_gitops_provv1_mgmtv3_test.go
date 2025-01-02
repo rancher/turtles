@@ -47,6 +47,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
+			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-migrated",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
