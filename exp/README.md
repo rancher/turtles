@@ -42,12 +42,9 @@ export WORKER_MACHINE_COUNT=1
 export CLUSTER_NAME=rke2
 export KUBERNETES_VERSION=v1.30.0
 export RKE2_VERSION=v1.31.0+rke2r1
+export RKE2_CNI=calico
 
-# Prevent replacing lb-config variables by envsubst
-export address='$address'
-export server='$server'
-
-envsubst < test/e2e/data/cluster-templates/docker-rke2.yaml | kubectl apply -f -
+envsubst '${CLUSTER_NAME} ${WORKER_MACHINE_COUNT} ${RKE2_VERSION} ${CONTROL_PLANE_MACHINE_COUNT} ${KUBERNETES_VERSION} ${RKE2_CNI}' < test/e2e/data/cluster-templates/docker-rke2.yaml | kubectl apply -f -
 ```
 
 ## Performing a manual snapshot

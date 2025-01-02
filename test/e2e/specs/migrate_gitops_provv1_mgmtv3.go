@@ -61,6 +61,7 @@ type MigrateToV3UsingGitOpsSpecInput struct {
 
 	ClusterctlBinaryPath        string
 	ClusterTemplate             []byte
+	AdditionalTemplates         [][]byte
 	ClusterName                 string
 	AdditionalTemplateVariables map[string]string
 
@@ -294,6 +295,16 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 			OutputFilePath:                clusterPath,
 			AddtionalEnvironmentVariables: additionalVars,
 		})).To(Succeed())
+
+		for n, template := range input.AdditionalTemplates {
+			templatePath := filepath.Join(clustersDir, fmt.Sprintf("%s-template-%d.yaml", input.ClusterName, n))
+			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+				Getter:                        input.E2EConfig.GetVariable,
+				Template:                      template,
+				OutputFilePath:                templatePath,
+				AddtionalEnvironmentVariables: additionalVars,
+			})).To(Succeed())
+		}
 
 		fleetPath := filepath.Join(clustersDir, "fleet.yaml")
 		turtlesframework.FleetCreateFleetFile(ctx, turtlesframework.FleetCreateFleetFileInput{

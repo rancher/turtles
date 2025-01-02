@@ -43,6 +43,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
+			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-auto-import-kubeadm",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
@@ -62,7 +63,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 	})
 })
 
-var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -76,6 +77,7 @@ var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete 
 			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
 			ArtifactFolder:                 artifactsFolder,
 			ClusterTemplate:                e2e.CAPIDockerRKE2,
+			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-auto-import-rke2",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),

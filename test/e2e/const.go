@@ -96,6 +96,9 @@ var (
 	//go:embed data/cluster-templates/vsphere-rke2.yaml
 	CAPIvSphereRKE2 []byte
 
+	//go:embed data/cni/kindnet.yaml
+	CAPIKindnet []byte
+
 	//go:embed data/cluster-api-addon-provider-fleet/host-network-patch.yaml
 	AddonProviderFleetHostNetworkPatch []byte
 

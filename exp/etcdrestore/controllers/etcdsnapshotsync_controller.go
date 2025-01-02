@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 - 2024 SUSE LLC
+Copyright © 2023 - 2025 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +46,7 @@ type EtcdSnapshotSyncReconciler struct {
 	WatchFilterValue string
 
 	controller controller.Controller
-	Tracker    *remote.ClusterCacheTracker
+	Tracker    clustercache.ClusterCache
 }
 
 func (r *EtcdSnapshotSyncReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
@@ -131,13 +131,12 @@ func (r *EtcdSnapshotSyncReconciler) watchEtcdSnapshotFiles(ctx context.Context,
 
 	log.V(5).Info("Setting up watch on ETCDSnapshotFile")
 
-	return r.Tracker.Watch(ctx, remote.WatchInput{
+	return r.Tracker.Watch(ctx, capiutil.ObjectKey(cluster), clustercache.NewWatcher(clustercache.WatcherOptions{
 		Name:         "ETCDSnapshotFiles-watcher",
-		Cluster:      capiutil.ObjectKey(cluster),
 		Watcher:      r.controller,
 		Kind:         &k3sv1.ETCDSnapshotFile{},
 		EventHandler: handler.EnqueueRequestsFromMapFunc(r.etcdSnapshotFile(ctx, cluster)),
-	})
+	}))
 }
 
 func (r *EtcdSnapshotSyncReconciler) etcdSnapshotFile(ctx context.Context, cluster *clusterv1.Cluster) handler.MapFunc {
