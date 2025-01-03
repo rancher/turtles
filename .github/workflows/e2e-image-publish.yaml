@@ -1,0 +1,30 @@
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  TAG: v0.0.1
+
+jobs:
+  publish_e2e_image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: setupGo
+        uses: actions/setup-go@v5.2.0
+        with:
+          go-version: "=1.22.10"
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push e2e image
+        run: make e2e-image-build-and-push
