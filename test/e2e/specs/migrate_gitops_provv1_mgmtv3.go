@@ -54,12 +54,12 @@ type MigrateToV3UsingGitOpsSpecInput struct {
 	E2EConfig             *clusterctl.E2EConfig
 	BootstrapClusterProxy framework.ClusterProxy
 	ClusterctlConfigPath  string
-	ArtifactFolder        string
+	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
 	RancherServerURL      string
-	HelmBinaryPath        string
-	ChartPath             string
+	HelmBinaryPath        string `env:"HELM_BINARY_PATH"`
+	ChartPath             string `env:"TURTLES_PATH"`
 
-	ClusterctlBinaryPath        string
+	ClusterctlBinaryPath        string `env:"CLUSTERCTL_BINARY_PATH"`
 	ClusterTemplate             []byte
 	AdditionalTemplates         [][]byte
 	ClusterName                 string
@@ -77,9 +77,9 @@ type MigrateToV3UsingGitOpsSpecInput struct {
 	WorkerMachineCount *int
 
 	GitAddr           string
-	GitAuthSecretName string
+	GitAuthSecretName string `envDefault:"basic-auth-secret"`
 
-	SkipCleanup      bool
+	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool
 
 	LabelNamespace bool
@@ -211,6 +211,8 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
 		input = inputGetter()
+		Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(input.ClusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. input.ClusterctlConfigPath must be an existing file when calling %s spec", specName)
@@ -290,7 +292,6 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 
 		clusterPath := filepath.Join(clustersDir, fmt.Sprintf("%s.yaml", input.ClusterName))
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-			Getter:                        input.E2EConfig.GetVariable,
 			Template:                      input.ClusterTemplate,
 			OutputFilePath:                clusterPath,
 			AddtionalEnvironmentVariables: additionalVars,
@@ -299,7 +300,6 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 		for n, template := range input.AdditionalTemplates {
 			templatePath := filepath.Join(clustersDir, fmt.Sprintf("%s-template-%d.yaml", input.ClusterName, n))
 			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-				Getter:                        input.E2EConfig.GetVariable,
 				Template:                      template,
 				OutputFilePath:                templatePath,
 				AddtionalEnvironmentVariables: additionalVars,

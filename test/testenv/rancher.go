@@ -18,7 +18,6 @@ package testenv
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -33,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/yaml"
@@ -45,46 +43,46 @@ type DeployRancherInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// HelmExtraValuesPath is the path to the Helm extra values file.
-	HelmExtraValuesPath string
+	HelmExtraValuesPath string `env:",expand" envDefault:"${HELM_EXTRA_VALUES_FOLDER}/deploy-rancher.yaml"`
 
 	// InstallCertManager is the flag indicating whether to install Cert Manager.
-	InstallCertManager bool
+	InstallCertManager bool `env:"INSTALL_CERT_MANAGER" envDefault:"true"`
 
 	// CertManagerChartPath is the path to the Cert Manager chart.
-	CertManagerChartPath string
+	CertManagerChartPath string `env:"CERT_MANAGER_PATH"`
 
 	// CertManagerUrl is the URL for Cert Manager.
-	CertManagerUrl string
+	CertManagerUrl string `env:"CERT_MANAGER_URL"`
 
 	// CertManagerRepoName is the repository name for Cert Manager.
-	CertManagerRepoName string
+	CertManagerRepoName string `env:"CERT_MANAGER_REPO_NAME"`
 
 	// RancherChartRepoName is the repository name for Rancher chart.
-	RancherChartRepoName string
+	RancherChartRepoName string `env:"RANCHER_ALPHA_REPO_NAME"`
 
 	// RancherChartURL is the URL for Rancher chart.
-	RancherChartURL string
+	RancherChartURL string `env:"RANCHER_ALPHA_URL"`
 
 	// RancherChartPath is the path to the Rancher chart.
-	RancherChartPath string
+	RancherChartPath string `env:"RANCHER_ALPHA_PATH"`
 
 	// RancherVersion is the version of Rancher.
-	RancherVersion string
+	RancherVersion string `env:"RANCHER_ALPHA_VERSION"`
 
 	// RancherImageTag is the image tag for Rancher.
 	RancherImageTag string
 
 	// RancherNamespace is the namespace for Rancher.
-	RancherNamespace string
+	RancherNamespace string `env:"RANCHER_NAMESPACE" envDefault:"cattle-system"`
 
 	// RancherHost is the host for Rancher.
-	RancherHost string
+	RancherHost string `env:"RANCHER_HOSTNAME"`
 
 	// RancherPassword is the password for Rancher.
-	RancherPassword string
+	RancherPassword string `env:"RANCHER_PASSWORD"`
 
 	// RancherFeatures are the features for Rancher.
 	RancherFeatures string
@@ -93,10 +91,10 @@ type DeployRancherInput struct {
 	RancherPatches [][]byte
 
 	// RancherWaitInterval is the wait interval for Rancher.
-	RancherWaitInterval []interface{}
+	RancherWaitInterval []interface{} `envDefault:"15m,30s"`
 
 	// ControllerWaitInterval is the wait interval for the controller.
-	ControllerWaitInterval []interface{}
+	ControllerWaitInterval []interface{} `envDefault:"15m,10s"`
 
 	// RancherIngressConfig is the ingress configuration for Rancher.
 	RancherIngressConfig []byte
@@ -109,9 +107,6 @@ type DeployRancherInput struct {
 
 	// Development is the flag indicating whether it is a development environment.
 	Development bool
-
-	// Variables is the collection of variables.
-	Variables turtlesframework.VariableCollection
 }
 
 type deployRancherValuesFile struct {
@@ -136,7 +131,15 @@ type deployRancherIngressValuesFile struct {
 // If RancherIngressConfig is provided, the function sets up the ingress for Rancher.
 // If RancherServicePatch is provided, the function updates the Rancher service.
 // The function waits for the Rancher webhook rollout and the fleet controller rollout.
-func DeployRancher(ctx context.Context, input DeployRancherInput) {
+func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInstallHookResult {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
+	By("Running rancher pre-install hook")
+	rancherHookResult := PreRancherInstallHook(&PreRancherInstallHookInput{
+		Ctx:          ctx,
+		RancherInput: &input,
+	})
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancher")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancher")
@@ -262,12 +265,10 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Updating rancher configuration")
-	variableGetter := turtlesframework.GetVariable(input.Variables)
 	for _, patch := range input.RancherPatches {
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Proxy:    input.BootstrapClusterProxy,
 			Template: patch,
-			Getter:   variableGetter,
 			AddtionalEnvironmentVariables: map[string]string{
 				e2e.RancherHostnameVar: input.RancherHost,
 			},
@@ -301,6 +302,8 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) {
 	Eventually(func() error {
 		return input.BootstrapClusterProxy.GetClient().DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace("cattle-fleet-system"), client.MatchingLabels{"app": "fleet-controller"})
 	}, input.ControllerWaitInterval...).ShouldNot(HaveOccurred())
+
+	return rancherHookResult
 }
 
 // RestartRancherInput represents the input parameters for restarting Rancher.
@@ -309,15 +312,17 @@ type RestartRancherInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// RancherNamespace is the namespace where Rancher is deployed.
-	RancherNamespace string
+	RancherNamespace string `envDefault:"cattle-system"`
 
 	// RancherWaitInterval is the wait interval for Rancher restart.
-	RancherWaitInterval []interface{}
+	RancherWaitInterval []interface{} `envDefault:"15m,10s"`
 }
 
 // RestartRancher restarts the Rancher application by killing its pods.
 // It expects the required input parameters to be non-nil.
 func RestartRancher(ctx context.Context, input RestartRancherInput) {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RestartRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RestartRancher")
 	Expect(input.RancherNamespace).ToNot(BeEmpty(), "RancherNamespace is required for RestartRancher")
@@ -349,43 +354,43 @@ type RancherDeployIngressInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// HelmExtraValuesPath is the path to the Helm extra values file.
-	HelmExtraValuesPath string
+	HelmExtraValuesPath string `env:",expand" envDefault:"${HELM_EXTRA_VALUES_FOLDER}/deploy-rancher-ingress.yaml"`
 
 	// CustomIngress is the custom ingress to be deployed.
 	CustomIngress []byte
 
 	// CustomIngressNamespace is the namespace for the custom ingress.
-	CustomIngressNamespace string
+	CustomIngressNamespace string `envDefault:"ingress-nginx"`
 
 	// CustomIngressDeployment is the deployment name for the custom ingress.
-	CustomIngressDeployment string
+	CustomIngressDeployment string `envDefault:"ingress-nginx-controller"`
 
 	// IngressWaitInterval is the wait interval for the ingress deployment.
-	IngressWaitInterval []interface{}
+	IngressWaitInterval []interface{} `envDefault:"15m,30s"`
 
 	// DefaultIngressClassPatch is the default ingress class patch.
 	DefaultIngressClassPatch []byte
 
 	// IngressType is the type of ingress to be deployed.
-	IngressType IngressType
+	IngressType IngressType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
 
 	// NgrokApiKey is the API key for Ngrok.
-	NgrokApiKey string
+	NgrokApiKey string `env:"NGROK_API_KEY"`
 
 	// NgrokAuthToken is the authentication token for Ngrok.
-	NgrokAuthToken string
+	NgrokAuthToken string `env:"NGROK_AUTHTOKEN"`
 
 	// NgrokPath is the path to the Ngrok binary.
-	NgrokPath string
+	NgrokPath string `env:"NGROK_PATH"`
 
 	// NgrokRepoName is the name of the Ngrok repository.
-	NgrokRepoName string
+	NgrokRepoName string `env:"NGROK_REPO_NAME"`
 
 	// NgrokRepoURL is the URL of the Ngrok repository.
-	NgrokRepoURL string
+	NgrokRepoURL string `env:"NGROK_URL"`
 }
 
 // RancherDeployIngress deploys an ingress based on the provided input.
@@ -404,7 +409,8 @@ type RancherDeployIngressInput struct {
 func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherDeployIngress")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RancherDeployIngress")
-	Expect(input.IngressType).ToNot(BeEmpty(), "IngressType is required for RancherDeployIngress")
+
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	komega.SetClient(input.BootstrapClusterProxy.GetClient())
 	komega.SetContext(ctx)
@@ -412,9 +418,6 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 	switch input.IngressType {
 	case CustomIngress:
 		Expect(input.CustomIngress).ToNot(BeEmpty(), "CustomIngress is required when using custom ingress")
-		Expect(input.CustomIngressNamespace).ToNot(BeEmpty(), "CustomIngressNamespace is required when using custom ingress")
-		Expect(input.CustomIngressDeployment).ToNot(BeEmpty(), "CustomIngressDeployment is required when using custom ingress")
-		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when using custom ingress")
 		deployIsolatedModeIngress(ctx, input)
 	case NgrokIngress:
 		Expect(input.NgrokApiKey).ToNot(BeEmpty(), "NgrokApiKey is required when using ngrok ingress")
@@ -425,7 +428,6 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 		Expect(input.HelmExtraValuesPath).ToNot(BeNil(), "HelmExtraValuesPath is when using ngrok ingress")
 		deployNgrokIngress(ctx, input)
 	case EKSNginxIngress:
-		Expect(input.IngressWaitInterval).ToNot(BeNil(), "IngressWaitInterval is required when using eks ingress")
 		deployEKSIngress(input)
 	}
 }
@@ -533,17 +535,17 @@ type PreRancherInstallHookInput struct {
 	// Ctx is the context for the hook execution.
 	Ctx context.Context
 
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+
 	// RancherInput is the input parameters for deploying Rancher.
-	RancherInput *DeployRancherInput
+	RancherInput *DeployRancherInput `env:",init"`
 
-	// PreSetupOutput is the output of the pre-management cluster setup.
-	PreSetupOutput PreManagementClusterSetupResult
+	// IngressWaitInterval is the interval to wait between ingress checks.
+	IngressWaitInterval []interface{} `envDefault:"15m,10s"`
 
-	// SetupClusterResult is the result of setting up the test cluster.
-	SetupClusterResult *SetupTestClusterResult
-
-	// E2EConfig is the E2E configuration for the cluster.
-	E2EConfig *clusterctl.E2EConfig
+	// RancherHostname is a maunally specified RancherHostname value
+	RancherHostname string `env:"RANCHER_HOSTNAME"`
 }
 
 // PreRancherInstallHookResult represents the result of a pre-Rancher install hook.
@@ -560,49 +562,48 @@ type PreRancherInstallHookResult struct {
 // If the infrastructure type is e2e.ManagementClusterEnvironmentKind, it sets the Rancher ingress config and service patch based on the provided values.
 // The function returns the host name as part of the PreRancherInstallHookResult.
 func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallHookResult {
+	Expect(e2e.Parse(input)).To(Succeed(), "Failed to parse environment variables")
+
 	hostName := ""
 
-	infrastructureType := e2e.ManagementClusterEnvironmentType(input.E2EConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
-
-	switch e2e.ManagementClusterEnvironmentType(infrastructureType) {
+	switch input.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		By("Getting ingress hostname")
 		svcRes := &WaitForServiceIngressHostnameResult{}
 		WaitForServiceIngressHostname(input.Ctx, WaitForServiceIngressHostnameInput{
-			BootstrapClusterProxy: input.SetupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy: input.RancherInput.BootstrapClusterProxy,
 			ServiceName:           "ingress-nginx-controller",
 			ServiceNamespace:      "ingress-nginx",
-			IngressWaitInterval:   input.E2EConfig.GetIntervals(input.SetupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			IngressWaitInterval:   input.IngressWaitInterval,
 		}, svcRes)
 
 		hostName = svcRes.Hostname
 		input.RancherInput.RancherHost = hostName
 
+		preSetupOutup := PreManagementClusterSetupHook(input)
+
 		By("Deploying ghcr details")
 		turtlesframework.CreateDockerRegistrySecret(input.Ctx, turtlesframework.CreateDockerRegistrySecretInput{
 			Name:                  "regcred",
-			BootstrapClusterProxy: input.SetupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy: input.RancherInput.BootstrapClusterProxy,
 			Namespace:             "rancher-turtles-system",
 			DockerServer:          "https://ghcr.io",
-			DockerUsername:        input.PreSetupOutput.DockerUsername,
-			DockerPassword:        input.PreSetupOutput.DockerPassword,
+			DockerUsername:        preSetupOutup.DockerUsername,
+			DockerPassword:        preSetupOutup.DockerPassword,
 		})
 
 		input.RancherInput.RancherIngressClassName = "nginx"
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
-		hostName = input.SetupClusterResult.IsolatedHostName
+		hostName = getInternalClusterHostname(input.Ctx, input.RancherInput.BootstrapClusterProxy)
 		input.RancherInput.RancherHost = hostName
 	case e2e.ManagementClusterEnvironmentKind:
 		// i.e. we are using ngrok locally
 		input.RancherInput.RancherIngressConfig = e2e.IngressConfig
 		input.RancherInput.RancherServicePatch = e2e.RancherServicePatch
-		hostName = input.E2EConfig.GetVariable(e2e.RancherHostnameVar)
-		input.RancherInput.RancherHost = hostName
-	default:
-		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
+		input.RancherInput.RancherHost = input.RancherHostname
 	}
 
 	return PreRancherInstallHookResult{
-		HostName: hostName,
+		HostName: input.RancherInput.RancherHost,
 	}
 }
