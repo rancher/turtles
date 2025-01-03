@@ -393,40 +393,23 @@ func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesI
 }
 
 // PreRancherTurtlesInstallHook is a function that sets additional values for the Rancher Turtles installation based on the management cluster environment type.
-// If the infrastructure type is e2e.ManagementClusterEnvironmentEKS, the image pull secrets are set to "{regcred}" and the image pull policy is set to "IfNotPresent".
-// If the infrastructure type is e2e.ManagementClusterEnvironmentIsolatedKind or e2e.ManagementClusterEnvironmentKind, the image pull policy is set to "Never".
-// If the infrastructure type is not recognized, the function fails with an error message indicating the invalid infrastructure type.
+// If the infrastructure type is e2e.ManagementClusterEnvironmentEKS, the image pull secrets are set to "{regcred}".
 func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput) {
 	Expect(e2e.Parse(rtInput)).To(Succeed(), "Failed to parse environment variables")
 
 	switch rtInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
-	case e2e.ManagementClusterEnvironmentIsolatedKind:
-		// NOTE: rancher turtles image is loaded into kind manually, we can set the imagePullPolicy to Never
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-	case e2e.ManagementClusterEnvironmentKind:
-		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	}
 }
 
 // PreRancherTurtlesUpgradelHook is a function that handles the pre-upgrade hook for Rancher Turtles.
 // If the infrastructure type is e2e.ManagementClusterEnvironmentEKS, it sets the imagePullSecrets and imagePullPolicy values in rtUpgradeInput.
-// If the infrastructure type is e2e.ManagementClusterEnvironmentIsolatedKind, it sets the imagePullPolicy value in rtUpgradeInput to "Never".
-// If the infrastructure type is e2e.ManagementClusterEnvironmentKind, it sets the imagePullPolicy value in rtUpgradeInput to "Never".
-// If the infrastructure type is not recognized, it fails with an error message indicating the invalid infrastructure type.
 func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput) {
 	Expect(e2e.Parse(rtUpgradeInput)).To(Succeed(), "Failed to parse environment variables")
 
 	switch rtUpgradeInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
-		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
-	case e2e.ManagementClusterEnvironmentIsolatedKind:
-		// NOTE: rancher turtles image is loaded into kind manually, we can set the imagePullPolicy to Never
-		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-	case e2e.ManagementClusterEnvironmentKind:
-		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	}
 }
