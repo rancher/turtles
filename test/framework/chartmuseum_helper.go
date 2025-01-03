@@ -19,6 +19,7 @@ package framework
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/drone/envsubst/v2"
@@ -62,9 +63,6 @@ type ChartMuseumInput struct {
 
 	// CustomIngressConfig is the custom ingress configuration.
 	CustomIngressConfig []byte
-
-	// Variables is the collection of variables.
-	Variables VariableCollection
 }
 
 // DeployChartMuseum will create a new repo in the Gitea server.
@@ -114,8 +112,7 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 
 	if input.CustomIngressConfig != nil {
 		By("Creating custom ingress for chartmuseum")
-		variableGetter := GetVariable(input.Variables)
-		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), variableGetter)
+		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), os.Getenv)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(Apply(ctx, input.Proxy, []byte(ingress))).To(Succeed())
 
