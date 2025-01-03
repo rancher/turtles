@@ -41,7 +41,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: post-delete-job
-    namespace: rancher-turtles-system
+    namespace: '{{ .Values.rancherTurtles.namespace }}'
 roleRef:
   kind: ClusterRole
   name: post-delete-job-delete-webhooks
