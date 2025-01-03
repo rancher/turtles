@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 
+	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
@@ -50,7 +51,7 @@ type CAPIOperatorDeployProviderInput struct {
 	TemplateData map[string]string
 
 	// WaitDeploymentsReadyInterval is the interval for waiting for deployments to be ready.
-	WaitDeploymentsReadyInterval []interface{}
+	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// WaitForDeployments is the list of deployments to wait for.
 	WaitForDeployments []NamespaceName
@@ -66,6 +67,8 @@ type NamespaceName struct {
 // It iterates over the CAPIProvidersSecretsYAML and applies them. Then, it applies the CAPI operator providers.
 // If there are no deployments to wait for, the function returns. Otherwise, it waits for the provider deployments to be ready.
 func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployProviderInput) {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for CAPIOperatorDeployProvider")
@@ -78,7 +81,6 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Proxy:    input.BootstrapClusterProxy,
 			Template: providerVars,
-			Getter:   input.E2EConfig.GetVariable,
 		})).To(Succeed(), "Failed to apply secret for capi providers")
 	}
 

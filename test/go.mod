@@ -8,6 +8,8 @@ replace github.com/rancher/turtles/exp/etcdrestore => ../exp/etcdrestore
 
 require (
 	code.gitea.io/sdk/gitea v0.19.0
+	dario.cat/mergo v1.0.1
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-git/go-git/v5 v5.13.0
 	github.com/onsi/ginkgo/v2 v2.22.1
@@ -28,7 +30,6 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.1 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect

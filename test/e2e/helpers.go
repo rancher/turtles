@@ -25,8 +25,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
+	"strings"
 
+	"dario.cat/mergo"
+	"github.com/caarlos0/env/v11"
 	. "github.com/onsi/gomega"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -46,6 +50,23 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	networkingv1 "k8s.io/api/networking/v1"
 )
+
+var in []interface{}
+
+var EnvOptions = env.Options{FuncMap: map[reflect.Type]env.ParserFunc{
+	reflect.TypeOf(in): func(v string) (interface{}, error) {
+		return Intervals(strings.Split(v, ",")), nil
+	},
+}}
+
+func Parse(dst any) error {
+	src := reflect.New(reflect.ValueOf(dst).Elem().Type()).Interface()
+	if err := env.ParseWithOptions(src, EnvOptions); err != nil {
+		return err
+	}
+
+	return mergo.Merge(dst, src)
+}
 
 func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
 	turtlesframework.Byf("Creating a namespace for hosting the %q test spec", specName)
@@ -107,7 +128,23 @@ func LoadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	config.Defaults()
 	config.AbsPaths(filepath.Dir(configPath))
 
+	for k, v := range config.Variables {
+		if os.Getenv(k) == "" {
+			Expect(os.Setenv(k, v)).To(Succeed(), "Failed to set default env value")
+		}
+	}
+
 	return config
+}
+
+func Intervals(intervals []string) []interface{} {
+	intervalsConverted := make([]interface{}, len(intervals))
+
+	for i, v := range intervals {
+		intervalsConverted[i] = v
+	}
+
+	return intervalsConverted
 }
 
 func CreateClusterctlLocalRepository(ctx context.Context, config *clusterctl.E2EConfig, repositoryFolder string) string {

@@ -32,22 +32,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
 // DeployRancherTurtlesInput represents the input parameters for deploying Rancher Turtles.
 type DeployRancherTurtlesInput struct {
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// TurtlesChartUrl is the URL of the Turtles chart.
 	TurtlesChartUrl string
 
 	// TurtlesChartPath is the path to the Turtles chart.
-	TurtlesChartPath string
+	TurtlesChartPath string `env:"TURTLES_PATH"`
 
 	// TurtlesChartRepoName is the name of the Turtles chart repository.
 	TurtlesChartRepoName string
@@ -59,7 +61,7 @@ type DeployRancherTurtlesInput struct {
 	CAPIProvidersYAML []byte
 
 	// Namespace is the namespace for deploying Rancher Turtles.
-	Namespace string
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// Image is the image for Rancher Turtles.
 	Image string
@@ -71,7 +73,7 @@ type DeployRancherTurtlesInput struct {
 	Version string
 
 	// WaitDeploymentsReadyInterval is the interval for waiting for deployments to be ready.
-	WaitDeploymentsReadyInterval []interface{}
+	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// AdditionalValues are the additional values for Rancher Turtles.
 	AdditionalValues map[string]string
@@ -83,13 +85,13 @@ type UninstallRancherTurtlesInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// Namespace is the namespace where Rancher Turtles are installed.
-	Namespace string
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// DeleteWaitInterval is the wait interval for deleting resources.
-	DeleteWaitInterval []interface{}
+	DeleteWaitInterval []interface{} `envDefault:"10m,10s"`
 }
 
 // DeployRancherTurtles deploys Rancher Turtles to the specified Kubernetes cluster.
@@ -100,6 +102,9 @@ type UninstallRancherTurtlesInput struct {
 // The function then adds the CAPI infrastructure providers and waits for the CAPI deployments to be available. It waits for the capi-controller-manager, capi-kubeadm-bootstrap-controller-manager,
 // capi-kubeadm-control-plane-controller-manager, capd-controller-manager, rke2-bootstrap-controller-manager, and rke2-control-plane-controller-manager deployments to be available.
 func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	PreRancherTurtlesInstallHook(&input)
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancherTurtles")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for DeployRancherTurtles")
@@ -108,9 +113,6 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required for DeployRancherTurtles")
 
 	namespace := input.Namespace
-	if namespace == "" {
-		namespace = turtlesframework.DefaultRancherTurtlesNamespace
-	}
 
 	if input.CAPIProvidersSecretYAML != nil {
 		By("Adding CAPI variables secret")
@@ -131,6 +133,9 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 			Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 		}
 		_, err := addChart.Run(nil)
+		if err != nil {
+			panic(fmt.Sprintf("%#v", input))
+		}
 		Expect(err).ToNot(HaveOccurred())
 	}
 
@@ -246,17 +251,20 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 
 // UpgradeRancherTurtlesInput represents the input parameters for upgrading Rancher Turtles.
 type UpgradeRancherTurtlesInput struct {
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// Namespace is the namespace for the deployment.
-	Namespace string
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// WaitDeploymentsReadyInterval is the interval for waiting until deployments are ready.
-	WaitDeploymentsReadyInterval []interface{}
+	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// AdditionalValues are the additional values for the Helm chart.
 	AdditionalValues map[string]string
@@ -265,7 +273,7 @@ type UpgradeRancherTurtlesInput struct {
 	Image string
 
 	// Tag is the tag for the deployment.
-	Tag string
+	Tag string `env:"TURTLES_VERSION"`
 
 	// PostUpgradeSteps are the post-upgrade steps to be executed.
 	PostUpgradeSteps []func()
@@ -281,6 +289,8 @@ type UpgradeRancherTurtlesInput struct {
 // 2. Upgrades the rancher-turtles chart by executing the necessary helm commands.
 // 3. Executes any post-upgrade steps provided in the input.
 func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput) {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for UpgradeRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UpgradeRancherTurtles")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UpgradeRancherTurtles")
@@ -289,6 +299,8 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 	Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required for UpgradeRancherTurtles")
 
 	By("Upgrading rancher-turtles chart")
+
+	PreRancherTurtlesUpgradelHook(&input)
 
 	additionalValues := []string{}
 	for name, val := range input.AdditionalValues {
@@ -352,6 +364,8 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 // UninstallRancherTurtles uninstalls the Rancher Turtles chart.
 // It expects the required input parameters to be non-nil.
 func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesInput) {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallRancherTurtles")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UninstallRancherTurtles")
@@ -382,10 +396,10 @@ func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesI
 // If the infrastructure type is e2e.ManagementClusterEnvironmentEKS, the image pull secrets are set to "{regcred}" and the image pull policy is set to "IfNotPresent".
 // If the infrastructure type is e2e.ManagementClusterEnvironmentIsolatedKind or e2e.ManagementClusterEnvironmentKind, the image pull policy is set to "Never".
 // If the infrastructure type is not recognized, the function fails with an error message indicating the invalid infrastructure type.
-func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput, e2eConfig *clusterctl.E2EConfig) {
-	infrastructureType := e2e.ManagementClusterEnvironmentType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
+func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput) {
+	Expect(e2e.Parse(rtInput)).To(Succeed(), "Failed to parse environment variables")
 
-	switch infrastructureType {
+	switch rtInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
@@ -394,8 +408,6 @@ func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput, e2eConfig 
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	case e2e.ManagementClusterEnvironmentKind:
 		rtInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-	default:
-		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
 	}
 }
 
@@ -404,10 +416,10 @@ func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput, e2eConfig 
 // If the infrastructure type is e2e.ManagementClusterEnvironmentIsolatedKind, it sets the imagePullPolicy value in rtUpgradeInput to "Never".
 // If the infrastructure type is e2e.ManagementClusterEnvironmentKind, it sets the imagePullPolicy value in rtUpgradeInput to "Never".
 // If the infrastructure type is not recognized, it fails with an error message indicating the invalid infrastructure type.
-func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput, e2eConfig *clusterctl.E2EConfig) {
-	infrastructureType := e2e.ManagementClusterEnvironmentType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
+func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput) {
+	Expect(e2e.Parse(rtUpgradeInput)).To(Succeed(), "Failed to parse environment variables")
 
-	switch infrastructureType {
+	switch rtUpgradeInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "IfNotPresent"
@@ -416,7 +428,5 @@ func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput, e
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 	case e2e.ManagementClusterEnvironmentKind:
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
-	default:
-		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
 	}
 }

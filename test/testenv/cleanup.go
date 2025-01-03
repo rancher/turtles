@@ -27,6 +27,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/rancher/turtles/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -36,15 +37,17 @@ type CleanupTestClusterInput struct {
 	SetupTestClusterResult
 
 	// SkipCleanup indicates whether to skip the cleanup process.
-	SkipCleanup bool
+	SkipCleanup bool `env:"SKIP_RESOURCE_CLEANUP"`
 
 	// ArtifactFolder specifies the folder where artifacts are stored.
-	ArtifactFolder string
+	ArtifactFolder string `env:"ARTIFACTS_FOLDER"`
 }
 
 // CleanupTestCluster is a function that cleans up the test cluster.
 // It expects the required input parameters to be non-nil.
 func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
+	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CleanupTestCluster")
 	Expect(input.SetupTestClusterResult).ToNot(BeNil(), "SetupTestClusterResult is required for CleanupTestCluster")
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for CleanupTestCluster")
