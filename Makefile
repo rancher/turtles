@@ -58,6 +58,7 @@ TEST_DIR := test
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/$(BIN_DIR))
 EXP_ETCDRESTORE_DIR := exp/etcdrestore
+EXP_CLUSTERCLASS_DIR := exp/clusterclass
 
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
@@ -184,6 +185,10 @@ CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
 IID_FILE ?= $(shell mktemp)
 
+# clusterclass
+CLUSTERCLASS_IMAGE_NAME ?= turtles-clusterclass-operations
+CLUSTERCLASS_IMG ?= $(REGISTRY)/$(ORG)/$(CLUSTERCLASS_IMAGE_NAME)
+
 # Release
 # Exclude tags with the prefix 'test/'
 RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
@@ -261,11 +266,19 @@ generate-exp-etcdrestore-manifests-api: controller-gen ## Generate ClusterRole a
 			output:webhook:dir=./exp/etcdrestore/config/webhook \
 			webhook
 
+.PHONY: generate-exp-clusterclass-manifests-api
+generate-exp-clusterclass-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects for experimental API.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/clusterclass/api/v1alpha1/..." \
+			paths=./exp/clusterclass/internal/controller/... \
+			output:crd:artifacts:config=./exp/clusterclass/config/crd/bases \
+			output:rbac:dir=./exp/clusterclass/config/rbac
+
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
 	cd $(TEST_DIR); go mod tidy
 	cd $(EXP_ETCDRESTORE_DIR); go mod tidy
+	cd $(EXP_CLUSTERCLASS_DIR); go mod tidy
 
 .PHONY: generate-go-deepcopy
 generate-go-deepcopy:  ## Run deepcopy generation
@@ -332,6 +345,10 @@ test: $(SETUP_ENVTEST) manifests test-exp-etcdrestore ## Run all generators and 
 test-exp-etcdrestore: $(SETUP_ENVTEST) ## Run tests for experimental etcdrestore API.
 	cd $(EXP_ETCDRESTORE_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
+.PHONY: test-exp-clusterclass
+test-exp-clusterclass: $(SETUP_ENVTEST) ## Run tests for experimental clusterclass API.
+	cd $(EXP_CLUSTERCLASS_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+
 ##@ Build
 
 .PHONY: build
@@ -383,6 +400,35 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
+
+## --------------------------------------
+## Docker - clusterclass
+## --------------------------------------
+
+.PHONY: docker-build-clusterclass ## Build the docker image for clusterclass
+docker-build-clusterclass: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
+	## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
+	# buildx does not support using local registry for multi-architecture images
+	cat $(EXP_CLUSTERCLASS_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
+			--platform $(ARCH) \
+			--load \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/clusterclass \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(CLUSTERCLASS_IMG):$(TAG) --file - --progress=plain
+
+.PHONY: docker-build-and-push-clusterclass
+docker-build-and-push-clusterclass: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-clusterclass targets for all architectures
+	cat $(EXP_CLUSTERCLASS_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
+			--platform $(TARGET_PLATFORMS) \
+			--push \
+			--sbom=true \
+			--attest type=provenance,mode=max \
+			--iidfile=$(IID_FILE) \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./exp/clusterclass \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(CLUSTERCLASS_IMG):$(TAG) --file - --progress=plain
 
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
