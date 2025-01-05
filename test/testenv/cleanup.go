@@ -101,7 +101,7 @@ type CollectArtifactsInput struct {
 	Args []string
 
 	// SecretKeys is the set of secret keys to exclude from output
-	SecretKeys []string
+	SecretKeys []string `envPrefix:"SECRET_" envSeparator:"\n"`
 }
 
 // CollectArtifacts collects artifacts using the provided kubeconfig path, name, and additional arguments.
