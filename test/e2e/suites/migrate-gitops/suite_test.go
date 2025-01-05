@@ -20,23 +20,15 @@ limitations under the License.
 package migrate_gitops
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/gob"
-	"fmt"
-	"path/filepath"
-	"strings"
+	"encoding/json"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/testenv"
-	appsv1 "k8s.io/api/apps/v1"
 
-	turtlesframework "github.com/rancher/turtles/test/framework"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -52,10 +44,6 @@ var (
 var (
 	// e2eConfig to be used for this test, read from configPath.
 	e2eConfig *clusterctl.E2EConfig
-
-	// clusterctlConfigPath to be used for this test, created by generating a clusterctl local repository
-	// with the providers specified in the configPath.
-	clusterctlConfigPath string
 
 	// hostName is the host name for the Rancher Manager server.
 	hostName string
@@ -82,23 +70,11 @@ func TestE2E(t *testing.T) {
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
-		By(fmt.Sprintf("Loading the e2e test configuration from %q", flagVals.ConfigPath))
-		Expect(flagVals.ConfigPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
 		e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
-		e2e.ValidateE2EConfig(e2eConfig)
-
-		artifactsFolder := e2eConfig.GetVariable(e2e.ArtifactsFolderVar)
-
-		preSetupOutput := testenv.PreManagementClusterSetupHook(&testenv.PreRancherInstallHookInput{})
-
-		By(fmt.Sprintf("Creating a clusterctl config into %q", artifactsFolder))
-		clusterctlConfigPath = e2e.CreateClusterctlLocalRepository(ctx, e2eConfig, filepath.Join(artifactsFolder, "repository"))
 
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-			E2EConfig:             e2eConfig,
-			ClusterctlConfigPath:  clusterctlConfigPath,
-			Scheme:                e2e.InitScheme(),
-			CustomClusterProvider: preSetupOutput.CustomClusterProvider,
+			E2EConfig: e2eConfig,
+			Scheme:    e2e.InitScheme(),
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
@@ -107,91 +83,56 @@ var _ = SynchronizedBeforeSuite(
 			DefaultIngressClassPatch: e2e.IngressClassPatch,
 		})
 
-		rancherInput := testenv.DeployRancherInput{
+		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			RancherHost:           hostName,
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
-		}
+		})
 
-		rancherHookResult := testenv.DeployRancher(ctx, rancherInput)
-
-		chartMuseumDeployInput := testenv.DeployChartMuseumInput{
+		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		}
+		})
 
-		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
-
-		rtInput := testenv.DeployRancherTurtlesInput{
+		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			CAPIProvidersYAML:     e2e.CapiProviders,
-			Image:                 "ghcr.io/rancher/turtles-e2e",
-			Tag:                   e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-			AdditionalValues:      map[string]string{},
-		}
-
-		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
-		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
-
-		testenv.DeployRancherTurtles(ctx, rtInput)
-
-		By("Waiting for CAAPF deployment to be available")
-		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			AdditionalValues: map[string]string{
+				"rancherTurtles.features.addon-provider-fleet.enabled": "true",
+				"rancherTurtles.features.managementv3-cluster.enabled": "false", // disable the default management.cattle.io/v3 controller
+			},
+			WaitForDeployments: append(testenv.DefaultDeployments, testenv.NamespaceName{
 				Name:      "caapf-controller-manager",
 				Namespace: e2e.RancherTurtlesNamespace,
-			}},
-		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+			}),
+			ConfigurationPatches: [][]byte{e2e.AddonProviderFleetHostNetworkPatch},
+		})
 
-		By("Setting the CAAPF config to use hostNetwork")
-		Expect(turtlesframework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
-
-		giteaInput := testenv.DeployGiteaInput{
+		giteaResult := testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			ValuesFilePath:        "../../data/gitea/values.yaml",
-			Values: map[string]string{
-				"gitea.admin.username": e2eConfig.GetVariable(e2e.GiteaUserNameVar),
-				"gitea.admin.password": e2eConfig.GetVariable(e2e.GiteaUserPasswordVar),
-			},
-			CustomIngressConfig: e2e.GiteaIngress,
-		}
+			ValuesFile:            e2e.GiteaValues,
+			CustomIngressConfig:   e2e.GiteaIngress,
+		})
 
-		giteaResult := testenv.DeployGitea(ctx, giteaInput)
-
-		// encode the e2e config into the byte array.
-		var configBuf bytes.Buffer
-		enc := gob.NewEncoder(&configBuf)
-		Expect(enc.Encode(e2eConfig)).To(Succeed())
-		configStr := base64.StdEncoding.EncodeToString(configBuf.Bytes())
-
-		return []byte(
-			strings.Join([]string{
-				setupClusterResult.ClusterName,
-				setupClusterResult.KubeconfigPath,
-				giteaResult.GitAddress,
-				configStr,
-				rancherHookResult.HostName,
-			}, ","),
-		)
+		data, err := json.Marshal(e2e.Setup{
+			ClusterName:     setupClusterResult.ClusterName,
+			KubeconfigPath:  setupClusterResult.KubeconfigPath,
+			GitAddress:      giteaResult.GitAddress,
+			E2EConfig:       e2eConfig,
+			RancherHostname: rancherHookResult.Hostname,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		return data
 	},
 	func(sharedData []byte) {
-		parts := strings.Split(string(sharedData), ",")
-		Expect(parts).To(HaveLen(5))
+		setup := e2e.Setup{}
+		Expect(json.Unmarshal(sharedData, &setup)).To(Succeed())
 
-		clusterName := parts[0]
-		kubeconfigPath := parts[1]
-		gitAddress = parts[2]
+		gitAddress = setup.GitAddress
+		e2eConfig = setup.E2EConfig
+		hostName = setup.RancherHostname
 
-		configBytes, err := base64.StdEncoding.DecodeString(parts[3])
-		Expect(err).NotTo(HaveOccurred())
-		buf := bytes.NewBuffer(configBytes)
-		dec := gob.NewDecoder(buf)
-		Expect(dec.Decode(&e2eConfig)).To(Succeed())
-
-		bootstrapClusterProxy = capiframework.NewClusterProxy(string(clusterName), string(kubeconfigPath), e2e.InitScheme(), capiframework.WithMachineLogCollector(capiframework.DockerLogCollector{}))
+		bootstrapClusterProxy = capiframework.NewClusterProxy(setup.ClusterName, setup.KubeconfigPath, e2e.InitScheme(), capiframework.WithMachineLogCollector(capiframework.DockerLogCollector{}))
 		Expect(bootstrapClusterProxy).ToNot(BeNil(), "cluster proxy should not be nil")
-
-		hostName = parts[4]
 	},
 )
 

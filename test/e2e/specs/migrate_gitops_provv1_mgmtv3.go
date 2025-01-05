@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -53,11 +52,8 @@ import (
 type MigrateToV3UsingGitOpsSpecInput struct {
 	E2EConfig             *clusterctl.E2EConfig
 	BootstrapClusterProxy framework.ClusterProxy
-	ClusterctlConfigPath  string
 	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
 	RancherServerURL      string
-	HelmBinaryPath        string `env:"HELM_BINARY_PATH"`
-	ChartPath             string `env:"TURTLES_PATH"`
 
 	ClusterctlBinaryPath        string `env:"CLUSTERCTL_BINARY_PATH"`
 	ClusterTemplate             []byte
@@ -76,8 +72,7 @@ type MigrateToV3UsingGitOpsSpecInput struct {
 	// If not specified, 1 will be used.
 	WorkerMachineCount *int
 
-	GitAddr           string
-	GitAuthSecretName string `envDefault:"basic-auth-secret"`
+	GitAddr string
 
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool
@@ -211,11 +206,10 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
 		input = inputGetter()
-		Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+		Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-		Expect(input.ClusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. input.ClusterctlConfigPath must be an existing file when calling %s spec", specName)
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
@@ -267,13 +261,9 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 		repoCloneAddr := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
 			ServerAddr: input.GitAddr,
 			RepoName:   repoName,
-			Username:   input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
-			Password:   input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 		})
 		repoDir := turtlesframework.GitCloneRepo(ctx, turtlesframework.GitCloneRepoInput{
-			Address:  repoCloneAddr,
-			Username: input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
-			Password: input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
+			Address: repoCloneAddr,
 		})
 
 		By("Create fleet repository structure")
@@ -316,23 +306,17 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 
 		turtlesframework.GitCommitAndPush(ctx, turtlesframework.GitCommitAndPushInput{
 			CloneLocation: repoDir,
-			Username:      input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
-			Password:      input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 			CommitMessage: "ci: add clusters bundle",
-			GitPushWait:   input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-gitpush"),
 		})
 
 		By("Applying GitRepo")
 
 		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:             repoName,
-			Namespace:        turtlesframework.FleetLocalNamespace,
-			Branch:           turtlesframework.DefaultBranchName,
-			Repo:             repoCloneAddr,
-			FleetGeneration:  1,
-			Paths:            []string{"clusters"},
-			ClientSecretName: input.GitAuthSecretName,
-			ClusterProxy:     input.BootstrapClusterProxy,
+			Name:            repoName,
+			Repo:            repoCloneAddr,
+			FleetGeneration: 1,
+			Paths:           []string{"clusters"},
+			ClusterProxy:    input.BootstrapClusterProxy,
 		})
 
 		By("Waiting for the CAPI cluster to appear")
@@ -369,27 +353,14 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 		validateLegacyRancherCluster()
 
 		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
-			HelmBinaryPath:        input.HelmBinaryPath,
-			ChartsPath:            input.ChartPath,
-			ChartVersion:          input.E2EConfig.GetVariable(e2e.TurtlesVersionVar),
 			BootstrapClusterProxy: input.BootstrapClusterProxy,
-			WaitInterval:          input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers"),
 		})
 
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
-			BootstrapClusterProxy:        input.BootstrapClusterProxy,
-			HelmBinaryPath:               input.HelmBinaryPath,
-			Namespace:                    turtlesframework.DefaultRancherTurtlesNamespace,
-			Image:                        "ghcr.io/rancher/turtles-e2e",
-			Tag:                          input.E2EConfig.GetVariable(e2e.TurtlesVersionVar),
-			WaitDeploymentsReadyInterval: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers"),
-			SkipCleanup:                  true,
-			AdditionalValues:             map[string]string{},
+			BootstrapClusterProxy: input.BootstrapClusterProxy,
+			SkipCleanup:           true,
+			AdditionalValues:      map[string]string{},
 		}
-
-		// NOTE: this was the default previously in the chart locally and ok as
-		// we where loading the image into kind manually.
-		upgradeInput.AdditionalValues["rancherTurtles.imagePullPolicy"] = "Never"
 
 		upgradeInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "true"
 		upgradeInput.AdditionalValues["rancherTurtles.features.managementv3-cluster-migration.enabled"] = "true"
@@ -431,12 +402,17 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+"bootstrap"+specName))
+		err := testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+			Path: input.ClusterName + "bootstrap" + specName,
+		})
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
 		}
 
-		err = testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
+		err = testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+			KubeconfigPath: originalKubeconfig.TempFilePath,
+			Path:           input.ClusterName + specName,
+		})
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}
@@ -444,13 +420,12 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 		By("Deleting GitRepo from Rancher")
 		turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
 			Name:         repoName,
-			Namespace:    turtlesframework.FleetLocalNamespace,
 			ClusterProxy: input.BootstrapClusterProxy,
 		})
 
 		By("Waiting for the rancher cluster record to be removed")
 		Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
 
-		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }

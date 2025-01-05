@@ -41,7 +41,6 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 		return specs.MigrateToV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-migrated",

@@ -39,7 +39,6 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-auto-import-kubeadm",
@@ -69,7 +68,6 @@ var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIDockerRKE2,
 			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-auto-import-rke2",
@@ -99,7 +97,6 @@ var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CA
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
 			ClusterName:                    "highlander-e2e-topology",
 			ControlPlaneMachineCount:       ptr.To[int](1),
@@ -127,7 +124,6 @@ var _ = Describe("[AWS] [EKS] - [management.cattle.io/v3] Create and delete CAPI
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIAwsEKSMMP,
 			ClusterName:                    "clusterv3-eks",
 			ControlPlaneMachineCount:       ptr.To[int](1),
@@ -155,7 +151,6 @@ var _ = Describe("[GCP] [GKE] - [management.cattle.io/v3] Create and delete CAPI
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIGCPGKE,
 			ClusterName:                    "clusterv3-gke",
 			ControlPlaneMachineCount:       ptr.To[int](1),

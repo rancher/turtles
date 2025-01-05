@@ -51,6 +51,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			CAPIProvidersYAML:     e2e.CapiProvidersLegacy,
 			Version:               "v0.6.0",
 			AdditionalValues:      map[string]string{},
+			WaitForDeployments:    testenv.DefaultDeployments,
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
 
@@ -62,7 +63,6 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			Image:                 "ghcr.io/rancher/turtles-e2e",
 			AdditionalValues:      rtInput.AdditionalValues,
 			PostUpgradeSteps:      []func(){},
 		}

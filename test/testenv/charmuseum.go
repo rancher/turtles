@@ -55,7 +55,7 @@ type DeployChartMuseumInput struct {
 // DeployChartMuseum installs ChartMuseum to the Kubernetes cluster using the provided input parameters.
 // It expects the required input parameters to be non-nil.
 func DeployChartMuseum(ctx context.Context, input DeployChartMuseumInput) {
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	By("Installing ChartMuseum")
 	PreChartMuseumInstallHook(&input)
@@ -82,7 +82,7 @@ func DeployChartMuseum(ctx context.Context, input DeployChartMuseumInput) {
 
 // PreChartMuseumInstallHook is a pre-install hook for ChartMuseum.
 func PreChartMuseumInstallHook(chartMuseumInput *DeployChartMuseumInput) {
-	Expect(e2e.Parse(chartMuseumInput)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(chartMuseumInput)).To(Succeed(), "Failed to parse environment variables")
 
 	switch chartMuseumInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentKind:

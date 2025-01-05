@@ -22,7 +22,6 @@ package update_labels
 import (
 	"fmt"
 	"os"
-	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -168,12 +167,17 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, bootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactsFolder, bootstrapClusterProxy.GetName(), clusterName+"bootstrap"+specName))
+		err := testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+			Path: clusterName + "bootstrap" + specName,
+		})
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
 		}
 
-		err = testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(artifactsFolder, bootstrapClusterProxy.GetName(), clusterName+specName))
+		err = testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+			KubeconfigPath: rancherKubeconfig.TempFilePath,
+			Path:           clusterName + specName,
+		})
 		if err != nil {
 			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
 		}

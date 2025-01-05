@@ -40,7 +40,6 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 		return specs.ETCDSnapshotRestoreInput{
 			E2EConfig:                   e2eConfig,
 			BootstrapClusterProxy:       bootstrapClusterProxy,
-			ClusterctlConfigPath:        flagVals.ConfigPath,
 			ClusterTemplate:             e2e.CAPIDockerRKE2,
 			ClusterName:                 "etcd-snapshot-restore",
 			ControlPlaneMachineCount:    ptr.To[int](1),

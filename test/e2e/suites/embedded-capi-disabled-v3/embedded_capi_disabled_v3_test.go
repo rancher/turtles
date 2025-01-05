@@ -39,7 +39,6 @@ var _ = Describe("[AWS] [EKS] [management.cattle.io/v3] Create and delete CAPI c
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
 			ClusterTemplate:                e2e.CAPIAwsEKSMMP,
 			ClusterName:                    "highlander-e2e-cluster1",
 			ControlPlaneMachineCount:       ptr.To[int](1),

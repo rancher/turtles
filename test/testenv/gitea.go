@@ -58,8 +58,8 @@ type DeployGiteaInput struct {
 	// ChartVersion is the version of the chart.
 	ChartVersion string `env:"GITEA_CHART_VERSION"`
 
-	// ValuesFilePath is the path to the values file.
-	ValuesFilePath string
+	// ValuesFile is the data the values file.
+	ValuesFile []byte
 
 	// Values are the values for the chart.
 	Values map[string]string
@@ -101,7 +101,7 @@ type DeployGiteaResult struct {
 // Depending on the service type, it retrieves the Git server address using the node port, load balancer, or custom ingress.
 // If a username is provided, it waits for the Gitea endpoint to be available and creates a Gitea secret with the username and password.
 func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult {
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 	PreGiteaInstallHook(&input)
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployGitea")
@@ -124,8 +124,18 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		Expect(input.CustomIngressConfig).ToNot(BeEmpty(), "CustomIngressConfig is required for DeployGitea if service type is ClusterIP")
 	}
 
+	if input.Values == nil {
+		input.Values = map[string]string{}
+	}
+
 	if input.Values["service.http.type"] == "" {
 		input.Values["service.http.type"] = string(input.ServiceType)
+	}
+	if input.Values["gitea.admin.username"] == "" {
+		input.Values["gitea.admin.username"] = input.Username
+	}
+	if input.Values["gitea.admin.password"] == "" {
+		input.Values["gitea.admin.password"] = input.Password
 	}
 
 	result := &DeployGiteaResult{}
@@ -155,9 +165,14 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		"--create-namespace",
 		"--wait",
 	)
-	if input.ValuesFilePath != "" {
-		flags = append(flags, "-f", input.ValuesFilePath)
+
+	if input.ValuesFile != nil {
+		giteaValues, err := os.CreateTemp("", "gitea-values.yaml")
+		Expect(err).NotTo(HaveOccurred(), "Failed to create temp file for gitea values")
+		Expect(os.WriteFile(giteaValues.Name(), input.ValuesFile, os.ModePerm)).To(Succeed(), "Failed to write gitea values to tmp file")
+		flags = append(flags, "-f", giteaValues.Name())
 	}
+
 	chart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Path:            fmt.Sprintf("%s/%s", input.ChartRepoName, input.ChartName),
@@ -273,7 +288,7 @@ type UninstallGiteaInput struct {
 // UninstallGitea uninstalls Gitea by removing the Gitea Helm Chart.
 // It expects the required input parameters to be non-nil.
 func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallGitea")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallGitea")
@@ -295,7 +310,7 @@ func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
 // PreGiteaInstallHook is a function that sets the service type for the Gitea input based on the management cluster environment type.
 // It expects the required input parameters to be non-nil.
 func PreGiteaInstallHook(giteaInput *DeployGiteaInput) {
-	Expect(e2e.Parse(giteaInput)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(giteaInput)).To(Succeed(), "Failed to parse environment variables")
 
 	switch giteaInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:

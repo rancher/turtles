@@ -104,6 +104,9 @@ var (
 
 	//go:embed data/gitea/ingress.yaml
 	GiteaIngress []byte
+
+	//go:embed data/gitea/values.yaml
+	GiteaValues []byte
 )
 
 const (
@@ -125,6 +128,11 @@ const (
 	ManagementClusterEnvironmentVar = "MANAGEMENT_CLUSTER_ENVIRONMENT"
 
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
+
+	BootstrapClusterNameVar       = "BOOTSTRAP_CLUSTER_NAME"
+	BootstrapClusterKubeconfigVar = "BOOTSTRAP_CLUSTER_KUBECONFIG_PATH"
+
+	ClusterctlRepositoryFolderVar = "CLUSTERCTL_REPOSITORY_FOLDER"
 
 	KubernetesVersionVar    = "KUBERNETES_VERSION"
 	RancherFeaturesVar      = "RANCHER_FEATURES"

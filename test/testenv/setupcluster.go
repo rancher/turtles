@@ -38,14 +38,17 @@ import (
 
 // SetupTestClusterInput represents the input parameters for setting up a test cluster.
 type SetupTestClusterInput struct {
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+
 	// UseExistingCluster specifies whether to use an existing cluster or create a new one.
 	UseExistingCluster bool `env:"USE_EXISTING_CLUSTER"`
 
+	// RepositoryFolder is the folder for the clusterctl repository
+	RepositoryFolder string `env:"CLUSTERCTL_REPOSITORY_FOLDER,expand" envDefault:"${ARTIFACTS_FOLDER}/repository"`
+
 	// E2EConfig is the configuration for end-to-end testing.
 	E2EConfig *clusterctl.E2EConfig
-
-	// ClusterctlConfigPath is the path to the clusterctl configuration file.
-	ClusterctlConfigPath string
 
 	// Scheme is the runtime scheme.
 	Scheme *runtime.Scheme
@@ -81,16 +84,24 @@ type SetupTestClusterResult struct {
 // SetupTestCluster sets up a test cluster for running tests.
 // It expects the required input parameters to be non-nil.
 func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTestClusterResult {
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for setupTestCluster")
 	Expect(input.E2EConfig).ToNot(BeNil(), "E2EConfig is required for setupTestCluster")
-	Expect(input.ClusterctlConfigPath).ToNot(BeEmpty(), "ClusterctlConfigPath is required for setupTestCluster")
 	Expect(input.Scheme).ToNot(BeNil(), "Scheme is required for setupTestCluster")
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for setupTestCluster")
 
+	e2e.CreateClusterctlLocalRepository(ctx, e2e.CreateClusterctlLocalRepositoryInput{
+		E2EConfig:        input.E2EConfig,
+		RepositoryFolder: input.RepositoryFolder,
+	})
+
 	clusterName := createClusterName(input.E2EConfig.ManagementClusterName)
 	result := &SetupTestClusterResult{}
+
+	if input.CustomClusterProvider == nil && input.EnvironmentType == e2e.ManagementClusterEnvironmentEKS {
+		input.CustomClusterProvider = EKSBootsrapCluster
+	}
 
 	By("Setting up the bootstrap cluster")
 	result.setupCluster(ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion, input.CustomClusterProvider)
@@ -127,6 +138,8 @@ func (r *SetupTestClusterResult) setupCluster(ctx context.Context, config *clust
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
 		Expect(kubeconfigPath).To(BeAnExistingFile(), "Failed to get the kubeconfig file for the bootstrap cluster")
+
+		Expect(os.Setenv(e2e.BootstrapClusterKubeconfigVar, kubeconfigPath)).To(Succeed(), "Failed to setup bootstrap cluster kubeconfig path env")
 	}
 
 	proxy := framework.NewClusterProxy(clusterName, kubeconfigPath, scheme, framework.WithMachineLogCollector(framework.DockerLogCollector{}))
@@ -161,50 +174,7 @@ func getInternalClusterHostname(ctx context.Context, clusterProxy framework.Clus
 }
 
 func createClusterName(baseName string) string {
-	return fmt.Sprintf("%s-%s", baseName, util.RandomString(6))
-}
-
-// PreManagementClusterSetupResult represents the result of pre-management cluster setup.
-type PreManagementClusterSetupResult struct {
-	// IngressType specifies the type of ingress for the cluster.
-	IngressType IngressType
-
-	// DockerUsername is the username for accessing the Docker registry.
-	DockerUsername string
-
-	// DockerPassword is the password for accessing the Docker registry.
-	DockerPassword string
-
-	// CustomClusterProvider represents the custom cluster provider for the cluster.
-	CustomClusterProvider CustomClusterProvider
-}
-
-// PreManagementClusterSetupHook is a function that performs pre-setup tasks for the management cluster.
-// It expects the required input parameters to be non-nil.
-// It checks the environment type and sets the Docker username, Docker password, custom cluster provider, and ingress type accordingly.
-// If the environment type is e2e.ManagementClusterEnvironmentEKS, it expects the GITHUB_USERNAME and GITHUB_TOKEN environment variables to be set.
-// If the environment type is e2e.ManagementClusterEnvironmentIsolatedKind, it sets the ingress type to CustomIngress.
-// If the environment type is e2e.ManagementClusterEnvironmentKind, it sets the ingress type to NgrokIngress.
-// If the environment type is not recognized, it fails with an error message indicating the invalid infrastructure type.
-func PreManagementClusterSetupHook(input *PreRancherInstallHookInput) PreManagementClusterSetupResult {
-	Expect(e2e.Parse(input)).To(Succeed(), "Failed to parse environment variables")
-
-	output := PreManagementClusterSetupResult{}
-
-	switch input.EnvironmentType {
-	case e2e.ManagementClusterEnvironmentEKS:
-		output.DockerUsername = os.Getenv("GITHUB_USERNAME")
-		Expect(output.DockerUsername).NotTo(BeEmpty(), "Github username is required")
-		output.DockerPassword = os.Getenv("GITHUB_TOKEN")
-		Expect(output.DockerPassword).NotTo(BeEmpty(), "Github token is required")
-		output.CustomClusterProvider = EKSBootsrapCluster
-		Expect(output.CustomClusterProvider).NotTo(BeNil(), "EKS custom cluster provider is required")
-		output.IngressType = EKSNginxIngress
-	case e2e.ManagementClusterEnvironmentIsolatedKind:
-		output.IngressType = CustomIngress
-	case e2e.ManagementClusterEnvironmentKind:
-		output.IngressType = NgrokIngress
-	}
-
-	return output
+	name := fmt.Sprintf("%s-%s", baseName, util.RandomString(6))
+	Expect(os.Setenv(e2e.BootstrapClusterNameVar, name)).To(Succeed(), "Failed to set bootstrap cluster name env value")
+	return name
 }

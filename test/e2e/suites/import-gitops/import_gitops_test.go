@@ -42,7 +42,6 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterTemplate:           e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:       [][]byte{e2e.CAPIKindnet},
 			ClusterName:               "clusterv1-docker-kubeadm",
@@ -69,7 +68,6 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
 			ClusterName:               "clusterv1-eks",
 			ControlPlaneMachineCount:  ptr.To[int](1),
@@ -94,7 +92,6 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterTemplate:           e2e.CAPIvSphereKubeadm,
 			ClusterName:               "cluster-vsphere-kubeadm",
 			ControlPlaneMachineCount:  ptr.To[int](1),
@@ -123,7 +120,6 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2eConfig,
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
 			ClusterTemplate:           e2e.CAPIvSphereRKE2,
 			ClusterName:               "cluster-vsphere-rke2",
 			ControlPlaneMachineCount:  ptr.To[int](1),

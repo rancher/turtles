@@ -25,12 +25,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 
-	"dario.cat/mergo"
-	"github.com/caarlos0/env/v11"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -51,21 +49,13 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 )
 
-var in []interface{}
-
-var EnvOptions = env.Options{FuncMap: map[reflect.Type]env.ParserFunc{
-	reflect.TypeOf(in): func(v string) (interface{}, error) {
-		return Intervals(strings.Split(v, ",")), nil
-	},
-}}
-
-func Parse(dst any) error {
-	src := reflect.New(reflect.ValueOf(dst).Elem().Type()).Interface()
-	if err := env.ParseWithOptions(src, EnvOptions); err != nil {
-		return err
-	}
-
-	return mergo.Merge(dst, src)
+// Setup is a shared data structure for parrallel test setup
+type Setup struct {
+	ClusterName     string
+	KubeconfigPath  string
+	GitAddress      string
+	E2EConfig       *clusterctl.E2EConfig
+	RancherHostname string
 }
 
 func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
@@ -84,7 +74,7 @@ func CreateRepoName(specName string) string {
 	return fmt.Sprintf("repo-%s-%s", specName, util.RandomString(6))
 }
 
-func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
 	if !skipCleanup {
 		turtlesframework.Byf("Deleting cluster %s", capiCluster)
 		// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance
@@ -118,6 +108,9 @@ func InitScheme() *runtime.Scheme {
 }
 
 func LoadE2EConfig(configPath string) *clusterctl.E2EConfig {
+	By(fmt.Sprintf("Loading the e2e test configuration from %q", configPath))
+	Expect(configPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
+
 	configData, err := os.ReadFile(configPath)
 	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test config file")
 	Expect(configData).ToNot(BeEmpty(), "The e2e test config file should not be empty")
@@ -128,33 +121,45 @@ func LoadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	config.Defaults()
 	config.AbsPaths(filepath.Dir(configPath))
 
+	replaceVars := []string{}
 	for k, v := range config.Variables {
 		if os.Getenv(k) == "" {
 			Expect(os.Setenv(k, v)).To(Succeed(), "Failed to set default env value")
 		}
+		replaceVars = append(replaceVars, fmt.Sprintf("{%s}", k), os.Getenv(k))
 	}
+
+	imageReplacer := strings.NewReplacer(replaceVars...)
+	for i := range config.Images {
+		containerImage := &config.Images[i]
+		containerImage.Name = imageReplacer.Replace(containerImage.Name)
+	}
+
+	ValidateE2EConfig(config)
 
 	return config
 }
 
-func Intervals(intervals []string) []interface{} {
-	intervalsConverted := make([]interface{}, len(intervals))
+type CreateClusterctlLocalRepositoryInput struct {
+	// E2EConfig to be used for this test, read from configPath.
+	E2EConfig *clusterctl.E2EConfig
 
-	for i, v := range intervals {
-		intervalsConverted[i] = v
-	}
-
-	return intervalsConverted
+	// RepositoryFolder is the folder for the clusterctl repository
+	RepositoryFolder string `env:"CLUSTERCTL_REPOSITORY_FOLDER,expand" envDefault:"${ARTIFACTS_FOLDER}/repository"`
 }
 
-func CreateClusterctlLocalRepository(ctx context.Context, config *clusterctl.E2EConfig, repositoryFolder string) string {
+func CreateClusterctlLocalRepository(ctx context.Context, input CreateClusterctlLocalRepositoryInput) string {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	createRepositoryInput := clusterctl.CreateRepositoryInput{
-		E2EConfig:        config,
-		RepositoryFolder: repositoryFolder,
+		E2EConfig:        input.E2EConfig,
+		RepositoryFolder: input.RepositoryFolder,
 	}
 
+	By(fmt.Sprintf("Creating a clusterctl config repository into %q", input.RepositoryFolder))
+
 	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
-	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
+	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", input.RepositoryFolder)
 	return clusterctlConfig
 }
 

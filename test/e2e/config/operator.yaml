@@ -2,7 +2,7 @@ managementClusterName: rancher-turtles-e2e
 
 images:
 # Use local dev images built source tree;
-- name: ghcr.io/rancher/turtles-e2e:v0.0.1
+- name: "{TURTLES_IMAGE}:{TURTLES_VERSION}"
   loadBehavior: tryLoad
 
 intervals:
@@ -49,6 +49,7 @@ variables:
   RANCHER_ALPHA_URL: "https://releases.rancher.com/server-charts/alpha"
   RANCHER_VERSION: "v2.10.0"
   TURTLES_VERSION: "v0.0.1"
+  TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e"
   TURTLES_PATH: "turtles/rancher-turtles"
   TURTLES_REPO_NAME: "turtles"
   TURTLES_URL: https://rancher.github.io/turtles

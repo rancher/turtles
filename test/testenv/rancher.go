@@ -102,7 +102,6 @@ type DeployRancherInput struct {
 	// RancherServicePatch is the service patch for Rancher.
 	RancherServicePatch []byte
 
-	// RancherIngressClassName is the ingress class name for Rancher.
 	RancherIngressClassName string
 
 	// Development is the flag indicating whether it is a development environment.
@@ -132,7 +131,7 @@ type deployRancherIngressValuesFile struct {
 // If RancherServicePatch is provided, the function updates the Rancher service.
 // The function waits for the Rancher webhook rollout and the fleet controller rollout.
 func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInstallHookResult {
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	By("Running rancher pre-install hook")
 	rancherHookResult := PreRancherInstallHook(&PreRancherInstallHookInput{
@@ -321,7 +320,7 @@ type RestartRancherInput struct {
 // RestartRancher restarts the Rancher application by killing its pods.
 // It expects the required input parameters to be non-nil.
 func RestartRancher(ctx context.Context, input RestartRancherInput) {
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RestartRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RestartRancher")
@@ -334,19 +333,6 @@ func RestartRancher(ctx context.Context, input RestartRancherInput) {
 		return input.BootstrapClusterProxy.GetClient().DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace(input.RancherNamespace), client.MatchingLabels{"app": "rancher"})
 	}, input.RancherWaitInterval...).ShouldNot(HaveOccurred())
 }
-
-type IngressType string
-
-const (
-	// CustomIngress represents a custom ingress type.
-	CustomIngress IngressType = "custom"
-
-	// NgrokIngress represents an ngrok ingress type.
-	NgrokIngress IngressType = "ngrok"
-
-	// EKSNginxIngress represents an EKS nginx ingress type.
-	EKSNginxIngress IngressType = "eks"
-)
 
 // RancherDeployIngressInput represents the input parameters for deploying an ingress in Rancher.
 type RancherDeployIngressInput struct {
@@ -374,8 +360,8 @@ type RancherDeployIngressInput struct {
 	// DefaultIngressClassPatch is the default ingress class patch.
 	DefaultIngressClassPatch []byte
 
-	// IngressType is the type of ingress to be deployed.
-	IngressType IngressType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+	// EnvironmentType is the type of the invironment to select ingress to be deployed.
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
 
 	// NgrokApiKey is the API key for Ngrok.
 	NgrokApiKey string `env:"NGROK_API_KEY"`
@@ -410,16 +396,16 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherDeployIngress")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RancherDeployIngress")
 
-	Expect(e2e.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	komega.SetClient(input.BootstrapClusterProxy.GetClient())
 	komega.SetContext(ctx)
 
-	switch input.IngressType {
-	case CustomIngress:
+	switch input.EnvironmentType {
+	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		Expect(input.CustomIngress).ToNot(BeEmpty(), "CustomIngress is required when using custom ingress")
 		deployIsolatedModeIngress(ctx, input)
-	case NgrokIngress:
+	case e2e.ManagementClusterEnvironmentKind:
 		Expect(input.NgrokApiKey).ToNot(BeEmpty(), "NgrokApiKey is required when using ngrok ingress")
 		Expect(input.NgrokAuthToken).ToNot(BeEmpty(), "NgrokAuthToken is required when using ngrok ingress")
 		Expect(input.NgrokPath).ToNot(BeEmpty(), "NgrokPath is required  when using ngrok ingress")
@@ -427,7 +413,7 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 		Expect(input.NgrokRepoURL).ToNot(BeEmpty(), "NgrokRepoURL is required when using ngrok ingress")
 		Expect(input.HelmExtraValuesPath).ToNot(BeNil(), "HelmExtraValuesPath is when using ngrok ingress")
 		deployNgrokIngress(ctx, input)
-	case EKSNginxIngress:
+	case e2e.ManagementClusterEnvironmentEKS:
 		deployEKSIngress(input)
 	}
 }
@@ -550,8 +536,8 @@ type PreRancherInstallHookInput struct {
 
 // PreRancherInstallHookResult represents the result of a pre-Rancher install hook.
 type PreRancherInstallHookResult struct {
-	// HostName is the hostname of the Rancher installation.
-	HostName string
+	// Hostname is the hostname of the Rancher installation.
+	Hostname string
 }
 
 // PreRancherInstallHook is a function that performs pre-installation tasks for Rancher.
@@ -562,7 +548,7 @@ type PreRancherInstallHookResult struct {
 // If the infrastructure type is e2e.ManagementClusterEnvironmentKind, it sets the Rancher ingress config and service patch based on the provided values.
 // The function returns the host name as part of the PreRancherInstallHookResult.
 func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallHookResult {
-	Expect(e2e.Parse(input)).To(Succeed(), "Failed to parse environment variables")
+	Expect(turtlesframework.Parse(input)).To(Succeed(), "Failed to parse environment variables")
 
 	hostName := ""
 
@@ -580,16 +566,9 @@ func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallH
 		hostName = svcRes.Hostname
 		input.RancherInput.RancherHost = hostName
 
-		preSetupOutup := PreManagementClusterSetupHook(input)
-
 		By("Deploying ghcr details")
 		turtlesframework.CreateDockerRegistrySecret(input.Ctx, turtlesframework.CreateDockerRegistrySecretInput{
-			Name:                  "regcred",
 			BootstrapClusterProxy: input.RancherInput.BootstrapClusterProxy,
-			Namespace:             "rancher-turtles-system",
-			DockerServer:          "https://ghcr.io",
-			DockerUsername:        preSetupOutup.DockerUsername,
-			DockerPassword:        preSetupOutup.DockerPassword,
 		})
 
 		input.RancherInput.RancherIngressClassName = "nginx"
@@ -604,6 +583,6 @@ func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallH
 	}
 
 	return PreRancherInstallHookResult{
-		HostName: input.RancherInput.RancherHost,
+		Hostname: input.RancherInput.RancherHost,
 	}
 }

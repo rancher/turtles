@@ -38,13 +38,13 @@ type FleetCreateGitRepoInput struct {
 	Name string
 
 	// Namespace is the namespace in which the Git repository will be created.
-	Namespace string
+	Namespace string `envDefault:"fleet-local"`
 
 	// Repo is the URL of the Git repository.
 	Repo string
 
 	// Branch is the branch of the Git repository to use.
-	Branch string
+	Branch string `envDefault:"main"`
 
 	// Paths are the paths within the Git repository to sync.
 	Paths []string
@@ -53,7 +53,7 @@ type FleetCreateGitRepoInput struct {
 	FleetGeneration int
 
 	// ClientSecretName is the name of the client secret to use for authentication.
-	ClientSecretName string
+	ClientSecretName string `envDefault:"basic-auth-secret"`
 
 	// ClusterProxy is the ClusterProxy instance for interacting with the cluster.
 	ClusterProxy framework.ClusterProxy
@@ -62,6 +62,8 @@ type FleetCreateGitRepoInput struct {
 // FleetCreateGitRepo will create and apply a GitRepo resource to the cluster. See the Fleet docs
 // for further information: https://fleet.rancher.io/gitrepo-add
 func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for FleetCreateGitRepo")
 	Expect(input.Name).ToNot(BeEmpty(), "Invalid argument. input.Name can't be empty when calling FleetCreateGitRepo")
 	Expect(input.Repo).ToNot(BeEmpty(), "Invalid argument. input.Repo can't be empty when calling FleetCreateGitRepo")
@@ -98,7 +100,7 @@ type FleetDeleteGitRepoInput struct {
 	Name string
 
 	// Namespace is the namespace of the Git repository to be deleted.
-	Namespace string
+	Namespace string `envDefault:"fleet-local"`
 
 	// ClusterProxy is the cluster proxy used for interacting with the cluster.
 	ClusterProxy framework.ClusterProxy
@@ -106,6 +108,8 @@ type FleetDeleteGitRepoInput struct {
 
 // FleetDeleteGitRepo will delete a GitRepo resource from a cluster.
 func FleetDeleteGitRepo(ctx context.Context, input FleetDeleteGitRepoInput) {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for FleetDeleteGitRepoInput")
 	Expect(input.Name).ToNot(BeEmpty(), "Invalid argument. input.Name can't be empty when calling FleetDeleteGitRepoInput")
 	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.Clusterproxy can't be nil when calling FleetDeleteGitRepoInput")
