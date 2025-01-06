@@ -76,3 +76,9 @@ questions:
     type: boolean
     label: Seamless integration with Fleet and CAPI
     group: "Rancher Turtles Features Settings"
+  - variable: rancherTurtles.features.agent-tls-mode.enabled
+    default: false
+    description: "If enabled Turtles will use the agent-tls-mode setting to determine CA cert trust mode for importing clusters"
+    type: boolean
+    label: Enable Agent TLS Mode
+    group: "Rancher Turtles Features Settings"
