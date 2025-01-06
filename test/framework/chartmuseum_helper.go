@@ -144,12 +144,18 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	}, input.WaitInterval...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 	By("Pushing local chart to chartmuseum")
-	exec.Command(
+
+	cmd := exec.Command(
 		input.HelmBinaryPath,
 		"cm-push", input.ChartsPath,
 		"rancher-turtles-local", "-a", input.ChartVersion,
 		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
-	).CombinedOutput()
+	)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		Expect(fmt.Errorf("Unable to push chart: %w\nOutput: %s, Command: %s", err, string(out), cmd.String())).ToNot(HaveOccurred())
+	}
 
 	return fmt.Sprintf("http://%s:%d", addr, port.NodePort)
 }

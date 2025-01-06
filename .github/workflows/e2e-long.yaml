@@ -11,16 +11,6 @@ jobs:
   publish_e2e_image:
     uses: ./.github/workflows/e2e-image-publish.yaml
     secrets: inherit
-  e2e_import_gitops:
-    needs: publish_e2e_image
-    uses: ./.github/workflows/run-e2e-suite.yaml
-    with:
-      test_suite: test/e2e/suites/import-gitops
-      test_name: Import via GitOps
-      run_azure_janitor: false
-      artifact_name: artifacts_import_gitops
-      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-    secrets: inherit
   e2e_import_gitops_v3:
     needs: publish_e2e_image
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -51,16 +41,6 @@ jobs:
       artifact_name: artifacts_update_labels
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
-  e2e_embedded_capi_disabled:
-    needs: publish_e2e_image
-    uses: ./.github/workflows/run-e2e-suite.yaml
-    with:
-      test_suite: test/e2e/suites/embedded-capi-disabled
-      test_name: Embedded CAPI disabled
-      run_azure_janitor: false
-      artifact_name: artifacts_embedded_capi
-      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-    secrets: inherit
   e2e_embedded_capi_disabled_v3:
     needs: publish_e2e_image
     uses: ./.github/workflows/run-e2e-suite.yaml
@@ -73,6 +53,6 @@ jobs:
     secrets: inherit
   clean_e2e_image:
     if: always()
-    needs: [e2e_import_gitops, e2e_import_gitops_v3, e2e_v2prov, e2e_update_labels, e2e_embedded_capi_disabled, e2e_embedded_capi_disabled_v3]
+    needs: [e2e_import_gitops_v3, e2e_v2prov, e2e_update_labels, e2e_embedded_capi_disabled_v3]
     uses: ./.github/workflows/e2e-image-clean.yaml
     secrets: inherit
