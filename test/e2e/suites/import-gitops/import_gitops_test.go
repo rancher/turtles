@@ -40,7 +40,7 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:       [][]byte{e2e.CAPIKindnet},
@@ -66,7 +66,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
 			ClusterName:               "clusterv1-eks",
@@ -90,7 +90,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIvSphereKubeadm,
 			ClusterName:               "cluster-vsphere-kubeadm",
@@ -118,7 +118,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIvSphereRKE2,
 			ClusterName:               "cluster-vsphere-rke2",

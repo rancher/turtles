@@ -35,11 +35,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// Test suite flags.
-var (
-	flagVals *e2e.FlagValues
-)
-
 // Test suite global vars.
 var (
 	// e2eConfig to be used for this test, read from configPath.
@@ -54,11 +49,6 @@ var (
 	bootstrapClusterProxy capiframework.ClusterProxy
 )
 
-func init() {
-	flagVals = &e2e.FlagValues{}
-	e2e.InitFlags(flagVals)
-}
-
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
 
@@ -69,10 +59,8 @@ func TestE2E(t *testing.T) {
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
-		e2eConfig = e2e.LoadE2EConfig(flagVals.ConfigPath)
-
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-			E2EConfig: e2eConfig,
+			E2EConfig: e2e.LoadE2EConfig(),
 			Scheme:    e2e.InitScheme(),
 		})
 
@@ -91,7 +79,6 @@ var _ = SynchronizedBeforeSuite(
 		data, err := json.Marshal(e2e.Setup{
 			ClusterName:     setupClusterResult.ClusterName,
 			KubeconfigPath:  setupClusterResult.KubeconfigPath,
-			E2EConfig:       e2eConfig,
 			RancherHostname: rancherHookResult.Hostname,
 		})
 		Expect(err).ToNot(HaveOccurred())
@@ -101,7 +88,7 @@ var _ = SynchronizedBeforeSuite(
 		setup := e2e.Setup{}
 		Expect(json.Unmarshal(sharedData, &setup)).To(Succeed())
 
-		e2eConfig = setup.E2EConfig
+		e2eConfig = e2e.LoadE2EConfig()
 		hostName = setup.RancherHostname
 
 		bootstrapClusterProxy = capiframework.NewClusterProxy(setup.ClusterName, setup.KubeconfigPath, e2e.InitScheme(), capiframework.WithMachineLogCollector(capiframework.DockerLogCollector{}))

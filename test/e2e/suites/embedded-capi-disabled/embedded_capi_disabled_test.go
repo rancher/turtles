@@ -37,7 +37,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
 			ClusterName:               "highlander-e2e-cluster1",

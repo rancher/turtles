@@ -39,7 +39,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 
 	specs.MigrateToV3UsingGitOpsSpec(ctx, func() specs.MigrateToV3UsingGitOpsSpecInput {
 		return specs.MigrateToV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2eConfig,
+			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},

@@ -187,6 +187,6 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		Expect(err).NotTo(HaveOccurred(), "Failed to delete rancher cluster")
 
 		By("Waiting for the rancher cluster record to be removed")
-		Eventually(komega.Get(rancherCluster), e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-azure-delete")...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+		Eventually(komega.Get(rancherCluster), e2e.LoadE2EConfig().GetIntervals(bootstrapClusterProxy.GetName(), "wait-azure-delete")...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
 	})
 })

@@ -404,7 +404,9 @@ func UninstallRancherTurtles(ctx context.Context, input UninstallRancherTurtlesI
 // If the infrastructure type is e2e.ManagementClusterEnvironmentEKS, the image pull secrets are set to "{regcred}".
 func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput) {
 	Expect(turtlesframework.Parse(rtInput)).To(Succeed(), "Failed to parse environment variables")
-
+	if rtInput.AdditionalValues == nil {
+		rtInput.AdditionalValues = map[string]string{}
+	}
 	switch rtInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
@@ -415,7 +417,9 @@ func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput) {
 // If the infrastructure type is e2e.ManagementClusterEnvironmentEKS, it sets the imagePullSecrets and imagePullPolicy values in rtUpgradeInput.
 func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput) {
 	Expect(turtlesframework.Parse(rtUpgradeInput)).To(Succeed(), "Failed to parse environment variables")
-
+	if rtUpgradeInput.AdditionalValues == nil {
+		rtUpgradeInput.AdditionalValues = map[string]string{}
+	}
 	switch rtUpgradeInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"

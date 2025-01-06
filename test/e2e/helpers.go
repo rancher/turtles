@@ -26,7 +26,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -41,7 +40,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/yaml"
 
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
@@ -54,7 +52,6 @@ type Setup struct {
 	ClusterName     string
 	KubeconfigPath  string
 	GitAddress      string
-	E2EConfig       *clusterctl.E2EConfig
 	RancherHostname string
 }
 
@@ -107,34 +104,13 @@ func InitScheme() *runtime.Scheme {
 	return scheme
 }
 
-func LoadE2EConfig(configPath string) *clusterctl.E2EConfig {
-	By(fmt.Sprintf("Loading the e2e test configuration from %q", configPath))
-	Expect(configPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
+func LoadE2EConfig() *clusterctl.E2EConfig {
+	By(fmt.Sprintf("Loading the e2e test configuration from %q", os.Getenv("E2E_CONFIG")))
 
-	configData, err := os.ReadFile(configPath)
-	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test config file")
-	Expect(configData).ToNot(BeEmpty(), "The e2e test config file should not be empty")
+	path := os.Getenv("E2E_CONFIG")
+	Expect(path).To(BeAnExistingFile(), "E2E_CONFIG should point at existing file.")
 
-	config := &clusterctl.E2EConfig{}
-	Expect(yaml.UnmarshalStrict(configData, config)).To(Succeed(), "Failed to convert the e2e test config file to yaml")
-
-	config.Defaults()
-	config.AbsPaths(filepath.Dir(configPath))
-
-	replaceVars := []string{}
-	for k, v := range config.Variables {
-		if os.Getenv(k) == "" {
-			Expect(os.Setenv(k, v)).To(Succeed(), "Failed to set default env value")
-		}
-		replaceVars = append(replaceVars, fmt.Sprintf("{%s}", k), os.Getenv(k))
-	}
-
-	imageReplacer := strings.NewReplacer(replaceVars...)
-	for i := range config.Images {
-		containerImage := &config.Images[i]
-		containerImage.Name = imageReplacer.Replace(containerImage.Name)
-	}
-
+	config := turtlesframework.LoadE2EConfig(path)
 	ValidateE2EConfig(config)
 
 	return config

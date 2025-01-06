@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"os"
 	"reflect"
 	"strings"
 
@@ -33,6 +34,8 @@ var EnvOptions = env.Options{FuncMap: map[reflect.Type]env.ParserFunc{
 }}
 
 func Parse[T any](dst *T) error {
+	LoadE2EConfig(os.Getenv("E2E_CONFIG"))
+
 	src := new(T)
 	if err := env.ParseWithOptions(src, EnvOptions); err != nil {
 		return err
