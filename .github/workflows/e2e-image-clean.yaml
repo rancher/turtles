@@ -1,0 +1,20 @@
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  TAG: v0.0.1
+
+jobs:
+  clean_e2e_image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup e2e test image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE_URL="$(gh api /orgs/rancher/packages/container/turtles-e2e/versions | jq ".[] | select( .metadata.container.tags | contains([\"$TAG\"])) | .url" | sed 's/\"//g')"
+          gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "$IMAGE_URL"
