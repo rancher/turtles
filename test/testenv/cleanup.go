@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesframework "github.com/rancher/turtles/test/framework"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // CleanupTestClusterInput represents the input parameters for cleaning up a test cluster.
@@ -53,7 +54,7 @@ func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for CleanupTestCluster")
 
 	By("Dumping artifacts from the bootstrap cluster")
-	dumpBootstrapCluster()
+	dumpBootstrapCluster(ctx)
 
 	if input.SkipCleanup {
 		return
@@ -66,19 +67,6 @@ func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 	if input.BootstrapClusterProvider != nil {
 		input.BootstrapClusterProvider.Dispose(ctx)
 	}
-}
-
-var secrets = []string{
-	"NGROK_AUTHTOKEN",
-	"NGROK_API_KEY",
-	"RANCHER_HOSTNAME",
-	"RANCHER_PASSWORD",
-	"CAPA_ENCODED_CREDS",
-	"CAPG_ENCODED_CREDS",
-	"AZURE_SUBSCRIPTION_ID",
-	"AZURE_CLIENT_ID",
-	"AZURE_CLIENT_SECRET",
-	"AZURE_TENANT_ID",
 }
 
 type CollectArtifactsInput struct {
@@ -100,13 +88,18 @@ type CollectArtifactsInput struct {
 	// Args are additional args for the artifacts collection
 	Args []string
 
-	// SecretKeys is the set of secret keys to exclude from output
-	SecretKeys []string `envPrefix:"SECRET_" envSeparator:"\n"`
+	// Secrets is the set of secret keys to exclude from output
+	Secrets []string
+
+	// SecretKeyList is the list of secret keys to exclude from output separated with ","
+	SecretKeyList []string `env:"SECRET_KEYS"`
 }
 
 // CollectArtifacts collects artifacts using the provided kubeconfig path, name, and additional arguments.
 // It returns an error if the kubeconfig path is empty or if there is an error running the kubectl command.
-func CollectArtifacts(input CollectArtifactsInput) error {
+func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
+	log := log.FromContext(ctx)
+
 	if err := turtlesframework.Parse(&input); err != nil {
 		return err
 	}
@@ -118,10 +111,10 @@ func CollectArtifacts(input CollectArtifactsInput) error {
 
 	path := path.Join(input.ArtifactsFolder, input.BootstrapClusterName, input.Path)
 	aargs := append([]string{"crust-gather", "collect", "--kubeconfig", kubeconfig, "-f", path, "-v", "ERROR"}, input.Args...)
-	for _, secret := range secrets {
+	for _, secret := range input.Secrets {
 		aargs = append(aargs, "-s", secret)
 	}
-	for _, secret := range input.SecretKeys {
+	for _, secret := range input.SecretKeyList {
 		aargs = append(aargs, "-s", secret)
 	}
 
@@ -132,15 +125,15 @@ func CollectArtifacts(input CollectArtifactsInput) error {
 	cmd.Stderr = &stderr
 	cmd.WaitDelay = time.Minute
 
-	fmt.Printf("Running kubectl %s\n", strings.Join(aargs, " "))
+	log.Info("Running kubectl:", "command", strings.Join(aargs, " "))
 	err := cmd.Run()
-	fmt.Printf("stderr:\n%s\n", string(stderr.Bytes()))
-	fmt.Printf("stdout:\n%s\n", string(stdout.Bytes()))
+	log.Info("stderr:", "stderr", string(stderr.Bytes()))
+	log.Info("stdout:", "stdout", string(stdout.Bytes()))
 	return err
 }
 
-func dumpBootstrapCluster() {
-	err := CollectArtifacts(CollectArtifactsInput{})
+func dumpBootstrapCluster(ctx context.Context) {
+	err := CollectArtifacts(ctx, CollectArtifactsInput{})
 	if err != nil {
 		fmt.Printf("Failed to artifacts for the bootstrap cluster: %v\n", err)
 		return

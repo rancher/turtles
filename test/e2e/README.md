@@ -90,6 +90,8 @@ time.
 
 The config is located in `test/e2e/config/operator.yaml`.
 
+`E2E_CONFIG` env variable is required to point to an existing path, where the config is located.
+
 `variables` section provides the default values for all missing environment variables used by test suite with the same name.
 
 Most notable ones:
@@ -100,7 +102,32 @@ variables:
   NGROK_API_KEY: "" # Key and token values for establishing ingress
   NGROK_AUTHTOKEN: ""
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # Environment to run the tests in: eks, isolated-kind, kind.
+  TURTLES_VERSION: "v0.0.1" # Version of the turtles image to use
+  TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e" # Rancher turtles image to use. It is pre-loaded from local docker registry in kind environment, but expected to be pulled and available in `eks` cluster environment
+  ARTIFACTS_FOLDER: "_artifacts" # Folder for the e2e run artifacts collection with crust-gather.
+  SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPA_ENCODED_CREDS,CAPG_ENCODED_CREDS,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID" # Is a list of environment variable keys, values of which would be excluded from collected artifacts data.
 ```
+
+## Artifacts collection
+
+To collect information of e2e failures we use `crust-gather` kubectl plugin installed via `krew`.
+
+To install it outside of the e2e environment you need to [install](https://krew.sigs.k8s.io/docs/user-guide/setup/install/) `krew` and run `kubectl krew install crust-gather`:
+
+```bash
+(
+  set -x; cd "$(mktemp -d)" &&
+  OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
+  ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
+  KREW="krew-${OS}_${ARCH}" &&
+  curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
+  tar zxvf "${KREW}.tar.gz" &&
+  ./"${KREW}" install krew
+)
+kubectl krew install crust-gather
+```
+
+To exlude any sensitive information from the collected artifacts, set the `SECRET_KEYS` environment variable accordingly.
 
 ## Testdata
 
