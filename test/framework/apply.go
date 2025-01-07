@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiexec "sigs.k8s.io/cluster-api/test/framework/exec"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Apply wraps `kubectl apply ...` and prints the output so we can see what gets applied to the cluster.
@@ -50,6 +51,7 @@ func Apply(ctx context.Context, p framework.ClusterProxy, resources []byte, args
 //
 // TODO: Remove this usage of kubectl and replace with a function from apply.go using the controller-runtime client.
 func KubectlApply(ctx context.Context, kubeconfigPath string, resources []byte, args ...string) error {
+	log := log.FromContext(ctx)
 	aargs := append([]string{"apply", "--kubeconfig", kubeconfigPath, "-f", "-"}, args...)
 	rbytes := bytes.NewReader(resources)
 	applyCmd := capiexec.NewCommand(
@@ -57,13 +59,14 @@ func KubectlApply(ctx context.Context, kubeconfigPath string, resources []byte, 
 		capiexec.WithArgs(aargs...),
 		capiexec.WithStdin(rbytes),
 	)
-	fmt.Printf("Running kubectl %s\n", strings.Join(aargs, " "))
+
+	log.Info("Running kubectl", "command", strings.Join(aargs, " "))
 	stdout, stderr, err := applyCmd.Run(ctx)
 	if len(stderr) > 0 {
-		fmt.Printf("stderr:\n%s\n", string(stderr))
+		log.Info("Stderr:", "stderr", string(stderr))
 	}
 	if len(stdout) > 0 {
-		fmt.Printf("stdout:\n%s\n", string(stdout))
+		log.Info("Stdout:", "stdout", string(stdout))
 	}
 	return err
 }

@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	"github.com/rancher/turtles/test/e2e"
@@ -351,7 +352,6 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			Eventually(func() bool {
 				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 				annotations := capiCluster.GetAnnotations()
-				fmt.Printf("Annotations: %v\n", annotations)
 
 				return annotations["imported"] != "true"
 			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
@@ -362,19 +362,19 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			Path: input.ClusterName + "bootstrap" + specName,
 		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
 		}
 
-		err = testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			KubeconfigPath: originalKubeconfig.TempFilePath,
 			Path:           input.ClusterName + specName,
 		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
 		By("Deleting GitRepo from Rancher")

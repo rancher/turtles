@@ -26,8 +26,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/testenv"
@@ -54,7 +54,7 @@ var (
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	ctrl.SetLogger(klog.Background())
+	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	RunSpecs(t, "rancher-turtles-e2e-import-gitops")
 }

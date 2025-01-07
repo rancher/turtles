@@ -28,9 +28,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/testenv"
-	"k8s.io/klog/v2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 // Test suite global vars.
@@ -48,7 +48,7 @@ var (
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	ctrl.SetLogger(klog.Background())
+	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	RunSpecs(t, "rancher-turtles-e2e-import-gitops")
 }

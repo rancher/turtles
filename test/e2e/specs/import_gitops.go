@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/test/e2e"
@@ -321,19 +322,19 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			Path: input.ClusterName + "bootstrap" + specName,
 		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
 		}
 
-		err = testenv.CollectArtifacts(testenv.CollectArtifactsInput{
+		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			KubeconfigPath: originalKubeconfig.TempFilePath,
 			Path:           input.ClusterName + specName,
 		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
 		By("Deleting GitRepo from Rancher")
