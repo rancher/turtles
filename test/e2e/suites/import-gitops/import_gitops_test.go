@@ -40,19 +40,14 @@ var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionalit
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
-			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:            artifactsFolder,
 			ClusterTemplate:           e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:       [][]byte{e2e.CAPIKindnet},
 			ClusterName:               "clusterv1-docker-kubeadm",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   gitAddress,
-			GitAuthSecretName:         e2e.AuthSecretName,
-			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
 			TestClusterReimport:       true,
@@ -71,18 +66,13 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
-			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:            artifactsFolder,
 			ClusterTemplate:           e2e.CAPIAwsEKSMMP,
 			ClusterName:               "clusterv1-eks",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   gitAddress,
-			GitAuthSecretName:         e2e.AuthSecretName,
-			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
@@ -100,18 +90,13 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
-			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:            artifactsFolder,
 			ClusterTemplate:           e2e.CAPIvSphereKubeadm,
 			ClusterName:               "cluster-vsphere-kubeadm",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   gitAddress,
-			GitAuthSecretName:         e2e.AuthSecretName,
-			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
@@ -133,18 +118,13 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2eConfig,
+			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterctlConfigPath:      flagVals.ConfigPath,
-			ClusterctlBinaryPath:      e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:            artifactsFolder,
 			ClusterTemplate:           e2e.CAPIvSphereRKE2,
 			ClusterName:               "cluster-vsphere-rke2",
 			ControlPlaneMachineCount:  ptr.To[int](1),
 			WorkerMachineCount:        ptr.To[int](1),
 			GitAddr:                   gitAddress,
-			GitAuthSecretName:         e2e.AuthSecretName,
-			SkipCleanup:               false,
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,

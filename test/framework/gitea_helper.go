@@ -34,14 +34,16 @@ type GiteaCreateRepoInput struct {
 	RepoName string
 
 	// Username is the username of the user creating the repository.
-	Username string
+	Username string `env:"GITEA_USER_NAME"`
 
 	// Password is the password of the user creating the repository.
-	Password string
+	Password string `env:"GITEA_USER_PWD"`
 }
 
 // GiteaCreateRepo will create a new repo in the Gitea server.
 func GiteaCreateRepo(ctx context.Context, input GiteaCreateRepoInput) string {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for GiteaCreateRepo")
 	Expect(input.ServerAddr).ToNot(BeEmpty(), "Invalid argument. input.ServerAddr can't be empty when calling GiteaCreateRepo")
 	Expect(input.RepoName).ToNot(BeEmpty(), "Invalid argument. input.RepoName can't be empty when calling GiteaCreateRepo")

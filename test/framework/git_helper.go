@@ -37,14 +37,16 @@ type GitCloneRepoInput struct {
 	CloneLocation string
 
 	// Username is the username for authentication (optional).
-	Username string
+	Username string `env:"GITEA_USER_NAME"`
 
 	// Password is the password for authentication (optional).
-	Password string
+	Password string `env:"GITEA_USER_PWD"`
 }
 
 // GitCloneRepo will clone a repo to a given location.
 func GitCloneRepo(ctx context.Context, input GitCloneRepoInput) string {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for GitCloneRepo")
 	Expect(input.Address).ToNot(BeEmpty(), "Invalid argument. input.Address can't be empty when calling GitCloneRepo")
 
@@ -79,20 +81,22 @@ type GitCommitAndPushInput struct {
 	CloneLocation string
 
 	// Username is the username for authentication (optional).
-	Username string
+	Username string `env:"GITEA_USER_NAME"`
 
 	// Password is the password for authentication (optional).
-	Password string
+	Password string `env:"GITEA_USER_PWD"`
 
 	// CommitMessage is the message for the commit.
 	CommitMessage string
 
 	// GitPushWait is the wait time for the git push operation.
-	GitPushWait []interface{}
+	GitPushWait []interface{} `envDefault:"3m,10s"`
 }
 
 // GitCommitAndPush will commit the files for a repo and push the changes to the origin.
 func GitCommitAndPush(ctx context.Context, input GitCommitAndPushInput) {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for GitCommitAndPush")
 	Expect(input.CloneLocation).ToNot(BeEmpty(), "Invalid argument. input.CloneLoaction can't be empty when calling GitCommitAndPush")
 	Expect(input.CommitMessage).ToNot(BeEmpty(), "Invalid argument. input.CommitMessage can't be empty when calling GitCommitAndPush")

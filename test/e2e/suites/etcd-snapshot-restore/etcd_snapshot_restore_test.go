@@ -38,18 +38,13 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 
 	specs.ETCDSnapshotRestore(ctx, func() specs.ETCDSnapshotRestoreInput {
 		return specs.ETCDSnapshotRestoreInput{
-			E2EConfig:                   e2eConfig,
+			E2EConfig:                   e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:       bootstrapClusterProxy,
-			ClusterctlConfigPath:        flagVals.ConfigPath,
-			ClusterctlBinaryPath:        e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:              artifactsFolder,
 			ClusterTemplate:             e2e.CAPIDockerRKE2,
 			ClusterName:                 "etcd-snapshot-restore",
 			ControlPlaneMachineCount:    ptr.To[int](1),
 			WorkerMachineCount:          ptr.To[int](0),
 			GitAddr:                     gitAddress,
-			GitAuthSecretName:           e2e.AuthSecretName,
-			SkipCleanup:                 false,
 			SkipDeletionTest:            false,
 			RancherServerURL:            hostName,
 			CAPIClusterSnapshotWaitName: "wait-snapshot",

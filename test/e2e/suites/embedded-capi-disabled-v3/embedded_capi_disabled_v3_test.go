@@ -37,18 +37,13 @@ var _ = Describe("[AWS] [EKS] [management.cattle.io/v3] Create and delete CAPI c
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2eConfig,
+			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
-			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:                 artifactsFolder,
 			ClusterTemplate:                e2e.CAPIAwsEKSMMP,
 			ClusterName:                    "highlander-e2e-cluster1",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        gitAddress,
-			GitAuthSecretName:              e2e.AuthSecretName,
-			SkipCleanup:                    false,
 			SkipDeletionTest:               false,
 			LabelNamespace:                 true,
 			RancherServerURL:               hostName,

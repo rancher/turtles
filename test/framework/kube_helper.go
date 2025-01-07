@@ -223,22 +223,24 @@ type CreateDockerRegistrySecretInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// Name is the name of the secret.
-	Name string
+	Name string `envDefault:"regcred"`
 
 	// Namespace is the namespace where the secret will be created.
-	Namespace string
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// DockerServer is the Docker server URL.
-	DockerServer string
+	DockerServer string `envDefault:"https://ghcr.io/"`
 
 	// DockerUsername is the username for authenticating with the Docker registry.
-	DockerUsername string
+	DockerUsername string `env:"GITHUB_USERNAME"`
 
 	// DockerPassword is the password for authenticating with the Docker registry.
-	DockerPassword string
+	DockerPassword string `env:"GITHUB_TOKEN"`
 }
 
 func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistrySecretInput) {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CreateDockerRegistrySecret")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CreateDockerRegistrySecret")
 	Expect(input.Name).ToNot(BeEmpty(), "Name is required for CreateDockerRegistrySecret")

@@ -22,7 +22,6 @@ package v2prov
 import (
 	"fmt"
 	"os"
-	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/test/e2e"
@@ -168,14 +168,19 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, bootstrapClusterProxy.GetKubeconfigPath(), path.Join(artifactsFolder, bootstrapClusterProxy.GetName(), clusterName+"bootstrap"+specName))
+		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+			Path: clusterName + "bootstrap" + specName,
+		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
 		}
 
-		err = testenv.CollectArtifacts(ctx, rancherKubeconfig.TempFilePath, path.Join(artifactsFolder, bootstrapClusterProxy.GetName(), clusterName+specName))
+		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+			KubeconfigPath: rancherKubeconfig.TempFilePath,
+			Path:           clusterName + specName,
+		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
 		By("Deleting cluster from Rancher")

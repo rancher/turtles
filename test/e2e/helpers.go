@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -39,13 +40,20 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/yaml"
 
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	networkingv1 "k8s.io/api/networking/v1"
 )
+
+// Setup is a shared data structure for parrallel test setup
+type Setup struct {
+	ClusterName     string
+	KubeconfigPath  string
+	GitAddress      string
+	RancherHostname string
+}
 
 func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
 	turtlesframework.Byf("Creating a namespace for hosting the %q test spec", specName)
@@ -63,7 +71,7 @@ func CreateRepoName(specName string) string {
 	return fmt.Sprintf("repo-%s-%s", specName, util.RandomString(6))
 }
 
-func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
 	if !skipCleanup {
 		turtlesframework.Byf("Deleting cluster %s", capiCluster)
 		// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance
@@ -96,28 +104,38 @@ func InitScheme() *runtime.Scheme {
 	return scheme
 }
 
-func LoadE2EConfig(configPath string) *clusterctl.E2EConfig {
-	configData, err := os.ReadFile(configPath)
-	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test config file")
-	Expect(configData).ToNot(BeEmpty(), "The e2e test config file should not be empty")
+func LoadE2EConfig() *clusterctl.E2EConfig {
+	By(fmt.Sprintf("Loading the e2e test configuration from %q", os.Getenv("E2E_CONFIG")))
 
-	config := &clusterctl.E2EConfig{}
-	Expect(yaml.UnmarshalStrict(configData, config)).To(Succeed(), "Failed to convert the e2e test config file to yaml")
+	path := os.Getenv("E2E_CONFIG")
+	Expect(path).To(BeAnExistingFile(), "E2E_CONFIG should point at existing file.")
 
-	config.Defaults()
-	config.AbsPaths(filepath.Dir(configPath))
+	config := turtlesframework.LoadE2EConfig(path)
+	ValidateE2EConfig(config)
 
 	return config
 }
 
-func CreateClusterctlLocalRepository(ctx context.Context, config *clusterctl.E2EConfig, repositoryFolder string) string {
+type CreateClusterctlLocalRepositoryInput struct {
+	// E2EConfig to be used for this test, read from configPath.
+	E2EConfig *clusterctl.E2EConfig
+
+	// RepositoryFolder is the folder for the clusterctl repository
+	RepositoryFolder string `env:"CLUSTERCTL_REPOSITORY_FOLDER,expand" envDefault:"${ARTIFACTS_FOLDER}/repository"`
+}
+
+func CreateClusterctlLocalRepository(ctx context.Context, input CreateClusterctlLocalRepositoryInput) string {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	createRepositoryInput := clusterctl.CreateRepositoryInput{
-		E2EConfig:        config,
-		RepositoryFolder: repositoryFolder,
+		E2EConfig:        input.E2EConfig,
+		RepositoryFolder: input.RepositoryFolder,
 	}
 
+	By(fmt.Sprintf("Creating a clusterctl config repository into %q", input.RepositoryFolder))
+
 	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
-	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
+	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", input.RepositoryFolder)
 	return clusterctlConfig
 }
 

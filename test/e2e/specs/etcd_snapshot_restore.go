@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 
@@ -39,6 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	etcdrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	"github.com/rancher/turtles/test/e2e"
@@ -49,11 +49,10 @@ import (
 type ETCDSnapshotRestoreInput struct {
 	E2EConfig             *clusterctl.E2EConfig
 	BootstrapClusterProxy framework.ClusterProxy
-	ClusterctlConfigPath  string
-	ArtifactFolder        string
+	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
 	RancherServerURL      string
 
-	ClusterctlBinaryPath        string
+	ClusterctlBinaryPath        string `env:"CLUSTERCTL_BINARY_PATH"`
 	ClusterTemplate             []byte
 	ClusterName                 string
 	AdditionalTemplateVariables map[string]string
@@ -70,10 +69,9 @@ type ETCDSnapshotRestoreInput struct {
 	// If not specified, 1 will be used.
 	WorkerMachineCount *int
 
-	GitAddr           string
-	GitAuthSecretName string
+	GitAddr string
 
-	SkipCleanup      bool
+	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool
 }
 
@@ -136,9 +134,10 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
 		input = inputGetter()
+		Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-		Expect(input.ClusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. input.ClusterctlConfigPath must be an existing file when calling %s spec", specName)
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
@@ -177,13 +176,9 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 		repoCloneAddr := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
 			ServerAddr: input.GitAddr,
 			RepoName:   repoName,
-			Username:   input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
-			Password:   input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 		})
 		repoDir := turtlesframework.GitCloneRepo(ctx, turtlesframework.GitCloneRepoInput{
-			Address:  repoCloneAddr,
-			Username: input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
-			Password: input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
+			Address: repoCloneAddr,
 		})
 
 		By("Create fleet repository structure")
@@ -202,7 +197,6 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 
 		clusterPath := filepath.Join(clustersDir, fmt.Sprintf("%s.yaml", input.ClusterName))
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-			Getter:                        input.E2EConfig.GetVariable,
 			Template:                      input.ClusterTemplate,
 			OutputFilePath:                clusterPath,
 			AddtionalEnvironmentVariables: additionalVars,
@@ -218,23 +212,17 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 
 		turtlesframework.GitCommitAndPush(ctx, turtlesframework.GitCommitAndPushInput{
 			CloneLocation: repoDir,
-			Username:      input.E2EConfig.GetVariable(e2e.GiteaUserNameVar),
-			Password:      input.E2EConfig.GetVariable(e2e.GiteaUserPasswordVar),
 			CommitMessage: "ci: add clusters bundle",
-			GitPushWait:   input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-gitpush"),
 		})
 
 		By("Applying GitRepo")
 
 		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:             repoName,
-			Namespace:        turtlesframework.FleetLocalNamespace,
-			Branch:           turtlesframework.DefaultBranchName,
-			Repo:             repoCloneAddr,
-			FleetGeneration:  1,
-			Paths:            []string{"clusters"},
-			ClientSecretName: input.GitAuthSecretName,
-			ClusterProxy:     input.BootstrapClusterProxy,
+			Name:            repoName,
+			Repo:            repoCloneAddr,
+			FleetGeneration: 1,
+			Paths:           []string{"clusters"},
+			ClusterProxy:    input.BootstrapClusterProxy,
 		})
 
 		By("Waiting for the CAPI cluster to appear")
@@ -275,23 +263,27 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 	})
 
 	AfterEach(func() {
-		err := testenv.CollectArtifacts(ctx, input.BootstrapClusterProxy.GetKubeconfigPath(), path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+"bootstrap"+specName))
+		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+			Path: input.ClusterName + "bootstrap" + specName,
+		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the bootstrap cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
 		}
 
-		err = testenv.CollectArtifacts(ctx, originalKubeconfig.TempFilePath, path.Join(input.ArtifactFolder, input.BootstrapClusterProxy.GetName(), input.ClusterName+specName))
+		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+			KubeconfigPath: originalKubeconfig.TempFilePath,
+			Path:           input.ClusterName + specName,
+		})
 		if err != nil {
-			fmt.Printf("Failed to collect artifacts for the child cluster: %v\n", err)
+			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
 		By("Deleting GitRepo from Rancher")
 		turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
 			Name:         repoName,
-			Namespace:    turtlesframework.FleetLocalNamespace,
 			ClusterProxy: input.BootstrapClusterProxy,
 		})
 
-		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }

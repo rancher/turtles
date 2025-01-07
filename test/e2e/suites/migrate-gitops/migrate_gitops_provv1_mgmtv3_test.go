@@ -39,21 +39,14 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Migrate v1 to m
 
 	specs.MigrateToV3UsingGitOpsSpec(ctx, func() specs.MigrateToV3UsingGitOpsSpecInput {
 		return specs.MigrateToV3UsingGitOpsSpecInput{
-			HelmBinaryPath:                 e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-			ChartPath:                      e2eConfig.GetVariable(e2e.TurtlesPathVar),
-			E2EConfig:                      e2eConfig,
+			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterctlConfigPath:           flagVals.ConfigPath,
-			ClusterctlBinaryPath:           e2eConfig.GetVariable(e2e.ClusterctlBinaryPathVar),
-			ArtifactFolder:                 artifactsFolder,
 			ClusterTemplate:                e2e.CAPIDockerKubeadm,
 			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
 			ClusterName:                    "clusterv3-migrated",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
 			GitAddr:                        gitAddress,
-			GitAuthSecretName:              e2e.AuthSecretName,
-			SkipCleanup:                    false,
 			SkipDeletionTest:               false,
 			LabelNamespace:                 true,
 			TestClusterReimport:            true,

@@ -47,13 +47,21 @@ type CAPIOperatorDeployProviderInput struct {
 	CAPIProvidersYAML []byte
 
 	// TemplateData is the data used for templating.
-	TemplateData map[string]string
+	TemplateData TemplateData
 
 	// WaitDeploymentsReadyInterval is the interval for waiting for deployments to be ready.
-	WaitDeploymentsReadyInterval []interface{}
+	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// WaitForDeployments is the list of deployments to wait for.
 	WaitForDeployments []NamespaceName
+}
+
+// TemplateData contains secret variables used for templating
+type TemplateData struct {
+	// AWSEncodedCredentials is the AWS credentials
+	AWSEncodedCredentials string `env:"CAPA_ENCODED_CREDS"`
+	// GCPEncodedCredentials is the GCP credentials
+	GCPEncodedCredentials string `env:"CAPG_ENCODED_CREDS"`
 }
 
 type NamespaceName struct {
@@ -66,6 +74,8 @@ type NamespaceName struct {
 // It iterates over the CAPIProvidersSecretsYAML and applies them. Then, it applies the CAPI operator providers.
 // If there are no deployments to wait for, the function returns. Otherwise, it waits for the provider deployments to be ready.
 func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployProviderInput) {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
 	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for CAPIOperatorDeployProvider")
@@ -74,11 +84,9 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 		secret := secret
 		By("Adding CAPI Operator variables secret")
 
-		providerVars := getFullProviderVariables(string(secret), input.TemplateData)
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Proxy:    input.BootstrapClusterProxy,
-			Template: providerVars,
-			Getter:   input.E2EConfig.GetVariable,
+			Template: getFullProviderVariables(string(secret), input.TemplateData),
 		})).To(Succeed(), "Failed to apply secret for capi providers")
 	}
 
@@ -106,7 +114,9 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 	}
 }
 
-func getFullProviderVariables(operatorTemplate string, data map[string]string) []byte {
+func getFullProviderVariables(operatorTemplate string, data TemplateData) []byte {
+	Expect(turtlesframework.Parse(&data)).To(Succeed(), "Failed to parse environment variables")
+
 	t := template.New("capi-operator")
 	t, err := t.Parse(operatorTemplate)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to parse template")

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -32,58 +33,57 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
 // DeployGiteaInput represents the input parameters for deploying Gitea.
 type DeployGiteaInput struct {
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+
 	// BootstrapClusterProxy is the cluster proxy for bootstrapping.
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// ChartRepoName is the name of the chart repository.
-	ChartRepoName string
+	ChartRepoName string `env:"GITEA_REPO_NAME"`
 
 	// ChartRepoURL is the URL of the chart repository.
-	ChartRepoURL string
+	ChartRepoURL string `env:"GITEA_REPO_URL"`
 
 	// ChartName is the name of the chart.
-	ChartName string
+	ChartName string `env:"GITEA_CHART_NAME"`
 
 	// ChartVersion is the version of the chart.
-	ChartVersion string
+	ChartVersion string `env:"GITEA_CHART_VERSION"`
 
-	// ValuesFilePath is the path to the values file.
-	ValuesFilePath string
+	// ValuesFile is the data the values file.
+	ValuesFile []byte
 
 	// Values are the values for the chart.
 	Values map[string]string
 
 	// RolloutWaitInterval is the interval to wait between rollouts.
-	RolloutWaitInterval []interface{}
+	RolloutWaitInterval []interface{} `envDefault:"3m,10s"`
 
 	// ServiceWaitInterval is the interval to wait for the service.
-	ServiceWaitInterval []interface{}
+	ServiceWaitInterval []interface{} `envDefault:"5m,10s"`
 
 	// Username is the username for authentication.
-	Username string
+	Username string `env:"GITEA_USER_NAME"`
 
 	// Password is the password for authentication.
-	Password string
+	Password string `env:"GITEA_USER_PWD"`
 
 	// AuthSecretName is the name of the authentication secret.
-	AuthSecretName string
+	AuthSecretName string `envDefault:"basic-auth-secret"`
 
 	// CustomIngressConfig is the custom ingress configuration.
 	CustomIngressConfig []byte
 
 	// ServiceType is the type of the service.
 	ServiceType corev1.ServiceType
-
-	// Variables is the collection of variables.
-	Variables turtlesframework.VariableCollection
 }
 
 // DeployGiteaResult represents the result of deploying Gitea.
@@ -101,6 +101,9 @@ type DeployGiteaResult struct {
 // Depending on the service type, it retrieves the Git server address using the node port, load balancer, or custom ingress.
 // If a username is provided, it waits for the Gitea endpoint to be available and creates a Gitea secret with the username and password.
 func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+	PreGiteaInstallHook(&input)
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployGitea")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployGitea")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployGitea")
@@ -121,8 +124,18 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		Expect(input.CustomIngressConfig).ToNot(BeEmpty(), "CustomIngressConfig is required for DeployGitea if service type is ClusterIP")
 	}
 
+	if input.Values == nil {
+		input.Values = map[string]string{}
+	}
+
 	if input.Values["service.http.type"] == "" {
 		input.Values["service.http.type"] = string(input.ServiceType)
+	}
+	if input.Values["gitea.admin.username"] == "" {
+		input.Values["gitea.admin.username"] = input.Username
+	}
+	if input.Values["gitea.admin.password"] == "" {
+		input.Values["gitea.admin.password"] = input.Password
 	}
 
 	result := &DeployGiteaResult{}
@@ -152,9 +165,14 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		"--create-namespace",
 		"--wait",
 	)
-	if input.ValuesFilePath != "" {
-		flags = append(flags, "-f", input.ValuesFilePath)
+
+	if input.ValuesFile != nil {
+		giteaValues, err := os.CreateTemp("", "gitea-values.yaml")
+		Expect(err).NotTo(HaveOccurred(), "Failed to create temp file for gitea values")
+		Expect(os.WriteFile(giteaValues.Name(), input.ValuesFile, os.ModePerm)).To(Succeed(), "Failed to write gitea values to tmp file")
+		flags = append(flags, "-f", giteaValues.Name())
 	}
+
 	chart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
 		Path:            fmt.Sprintf("%s/%s", input.ChartRepoName, input.ChartName),
@@ -204,8 +222,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		result.GitAddress = fmt.Sprintf("http://%s:%d", svcRes.Hostname, port.Port)
 	case string(corev1.ServiceTypeClusterIP):
 		By("Creating custom ingress for gitea")
-		variableGetter := turtlesframework.GetVariable(input.Variables)
-		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), variableGetter)
+		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), os.Getenv)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
 
@@ -262,15 +279,17 @@ type UninstallGiteaInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 
 	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string
+	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// DeleteWaitInterval is the interval to wait between deleting resources.
-	DeleteWaitInterval []interface{}
+	DeleteWaitInterval []interface{} `envDefault:"10m,10s"`
 }
 
 // UninstallGitea uninstalls Gitea by removing the Gitea Helm Chart.
 // It expects the required input parameters to be non-nil.
 func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallGitea")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallGitea")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UninstallGitea")
@@ -290,17 +309,15 @@ func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
 
 // PreGiteaInstallHook is a function that sets the service type for the Gitea input based on the management cluster environment type.
 // It expects the required input parameters to be non-nil.
-func PreGiteaInstallHook(giteaInput *DeployGiteaInput, e2eConfig *clusterctl.E2EConfig) {
-	infrastructureType := e2e.ManagementClusterEnvironmentType(e2eConfig.GetVariable(e2e.ManagementClusterEnvironmentVar))
+func PreGiteaInstallHook(giteaInput *DeployGiteaInput) {
+	Expect(turtlesframework.Parse(giteaInput)).To(Succeed(), "Failed to parse environment variables")
 
-	switch infrastructureType {
+	switch giteaInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		giteaInput.ServiceType = corev1.ServiceTypeLoadBalancer
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		giteaInput.ServiceType = corev1.ServiceTypeNodePort
 	case e2e.ManagementClusterEnvironmentKind:
 		giteaInput.ServiceType = corev1.ServiceTypeClusterIP
-	default:
-		Fail(fmt.Sprintf("Invalid management cluster infrastructure type %q", infrastructureType))
 	}
 }

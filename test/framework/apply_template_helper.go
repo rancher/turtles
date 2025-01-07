@@ -27,9 +27,6 @@ import (
 
 // ApplyFromTemplateInput represents the input parameters for applying a template.
 type ApplyFromTemplateInput struct {
-	// Getter is a function that retrieves a value based on a given key.
-	Getter func(key string) string
-
 	// Template is the content of the template to be applied.
 	Template []byte
 
@@ -47,7 +44,6 @@ type ApplyFromTemplateInput struct {
 func ApplyFromTemplate(ctx context.Context, input ApplyFromTemplateInput) error {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for ApplyFromTemplate.")
 	Expect(input.Template).ToNot(BeEmpty(), "Invalid argument. input.Template must be an existing byte array.")
-	Expect(input.Getter).NotTo(BeNil(), "Getter method is required for ApplyFromTemplate. Typically an os.Getenv is enough.")
 	if input.OutputFilePath == "" {
 		Expect(input.Proxy).NotTo(BeNil(), "Cluster proxy is required for ApplyFromTemplate.")
 	}
@@ -66,7 +62,7 @@ func ApplyFromTemplate(ctx context.Context, input ApplyFromTemplateInput) error 
 		if val, ok := overrides[key]; ok {
 			return val
 		}
-		return input.Getter(key)
+		return os.Getenv(key)
 	}
 
 	template, err := envsubst.Eval(string(input.Template), getter)

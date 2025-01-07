@@ -46,42 +46,28 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 	It("Should perform upgrade from GA version to latest", func() {
 		rtInput := testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy:        bootstrapClusterProxy,
-			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-			TurtlesChartPath:             "https://rancher.github.io/turtles",
-			CAPIProvidersYAML:            e2e.CapiProvidersLegacy,
-			Namespace:                    framework.DefaultRancherTurtlesNamespace,
-			Version:                      "v0.6.0",
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             map[string]string{},
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			TurtlesChartPath:      "https://rancher.github.io/turtles",
+			CAPIProvidersYAML:     e2e.CapiProvidersLegacy,
+			Version:               "v0.6.0",
+			AdditionalValues:      map[string]string{},
+			WaitForDeployments:    testenv.DefaultDeployments,
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
 
 		chartMuseumDeployInput := testenv.DeployChartMuseumInput{
-			HelmBinaryPath:        e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-			ChartsPath:            e2eConfig.GetVariable(e2e.TurtlesPathVar),
-			ChartVersion:          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			WaitInterval:          e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
-			Variables:             e2eConfig.Variables,
 		}
-
-		testenv.PreChartMuseumInstallHook(&chartMuseumDeployInput, e2eConfig)
 
 		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
-			BootstrapClusterProxy:        bootstrapClusterProxy,
-			HelmBinaryPath:               e2eConfig.GetVariable(e2e.HelmBinaryPathVar),
-			Namespace:                    framework.DefaultRancherTurtlesNamespace,
-			Image:                        "ghcr.io/rancher/turtles-e2e",
-			Tag:                          e2eConfig.GetVariable(e2e.TurtlesVersionVar),
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
-			AdditionalValues:             rtInput.AdditionalValues,
-			PostUpgradeSteps:             []func(){},
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			AdditionalValues:      rtInput.AdditionalValues,
+			PostUpgradeSteps:      []func(){},
 		}
 
-		testenv.PreRancherTurtlesInstallHook(&rtInput, e2eConfig)
+		testenv.PreRancherTurtlesInstallHook(&rtInput)
 
 		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
 		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
