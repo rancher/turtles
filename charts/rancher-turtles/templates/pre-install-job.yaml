@@ -59,6 +59,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: rancher-mutatingwebhook-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "2"
@@ -81,6 +82,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: rancher-validatingwebhook-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "2"
