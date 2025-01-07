@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 )
 
 var (
@@ -73,8 +72,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 		}
 
 		r = &RKE2ConfigWebhook{
-			Client:  cl,
-			Tracker: new(remote.ClusterCacheTracker),
+			Client: cl,
 		}
 	})
 
@@ -163,7 +161,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 	})
 
 	It("Should add system-agent-install.sh when it's not present", func() {
-		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config)
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config, &clusterv1.Cluster{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
@@ -184,7 +182,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Path: "/opt/system-agent-install.sh",
 		})
 
-		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config)
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config, &clusterv1.Cluster{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rke2Config.Spec.Files).To(HaveLen(1))

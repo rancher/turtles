@@ -31,6 +31,10 @@ const (
 	NoCreatorRBACAnnotation = "field.cattle.io/no-creator-rbac"
 	// EtcdAutomaticSnapshot represents automatically generated etcd snapshot.
 	EtcdAutomaticSnapshot = "etcd.turtles.cattle.io/automatic-snapshot"
+	// UpstreamSystemAgentAnnotation is a cluster annotation, allowing to pull the agent binary from the github repo instead of rancher url.
+	UpstreamSystemAgentAnnotation = "cluster-api.cattle.io/upstream-system-agent"
+	// LocalSystemAgentAnnotation is a cluster annotation, allowing to specify agent binary location from the node in the airgapped environment.
+	LocalSystemAgentAnnotation = "cluster-api.cattle.io/local-system-agent"
 )
 
 // HasClusterImportAnnotation returns true if the object has the `imported` annotation.

@@ -30,6 +30,7 @@ fi
 #   - CATTLE_AGENT_UNINSTALL_URL (default: latest GitHub release)
 #   - CATTLE_PRESERVE_WORKDIR (default: false)
 #   - CATTLE_REMOTE_ENABLED (default: true)
+#   - CATTLE_UPSTREAM_ENABLED (default: false)
 #   - CATTLE_LOCAL_ENABLED (default: false)
 #   - CATTLE_AGENT_BINARY_LOCAL (default: false)
 #   - CATTLE_AGENT_BINARY_LOCAL_LOCATION (default: )
@@ -215,7 +216,7 @@ setup_env() {
         CATTLE_REMOTE_ENABLED=$(echo "${CATTLE_REMOTE_ENABLED}" | tr '[:upper:]' '[:lower:]')
     fi
 
-    if [ "${CATTLE_LOCAL_ENABLED}" = "false" ] && [ "${CATTLE_REMOTE_ENABLED}" = "false" ]; then
+    if [ "${CATTLE_LOCAL_ENABLED}" = "false" ] && [ "${CATTLE_REMOTE_ENABLED}" = "false" ] && [ "${CATTLE_UPSTREAM_ENABLED}" = "false" ]; then
         fatal "Neither local or remote plan support was enabled"
     fi
 
