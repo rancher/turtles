@@ -131,6 +131,8 @@ def update_manager(yaml, containerName, debug, env, name, project):
                     continue
                 if name != "turtles": # use custom image for projects except turtles
                     c["image"] = project.get("image")
+                if project.get("command"):
+                    c["command"] = project.get("command")
 
                 cmd = ["sh", "/start.sh", "/manager"]
                 if debug != {}:

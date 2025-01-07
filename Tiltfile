@@ -64,6 +64,7 @@ projects = {
         ],
         "kustomize_dir": "config/default",
         "label": "turtles-etcdsnapshotrestore",
+        "command": ["/manager"],
         "binary_name" : "etcd-snapshot-restore"
     },
     "turtles-capiproviders": {
