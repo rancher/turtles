@@ -321,8 +321,14 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{}, nil
 	}
 
+	// Get custom CAcert if agentTLSMode feature is enabled
+	caCert, err := getTrustedCAcert(ctx, r.Client, feature.Gates.Enabled(feature.AgentTLSMode))
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting CA cert: %w", err)
+	}
+
 	// get the registration manifest
-	manifest, err := getClusterRegistrationManifest(ctx, rancherCluster.Name, rancherCluster.Name, r.RancherClient, r.InsecureSkipVerify)
+	manifest, err := getClusterRegistrationManifest(ctx, rancherCluster.Name, rancherCluster.Name, r.RancherClient, caCert, r.InsecureSkipVerify)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

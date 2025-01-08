@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -58,7 +59,7 @@ const (
 )
 
 func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string, cl client.Client,
-	insecureSkipVerify bool,
+	caCert []byte, insecureSkipVerify bool,
 ) (string, error) {
 	log := log.FromContext(ctx)
 
@@ -85,7 +86,7 @@ func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace 
 		return "", nil
 	}
 
-	manifestData, err := downloadManifest(token.Status.ManifestURL, insecureSkipVerify)
+	manifestData, err := downloadManifest(token.Status.ManifestURL, caCert, insecureSkipVerify)
 	if err != nil {
 		log.Error(err, "failed downloading import manifest")
 		return "", err
@@ -140,11 +141,23 @@ func namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Fun
 	}
 }
 
-func downloadManifest(url string, insecureSkipVerify bool) (string, error) {
+func downloadManifest(url string, caCert []byte, insecureSkipVerify bool) (string, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify, //nolint:gosec
+	}
+
+	// Only trust the CA certificate if it is provided
+	if caCert != nil { //
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return "", errors.New("failed to append CA certificate")
+		}
+
+		tlsConfig.RootCAs = caCertPool
+	}
+
 	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: insecureSkipVerify, //nolint:gosec
-		},
+		TLSClientConfig: tlsConfig,
 	}}
 
 	resp, err := client.Get(url) //nolint:gosec,noctx
@@ -284,4 +297,45 @@ func createObject(ctx context.Context, c client.Client, obj client.Object) error
 	log.V(4).Info("object was created", "gvk", gvk, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
 	return nil
+}
+
+func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeatureEnabled bool) ([]byte, error) {
+	log := log.FromContext(ctx)
+
+	if !agentTLSModeFeatureEnabled {
+		log.Info("agent-tls-mode feature is disabled, using system store")
+		return nil, nil
+	}
+
+	agentTLSModeSetting := &managementv3.Setting{}
+
+	if err := cl.Get(ctx, client.ObjectKey{
+		Name: "agent-tls-mode",
+	}, agentTLSModeSetting); err != nil {
+		return nil, fmt.Errorf("error getting agent-tls-mode setting: %w", err)
+	}
+
+	switch agentTLSModeSetting.Value {
+	case "system-store":
+		log.Info("using system store for CA certificates")
+		return nil, nil
+	case "strict":
+		log.Info("using strict mode for CA certificates")
+
+		caCertsSetting := &managementv3.Setting{}
+
+		if err := cl.Get(ctx, client.ObjectKey{
+			Name: "cacerts",
+		}, caCertsSetting); err != nil {
+			return nil, fmt.Errorf("error getting ca-certs setting: %w", err)
+		}
+
+		if caCertsSetting.Value == "" {
+			return nil, errors.New("ca-certs setting value is empty")
+		}
+
+		return []byte(caCertsSetting.Value), nil
+	default:
+		return nil, fmt.Errorf("invalid agent-tls-mode setting value: %s", agentTLSModeSetting.Value)
+	}
 }
