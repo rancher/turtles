@@ -18,15 +18,18 @@ package webhooks
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -164,13 +167,89 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config, &clusterv1.Cluster{})
 		Expect(err).ToNot(HaveOccurred())
 
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
+				Namespace: rke2Config.Namespace,
+			},
+		}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+
+		Expect(secret.Data["install.sh"]).To(Equal([]byte(fmt.Sprintf("CATTLE_SERVER=%s\nCATTLE_AGENT_BINARY_BASE_URL=\"%s/assets\"\n%s", serverUrl, serverUrl, installSh))))
+
 		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
 			Path:        "/opt/system-agent-install.sh",
 			Owner:       defaultFileOwner,
 			Permissions: "0600",
 			ContentFrom: &bootstrapv1.FileSource{
 				Secret: bootstrapv1.SecretFileSource{
-					Name: "test-system-agent-install-script",
+					Name: fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
+					Key:  "install.sh",
+				},
+			},
+		}))
+	})
+
+	It("Should add system-agent-install.sh pulling from upstream setup when cluster is annotated", func() {
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config, &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					turtlesannotations.UpstreamSystemAgentAnnotation: "",
+				},
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
+				Namespace: rke2Config.Namespace,
+			},
+		}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+
+		Expect(secret.Data["install.sh"]).To(Equal([]byte(fmt.Sprintf("CATTLE_REMOTE_ENABLED=false;CATTLE_UPSTREAM_ENABLED=true;%s", installSh))))
+
+		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
+			Path:        "/opt/system-agent-install.sh",
+			Owner:       defaultFileOwner,
+			Permissions: "0600",
+			ContentFrom: &bootstrapv1.FileSource{
+				Secret: bootstrapv1.SecretFileSource{
+					Name: fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
+					Key:  "install.sh",
+				},
+			},
+		}))
+	})
+
+	It("Should add system-agent-install.sh using provided binary path when cluster is annotated", func() {
+		err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config, &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					turtlesannotations.LocalSystemAgentAnnotation: "/my/agent/location",
+				},
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
+				Namespace: rke2Config.Namespace,
+			},
+		}
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+
+		Expect(secret.Data["install.sh"]).To(Equal([]byte(fmt.Sprintf("CATTLE_LOCAL_ENABLED=true;CATTLE_REMOTE_ENABLED=false;CATTLE_AGENT_BINARY_LOCAL=true;CATTLE_AGENT_BINARY_LOCAL_LOCATION=/my/agent/location;%s", installSh))))
+
+		Expect(rke2Config.Spec.Files).To(ContainElement(bootstrapv1.File{
+			Path:        "/opt/system-agent-install.sh",
+			Owner:       defaultFileOwner,
+			Permissions: "0600",
+			ContentFrom: &bootstrapv1.FileSource{
+				Secret: bootstrapv1.SecretFileSource{
+					Name: fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
 					Key:  "install.sh",
 				},
 			},
