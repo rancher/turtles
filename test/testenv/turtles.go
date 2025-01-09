@@ -181,7 +181,6 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 
 	By("Installing rancher-turtles chart")
 	values := map[string]string{
-		"rancherTurtles.managerArguments[0]":                 "--insecure-skip-verify=true",
 		"cluster-api-operator.cluster-api.configSecret.name": "variables",
 	}
 
@@ -349,7 +348,6 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 		"--wait",
 		"--timeout", "10m",
 		"--kubeconfig", input.BootstrapClusterProxy.GetKubeconfigPath(),
-		"--set", "rancherTurtles.managerArguments[0]=--insecure-skip-verify=true",
 		"--set", fmt.Sprintf("rancherTurtles.image=%s", input.Image),
 		"--set", fmt.Sprintf("rancherTurtles.imageVersion=%s", input.Tag),
 		"--set", fmt.Sprintf("rancherTurtles.tag=%s", input.Tag),
