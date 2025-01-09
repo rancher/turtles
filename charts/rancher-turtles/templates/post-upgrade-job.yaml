@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: post-upgrade-job
-  namespace: rancher-turtles-system
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": post-upgrade
     "helm.sh/hook-weight": "1"
@@ -42,7 +42,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: post-upgrade-job
-    namespace: rancher-turtles-system
+    namespace: '{{ .Values.rancherTurtles.namespace }}'
 roleRef:
   kind: ClusterRole
   name: post-upgrade-job-delete-clusters
@@ -52,6 +52,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: post-upgrade-delete-clusters
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": post-upgrade
     "helm.sh/hook-weight": "2"
