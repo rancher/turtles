@@ -30,7 +30,7 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the cluster", Label(e2e.LocalTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the cluster", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)

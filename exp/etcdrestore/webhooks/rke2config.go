@@ -25,6 +25,7 @@ import (
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,8 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	_ "embed"
 )
@@ -67,7 +66,6 @@ var (
 // RKE2ConfigWebhook defines a webhook for RKE2Config.
 type RKE2ConfigWebhook struct {
 	client.Client
-	Tracker               *remote.ClusterCacheTracker
 	InsecureSkipTLSVerify bool
 }
 
@@ -95,6 +93,14 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 	// Deploy agent only on CP machines
 	if _, found := rke2Config.Labels[clusterv1.MachineControlPlaneLabel]; !found {
 		return nil
+	}
+
+	cluster := &clusterv1.Cluster{}
+	if err := r.Get(ctx, client.ObjectKey{
+		Namespace: rke2Config.Namespace,
+		Name:      rke2Config.Labels[clusterv1.ClusterNameLabel],
+	}, cluster); err != nil {
+		return apierrors.NewBadRequest(fmt.Sprintf("failed to get cluster for the rke2config: %s", err))
 	}
 
 	if rke2Config.Annotations == nil {
@@ -151,7 +157,7 @@ func (r *RKE2ConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create connect info json: %s", err))
 	}
 
-	if err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config); err != nil {
+	if err := r.createSystemAgentInstallScript(ctx, serverUrl, systemAgentVersion, rke2Config, cluster); err != nil {
 		return apierrors.NewBadRequest(fmt.Sprintf("failed to create system agent install script: %s", err))
 	}
 
@@ -345,7 +351,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 }
 
 // createSystemAgentInstallScript creates the system-agent-install.sh script.
-func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, serverUrl, systemAgentVersion string, rke2Config *bootstrapv1.RKE2Config) error {
+func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, serverUrl, systemAgentVersion string, rke2Config *bootstrapv1.RKE2Config, cluster *clusterv1.Cluster) error {
 	systemAgentInstallScriptPath := "/opt/system-agent-install.sh"
 
 	filePaths := make(map[string]struct{})
@@ -362,6 +368,19 @@ func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, 
 
 	serverUrlBash := fmt.Sprintf("CATTLE_SERVER=%s\n", serverUrl)
 	binaryURL := fmt.Sprintf("CATTLE_AGENT_BINARY_BASE_URL=\"%s/assets\"\n", serverUrl)
+	installScript := fmt.Sprintf("%s%s%s", serverUrlBash, binaryURL, installSh)
+
+	if cluster.Annotations == nil {
+		cluster.Annotations = map[string]string{}
+	}
+
+	if _, found := cluster.Annotations[turtlesannotations.UpstreamSystemAgentAnnotation]; found {
+		installScript = fmt.Sprintf("CATTLE_REMOTE_ENABLED=false;CATTLE_UPSTREAM_ENABLED=true;%s", installSh)
+	}
+
+	if location, found := cluster.Annotations[turtlesannotations.LocalSystemAgentAnnotation]; found {
+		installScript = fmt.Sprintf("CATTLE_LOCAL_ENABLED=true;CATTLE_REMOTE_ENABLED=false;CATTLE_AGENT_BINARY_LOCAL=true;CATTLE_AGENT_BINARY_LOCAL_LOCATION=%s;%s", location, installSh)
+	}
 
 	if err := r.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -372,13 +391,10 @@ func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, 
 			},
 		},
 		Data: map[string][]byte{
-			installScriptKey: []byte(fmt.Sprintf("%s%s%s", serverUrlBash, binaryURL, installSh)),
+			installScriptKey: []byte(installScript),
 		},
-	},
-	); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
+	}); client.IgnoreAlreadyExists(err) != nil {
+		return err
 	}
 
 	rke2Config.Spec.Files = append(rke2Config.Spec.Files, bootstrapv1.File{
