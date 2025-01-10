@@ -71,11 +71,17 @@ spec:
   agentConfig:
     nodeAnnotations:
       test: "true"
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name:  ${CLUSTER_NAME}-control-plane
+    nodeDrainTimeout: 30s
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerMachineTemplate
     name:  ${CLUSTER_NAME}-control-plane
-  nodeDrainTimeout: 30s
+  nodeDrainTimeout: 30s  
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
