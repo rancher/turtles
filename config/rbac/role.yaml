@@ -9,19 +9,8 @@ rules:
   resources:
   - configmaps
   - events
-  - secrets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - namespaces
+  - secrets
   verbs:
   - create
   - delete
@@ -36,7 +25,6 @@ rules:
   - clusters
   - clusters/status
   verbs:
-  - create
   - get
   - list
   - patch
@@ -52,6 +40,7 @@ rules:
   - update
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
+  - operator.cluster.x-k8s.io
   resources:
   - '*'
   verbs:
@@ -66,15 +55,6 @@ rules:
   - management.cattle.io
   resources:
   - clusterregistrationtokens
-  - clusterregistrationtokens/status
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-- apiGroups:
-  - management.cattle.io
-  resources:
   - clusters
   - clusters/status
   verbs:
@@ -85,6 +65,15 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - management.cattle.io
+  resources:
+  - clusterregistrationtokens/status
+  - settings
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - provisioning.cattle.io
@@ -103,24 +92,45 @@ rules:
   - turtles-capi.cattle.io
   resources:
   - capiproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
+  - capiproviders/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
   - capiproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - turtles-capi.cattle.io
+  resources:
   - clusterctlconfigs
   - clusterctlconfigs/status
   verbs:
   - get
   - list
-  - watch
   - patch
-  - update
+  - watch
 - apiGroups:
-  - operator.cluster.x-k8s.io
+  - turtles-capi.cattle.io
   resources:
-  - '*'
+  - clusterctlconfigs/finalizers
   verbs:
-  - create
   - get
   - list
-  - watch
   - patch
   - update
-  - create
+  - watch
