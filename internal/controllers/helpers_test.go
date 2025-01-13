@@ -79,6 +79,17 @@ var _ = Describe("getTrustedCAcert", func() {
 		Expect(result).To(Equal([]byte("cert-data")))
 	})
 
+	It("should use default agent-tls-mode when value is empty", func() {
+		agentTLSModeSetting.Value = ""
+		agentTLSModeSetting.Default = "strict"
+		Expect(fakeClient.Create(ctx, agentTLSModeSetting)).To(Succeed())
+		Expect(fakeClient.Create(ctx, cacertsSetting)).To(Succeed())
+
+		result, err := getTrustedCAcert(ctx, fakeClient, true)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(Equal([]byte("cert-data")))
+	})
+
 	It("should return error when agent-tls-mode is strict and cacerts is empty", func() {
 		cacertsSetting.Value = ""
 		Expect(fakeClient.Create(ctx, agentTLSModeSetting)).To(Succeed())
@@ -96,6 +107,17 @@ var _ = Describe("getTrustedCAcert", func() {
 
 		result, err := getTrustedCAcert(ctx, fakeClient, true)
 		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("invalid agent-tls-mode setting value"))
+		Expect(result).To(BeNil())
+	})
+
+	It("should return error for missing agent-tls-mode value and default", func() {
+		agentTLSModeSetting.Value = ""
+		agentTLSModeSetting.Default = ""
+		Expect(fakeClient.Create(ctx, agentTLSModeSetting)).To(Succeed())
+
+		result, err := getTrustedCAcert(ctx, fakeClient, true)
+		Expect(err).To(HaveOccurred(), "Should not make assumptions on default agent-tls-mode value")
 		Expect(err.Error()).To(ContainSubstring("invalid agent-tls-mode setting value"))
 		Expect(result).To(BeNil())
 	})
