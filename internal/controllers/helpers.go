@@ -315,7 +315,12 @@ func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeature
 		return nil, fmt.Errorf("error getting agent-tls-mode setting: %w", err)
 	}
 
-	switch agentTLSModeSetting.Value {
+	agentTLSModeValue := agentTLSModeSetting.Value
+	if len(agentTLSModeValue) == 0 {
+		agentTLSModeValue = agentTLSModeSetting.Default
+	}
+
+	switch agentTLSModeValue {
 	case "system-store":
 		log.Info("using system store for CA certificates")
 		return nil, nil
@@ -336,6 +341,6 @@ func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeature
 
 		return []byte(caCertsSetting.Value), nil
 	default:
-		return nil, fmt.Errorf("invalid agent-tls-mode setting value: %s", agentTLSModeSetting.Value)
+		return nil, fmt.Errorf("invalid agent-tls-mode setting value: %s", agentTLSModeValue)
 	}
 }
