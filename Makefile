@@ -243,7 +243,7 @@ generate-manifests-external: vendor controller-gen ## Generate ClusterRole and C
 
 .PHONY: generate-manifests-api
 generate-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/v1alpha1/..." \
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/v1alpha1/..." paths="./internal/controllers/..." \
 			output:crd:artifacts:config=./config/crd/bases \
 			output:rbac:dir=./config/rbac \
 
