@@ -80,9 +80,12 @@ var _ = SynchronizedBeforeSuite(
 		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			CAPIProvidersYAML:     e2e.CapiProviders,
+			TurtlesChartPath:      "https://rancher.github.io/turtles",
+			Version:               "v0.15.0",
 			AdditionalValues: map[string]string{
-				"rancherTurtles.features.addon-provider-fleet.enabled": "true",
-				"rancherTurtles.features.managementv3-cluster.enabled": "false", // disable the default management.cattle.io/v3 controller
+				"rancherTurtles.features.addon-provider-fleet.enabled":           "true",
+				"rancherTurtles.features.managementv3-cluster.enabled":           "false",
+				"rancherTurtles.features.managementv3-cluster-migration.enabled": "false",
 			},
 			WaitForDeployments: append(testenv.DefaultDeployments, testenv.NamespaceName{
 				Name:      "caapf-controller-manager",

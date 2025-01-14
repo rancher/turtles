@@ -331,6 +331,7 @@ func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput
 		}()
 	}
 
+	By("Updating the chart index")
 	values := []string{"repo", "update"}
 	cmd := exec.Command(
 		input.HelmBinaryPath,

@@ -26,7 +26,7 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=propagate-labels={{ index .Values "rancherTurtles" "features" "propagate-labels" "enabled"}},managementv3-cluster={{ index .Values "rancherTurtles" "features" "managementv3-cluster" "enabled"}},rancher-kube-secret-patch={{ index .Values "rancherTurtles" "features" "rancher-kubeconfigs" "label"}},addon-provider-fleet={{ index .Values "rancherTurtles" "features" "addon-provider-fleet" "enabled"}},agent-tls-mode={{ index .Values "rancherTurtles" "features" "agent-tls-mode" "enabled"}}
+        - --feature-gates=propagate-labels={{ index .Values "rancherTurtles" "features" "propagate-labels" "enabled"}},rancher-kube-secret-patch={{ index .Values "rancherTurtles" "features" "rancher-kubeconfigs" "label"}},addon-provider-fleet={{ index .Values "rancherTurtles" "features" "addon-provider-fleet" "enabled"}},agent-tls-mode={{ index .Values "rancherTurtles" "features" "agent-tls-mode" "enabled"}}
         {{- range .Values.rancherTurtles.managerArguments }}
         - {{ . }}
         {{- end }}  

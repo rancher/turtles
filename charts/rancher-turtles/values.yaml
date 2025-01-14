@@ -17,10 +17,6 @@ rancherTurtles:
       kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
     rancher-kubeconfigs:
       label: false
-    managementv3-cluster:
-      enabled: true
-    managementv3-cluster-migration:
-      enabled: false
     propagate-labels:
       enabled: false
     etcd-snapshot-restore:

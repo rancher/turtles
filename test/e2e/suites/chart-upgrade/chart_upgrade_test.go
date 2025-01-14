@@ -61,16 +61,13 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
+		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
+
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			AdditionalValues:      rtInput.AdditionalValues,
 			PostUpgradeSteps:      []func(){},
 		}
-
-		testenv.PreRancherTurtlesInstallHook(&rtInput)
-
-		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
-		rtInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false" // disable the default management.cattle.io/v3 controller
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			By("Waiting for CAAPF deployment to be available")

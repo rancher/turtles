@@ -353,18 +353,10 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 		By("Running checks on Rancher cluster")
 		validateLegacyRancherCluster()
 
-		testenv.DeployChartMuseum(ctx, testenv.DeployChartMuseumInput{
-			BootstrapClusterProxy: input.BootstrapClusterProxy,
-		})
-
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
 			BootstrapClusterProxy: input.BootstrapClusterProxy,
 			SkipCleanup:           true,
-			AdditionalValues:      map[string]string{},
 		}
-
-		upgradeInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "true"
-		upgradeInput.AdditionalValues["rancherTurtles.features.managementv3-cluster-migration.enabled"] = "true"
 
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
 
@@ -381,25 +373,6 @@ func MigrateToV3UsingGitOpsSpec(ctx context.Context, inputGetter func() MigrateT
 
 		By("Rancher should be available using new cluster import")
 		validateRancherCluster()
-
-		By("Running downgrade on provisioningv1 cluster later")
-		upgradeInput.AdditionalValues["rancherTurtles.features.managementv3-cluster.enabled"] = "false"
-		upgradeInput.SkipCleanup = false
-		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
-
-		By("Waiting for the new Rancher cluster record to be removed")
-		Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be unimported (deleted)")
-
-		By("CAPI cluster should NOT have the 'imported' annotation")
-		Consistently(func() bool {
-			Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			annotations := capiCluster.GetAnnotations()
-			_, found := annotations["imported"]
-			return !found
-		}, 5*time.Second).Should(BeTrue(), "'imported' annotation is NOT expected on CAPI cluster")
-
-		By("Rancher should be available using old cluster import")
-		validateLegacyRancherCluster()
 	})
 
 	AfterEach(func() {

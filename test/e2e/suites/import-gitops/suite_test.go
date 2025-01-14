@@ -81,7 +81,6 @@ var _ = SynchronizedBeforeSuite(
 				CAPIProvidersYAML:     e2e.CapiProviders,
 				AdditionalValues: map[string]string{
 					"rancherTurtles.features.addon-provider-fleet.enabled": "true",
-					"rancherTurtles.features.managementv3-cluster.enabled": "false", // disable the default management.cattle.io/v3 controller
 				},
 				WaitForDeployments: append(
 					testenv.DefaultDeployments,
@@ -96,10 +95,7 @@ var _ = SynchronizedBeforeSuite(
 			testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 				BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 				CAPIProvidersYAML:     e2e.CapiProviders,
-				AdditionalValues: map[string]string{
-					"rancherTurtles.features.managementv3-cluster.enabled": "false", // disable the default management.cattle.io/v3 controller
-				},
-				WaitForDeployments: testenv.DefaultDeployments,
+				WaitForDeployments:    testenv.DefaultDeployments,
 			})
 		}
 

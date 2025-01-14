@@ -32,7 +32,7 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 )
 
-var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", func() {
 	BeforeEach(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)

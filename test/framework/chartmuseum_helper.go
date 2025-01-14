@@ -77,14 +77,6 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	Expect(input.Proxy).NotTo(BeNil(), "Cluster proxy is required for DeployChartMuseum.")
 	Expect(input.WaitInterval).ToNot(BeNil(), "WaitInterval is required for DeployGitea")
 
-	By("Installing chartmuseum push plugin")
-	exec.Command(
-		input.HelmBinaryPath,
-		"plugin", "install",
-		"https://github.com/chartmuseum/helm-push.git",
-		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
-	).CombinedOutput()
-
 	By("Creating chartmuseum manifests")
 	Expect(Apply(ctx, input.Proxy, input.ChartMuseumManifests)).ShouldNot(HaveOccurred())
 
@@ -144,12 +136,18 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	}, input.WaitInterval...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 	By("Pushing local chart to chartmuseum")
-	exec.Command(
-		input.HelmBinaryPath,
-		"cm-push", input.ChartsPath,
-		"rancher-turtles-local", "-a", input.ChartVersion,
-		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
-	).CombinedOutput()
+
+	cmd := exec.Command(
+		"curl",
+		"-L",
+		"-F", fmt.Sprintf("chart=@%s", input.ChartsPath),
+		fmt.Sprintf("%s/api/charts", path),
+	)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		Expect(fmt.Errorf("Unable to push chart: %w\nOutput: %s, Command: %s", err, string(out), cmd.String())).ToNot(HaveOccurred())
+	}
 
 	return fmt.Sprintf("http://%s:%d", addr, port.NodePort)
 }
