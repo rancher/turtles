@@ -77,14 +77,6 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	Expect(input.Proxy).NotTo(BeNil(), "Cluster proxy is required for DeployChartMuseum.")
 	Expect(input.WaitInterval).ToNot(BeNil(), "WaitInterval is required for DeployGitea")
 
-	By("Installing chartmuseum push plugin")
-	exec.Command(
-		input.HelmBinaryPath,
-		"plugin", "install",
-		"https://github.com/chartmuseum/helm-push.git",
-		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
-	).CombinedOutput()
-
 	By("Creating chartmuseum manifests")
 	Expect(Apply(ctx, input.Proxy, input.ChartMuseumManifests)).ShouldNot(HaveOccurred())
 
@@ -146,10 +138,10 @@ func DeployChartMuseum(ctx context.Context, input ChartMuseumInput) string {
 	By("Pushing local chart to chartmuseum")
 
 	cmd := exec.Command(
-		input.HelmBinaryPath,
-		"cm-push", input.ChartsPath,
-		"rancher-turtles-local", "-a", input.ChartVersion,
-		"--kubeconfig", input.Proxy.GetKubeconfigPath(),
+		"curl",
+		"-L",
+		"-F", fmt.Sprintf("chart=@%s", input.ChartsPath),
+		fmt.Sprintf("%s/api/charts", path),
 	)
 
 	out, err := cmd.CombinedOutput()
