@@ -47,6 +47,6 @@ func init() {
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	RancherKubeSecretPatch: {Default: false, PreRelease: featuregate.Beta},
 	PropagateLabels:        {Default: false, PreRelease: featuregate.Beta},
-	ExternalFleet:          {Default: false, PreRelease: featuregate.Beta},
+	ExternalFleet:          {Default: true, PreRelease: featuregate.Beta},
 	AgentTLSMode:           {Default: false, PreRelease: featuregate.Beta},
 }

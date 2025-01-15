@@ -35,10 +35,17 @@ data:
       cluster:
         patchResource: true
         setOwnerReferences: true
+        hostNetwork: true
         selector:
           matchLabels:
             cluster-api.cattle.io/rancher-auto-import: "true"
+          matchExpressions:
+            - key: cluster-api.cattle.io/disable-fleet-auto-import
+              operator: DoesNotExist
         namespaceSelector:
           matchLabels:
             cluster-api.cattle.io/rancher-auto-import: "true"
+          matchExpressions:
+            - key: cluster-api.cattle.io/disable-fleet-auto-import
+              operator: DoesNotExist
 {{- end }}

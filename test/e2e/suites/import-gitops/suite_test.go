@@ -79,9 +79,6 @@ var _ = SynchronizedBeforeSuite(
 			testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 				BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 				CAPIProvidersYAML:     e2e.CapiProviders,
-				AdditionalValues: map[string]string{
-					"rancherTurtles.features.addon-provider-fleet.enabled": "true",
-				},
 				WaitForDeployments: append(
 					testenv.DefaultDeployments,
 					testenv.NamespaceName{
@@ -89,7 +86,6 @@ var _ = SynchronizedBeforeSuite(
 						Namespace: e2e.RancherTurtlesNamespace,
 					},
 				),
-				ConfigurationPatches: [][]byte{e2e.AddonProviderFleetHostNetworkPatch},
 			})
 		} else {
 			testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{

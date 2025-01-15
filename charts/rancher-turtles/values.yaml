@@ -25,7 +25,7 @@ rancherTurtles:
       imageVersion: v0.0.0
       imagePullPolicy: IfNotPresent
     addon-provider-fleet:
-      enabled: false
+      enabled: true
     agent-tls-mode:
       enabled: false
 cluster-api-operator:
