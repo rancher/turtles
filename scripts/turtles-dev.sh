@@ -21,6 +21,7 @@ if [ -z "$RANCHER_HOSTNAME" ]; then
 fi
 
 RANCHER_VERSION=${RANCHER_VERSION:-v2.10.0}
+RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 ETCD_CONTROLLER_IMAGE=${ETCD_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
 ETCD_CONTROLLER_IMAGE_TAG=${ETCD_CONTROLLER_IMAGE_TAG:-dev}
@@ -31,6 +32,8 @@ USE_TILT_DEV=${USE_TILT_DEV:-true}
 BASEDIR=$(dirname "$0")
 
 kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml"
+docker pull $RANCHER_IMAGE
+kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME
 
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
