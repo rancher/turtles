@@ -63,19 +63,17 @@ func (r *ClusterUpgradeReconciler) SetupWithManager(ctx context.Context, mgr ctr
 	}
 
 	// TODO: watch CAPI clusters and ClusterClass
-	err = c.Watch(
-		source.Kind(mgr.GetCache(), &clusterv1.Cluster{}),
-		handler.EnqueueRequestsFromMapFunc(r.capiClusterToClusterUpgradeGroup(ctx)),
-	)
-	if err != nil {
+	if err := c.Watch(
+		source.Kind[client.Object](mgr.GetCache(), &clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.capiClusterToClusterUpgradeGroup(ctx)),
+		)); err != nil {
 		return fmt.Errorf("adding watch for cluster upgrade group: %w", err)
 	}
 
-	err = c.Watch(
-		source.Kind(mgr.GetCache(), &clusterv1.ClusterClass{}),
-		handler.EnqueueRequestsFromMapFunc(r.clusterClassToClusterUpgradeGroup(ctx)),
-	)
-	if err != nil {
+	if err := c.Watch(
+		source.Kind[client.Object](mgr.GetCache(), &clusterv1.ClusterClass{},
+			handler.EnqueueRequestsFromMapFunc(r.clusterClassToClusterUpgradeGroup(ctx)),
+		)); err != nil {
 		return fmt.Errorf("adding watch for cluster class: %w", err)
 	}
 
