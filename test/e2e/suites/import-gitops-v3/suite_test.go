@@ -74,16 +74,12 @@ var _ = SynchronizedBeforeSuite(
 		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			CAPIProvidersYAML:     e2e.CapiProviders,
-			AdditionalValues: map[string]string{
-				"rancherTurtles.features.addon-provider-fleet.enabled": "true",
-			},
 			WaitForDeployments: append(
 				testenv.DefaultDeployments,
 				testenv.NamespaceName{
 					Name:      "caapf-controller-manager",
 					Namespace: e2e.RancherTurtlesNamespace,
 				}),
-			ConfigurationPatches: [][]byte{e2e.AddonProviderFleetHostNetworkPatch},
 		})
 
 		if !shortTestOnly() && !localTestOnly() {

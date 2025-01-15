@@ -23,7 +23,6 @@ import (
 	_ "embed"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"github.com/rancher/turtles/test/e2e"
@@ -33,7 +32,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	turtlesframework "github.com/rancher/turtles/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -61,8 +59,6 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
-		rtInput.AdditionalValues["rancherTurtles.features.addon-provider-fleet.enabled"] = "true"
-
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			AdditionalValues:      rtInput.AdditionalValues,
@@ -78,9 +74,6 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 					Namespace: e2e.RancherTurtlesNamespace,
 				}},
 			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
-
-			By("Setting the CAAPF config to use hostNetwork")
-			Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, e2e.AddonProviderFleetHostNetworkPatch)).To(Succeed())
 		})
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
