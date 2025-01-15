@@ -85,7 +85,7 @@ updates:
       # together with controller-runtime.
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
-      - dependency-name: "google.golang.org/grpc
+      - dependency-name: "google.golang.org/grpc"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
