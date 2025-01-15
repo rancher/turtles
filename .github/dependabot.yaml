@@ -66,6 +66,26 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
+  # Clusterclass progressive rebase implementation
+  - package-ecosystem: "gomod"
+    directory: "/exp/clusterclass"
+    schedule:
+      interval: "daily"
+    labels:
+      - "kind/cleanup"
+      - "area/dependency"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Ignore controller-runtime as its upgraded manually.
+      - dependency-name: "sigs.k8s.io/controller-runtime"
+      # Ignore k8s and its transitives modules as they are upgraded manually
+      # together with controller-runtime.
+      - dependency-name: "k8s.io/*"
+      - dependency-name: "go.etcd.io/*"
+      - dependency-name: "google.golang.org/grpc
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
