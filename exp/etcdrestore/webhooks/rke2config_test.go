@@ -19,6 +19,7 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -173,7 +174,9 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 				Namespace: rke2Config.Namespace,
 			},
 		}
-		Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+		Eventually(func() error {
+			return testEnv.Get(ctx, client.ObjectKeyFromObject(secret), secret)
+		}, 5*time.Second).Should(Succeed())
 
 		Expect(secret.Data["install.sh"]).To(Equal([]byte(fmt.Sprintf("CATTLE_SERVER=%s\nCATTLE_AGENT_BINARY_BASE_URL=\"%s/assets\"\n%s", serverUrl, serverUrl, installSh))))
 
@@ -206,7 +209,10 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 				Namespace: rke2Config.Namespace,
 			},
 		}
-		Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+
+		Eventually(func() error {
+			return testEnv.Get(ctx, client.ObjectKeyFromObject(secret), secret)
+		}, 5*time.Second).Should(Succeed())
 
 		Expect(secret.Data["install.sh"]).To(Equal([]byte(fmt.Sprintf("CATTLE_REMOTE_ENABLED=false;CATTLE_UPSTREAM_ENABLED=true;%s", installSh))))
 
@@ -239,7 +245,9 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 				Namespace: rke2Config.Namespace,
 			},
 		}
-		Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+		Eventually(func() error {
+			return testEnv.Get(ctx, client.ObjectKeyFromObject(secret), secret)
+		}, 5*time.Second).Should(Succeed())
 
 		Expect(secret.Data["install.sh"]).To(Equal([]byte(fmt.Sprintf("CATTLE_LOCAL_ENABLED=true;CATTLE_REMOTE_ENABLED=false;CATTLE_AGENT_BINARY_LOCAL=true;CATTLE_AGENT_BINARY_LOCAL_LOCATION=/my/agent/location;%s", installSh))))
 

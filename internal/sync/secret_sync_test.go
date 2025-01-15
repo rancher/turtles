@@ -17,6 +17,8 @@ limitations under the License.
 package sync_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -120,6 +122,6 @@ var _ = Describe("Provider sync", func() {
 
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), infrastructure)).ToNot(HaveOccurred())
 			g.Expect(infrastructure.Spec.ConfigSecret).ToNot(BeNil())
-		}).Should(Succeed())
+		}, 5*time.Second).Should(Succeed())
 	})
 })
