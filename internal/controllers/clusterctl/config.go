@@ -102,7 +102,27 @@ func ClusterConfig(ctx context.Context, c client.Client) (*ConfigRepository, err
 		clusterctlConfig.Images = map[string]ConfigImage{}
 	}
 
-	clusterctlConfig.Providers = append(clusterctlConfig.Providers, config.Spec.Providers...)
+	// Deduplicate and update providers
+	existingProviders := make(map[string]int)
+
+	for i, provider := range clusterctlConfig.Providers {
+		key := provider.Name + "-" + provider.Type
+		existingProviders[key] = i
+	}
+
+	for _, newProvider := range config.Spec.Providers {
+		key := newProvider.Name + "-" + newProvider.Type
+		if idx, exists := existingProviders[key]; exists {
+			// Update existing provider
+			oldProvider := clusterctlConfig.Providers[idx]
+			clusterctlConfig.Providers[idx] = newProvider
+			log.Info("Updated existing provider", "name", newProvider.Name, "type", newProvider.Type, "oldURL", oldProvider.URL, "newURL", newProvider.URL)
+		} else {
+			// Add new provider
+			clusterctlConfig.Providers = append(clusterctlConfig.Providers, newProvider)
+			log.Info("Added new provider", "name", newProvider.Name, "type", newProvider.Type, "url", newProvider.URL)
+		}
+	}
 
 	for _, image := range config.Spec.Images {
 		clusterctlConfig.Images[image.Name] = ConfigImage{
