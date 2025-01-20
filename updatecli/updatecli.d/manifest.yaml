@@ -56,6 +56,16 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
+  capgrelease:
+    kind: githubrelease
+    name: Get the latest CAPI GCP infrastructure provider release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-provider-gcp"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
   capvrelease:
     kind: githubrelease
     name: Get the latest CAPI vSphere infrastructure provider release
@@ -142,6 +152,15 @@ targets:
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/{{ source "caparelease" }}/'
     scmid: turtles
     sourceid: caparelease # Will be ignored as `replacepattern` is specified
+  bumpcapg:
+    name: bump capg provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/{{ source "capgrelease" }}/'
+    scmid: turtles
+    sourceid: capgrelease # Will be ignored as `replacepattern` is specified
   bumpcapv:
     name: bump capv provider
     kind: file
