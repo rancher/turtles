@@ -251,7 +251,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"replicas":                  "1",
 	}
 	if input.RancherFeatures != "" {
-		values["CATTLE_FEATURES"] = input.RancherFeatures
+		values["features"] = input.RancherFeatures
 	}
 	if input.RancherImageTag != "" {
 		values["rancherImageTag"] = input.RancherImageTag
