@@ -7,9 +7,6 @@ rancherTurtles:
   imagePullSecrets: []
   rancherInstalled: true
   features:
-    cluster-api-operator:
-      cleanup: true
-      kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
     embedded-capi:
       disabled: true
     rancher-webhook:
@@ -51,6 +48,8 @@ cluster-api-operator:
       - mountPath: /config
         name: clusterctl-config
         readOnly: true
+  cleanup: true
+  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   cluster-api:
     enabled: true
     configSecret:
