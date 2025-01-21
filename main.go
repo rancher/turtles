@@ -134,6 +134,10 @@ func main() {
 
 	ctrl.SetLogger(textlogger.NewLogger(textlogger.NewConfig()))
 
+	if insecureSkipVerify {
+		setupLog.Info("insecure-skip-verify is True. This should only be used for development and testing purposes. Use at your own risk.")
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: server.Options{
