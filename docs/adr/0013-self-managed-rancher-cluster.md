@@ -53,6 +53,6 @@ Support for a self managed cluster can be improved in different iterations:
 ## Consequences
 
 - `clusteroperator move` needs to be implemented first
-- Air-gapped scenarios are different depending on the infrastructure providers used, wil need to pay attention to not overlap with provider specific air-gap logic or setup instructions
+- Implementation will be integrated with air-gapped scenarios specific to the infrastructure provider. 
 - There is no clear cluster-api contract for self-managing clusters. This should not be a problem by design, but it could be improved, for example by preventing self-managed cluster accidental deletion.
 - Different ways of deploying the temporary cluster can be supported. One notable example being Rancher Desktop, to make the process accessible to most users.
