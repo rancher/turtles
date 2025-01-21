@@ -29,7 +29,7 @@ In this scenario, a user such as a platform engineer starts from zero.
 
 The proposed solution is to support a [Bootstrap & Pivot](https://cluster-api.sigs.k8s.io/clusterctl/commands/move.html#bootstrap--pivot) process, so that the user can first create a temporary management cluster, then use it to bootstrap the Rancher management cluster, and finally pivot all needed resources to it.  
 
-In order to ensure compatibility and sane validation checks, initing and moving resources should be done using the [clusteroperator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/cmd/plugin/cmd) CLI.  
+In order to ensure compatibility and sane validation checks, initialize and move operation should be done using the [clusteroperator](https://github.com/kubernetes-sigs/cluster-api-operator/tree/main/cmd/plugin/cmd) CLI.  
 An additional reason to use `clusteroperator` is to make use of the upcoming `preload` [support](https://github.com/kubernetes-sigs/cluster-api-operator/pull/683) and being able to load manifests from OCI images, which will ease the air-gapped scenarios.  
 
 A simplified sequence of actions should look like:
