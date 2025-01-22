@@ -3438,12 +3438,8 @@ rules:
   - clusters
   - clusters/status
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - turtles-capi.cattle.io
