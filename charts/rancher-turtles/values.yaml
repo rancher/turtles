@@ -6,10 +6,8 @@ rancherTurtles:
   managerArguments: []
   imagePullSecrets: []
   rancherInstalled: true
+  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   features:
-    rancher-webhook:
-      cleanup: true
-      kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
     rancher-kubeconfigs:
       label: false
     etcd-snapshot-restore:
@@ -45,7 +43,6 @@ cluster-api-operator:
         name: clusterctl-config
         readOnly: true
   cleanup: true
-  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   cluster-api:
     enabled: true
     configSecret:

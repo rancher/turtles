@@ -10,7 +10,7 @@ metadata:
 spec:
   value: false
 {{- end }}
-{{- if index .Values "rancherTurtles" "features" "rancher-webhook" "cleanup" }}
+{{- if index .Values "rancherTurtles" "rancherInstalled" }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -68,7 +68,7 @@ spec:
       serviceAccountName: pre-install-job
       containers:
         - name: rancher-mutatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
           args:
           - delete
           - mutatingwebhookconfigurations.admissionregistration.k8s.io
@@ -91,7 +91,7 @@ spec:
       serviceAccountName: pre-install-job
       containers:
         - name: rancher-validatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
           args:
           - delete
           - validatingwebhookconfigurations.admissionregistration.k8s.io

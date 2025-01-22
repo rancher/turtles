@@ -62,7 +62,7 @@ spec:
       serviceAccountName: post-upgrade-job
       containers:
         - name: post-upgrade-delete-clusters
-          image: {{ index .Values "rancherTurtles" "features" "rancher-webhook" "kubectlImage" }}
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
           args:
           - delete
           - clusters.management.cattle.io
