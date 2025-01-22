@@ -7,8 +7,6 @@ rancherTurtles:
   imagePullSecrets: []
   rancherInstalled: true
   features:
-    embedded-capi:
-      disabled: true
     rancher-webhook:
       cleanup: true
       kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
