@@ -183,7 +183,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Update(ctx, ns)).To(Succeed())
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
-			testLabelName:   testLabelVal,
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
@@ -204,7 +203,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
-			g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}).Should(Succeed())
@@ -258,7 +256,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
-		Expect(rancherClusters.Items[0].Annotations).To(HaveKeyWithValue(externalFleetAnnotation, testLabelVal))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists, and have finalizers set", func() {
@@ -268,9 +265,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}))
 		defer server.Close()
 
-		capiCluster.Labels = map[string]string{
-			testLabelName: testLabelVal,
-		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
@@ -329,7 +323,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
-			g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}, 10*time.Second).Should(Succeed())
 	})
@@ -473,7 +466,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 			rancherCluster := cluster.DeepCopy()
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), rancherCluster)).To(Succeed())
-			g.Expect(rancherCluster.Annotations).To(HaveKeyWithValue(externalFleetAnnotation, testLabelVal))
 		}, 5*time.Second).Should(Succeed())
 	})
 
@@ -556,7 +548,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Update(ctx, ns)).To(Succeed())
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
-			testLabelName:   testLabelVal,
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
@@ -591,7 +582,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
 		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
-		Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabelName, testLabelVal))
 	})
 
 	It("should reconcile a CAPI Cluster when V1 cluster exists and not migrated", func() {
@@ -599,7 +589,6 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Update(ctx, ns)).To(Succeed())
 		capiCluster.Labels = map[string]string{
 			importLabelName: "true",
-			testLabelName:   testLabelVal,
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		capiCluster.Status.ControlPlaneReady = true
