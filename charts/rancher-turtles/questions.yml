@@ -13,7 +13,7 @@ questions:
     type: boolean
     description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually"
     label: "Enable Cert Manager"
-  - variable: rancherTurtles.features.cluster-api-operator.cleanup
+  - variable: rancherTurtles.cluster-api-operator.cleanup
     default: true
     description: "Specify that the CAPI Operator post-delete cleanup job will be performed"
     type: boolean
@@ -21,7 +21,7 @@ questions:
     group: "CAPI Operator cleanup settings"
     show_subquestion_if: true
     subquestions:
-    - variable: rancherTurtles.features.cluster-api-operator.kubectlImage
+    - variable: rancherTurtles.cluster-api-operator.kubectlImage
       default: "registry.k8s.io/kubernetes/kubectl:v1.30.0"
       description: "Specify the image to use when cleaning up the Cluster API Operator manifests"
       type: string

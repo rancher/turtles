@@ -1,4 +1,4 @@
-{{- if index .Values "rancherTurtles" "features" "cluster-api-operator" "cleanup" }}
+{{- if index .Values "cluster-api-operator" "cleanup" }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -62,7 +62,7 @@ spec:
       serviceAccountName: post-delete-job
       containers:
         - name: cluster-api-operator-mutatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+          image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
           command: ["kubectl"]
           args:
           - delete
@@ -90,7 +90,7 @@ spec:
       serviceAccountName: post-delete-job
       containers:
         - name: cluster-api-operator-validatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+          image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
           command: ["kubectl"]
           args:
           - delete
@@ -119,7 +119,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: delete-capi-controller-manager
-        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
         command: ["kubectl"]
         args:
         - delete
@@ -128,7 +128,7 @@ spec:
         - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
         - --ignore-not-found=true
       - name: delete-capi-kubeadm-bootstrap-controller-manager
-        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
         command: ["kubectl"]
         args:
         - delete
@@ -137,7 +137,7 @@ spec:
         - capi-kubeadm-bootstrap-system
         - --ignore-not-found=true
       - name: delete-capi-kubeadm-control-plane-controller-manager
-        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
         command: ["kubectl"]
         args:
         - delete
@@ -146,7 +146,7 @@ spec:
         - capi-kubeadm-control-plane-system
         - --ignore-not-found=true
       - name: delete-rke2-kubeadm-bootstrap-controller-manager
-        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
         command: ["kubectl"]
         args:
         - delete
@@ -155,7 +155,7 @@ spec:
         - {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "bootstrap" "namespace" }}
         - --ignore-not-found=true
       - name: delete-rke2-control-plane-controller-manager
-        image: {{ index .Values "rancherTurtles" "features" "cluster-api-operator" "kubectlImage" }}
+        image: {{ index .Values "cluster-api-operator" "kubectlImage" }}
         command: ["kubectl"]
         args:
         - delete
