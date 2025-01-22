@@ -299,7 +299,6 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 
 	r.optOutOfClusterOwner(ctx, rancherCluster)
 	r.optOutOfFleetManagement(ctx, rancherCluster)
-	r.propagateLabels(ctx, capiCluster, rancherCluster)
 
 	addedFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
 	if addedFinalizer {
@@ -570,28 +569,5 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfFleetManagement(ctx context.C
 		rancherCluster.SetAnnotations(annotations)
 
 		log.Info("Added fleet annotation to Rancher cluster")
-	}
-}
-
-func (r *CAPIImportManagementV3Reconciler) propagateLabels(
-	ctx context.Context,
-	capiCluster *clusterv1.Cluster,
-	rancherCluster *managementv3.Cluster,
-) {
-	log := log.FromContext(ctx)
-
-	labels := rancherCluster.GetLabels()
-	if rancherCluster.Labels == nil {
-		labels = map[string]string{}
-	}
-
-	if feature.Gates.Enabled(feature.PropagateLabels) {
-		for labelKey, labelVal := range capiCluster.Labels {
-			labels[labelKey] = labelVal
-		}
-
-		rancherCluster.SetLabels(labels)
-
-		log.V(5).Info("Propagated labels to Rancher cluster")
 	}
 }
