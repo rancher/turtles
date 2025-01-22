@@ -33,8 +33,14 @@ var (
 	//go:embed data/capi-operator/capv-provider.yaml
 	CapvProvider []byte
 
-	//go:embed data/capi-operator/full-providers.yaml
-	FullProviders []byte
+	//go:embed data/capi-operator/aws-provider.yaml
+	AWSProvider []byte
+
+	//go:embed data/capi-operator/gcp-provider.yaml
+	GCPProvider []byte
+
+	//go:embed data/capi-operator/azure-provider.yaml
+	AzureProvider []byte
 
 	//go:embed data/capi-operator/capa-variables.yaml
 	AWSProviderSecret []byte

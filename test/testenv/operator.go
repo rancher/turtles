@@ -44,7 +44,7 @@ type CAPIOperatorDeployProviderInput struct {
 	CAPIProvidersSecretsYAML [][]byte
 
 	// CAPIProvidersYAML is the YAML representation of the CAPI providers.
-	CAPIProvidersYAML []byte
+	CAPIProvidersYAML [][]byte
 
 	// TemplateData is the data used for templating.
 	TemplateData TemplateData
@@ -90,8 +90,12 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 		})).To(Succeed(), "Failed to apply secret for capi providers")
 	}
 
-	By("Adding CAPI Operator providers")
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersYAML)).To(Succeed(), "Failed to add CAPI operator providers")
+	for _, provider := range input.CAPIProvidersYAML {
+		provider := provider
+
+		By("Adding CAPI Operator provider")
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, provider)).To(Succeed(), "Failed to add CAPI operator providers")
+	}
 
 	if len(input.WaitForDeployments) == 0 {
 		By("No deployments to wait for")

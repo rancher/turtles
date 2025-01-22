@@ -21,13 +21,13 @@ package import_gitops_v3
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/testenv"
+	"k8s.io/apimachinery/pkg/util/json"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -73,58 +73,7 @@ var _ = SynchronizedBeforeSuite(
 
 		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			CAPIProvidersYAML:     e2e.CapiProviders,
-			WaitForDeployments: append(
-				testenv.DefaultDeployments,
-				testenv.NamespaceName{
-					Name:      "caapf-controller-manager",
-					Namespace: e2e.RancherTurtlesNamespace,
-				}),
 		})
-
-		if !shortTestOnly() && !localTestOnly() {
-			By("Running full tests, deploying additional infrastructure providers")
-
-			testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-				BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-				CAPIProvidersSecretsYAML: [][]byte{
-					e2e.AWSProviderSecret,
-					e2e.AzureIdentitySecret,
-					e2e.GCPProviderSecret,
-				},
-				CAPIProvidersYAML: e2e.FullProviders,
-				WaitForDeployments: []testenv.NamespaceName{
-					{
-						Name:      "capa-controller-manager",
-						Namespace: "capa-system",
-					},
-					{
-						Name:      "capz-controller-manager",
-						Namespace: "capz-system",
-					},
-					{
-						Name:      "capg-controller-manager",
-						Namespace: "capg-system",
-					},
-				},
-			})
-		} else if Label(e2e.LocalTestLabel).MatchesLabelFilter(GinkgoLabelFilter()) {
-			By("Running local vSphere tests, deploying vSphere infrastructure provider")
-
-			testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-				BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-				CAPIProvidersSecretsYAML: [][]byte{
-					e2e.VSphereProviderSecret,
-				},
-				CAPIProvidersYAML: e2e.CapvProvider,
-				WaitForDeployments: []testenv.NamespaceName{
-					{
-						Name:      "capv-controller-manager",
-						Namespace: "capv-system",
-					},
-				},
-			})
-		}
 
 		giteaResult := testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
@@ -158,11 +107,11 @@ var _ = SynchronizedAfterSuite(
 	},
 	func() {
 		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy: bootstrapClusterProxy,
 		})
 
 		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy: bootstrapClusterProxy,
 		})
 
 		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{

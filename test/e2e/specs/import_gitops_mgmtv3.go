@@ -93,7 +93,7 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 // automatically imports into Rancher Manager.
 func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateMgmtV3UsingGitOpsSpecInput) {
 	var (
-		specName              = "creategitops-v3"
+		specName              = "creategitops"
 		input                 CreateMgmtV3UsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		repoName              string
@@ -172,6 +172,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		input = inputGetter()
 		Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
+		Expect(input.GitAddr).ToNot(BeEmpty(), "Invalid argument. input.GitAddr can't be empty when calling %s spec", specName)
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)

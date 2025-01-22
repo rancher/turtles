@@ -136,7 +136,6 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancherTurtles")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancherTurtles")
-	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for DeployRancherTurtles")
 	Expect(input.TurtlesChartPath).ToNot(BeEmpty(), "ChartPath is required for DeployRancherTurtles")
 	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for DeployRancherTurtles")
 	Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required for DeployRancherTurtles")
@@ -228,8 +227,10 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(fullCommand, " "))).ToNot(HaveOccurred())
 	}
 
-	By("Adding CAPI infrastructure providers")
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersYAML)).To(Succeed())
+	if input.CAPIProvidersYAML != nil {
+		By("Adding CAPI infrastructure providers")
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersYAML)).To(Succeed())
+	}
 
 	if input.WaitForDeployments != nil {
 		By("Waiting for provider deployments to be ready")
