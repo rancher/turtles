@@ -31,18 +31,8 @@ jobs:
       artifact_name: artifacts_v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
-  e2e_update_labels:
-    needs: publish_e2e_image
-    uses: ./.github/workflows/run-e2e-suite.yaml
-    with:
-      test_suite: test/e2e/suites/update-labels
-      test_name: Update labels
-      run_azure_janitor: false
-      artifact_name: artifacts_update_labels
-      MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-    secrets: inherit
   clean_e2e_image:
     if: always()
-    needs: [e2e_import_gitops_v3, e2e_v2prov, e2e_update_labels]
+    needs: [e2e_import_gitops_v3, e2e_v2prov]
     uses: ./.github/workflows/e2e-image-clean.yaml
     secrets: inherit

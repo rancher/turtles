@@ -8,8 +8,6 @@ rancherTurtles:
   rancherInstalled: true
   kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   features:
-    rancher-kubeconfigs:
-      label: false
     etcd-snapshot-restore:
       enabled: false
       image: controller
