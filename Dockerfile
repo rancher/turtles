@@ -17,7 +17,7 @@
 # Build the manager binary
 ARG builder_image
 
-FROM ${builder_image} as builder
+FROM --platform=$BUILDPLATFORM ${builder_image} as builder
 WORKDIR /workspace
 
 # Run this with docker build --build-arg goproxy=$(go env GOPROXY) to override the goproxy
@@ -30,15 +30,16 @@ COPY ./ ./
 # Build
 ARG package=.
 ARG ldflags
+ARG TARGETOS TARGETARCH
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
 
-FROM ${builder_image} as etcd-snapshot-restore-builder
+FROM --platform=$BUILDPLATFORM ${builder_image} as etcd-snapshot-restore-builder
 WORKDIR /workspace
 
 # Run this with docker build --build-arg goproxy=$(go env GOPROXY) to override the goproxy
@@ -51,11 +52,12 @@ COPY ./ ./
 
 # Build
 ARG ldflags
+ARG TARGETOS TARGETARCH
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     sh -c "cd exp/etcdrestore && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
 
 # Use distroless as minimal base image to package the manager binary
