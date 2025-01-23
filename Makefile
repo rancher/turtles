@@ -392,35 +392,6 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg package=. \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
-## --------------------------------------
-## Docker - clusterclass
-## --------------------------------------
-
-.PHONY: docker-build-clusterclass ## Build the docker image for clusterclass
-docker-build-clusterclass: buildx-machine docker-pull-prerequisites ## Build docker image for a specific architecture
-	## reads Dockerfile from stdin to avoid an incorrectly cached Dockerfile (https://github.com/moby/buildkit/issues/1368)
-	# buildx does not support using local registry for multi-architecture images
-	cat $(EXP_CLUSTERCLASS_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(ARCH) \
-			--load \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/clusterclass \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(CLUSTERCLASS_IMG):$(TAG) --file - --progress=plain
-
-.PHONY: docker-build-and-push-clusterclass
-docker-build-and-push-clusterclass: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push-clusterclass targets for all architectures
-	cat $(EXP_CLUSTERCLASS_DIR)/Dockerfile | DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
-			--platform $(TARGET_PLATFORMS) \
-			--push \
-			--sbom=true \
-			--attest type=provenance,mode=max \
-			--iidfile=$(IID_FILE) \
-			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
-			--build-arg goproxy=$(GOPROXY) \
-			--build-arg package=./exp/clusterclass \
-			--build-arg ldflags="$(LDFLAGS)" . -t $(CLUSTERCLASS_IMG):$(TAG) --file - --progress=plain
-
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
 
