@@ -27,6 +27,7 @@ import (
 
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
+	"github.com/rancher/turtles/test/testenv"
 )
 
 var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
@@ -36,6 +37,14 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapiProviders,
+			},
+			WaitForDeployments: testenv.DefaultDeployments,
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -65,6 +74,14 @@ var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete 
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapiProviders,
+			},
+			WaitForDeployments: testenv.DefaultDeployments,
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -94,11 +111,27 @@ var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CA
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AzureIdentitySecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.AzureProvider,
+			},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capz-controller-manager",
+					Namespace: "capz-system",
+				},
+			},
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
-			ClusterName:                    "highlander-e2e-topology",
+			ClusterName:                    "cluster-aks",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        gitAddress,
@@ -121,11 +154,27 @@ var _ = Describe("[AWS] [EKS] - [management.cattle.io/v3] Create and delete CAPI
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AWSProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.AWSProvider,
+			},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capa-controller-manager",
+					Namespace: "capa-system",
+				},
+			},
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEKSMMP,
-			ClusterName:                    "clusterv3-eks",
+			ClusterName:                    "cluster-eks",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        gitAddress,
@@ -148,11 +197,27 @@ var _ = Describe("[GCP] [GKE] - [management.cattle.io/v3] Create and delete CAPI
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.GCPProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.GCPProvider,
+			},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capg-controller-manager",
+					Namespace: "capg-system",
+				},
+			},
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIGCPGKE,
-			ClusterName:                    "clusterv3-gke",
+			ClusterName:                    "cluster-gke",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
 			GitAddr:                        gitAddress,
@@ -176,6 +241,22 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		By("Running local vSphere tests, deploying vSphere infrastructure provider")
+
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.VSphereProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{e2e.CapvProvider},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capv-controller-manager",
+					Namespace: "capv-system",
+				},
+			},
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
