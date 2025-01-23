@@ -58,7 +58,7 @@ env:
 
 jobs:
   run_e2e_tests:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - name: Install eksctl
         run: |
