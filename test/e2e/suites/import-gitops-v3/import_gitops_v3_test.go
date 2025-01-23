@@ -168,3 +168,59 @@ var _ = Describe("[GCP] [GKE] - [management.cattle.io/v3] Create and delete CAPI
 		}
 	})
 })
+
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIvSphereKubeadm,
+			ClusterName:               "cluster-vsphere-kubeadm",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   gitAddress,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
+			DeleteClusterWaitName:     "wait-vsphere-delete",
+			AdditionalTemplateVariables: map[string]string{
+				"NAMESPACE":             "default",
+				"VIP_NETWORK_INTERFACE": "",
+			},
+		}
+	})
+})
+
+var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIvSphereRKE2,
+			ClusterName:               "cluster-vsphere-rke2",
+			ControlPlaneMachineCount:  ptr.To[int](1),
+			WorkerMachineCount:        ptr.To[int](1),
+			GitAddr:                   gitAddress,
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
+			DeleteClusterWaitName:     "wait-vsphere-delete",
+			AdditionalTemplateVariables: map[string]string{
+				"NAMESPACE":             "default",
+				"VIP_NETWORK_INTERFACE": "",
+			},
+		}
+	})
+})
