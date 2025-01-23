@@ -62,7 +62,7 @@ data:
         repository: "registry.suse.com/rancher"
       infrastructure-aws:
         repository: "registry.suse.com/rancher"
-      infrastructure-azure:
+      infrastructure-azure/cluster-api-azure-controller:
         repository: "registry.suse.com/rancher"
       infrastructure-gcp:
         repository: "registry.suse.com/rancher"
