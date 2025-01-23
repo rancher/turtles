@@ -25,8 +25,6 @@ RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 ETCD_CONTROLLER_IMAGE=${ETCD_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
 ETCD_CONTROLLER_IMAGE_TAG=${ETCD_CONTROLLER_IMAGE_TAG:-dev}
-CC_CONTROLLER_IMAGE=${CC_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles-clusterclass-operations}
-CC_CONTROLLER_IMAGE_TAG=${CC_CONTROLLER_IMAGE_TAG:-dev}
 USE_TILT_DEV=${USE_TILT_DEV:-true}
 
 BASEDIR=$(dirname "$0")
@@ -81,10 +79,6 @@ install_local_rancher_turtles_chart() {
     make docker-build
     # Load the etcdrestore controller image into the kind cluster
     kind load docker-image $ETCD_CONTROLLER_IMAGE:$ETCD_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
-    # Build the clusterclass controller image
-    make docker-build-clusterclass
-    # Load the clusterclass controller image into the kind cluster
-    kind load docker-image $CC_CONTROLLER_IMAGE:$CC_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
     # Install the Rancher Turtles using a local chart with 'etcd-snapshot-restore' feature flag enabled
     # to run etcdrestore controller
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
