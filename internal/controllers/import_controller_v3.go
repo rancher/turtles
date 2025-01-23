@@ -136,6 +136,7 @@ func (r *CAPIImportManagementV3Reconciler) SetupWithManager(ctx context.Context,
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=management.cattle.io,resources=clusters;clusters/status;clusterregistrationtokens,verbs=get;list;watch;create;update;delete;deletecollection;patch
 // +kubebuilder:rbac:groups=management.cattle.io,resources=clusterregistrationtokens/status;settings,verbs=get;list;watch
+// +kubebuilder:rbac:groups=provisioning.cattle.io,resources=clusters;clusters/status,verbs=get;list;watch
 //
 //nolint:lll
 

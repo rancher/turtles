@@ -22,10 +22,6 @@ import (
 )
 
 const (
-	// RancherKubeSecretPatch is used to enable patching of the Rancher v2prov created kubeconfig
-	// secrets so that they can be used with CAPI 1.5.x.
-	RancherKubeSecretPatch featuregate.Feature = "rancher-kube-secret-patch" //nolint:gosec
-
 	// ExternalFleet allows to disable in-tree management of the Fleet clusters
 	// in the imported rancher clusters, by setting "provisioning.cattle.io/externally-managed"
 	// annotation.
@@ -41,7 +37,6 @@ func init() {
 }
 
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	RancherKubeSecretPatch: {Default: false, PreRelease: featuregate.Beta},
-	ExternalFleet:          {Default: true, PreRelease: featuregate.Beta},
-	AgentTLSMode:           {Default: false, PreRelease: featuregate.Beta},
+	ExternalFleet: {Default: true, PreRelease: featuregate.Beta},
+	AgentTLSMode:  {Default: false, PreRelease: featuregate.Beta},
 }

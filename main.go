@@ -254,22 +254,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if feature.Gates.Enabled(feature.RancherKubeSecretPatch) {
-		setupLog.Info("enabling Rancher kubeconfig secret patching")
-
-		if err := (&controllers.RancherKubeconfigSecretReconciler{
-			Client:           mgr.GetClient(),
-			Scheme:           mgr.GetScheme(),
-			WatchFilterValue: watchFilterValue,
-		}).SetupWithManager(ctx, mgr, controller.Options{
-			MaxConcurrentReconciles: concurrencyNumber,
-			CacheSyncTimeout:        maxDuration,
-		}); err != nil {
-			setupLog.Error(err, "unable to create Rancher kubeconfig secret controller")
-			os.Exit(1)
-		}
-	}
-
 	setupLog.Info("enabling Clusterctl Config synchronization controller")
 
 	if err := (&controllers.ClusterctlConfigReconciler{
