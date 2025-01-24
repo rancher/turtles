@@ -45,11 +45,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var (
-	testLabelName = "test-label"
-	testLabelVal  = "true"
-)
-
 var _ = Describe("reconcile CAPI Cluster", func() {
 	var (
 		r                        *CAPIImportManagementV3Reconciler
