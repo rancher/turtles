@@ -59,7 +59,7 @@ data:
     providers:
       - name: core
         type: CoreProvider
-        url: https://github.com/rancher-sandbox/cluster-api/releases/v1.9.0/core-components.yaml
+        url: https://github.com/rancher-sandbox/cluster-api/releases/v1.9.4/core-components.yaml
       - name: gcp
         type: InfrastructureProvider
         url: https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/v1.8.1/infrastructure-components.yaml
@@ -125,7 +125,7 @@ data:
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "core",
 			Type: "CoreProvider",
-			URL:  "https://github.com/rancher-sandbox/cluster-api/releases/v1.9.0/core-components.yaml",
+			URL:  "https://github.com/rancher-sandbox/cluster-api/releases/v1.9.4/core-components.yaml",
 		}))
 
 		// Ensure gcp infrastructure provider is updated
