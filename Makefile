@@ -196,6 +196,7 @@ PULL_POLICY ?= IfNotPresent
 
 # Development config
 RANCHER_HOSTNAME ?= my.hostname.dev
+CLUSTER_NAME ?= capi-test
 
 CACHE_DIR ?= .buildx-cache/
 CACHE_COMMANDS = "--cache-from type=local,src=$(CACHE_DIR) --cache-to type=local,dest=$(CACHE_DIR),mode=max"
@@ -662,4 +663,4 @@ clean-release: ## Remove the release folder
 
 .PHOHY: clean-dev-env
 clean-dev-env: ## Remove the dev env
-	kind delete cluster --name=capi-test
+	kind delete cluster --name=$(CLUSTER_NAME)
