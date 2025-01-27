@@ -74,7 +74,7 @@ jobs:
         run: RELEASE_TAG=${GITHUB_REF##*/} CONTROLLER_IMAGE_VERSION=${{ env.multiarch_digest }} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
 
       - name: Install chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
+        uses: helm/chart-releaser-action@v1.7.0
         with:
           install_only: true
 
