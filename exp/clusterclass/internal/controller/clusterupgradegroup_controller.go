@@ -173,6 +173,7 @@ func (r *ClusterUpgradeReconciler) reconcileNormal(ctx context.Context, upgradeG
 }
 
 func (r *ClusterUpgradeReconciler) getTargetClusters(ctx context.Context, target *clusterclassv1.ClusterTargets, clusters []clusterv1.Cluster) ([]*clusterv1.Cluster, error) {
+	log := log.FromContext(ctx)
 	clusterMatcher, err := matcher.NewClusterMatcher(target.ClusterName, target.ClusterGroup, target.ClusterGroupSelector, target.ClusterSelector)
 	if err != nil {
 		return nil, fmt.Errorf("created cluster match for target %s: %w", target.Name, err)
@@ -183,6 +184,7 @@ func (r *ClusterUpgradeReconciler) getTargetClusters(ctx context.Context, target
 	for _, cluster := range clusters {
 		if cluster.Spec.Topology == nil {
 			// Cluster no using clusterclass
+			log.Info("cluster not using clusterclass", "cluster", cluster.Name)
 			continue
 		}
 
