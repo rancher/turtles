@@ -14,7 +14,7 @@
 git clone git@github.com:rancher/turtles.git
 ```
 
-2. Depending on whether you are cutting a minor/major or patch release, the process varies.
+2. Depending on whether you are cutting a minor/major, patch, or release candidate, the process varies.
 
     * If you are cutting a new minor/major release:
 
@@ -36,6 +36,14 @@ git clone git@github.com:rancher/turtles.git
             git checkout upstream/release-0.4
             # Export the tag of the patch release to be cut, e.g.:
             export RELEASE_TAG=v0.4.1
+        ```
+    * For release candidates:
+
+        There's no need to create a release branch: use main and follow step 3 to create and push the new tag.
+
+        ```bash
+            # Export the tag of the release candidate, e.g.:
+            export RELEASE_TAG=v0.4.0-rc.0
         ```
 3. Create a signed/annotated tag and push it:
 
