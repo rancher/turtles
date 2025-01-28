@@ -29,16 +29,16 @@ USE_TILT_DEV=${USE_TILT_DEV:-true}
 
 BASEDIR=$(dirname "$0")
 
-kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml"
+kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml" --name $CLUSTER_NAME
 docker pull $RANCHER_IMAGE
 kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME
 
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
-helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
-helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
-helm repo add jetstack https://charts.jetstack.io
-helm repo add ngrok https://charts.ngrok.com
+helm repo add rancher-latest https://releases.rancher.com/server-charts/latest --force-update
+helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator --force-update
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm repo add ngrok https://charts.ngrok.com --force-update
 helm repo update
 
 helm install cert-manager jetstack/cert-manager \
@@ -46,7 +46,9 @@ helm install cert-manager jetstack/cert-manager \
     --create-namespace \
     --set crds.enabled=true
 
-helm upgrade ngrok ngrok/kubernetes-ingress-controller \
+helm upgrade ngrok ngrok/ngrok-operator \
+    --namespace ngrok \
+    --create-namespace \
     --install \
     --wait \
     --timeout 5m \
