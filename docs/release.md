@@ -74,8 +74,23 @@ Please, take a look at the release notes <here link to GitHub release notes>.
 If a new minor/major branch was created, there are some post-release actions that need to be taken. If you cut a patch release before, please disregard
 [publish a new Turtles Community Documentation version](#publish-a-new-rancher-turtles-community-docs-version) and [create a JIRA ticket for Documentation syncing](#create-a-jira-ticket-for-syncing-turtles-community-docs-with-product-docs) steps below.
 
+### Write release description for non-developers
 
-### Publish a new Rancher Turtles Community Docs version
+Turtles release notes are automatically generated based on the commits that are published with the new version.
+
+These commit messages are usually hard to understand for those that are not very familiar with the project and we must add a "human-readable" description of what the release brings at the beginning of release notes. [This](https://github.com/rancher/turtles/releases/tag/v0.13.0) can be used for reference.
+
+### Rancher Turtles Community Documentation
+
+#### Generate changelog from Turtles release notes
+
+Before publishing a new version of the documentation, a new [Changelog](https://turtles.docs.rancher.com/turtles/next/en/changelogs/index.html) must be generated to include the new release.
+
+1. Navigate to the Rancher Turtles Docs repository: [rancher/turtles-docs](https://github.com/rancher/turtles-docs)
+2. Go to `Actions` and start a new run of `Updatecli`.
+3. This will generate a new PR in the same repository that adds the release notes from any new Turtles release.
+
+#### Publish Rancher Turtles Docs
 
 1. Clone the Rancher Turtles Docs repository locally:
 
