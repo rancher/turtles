@@ -268,7 +268,7 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 			continue
 		}
 
-		secret := secret
+		secret := secret //nolint:copyloopvar
 		s.RancherSecret = &secret
 
 		return s.SecretSync.Get(ctx)
@@ -278,7 +278,7 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 		turtlesv1.RancherCredentialsSecretCondition,
 		turtlesv1.RancherCredentialSourceMissing,
 		clusterv1.ConditionSeverityError,
-		fmt.Sprintf(missingSource, cmp.Or(
+		"%s", fmt.Sprintf(missingSource, cmp.Or(
 			s.Source.Spec.Credentials.RancherCloudCredential,
 			s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName)),
 	))
@@ -298,7 +298,7 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 			turtlesv1.RancherCredentialsSecretCondition,
 			turtlesv1.RancherCredentialKeyMissing,
 			clusterv1.ConditionSeverityError,
-			fmt.Sprintf(missingKey, err.Error()),
+			"%s", fmt.Sprintf(missingKey, err.Error()),
 		))
 
 		return nil
