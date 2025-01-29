@@ -23,13 +23,6 @@ rules:
   verbs:
   - list
   - delete
-- apiGroups:
-  - management.cattle.io
-  resources:
-  - clusters
-  verbs:
-  - list
-  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -65,7 +58,7 @@ spec:
           image: {{ index .Values "rancherTurtles" "kubectlImage" }}
           args:
           - delete
-          - clusters.management.cattle.io
+          - clusters.provisioning.cattle.io
           - --selector=cluster-api.cattle.io/owned
           - -A
           - --ignore-not-found=true
