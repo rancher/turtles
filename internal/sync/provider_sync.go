@@ -117,7 +117,6 @@ func (s *ProviderSync) SyncObjects() {
 	s.Source.Status.Conditions = oldConditions
 
 	for _, condition := range newConditions {
-		condition := condition
 		conditions.Set(s.Source, &condition)
 	}
 

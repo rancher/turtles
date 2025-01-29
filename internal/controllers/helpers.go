@@ -124,7 +124,6 @@ func namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Fun
 		reqs := []ctrl.Request{}
 
 		for _, cluster := range capiClusters.Items {
-			cluster := cluster
 			if !clusterPredicate.Generic(event.GenericEvent{Object: &cluster}) {
 				continue
 			}

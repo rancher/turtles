@@ -302,7 +302,7 @@ func setupRancherClient(options client.Options) (client.Client, error) {
 
 	setupLog.Info("in-cluster installation of rancher-turtles")
 
-	return nil, nil
+	return nil, nil //nolint:nilnil
 }
 
 // loadConfigWithContext loads a REST Config from a path using a logic similar to the one used in controller-runtime.

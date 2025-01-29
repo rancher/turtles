@@ -32,7 +32,7 @@ else
 UPDATECLI_OS = Darwin
 endif
 
-GO_VERSION ?= 1.22.10
+GO_VERSION ?= 1.23.0
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 
@@ -157,7 +157,7 @@ CLUSTERCTL_VER := v1.7.7
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 
-GOLANGCI_LINT_VER := v1.56.2
+GOLANGCI_LINT_VER := v1.60.2
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
 
