@@ -152,7 +152,7 @@ func (r *EtcdSnapshotSyncReconciler) etcdSnapshotFile(ctx context.Context, clust
 		}
 
 		if o.GetObjectKind().GroupVersionKind() != gvk {
-			log.Error(fmt.Errorf("got a different object"), "objectGVK", o.GetObjectKind().GroupVersionKind().String())
+			log.Error(fmt.Errorf("got a different object"), "unexpected object, will not enqueue request", "objectGVK", o.GetObjectKind().GroupVersionKind().String())
 			return nil
 		}
 

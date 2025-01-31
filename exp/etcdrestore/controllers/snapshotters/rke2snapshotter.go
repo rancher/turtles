@@ -125,6 +125,37 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 		return fmt.Errorf("failed to create/modify EtcdMachineSnapshot status: %w", err)
 	}
 
+	// Get all ETCDMachineSnapshot resources for this cluster
+	etcdMachineSnapshotList := &snapshotrestorev1.ETCDMachineSnapshotList{}
+	if err := s.List(ctx, etcdMachineSnapshotList, client.MatchingFields{
+		"spec.clusterName": s.cluster.Name,
+	}); err != nil {
+		return fmt.Errorf("failed to list ETCDMachineSnapshot resources for cluster %s: %w", s.cluster.Name, err)
+	}
+
+	// Delete any ETCDMachineSnapshot resources marked as Done that don't have a corresponding ETCDSnapshotFile
+	for _, snapshot := range etcdMachineSnapshotList.Items {
+		if snapshot.Status.Phase != snapshotrestorev1.ETCDSnapshotPhaseDone {
+			continue
+		}
+
+		found := false
+		for _, snapshotFile := range etcdnapshotFileList.Items {
+			if *snapshot.Status.SnapshotFileName == snapshotFile.Name {
+				found = true
+				log.V(5).Info("Found corresponding ETCDSnapshotFile for ETCDMachineSnapshot", "name", snapshot.Name, "snapshotFileName", snapshotFile.Name)
+				break
+			}
+		}
+
+		if !found {
+			log.Info("Deleting ETCDMachineSnapshot without a corresponding ETCDSnapshotFile", "name", snapshot.Name)
+			if err := s.Delete(ctx, &snapshot); err != nil {
+				return fmt.Errorf("failed to delete ETCDMachineSnapshot: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 

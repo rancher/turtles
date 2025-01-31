@@ -224,12 +224,19 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 	setupLog.Info("enabling ETCDMachineSnapshot controller")
 
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &snapshotrestorev1.ETCDMachineSnapshot{}, "spec.clusterName", func(o client.Object) []string {
+		return []string{o.(*snapshotrestorev1.ETCDMachineSnapshot).Spec.ClusterName}
+	}); err != nil {
+		setupLog.Error(err, "unable to create field indexer for ETCDMachineSnapshot")
+		os.Exit(1)
+	}
+
 	if err := (&expcontrollers.ETCDMachineSnapshotReconciler{
 		Client:           mgr.GetClient(),
 		Tracker:          tracker,
 		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
-		setupLog.Error(err, "unable to create EtcdMachineSnapshot controller")
+		setupLog.Error(err, "unable to create ETCDMachineSnapshot controller")
 		os.Exit(1)
 	}
 
