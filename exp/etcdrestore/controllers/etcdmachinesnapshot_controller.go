@@ -25,7 +25,9 @@ import (
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
@@ -68,6 +70,9 @@ type snapshotScope struct {
 
 	// snapshot is the snapshot object which is used for reconcile
 	snapshot *snapshotrestorev1.ETCDMachineSnapshot
+
+	// controlPlaneVersion is lowest found kubernetes version among the Control plane machines
+	controlPlaneVersion *string
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -144,22 +149,33 @@ func (r *ETCDMachineSnapshotReconciler) newScope(ctx context.Context, etcdMachin
 	}
 
 	controlPlaneMachines := machines.Filter(collections.ControlPlaneMachines(cluster.Name))
+	if len(controlPlaneMachines) == 0 {
+		return nil, fmt.Errorf("no control plane machines found for cluster: %s", cluster.Name)
+	}
+
 	targetMachineCandidates := controlPlaneMachines.Filter(func(machine *clusterv1.Machine) bool {
 		return machine.Name == etcdMachineSnapshot.Spec.MachineName
 	}).UnsortedList()
 
 	if len(targetMachineCandidates) < 1 {
-		return nil, fmt.Errorf(
-			"failed to found machine %s for cluster %s",
-			etcdMachineSnapshot.Spec.MachineName,
-			client.ObjectKeyFromObject(cluster).String())
+		return &snapshotScope{
+				snapshot:            etcdMachineSnapshot,
+				controlPlaneVersion: controlPlaneMachines.LowestVersion(),
+			}, apierrors.NewNotFound(
+				schema.GroupResource{
+					Group:    clusterv1.GroupVersion.Group,
+					Resource: "machines",
+				},
+				etcdMachineSnapshot.Spec.MachineName,
+			)
 	}
 
 	return &snapshotScope{
-		cluster:  cluster,
-		machines: controlPlaneMachines,
-		machine:  targetMachineCandidates[0],
-		snapshot: etcdMachineSnapshot,
+		cluster:             cluster,
+		machines:            controlPlaneMachines,
+		machine:             targetMachineCandidates[0],
+		snapshot:            etcdMachineSnapshot,
+		controlPlaneVersion: controlPlaneMachines.LowestVersion(),
 	}, nil
 }
 
@@ -171,6 +187,15 @@ func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
 	scope, err := r.newScope(ctx, etcdMachineSnapshot)
 	if err != nil {
 		log.Error(err, "Unable to intialize scope")
+		if apierrors.IsNotFound(err) {
+			log.Info("No valid control-plane machine found")
+			if etcdMachineSnapshot.Spec.Version != "" {
+				if etcdMachineSnapshot.Spec.Version != *scope.controlPlaneVersion {
+					log.Info("Cluster control-plane version changed & Node not found; marking snapshot for deletion")
+					return ctrl.Result{}, r.reconcileDelete(ctx, etcdMachineSnapshot)
+				}
+			}
+		}
 		return ctrl.Result{}, err
 	}
 
@@ -189,6 +214,10 @@ func (r *ETCDMachineSnapshotReconciler) reconcileNormal(
 
 		// Initial phase, set to Pending
 		etcdMachineSnapshot.Status.Phase = snapshotrestorev1.ETCDSnapshotPhasePending
+
+		// Set the Version field as k8s version of the cluster
+		fmt.Printf("\nsetting control-plane version as: %v\n", *scope.controlPlaneVersion)
+		etcdMachineSnapshot.Spec.Version = *scope.controlPlaneVersion
 
 		return ctrl.Result{}, nil
 	case snapshotrestorev1.ETCDSnapshotPhasePending, snapshotrestorev1.ETCDSnapshotPhasePlanning:

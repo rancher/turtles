@@ -49,6 +49,8 @@ spec:
                 type: string
               machineName:
                 type: string
+              version:
+                type: string
             required:
             - clusterName
             type: object
