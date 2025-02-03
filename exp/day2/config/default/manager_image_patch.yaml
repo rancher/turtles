@@ -7,6 +7,6 @@ spec:
   template:
     spec:
       containers:
-        - image: ghcr.io/rancher/turtles-etcd-snapshot-restore:dev
+        - image: ghcr.io/rancher/turtles-day2-operations:dev
           name: manager
-          command: ["./etcd-snapshot-restore"]
+          command: ["./turtles-day2-operations"]

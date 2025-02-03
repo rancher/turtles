@@ -22,7 +22,7 @@ import (
 	"time"
 
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
-	"github.com/rancher/turtles/exp/etcdrestore/controllers/snapshotters"
+	"github.com/rancher/turtles/exp/day2/controllers/snapshotters"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

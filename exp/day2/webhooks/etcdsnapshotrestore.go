@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 

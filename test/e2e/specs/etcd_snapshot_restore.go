@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	etcdrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	etcdrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"

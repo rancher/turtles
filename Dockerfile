@@ -39,12 +39,12 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     -o manager ${package}
 
 
-FROM --platform=$BUILDPLATFORM ${builder_image} as etcd-snapshot-restore-builder
+FROM --platform=$BUILDPLATFORM ${builder_image} as day2-operations-builder
 WORKDIR /workspace
 
 # Run this with docker build --build-arg goproxy=$(go env GOPROXY) to override the goproxy
 ARG goproxy=https://proxy.golang.org
-# Run this with docker build --build-arg package=./exp/etcdrestore
+# Run this with docker build --build-arg package=./exp/day2
 ENV GOPROXY=$goproxy
 
 # Copy the sources
@@ -58,7 +58,7 @@ ARG TARGETOS TARGETARCH
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    sh -c "cd exp/etcdrestore && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
+    sh -c "cd exp/day2 && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -66,7 +66,7 @@ FROM gcr.io/distroless/static:nonroot
 LABEL org.opencontainers.image.source=https://github.com/rancher/turtles
 WORKDIR /
 COPY --from=builder /workspace/manager .
-COPY --from=etcd-snapshot-restore-builder /workspace/exp/etcdrestore/manager etcd-snapshot-restore
+COPY --from=day2-operations-builder /workspace/exp/day2/manager turtles-day2-operations
 # Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies
 USER 65532
 ENTRYPOINT ["/manager"]

@@ -16,7 +16,7 @@ issues:
     - path: internal/controllers/import_controller(_v3)?\.go
       linters:
         - dupl
-    - path: exp/etcdrestore/controllers/.*.go
+    - path: exp/day2/controllers/.*.go
       linters:
         - dupl
     - text: var-naming
@@ -28,8 +28,8 @@ issues:
     - linters:
       - revive
       text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
-      path: exp/etcdrestore/controllers/.*.go
-    - path: exp/etcdrestore/controllers/.*.go
+      path: exp/day2/controllers/.*.go
+    - path: exp/day2/controllers/.*.go
       linters:
         - unused
 linters-settings:

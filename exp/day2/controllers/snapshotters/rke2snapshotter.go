@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

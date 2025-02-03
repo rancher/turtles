@@ -108,7 +108,7 @@ var _ = Describe("RBAC tests", func() {
 		Expect(validateRBAC(admission.NewContextWithRequest(ctx, admission.Request{
 			AdmissionRequest: admissionv1.AdmissionRequest{
 				UserInfo: authenticationv1.UserInfo{
-					Username: "system:serviceaccount:rancher-turtles-system:rancher-turtles-etcdsnapshotrestore-manager",
+					Username: "system:serviceaccount:rancher-turtles-system:rancher-turtles-day2-operations-manager",
 				},
 			},
 		}), cl, "test-cluster", namespace)).To(Succeed())

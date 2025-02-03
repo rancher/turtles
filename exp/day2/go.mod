@@ -1,4 +1,4 @@
-module github.com/rancher/turtles/exp/etcdrestore
+module github.com/rancher/turtles/exp/day2
 
 go 1.23.0
 

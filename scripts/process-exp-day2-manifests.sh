@@ -16,7 +16,7 @@ else
 fi
 
 # Define the content to append at the beginning and end of the file
-start_content="{{- if index .Values \"rancherTurtles\" \"features\" \"etcd-snapshot-restore\" \"enabled\" }}"
+start_content="{{- if index .Values \"rancherTurtles\" \"features\" \"day2-operations\" \"enabled\" }}"
 end_content="{{- end }}"
 
 # Append content at the beginning of the file
@@ -29,19 +29,19 @@ echo "$end_content" >> "$filename"
 $sed_cmd -i "s|rancher-turtles-system|{{ index .Values \"rancherTurtles\" \"namespace\" }}|g" "$filename"
 
 # 2. Replace "rancher-turtles-system" with the templated image
-$sed_cmd -i "s|rancher-turtles-system|{{ index .Values \"rancherTurtles\" \"features\" \"etcd-snapshot-restore\" \"image\" }}|g" "$filename"
+$sed_cmd -i "s|rancher-turtles-system|{{ index .Values \"rancherTurtles\" \"features\" \"day2-operations\" \"image\" }}|g" "$filename"
 
 # 3. Update the "image:" section dynamically based on conditions
-$sed_cmd -i '/image: ghcr.io\/rancher\/turtles-etcd-snapshot-restore:dev/c\
-        {{- $imageVersion := index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imageVersion" -}}\
+$sed_cmd -i '/image: ghcr.io\/rancher\/turtles-day2-operations:dev/c\
+        {{- $imageVersion := index .Values "rancherTurtles" "features" "day2-operations" "imageVersion" -}}\
         {{- if contains "sha256:" $imageVersion }}\
-        image: {{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "image" }}@{{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imageVersion" }}\
+        image: {{ index .Values "rancherTurtles" "features" "day2-operations" "image" }}@{{ index .Values "rancherTurtles" "features" "day2-operations" "imageVersion" }}\
         {{- else }}\
-        image: {{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "image" }}:{{ index .Values "rancherTurtles" "features" "etcd-snapshot-restore" "imageVersion" }}\
+        image: {{ index .Values "rancherTurtles" "features" "day2-operations" "image" }}:{{ index .Values "rancherTurtles" "features" "day2-operations" "imageVersion" }}\
         {{- end }}' "$filename"
 
 # 4. Replace the "imagePullPolicy" dynamically
-$sed_cmd -i "s|imagePullPolicy: IfNotPresent|imagePullPolicy: '{{ index .Values \"rancherTurtles\" \"features\" \"etcd-snapshot-restore\" \"imagePullPolicy\" }}'|g" "$filename"
+$sed_cmd -i "s|imagePullPolicy: IfNotPresent|imagePullPolicy: '{{ index .Values \"rancherTurtles\" \"features\" \"day2-operations\" \"imagePullPolicy\" }}'|g" "$filename"
 
 # Confirmation message
 echo "All replacements applied successfully to $filename"
