@@ -46,7 +46,7 @@ updates:
       - dependency-name: "google.golang.org/grpc"
   # ETCD backup/restore module
   - package-ecosystem: "gomod"
-    directory: "exp/etcdrestore/"
+    directory: "exp/day2/"
     schedule:
       interval: "weekly"
     labels:

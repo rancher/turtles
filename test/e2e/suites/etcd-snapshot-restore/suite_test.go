@@ -76,7 +76,7 @@ var _ = SynchronizedBeforeSuite(
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			CAPIProvidersYAML:     e2e.CapiProviders,
 			AdditionalValues: map[string]string{
-				"rancherTurtles.features.etcd-snapshot-restore.enabled": "true", // enable etcd-snapshot-restore feature
+				"rancherTurtles.features.day2-operations.enabled": "true", // enable day2-operations feature
 			},
 			WaitForDeployments: testenv.DefaultDeployments,
 		})

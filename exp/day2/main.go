@@ -27,9 +27,9 @@ import (
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
-	expcontrollers "github.com/rancher/turtles/exp/etcdrestore/controllers"
-	expwebhooks "github.com/rancher/turtles/exp/etcdrestore/webhooks"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
+	expcontrollers "github.com/rancher/turtles/exp/day2/controllers"
+	expwebhooks "github.com/rancher/turtles/exp/day2/webhooks"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -140,7 +140,7 @@ func main() {
 			BindAddress: metricsBindAddr,
 		},
 		LeaderElection:             enableLeaderElection,
-		LeaderElectionID:           "controller-leader-election-etcd-restore",
+		LeaderElectionID:           "controller-leader-election-day2-operations",
 		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 		LeaseDuration:              &leaderElectionLeaseDuration,
 		RenewDeadline:              &leaderElectionRenewDeadline,
@@ -214,7 +214,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 	tracker, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
 		SecretClient: secretCachingClient,
 		Client: clustercache.ClientOptions{
-			UserAgent: remote.DefaultClusterAPIUserAgent("etcd-restore-controller"),
+			UserAgent: remote.DefaultClusterAPIUserAgent("day2-operations-controller"),
 		},
 	}, controller.Options{})
 	if err != nil {

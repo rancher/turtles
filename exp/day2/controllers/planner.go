@@ -31,7 +31,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

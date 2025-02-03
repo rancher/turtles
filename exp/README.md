@@ -2,9 +2,11 @@
 
 This is a technical preview of the experimental features that are currently being developed in the project. These features are not yet ready for production use and are subject to change.
 
-# turtles-etcd-restore
+# Day2 Operations
 
-## Setting up the environment
+## Etcd Snapshots and Restores
+
+### Setting up the environment
 
 To set up the environment, navigate to the root of the repository and run:
 
@@ -32,7 +34,7 @@ script with the `RANCHER_HOSTNAME` argument. Under the hood, it performs the fol
 
 Environment is prepared for cluster creation using CAPRKE2. UI is accessible via `RANCHER_HOSTNAME`.
 
-## Creating a cluster
+### Creating a cluster
 
 To deploy an RKE2 cluster with automatic snapshots enabled:
 
@@ -47,7 +49,7 @@ export RKE2_CNI=calico
 envsubst '${CLUSTER_NAME} ${WORKER_MACHINE_COUNT} ${RKE2_VERSION} ${CONTROL_PLANE_MACHINE_COUNT} ${KUBERNETES_VERSION} ${RKE2_CNI}' < test/e2e/data/cluster-templates/docker-rke2.yaml | kubectl apply -f -
 ```
 
-## Performing a manual snapshot
+### Performing a manual snapshot
 
 ```bash
 export CLUSTER_NAMESPACE=default
@@ -55,10 +57,10 @@ export CLUSTER_NAME=rke2
 export ETCD_MACHINE_SNAPSHOT_NAME="manual-snapshot"
 export MACHINE_NAME=$(kubectl get machines -l cluster.x-k8s.io/control-plane  -o jsonpath='{.items[0].metadata.name}')
 
-envsubst < exp/etcdrestore/examples/etcd-snapshot.yaml | kubectl apply -f -
+envsubst < exp/day2/examples/etcd-snapshot.yaml | kubectl apply -f -
 ```
 
-## Performing the restore
+### Performing the restore
 
 When all machines in the cluster are ready, automatic ETCDMachineSnapshot object should appear on the management cluster soon.
 
@@ -74,10 +76,10 @@ export CLUSTER_NAMESPACE=default
 export CLUSTER_NAME=rke2
 export ETCD_MACHINE_SNAPSHOT_NAME="<snapshot_name_from_the_output>"
 
-envsubst < exp/etcdrestore/examples/etcd-restore.yaml | kubectl apply -f -
+envsubst < exp/day2/examples/etcd-restore.yaml | kubectl apply -f -
 ```
 
-## Cleanup
+### Cleanup
 
 To clean up the environment, run the following command from the root of the repo:
 

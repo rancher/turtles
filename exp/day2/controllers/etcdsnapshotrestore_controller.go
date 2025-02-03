@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 )
 
 // initMachine is a filter matching on init machine of the ETCD snapshot

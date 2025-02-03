@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/rancher/turtles/exp/etcdrestore/webhooks"
+	"github.com/rancher/turtles/exp/day2/webhooks"
 )
 
 // ETCDSnapshotSecretReconciler reconciles an EtcdMachineSnapshot object.

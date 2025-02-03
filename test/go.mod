@@ -4,7 +4,7 @@ go 1.23.0
 
 replace github.com/rancher/turtles => ../
 
-replace github.com/rancher/turtles/exp/etcdrestore => ../exp/etcdrestore
+replace github.com/rancher/turtles/exp/day2 => ../exp/day2
 
 require (
 	code.gitea.io/sdk/gitea v0.20.0
@@ -15,7 +15,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
-	github.com/rancher/turtles/exp/etcdrestore v0.0.0-00010101000000-000000000000
+	github.com/rancher/turtles/exp/day2 v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.31.4
 	k8s.io/apimachinery v0.31.4
 	k8s.io/client-go v0.31.4

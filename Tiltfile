@@ -35,7 +35,7 @@ if settings.get("trigger_mode") == "manual":
 if settings.get("default_registry") != "":
     default_registry(settings.get("default_registry"))
 
-always_enable_projects = ["turtles", "turtles-capiproviders", "turtles-etcdsnapshotrestore", "turtles-clusterclass-operations"]
+always_enable_projects = ["turtles", "turtles-capiproviders", "turtles-day2", "turtles-clusterclass-operations"]
 
 projects = {
     "turtles": {
@@ -52,9 +52,9 @@ projects = {
         "label": "turtles",
         "binary_name" : "manager"
     },
-    "turtles-etcdsnapshotrestore": {
-        "context": "exp/etcdrestore",
-        "image": "ghcr.io/rancher/turtles-etcd-restore:dev",
+    "turtles-day2": {
+        "context": "exp/day2",
+        "image": "ghcr.io/rancher/turtles-day2-operations:dev",
         "live_reload_deps": [
             "main.go",
             "go.mod",
@@ -63,9 +63,9 @@ projects = {
             "webhooks",
         ],
         "kustomize_dir": "config/default",
-        "label": "turtles-etcdsnapshotrestore",
+        "label": "turtles-day2",
         "command": ["/manager"],
-        "binary_name" : "etcd-snapshot-restore"
+        "binary_name" : "turtles-day2-operations"
     },
     "turtles-capiproviders": {
         "context": ".",

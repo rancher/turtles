@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhooks
+package controllers
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
@@ -54,7 +54,7 @@ func setup() {
 	utilruntime.Must(snapshotrestorev1.AddToScheme(scheme.Scheme))
 
 	testEnvConfig := helpers.NewTestEnvironmentConfiguration(
-		path.Join("exp", "etcdrestore", "config", "crd", "bases"),
+		path.Join("exp", "day2", "config", "crd", "bases"),
 	)
 
 	var err error
@@ -81,11 +81,11 @@ func teardown() {
 	}
 }
 
-func TestWebhooks(t *testing.T) {
+func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
 	setup()
 	defer teardown()
-	RunSpecs(t, "Rancher Turtles Experimental Webhooks Suite")
+	RunSpecs(t, "Rancher Turtles Experimental Controller Suite")
 }
 
 var _ = BeforeSuite(func() {

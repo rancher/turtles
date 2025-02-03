@@ -23,7 +23,7 @@ import (
 	"time"
 
 	k3sv1 "github.com/rancher/turtles/api/rancher/k3s/v1"
-	snapshotrestorev1 "github.com/rancher/turtles/exp/etcdrestore/api/v1alpha1"
+	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"

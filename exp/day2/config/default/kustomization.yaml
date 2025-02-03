@@ -1,10 +1,10 @@
 # Adds namespace to all resources.
 namespace: rancher-turtles-system
 
-namePrefix: rancher-turtles-etcdsnapshotrestore-
+namePrefix: rancher-turtles-day2-operations-
 
 commonLabels:
-  turtles-capi.cattle.io: "etcd-restore"
+  turtles-capi.cattle.io: "day2-operations"
 
 bases:
 - ../crd

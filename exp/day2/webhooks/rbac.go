@@ -36,7 +36,7 @@ func validateRBAC(ctx context.Context, cl client.Client, clusterName, clusterNam
 
 	namespace := cmp.Or(os.Getenv("POD_NAMESPACE"), "rancher-turtles-system")
 
-	turtlesController := fmt.Sprintf("system:serviceaccount:%s:rancher-turtles-etcdsnapshotrestore-manager", namespace)
+	turtlesController := fmt.Sprintf("system:serviceaccount:%s:rancher-turtles-day2-operations-manager", namespace)
 	if admissionRequest.UserInfo.Username == turtlesController {
 		return nil
 	}
