@@ -9,3 +9,4 @@ spec:
       containers:
         - image: ghcr.io/rancher/turtles-clusterclass-operations:dev
           name: manager
+          command: ["./turtles-clusterclass-operations"]
