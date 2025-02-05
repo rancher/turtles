@@ -556,9 +556,9 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 .PHONY: build-chart
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	$(KUSTOMIZE) build ./exp/day2/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
+	$(KUSTOMIZE) build ./exp/day2/config/chart > $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
 	$(KUSTOMIZE) build ./exp/clusterclass/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
-	./scripts/process-manifests.sh day2-operations $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
+	./scripts/process-manifests.sh day2operations $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
 	./scripts/process-manifests.sh clusterclass-operations $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 
@@ -566,9 +566,9 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 
-	sed -i'' -e '/day2-operations:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e '/day2-operations:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e '/day2-operations:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/day2operations:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/day2operations:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/day2operations:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 
 	sed -i'' -e '/clusterclass:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e '/clusterclass:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
