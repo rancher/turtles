@@ -60,6 +60,27 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     sh -c "cd exp/day2 && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
 
+FROM --platform=$BUILDPLATFORM ${builder_image} as clusterclass-operations-builder
+WORKDIR /workspace
+
+# Run this with docker build --build-arg goproxy=$(go env GOPROXY) to override the goproxy
+ARG goproxy=https://proxy.golang.org
+# Run this with docker build --build-arg package=./exp/etcdrestore
+ENV GOPROXY=$goproxy
+
+# Copy the sources
+COPY ./ ./
+
+# Build
+ARG ldflags
+ARG TARGETOS TARGETARCH
+
+# Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    sh -c "cd exp/clusterclass && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
+
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
@@ -67,6 +88,7 @@ LABEL org.opencontainers.image.source=https://github.com/rancher/turtles
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=day2-operations-builder /workspace/exp/day2/manager turtles-day2-operations
+COPY --from=clusterclass-operations-builder /workspace/exp/clusterclass/manager turtles-clusterclass-operations
 # Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies
 USER 65532
 ENTRYPOINT ["/manager"]
