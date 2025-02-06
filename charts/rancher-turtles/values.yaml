@@ -19,6 +19,11 @@ rancherTurtles:
     # alpha feature, see documentation for more information on feature stages
     agent-tls-mode:
       enabled: false
+    clusterclass-operations:
+      enabled: false
+      image: controller
+      imageVersion: v0.0.0
+      imagePullPolicy: IfNotPresent
 cluster-api-operator:
   enabled: true
   cert-manager:

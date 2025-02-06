@@ -25,6 +25,8 @@ RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 DAY2_CONTROLLER_IMAGE=${DAY2_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
 DAY2_CONTROLLER_IMAGE_TAG=${DAY2_CONTROLLER_IMAGE_TAG:-dev}
+CLUSTERCLASS_CONTROLLER_IMAGE=${CLUSTERCLASS_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
+CLUSTERCLASS_CONTROLLER_IMAGE_TAG=${CLUSTERCLASS_CONTROLLER_IMAGE_TAG:-dev}
 USE_TILT_DEV=${USE_TILT_DEV:-true}
 
 BASEDIR=$(dirname "$0")
@@ -81,14 +83,18 @@ install_local_rancher_turtles_chart() {
     make docker-build
     # Load the day2 controller image into the kind cluster
     kind load docker-image $DAY2_CONTROLLER_IMAGE:$DAY2_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
-    # Install the Rancher Turtles using a local chart with 'day2-operations' feature flag enabled
-    # to run day2 controller
+    # Load the clusterclass controller image into the kind cluster
+    kind load docker-image $CLUSTERCLASS_CONTROLLER_IMAGE:$CLUSTERCLASS_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
+    # Install Rancher Turtles using a local chart with 'day2-operations' & 'clusterclass-operations'
+    # feature flags enabled to run day2 & clusterclass controllers
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
         -n rancher-turtles-system \
         --set cluster-api-operator.enabled=true \
         --set cluster-api-operator.cluster-api.enabled=false \
         --set rancherTurtles.features.day2-operations.enabled=true \
         --set rancherTurtles.features.day2-operations.imageVersion=dev \
+        --set rancherTurtles.features.clusterclass-operations.enabled=true \
+        --set rancherTurtles.features.clusterclass-operations.imageVersion=dev \
         --set rancherTurtles.imageVersion=dev \
         --dependency-update \
         --create-namespace --wait \

@@ -8,15 +8,6 @@ rules:
   - cluster.x-k8s.io
   resources:
   - clusterclasses
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cluster.x-k8s.io
-  resources:
   - clusters
   - clusters/status
   verbs:

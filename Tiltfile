@@ -86,7 +86,9 @@ projects = {
             "internal/",
         ],
         "kustomize_dir": "config/default",
-        "label": "turtles-clusterclass-operations"
+        "label": "turtles-clusterclass-operations",
+        "command": ["/manager"],
+        "binary_name" : "turtles-clusterclass-operations"
     }
 }
 

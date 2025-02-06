@@ -176,10 +176,6 @@ CONTROLLER_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLLER_IMAGE_NAME)
 CONTROLLER_IMAGE_VERSION ?= $(shell git describe --abbrev=0 2>/dev/null)
 IID_FILE ?= $(shell mktemp)
 
-# clusterclass
-CLUSTERCLASS_IMAGE_NAME ?= turtles-clusterclass-operations
-CLUSTERCLASS_IMG ?= $(REGISTRY)/$(ORG)/$(CLUSTERCLASS_IMAGE_NAME)
-
 # Release
 # Exclude tags with the prefix 'test/'
 RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
@@ -228,6 +224,7 @@ generate: vendor ## Run all generators
 	$(MAKE) generate-modules
 	$(MAKE) generate-manifests-api
 	$(MAKE) generate-exp-day2-manifests-api
+	$(MAKE) generate-exp-clusterclass-manifests-api
 	$(MAKE) generate-manifests-external
 	$(MAKE) generate-go-deepcopy
 	$(MAKE) vendor-clean
@@ -278,6 +275,7 @@ generate-go-deepcopy:  ## Run deepcopy generation
 		object:headerFile=./hack/boilerplate.go.txt \
 		paths=./api/... \
 		paths=./exp/day2/api/...
+		paths=./exp/clusterclass/api/...
 
 # Run go mod
 .PHONY: vendor
@@ -329,7 +327,7 @@ updatecli-apply: $(UPDATECLI)
 KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 .PHONY: test
-test: $(SETUP_ENVTEST) manifests test-exp-day2 ## Run all generators and exp tests.
+test: $(SETUP_ENVTEST) manifests test-exp-day2 test-exp-clusterclass ## Run all generators and exp tests.
 	go clean -testcache
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
@@ -559,7 +557,9 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
 	$(KUSTOMIZE) build ./exp/day2/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
-	./scripts/process-exp-day2-manifests.sh $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
+	$(KUSTOMIZE) build ./exp/clusterclass/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
+	./scripts/process-manifests.sh day2-operations $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
+	./scripts/process-manifests.sh clusterclass-operations $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 
 	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
@@ -569,6 +569,10 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	sed -i'' -e '/day2-operations:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e '/day2-operations:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e '/day2-operations:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+
+	sed -i'' -e '/clusterclass:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/clusterclass:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i'' -e '/clusterclass:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
