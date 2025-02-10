@@ -8,11 +8,13 @@ rancherTurtles:
   rancherInstalled: true
   kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   features:
-    day2-operations:
+    day2operations:
       enabled: false
       image: controller
       imageVersion: v0.0.0
       imagePullPolicy: IfNotPresent
+      etcdBackupRestore:
+        enabled: false
     # beta feature, see documentation for more information on feature stages
     addon-provider-fleet:
       enabled: true

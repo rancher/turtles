@@ -11,11 +11,11 @@ questions:
       - variable: cluster-api-operator.cert-manager.enabled
         default: false
         type: boolean
-        description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually"
+        description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually."
         label: "Enable Cert Manager"
       - variable: rancherTurtles.cluster-api-operator.cleanup
         default: true
-        description: "Specify that the CAPI Operator post-delete cleanup job will be performed"
+        description: "Specify that the CAPI Operator post-delete cleanup job will be performed."
         type: boolean
         label: Cleanup CAPI Operator installation
         group: "CAPI Operator cleanup settings"
@@ -26,19 +26,30 @@ questions:
         type: boolean
       - variable: rancherTurtles.features.addon-provider-fleet.enabled
         default: true
-        description: "[BETA] Enable Fleet Addon Provider functionality in Rancher Turtles"
+        description: "[BETA] Enable Fleet Addon Provider functionality in Rancher Turtles."
         type: boolean
         label: Seamless integration with Fleet and CAPI
         group: "Rancher Turtles Features Settings"
       - variable: rancherTurtles.features.agent-tls-mode.enabled
         default: false
-        description: "[ALPHA] If enabled Turtles will use the agent-tls-mode setting to determine CA cert trust mode for importing clusters"
+        description: "[ALPHA] If enabled Turtles will use the agent-tls-mode setting to determine CA cert trust mode for importing clusters."
         type: boolean
         label: Enable Agent TLS Mode
         group: "Rancher Turtles Features Settings"
       - variable: rancherTurtles.kubectlImage
         default: "registry.k8s.io/kubernetes/kubectl:v1.30.0"
-        description: "Specify the image to use when running kubectl in jobs"
+        description: "Specify the image to use when running kubectl in jobs."
         type: string
         label: Kubectl Image
         group: "Rancher Turtles Features Settings"
+      - variable: rancherTurtles.features.day2operations.enabled
+        label: "Enable Day 2 Operations functionality in Rancher Turtles"
+        description: "Use this setting to configure Day 2 Operations functionality in Rancher Turtles, such as enabling ETCD Backup and Restore."
+        type: boolean
+        group: "Rancher Turtles Features Settings"
+      - variable: rancherTurtles.features.day2operations.etcdBackupRestore.enabled
+        label: "Enable ETCD Backup and Restore"
+        description: "[ALPHA] Enable ETCD Backup and Restore functionality in Rancher Turtles."
+        type: boolean
+        group: "ETCD Backup and Restore Settings"
+        show_if: "rancherTurtles.features.day2operations.enabled"

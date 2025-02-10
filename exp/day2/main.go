@@ -29,6 +29,7 @@ import (
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	snapshotrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	expcontrollers "github.com/rancher/turtles/exp/day2/controllers"
+	"github.com/rancher/turtles/exp/day2/feature"
 	expwebhooks "github.com/rancher/turtles/exp/day2/webhooks"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
@@ -125,6 +126,8 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
 		"Webhook cert dir, only used when webhook-port is specified.")
+
+	feature.MutableGates.AddFlag(fs)
 }
 
 func main() {
@@ -172,9 +175,11 @@ func main() {
 	// Setup the context that's going to be used in controllers and for the manager.
 	ctx := ctrl.SetupSignalHandler()
 
-	setupChecks(mgr)
-	setupReconcilers(ctx, mgr)
-	setupWebhooks(mgr)
+	if feature.Gates.Enabled(feature.EtcdBackupRestore) {
+		setupChecks(mgr)
+		setupReconcilers(ctx, mgr)
+		setupWebhooks(mgr)
+	}
 
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager", "version", version.Get().String())

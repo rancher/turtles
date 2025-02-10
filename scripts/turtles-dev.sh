@@ -91,8 +91,8 @@ install_local_rancher_turtles_chart() {
         -n rancher-turtles-system \
         --set cluster-api-operator.enabled=true \
         --set cluster-api-operator.cluster-api.enabled=false \
-        --set rancherTurtles.features.day2-operations.enabled=true \
-        --set rancherTurtles.features.day2-operations.imageVersion=dev \
+        --set rancherTurtles.features.day2operations.enabled=true \
+        --set rancherTurtles.features.day2operations.imageVersion=dev \
         --set rancherTurtles.features.clusterclass-operations.enabled=true \
         --set rancherTurtles.features.clusterclass-operations.imageVersion=dev \
         --set rancherTurtles.imageVersion=dev \
