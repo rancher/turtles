@@ -131,9 +131,9 @@ To exlude any sensitive information from the collected artifacts, set the `SECRE
 
 ## Testdata
 
-For simplicity each test case testdata is stored under `test/e2e/resources/testdata`. This allows to use it with golang [embed](https://pkg.go.dev/embed) to avoid error checks and mistakes in the path resolution while loading the resources.
+For simplicity each test case testdata is stored under `test/e2e/data`. This allows to use it with golang [embed](https://pkg.go.dev/embed) to avoid error checks and mistakes in the path resolution while loading the resources.
 
-Import of the resources can be found in `test/e2e/helpers_test.go`.
+Import of the resources can be found in `test/e2e/helpers.go`.
 
 ## Testing
 
@@ -157,7 +157,7 @@ EKS is used to set up a cluster for e2e tests. In this setup nginx ingress will 
 
 To configure individual components, a series of `server-side-apply` patches are being issued. All required patch manifests are located under `test/e2e/resources/config`. Under circumstances each manifest could have a limited environment based configuration with `envsubst` (for example: setting `RANCHER_HOSTNAME` value in ingress configuration).
 
-Import of the resources could be found in `test/e2e/helpers_test.go`.
+Import of the resources could be found in `test/e2e/helpers.go`.
 
 ## Artifacts
 

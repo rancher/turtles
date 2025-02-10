@@ -21,7 +21,7 @@ body:
     id: check_successful
     attributes:
       label: Did you follow the certification process?
-      placeholder: "You need to follow the certification process before requesting a provider to be added to the list. You can refer to the Turtles documentation [here](https://turtles.docs.rancher.com/tasks/provider-certification/intro)."
+      placeholder: "You need to follow the certification process before requesting a provider to be added to the list. You can refer to the Turtles documentation [here](https://turtles.docs.rancher.com/turtles/next/en/tasks/provider-certification/intro)."
     validations:
       required: true     
 
