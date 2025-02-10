@@ -25,7 +25,7 @@ The content of the `ConfigMap` is not easy to override without introducing issue
 
 The proposed solution involves introducing a new singleton namespaced `CustomResource` - `ClusterctlConfig`, which will manage clusterctl overrides in a more flexible and maintainable way. The `ClusterctlConfig` CRD will provide `images` override options for `airGapped` installations and enable users to override or extend the default configuration with new `providers` specific to their use-case.
 
-This additional customization layer would allow to test new provider integrations early, and will not require immediate changes to `turtles` repository, which will align it with the current [certification process](https://turtles.docs.rancher.com/tasks/provider-certification/process).
+This additional customization layer would allow to test new provider integrations early, and will not require immediate changes to `turtles` repository, which will align it with the current [certification process](https://turtles.docs.rancher.com/turtles/next/en/tasks/provider-certification/process).
 
 ```yaml
 apiVersion: turtles-capi.cattle.io/v1alpha1
