@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	ctrlwebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -175,8 +176,8 @@ func main() {
 	// Setup the context that's going to be used in controllers and for the manager.
 	ctx := ctrl.SetupSignalHandler()
 
+	setupChecks(mgr)
 	if feature.Gates.Enabled(feature.EtcdBackupRestore) {
-		setupChecks(mgr)
 		setupReconcilers(ctx, mgr)
 		setupWebhooks(mgr)
 	}
@@ -191,14 +192,26 @@ func main() {
 }
 
 func setupChecks(mgr ctrl.Manager) {
-	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to create ready check")
 		os.Exit(1)
 	}
 
-	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to create health check")
 		os.Exit(1)
+	}
+
+	if feature.Gates.Enabled(feature.EtcdBackupRestore) {
+		if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+			setupLog.Error(err, "unable to create ready check")
+			os.Exit(1)
+		}
+
+		if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+			setupLog.Error(err, "unable to create health check")
+			os.Exit(1)
+		}
 	}
 }
 
