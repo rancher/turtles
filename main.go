@@ -278,6 +278,22 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		setupLog.Error(err, "unable to create CAPI Provider controller")
 		os.Exit(1)
 	}
+
+	setupLog.Info("enabling UI installation controller")
+
+	if feature.Gates.Enabled(feature.UIPlugin) {
+		if err := (&controllers.UIPluginReconciler{
+			Client:         mgr.GetClient(),
+			Scheme:         scheme,
+			UncachedClient: uncachedClient,
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+			CacheSyncTimeout:        maxDuration,
+		}); err != nil {
+			setupLog.Error(err, "unable to create UI Plugin controller")
+			os.Exit(1)
+		}
+	}
 }
 
 // setupRancherClient can either create a client for an in-cluster installation (rancher and rancher-turtles in the same cluster)
