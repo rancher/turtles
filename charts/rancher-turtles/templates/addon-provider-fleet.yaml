@@ -10,6 +10,12 @@ metadata:
     "helm.sh/hook-weight": "2"
 spec:
   type: addon
+  deployment:
+    containers:
+    - name: manager
+      imageUrl: registry.rancher.com/rancher/cluster-api-fleet-controller:v0.5.1
+    - name: helm-manager
+      imageUrl: registry.rancher.com/rancher/cluster-api-fleet-controller:v0.5.1
   additionalManifests:
     name: fleet-addon-config
     namespace: '{{ .Values.rancherTurtles.namespace }}'
