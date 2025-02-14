@@ -20,6 +20,17 @@ rules:
   - update
   - watch
 - apiGroups:
+  - catalog.cattle.io
+  resources:
+  - uiplugins
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
   - cluster.x-k8s.io
   resources:
   - clusters
@@ -84,6 +95,15 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - rancher-turtles-manager-role
+  resources:
+  - clusterroles
+  verbs:
+  - get
+  - list
 - apiGroups:
   - turtles-capi.cattle.io
   resources:

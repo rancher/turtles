@@ -86,6 +86,29 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
+  capioperatorrelease:
+    kind: githubrelease
+    name: Get the latest CAPI operator release
+    spec:
+      owner: "rancher-sandbox"
+      repository: "cluster-api-operator"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+  capiuirelease:
+    kind: githubrelease
+    name: Get the latest CAPI UI extension release
+    spec:
+      owner: "rancher"
+      repository: "capi-ui-extension"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+    transformers:
+    - trimprefix: "capi-"
+    - addprefix: "v"
 
 # update config.yaml accordingly
 targets:
@@ -179,6 +202,22 @@ targets:
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
     scmid: turtles
     sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
+  bumpcapioperator:
+    name: bump CAPI Operator version
+    kind: yaml
+    spec:
+      file: "charts/rancher-turtles/Chart.yaml"
+      key: "$.dependencies[0].version"
+    scmid: turtles
+    sourceid: capioperatorrelease # Will be ignored as `replacepattern` is specified
+  bumpcapiui:
+    name: bump CAPI UI version
+    kind: yaml
+    spec:
+      file: "charts/rancher-turtles/values.yaml"
+      key: "$.turtlesUI.version"
+    scmid: turtles
+    sourceid: capiuirelease # Will be ignored as `replacepattern` is specified
 
 # create a pr with the changes
 actions:
