@@ -157,9 +157,10 @@ CLUSTERCTL_VER := v1.7.7
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 
-GOLANGCI_LINT_VER := v1.60.2
 GOLANGCI_LINT_BIN := golangci-lint
-GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
+GOLANGCI_LINT_VER := $(shell cat .github/workflows/golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
+GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER))
+GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/cmd/golangci-lint
 
 NOTES_BIN := notes
 NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
@@ -505,10 +506,8 @@ $(UPDATECLI): # Install updatecli
 	cd ${TOOLS_BIN_DIR} && chmod +x updatecli
 	cd ${TOOLS_BIN_DIR} && mv updatecli $(UPDATECLI_BIN)-$(UPDATECLI_VER)
 
-$(GOLANGCI_LINT): # Download and install golangci-lint
-	hack/ensure-golangci-lint.sh \
-		-b $(TOOLS_BIN_DIR) \
-		$(GOLANGCI_LINT_VER)
+$(GOLANGCI_LINT): # Build golangci-lint from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOLANGCI_LINT_PKG) $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
 $(NOTES): # Download and install note generator from cluster-api commit
 	hack/make-release-notes.sh $(TOOLS_BIN_DIR)

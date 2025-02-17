@@ -41,7 +41,7 @@ import (
 const AppliedSpecHashAnnotation = "operator.cluster.x-k8s.io/applied-spec-hash"
 
 // ProviderSync is a structure mirroring state of the CAPI Operator Provider object.
-type ProviderSync struct {
+type ProviderSync struct { //nolint: recvcheck
 	*DefaultSynchronizer
 	Destination api.Provider
 }
