@@ -1,10 +1,10 @@
 # Options for analysis running.
 run:
-  go: "1.22"
-  skip-files:
-    - ".*_test\\.go$"
+  go: "1.23"
   allow-parallel-runners: true
 issues:
+  exclude-files:
+    - ".*_test\\.go$"
   include:
     - EXC0012
     - EXC0014
@@ -49,8 +49,6 @@ linters-settings:
       - "default"
       - "prefix(sigs.k8s.io/cluster-api)"
       - "prefix(github.com/rancher/turtles)"
-    wsl:
-      force-err-cuddling: false
   importas:
       no-unaliased: true
       alias:
@@ -137,8 +135,6 @@ linters:
     - tagliatelle
     - exhaustruct
     - exhaustive
-    - exhaustivestruct
-    - maligned
     - funlen
     - wrapcheck
     - goerr113  
@@ -150,21 +146,11 @@ linters:
     - nonamedreturns
     - gocritic
     - nlreturn
-    - gomnd
     - mnd
     - ireturn
     - depguard
     - containedctx 
     - godox
-    # The following are all deprecated linters
-    - deadcode
-    - ifshort
-    - varcheck
-    - scopelint
-    - interfacer
-    - structcheck
-    - golint
-    - nosnakecase
     # Disabled because of generics
     - rowserrcheck
     - sqlclosecheck

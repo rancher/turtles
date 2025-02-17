@@ -32,7 +32,7 @@ import (
 )
 
 // SecretSync is a structure mirroring variable secret state of the CAPI Operator Provider object.
-type SecretSync struct {
+type SecretSync struct { //nolint: recvcheck
 	*DefaultSynchronizer
 
 	Secret *corev1.Secret
