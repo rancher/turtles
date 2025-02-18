@@ -14,8 +14,8 @@ require (
 	github.com/go-git/go-git/v5 v5.13.2
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
-	github.com/rancher/turtles/exp/day2 v0.0.0-00010101000000-000000000000
+	github.com/rancher/turtles v0.16.1-0.20250217112855-5adeb47014de
+	github.com/rancher/turtles/exp/day2 v0.0.0-20250217112855-5adeb47014de
 	k8s.io/api v0.31.4
 	k8s.io/apimachinery v0.31.4
 	k8s.io/client-go v0.31.4
