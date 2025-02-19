@@ -178,10 +178,10 @@ func RKE2KillAll() Instruction {
 func ETCDRestore(snapshot *snapshotrestorev1.ETCDMachineSnapshotFile) Instruction {
 	return Instruction{
 		Name:    "etcd-restore",
-		Command: "/bin/sh",
+		Command: "rke2",
 		Args: []string{
-			"-c",
-			"rke2 server --cluster-reset",
+			"server",
+			"--cluster-reset",
 			fmt.Sprintf("--cluster-reset-restore-path=%s", strings.TrimPrefix(snapshot.Location, "file://")),
 		},
 		SaveOutput: true,
