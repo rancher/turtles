@@ -93,6 +93,7 @@ install_local_rancher_turtles_chart() {
         --set cluster-api-operator.cluster-api.enabled=false \
         --set rancherTurtles.features.day2operations.enabled=true \
         --set rancherTurtles.features.day2operations.imageVersion=dev \
+        --set rancherTurtles.features.day2operations.etcdBackupRestore.enabled=true \
         --set rancherTurtles.features.clusterclass-operations.enabled=true \
         --set rancherTurtles.features.clusterclass-operations.imageVersion=dev \
         --set rancherTurtles.imageVersion=dev \
