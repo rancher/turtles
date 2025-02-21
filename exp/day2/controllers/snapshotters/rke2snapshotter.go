@@ -64,16 +64,6 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 			continue
 		}
 
-		machineName, err := s.findMachineForSnapshot(ctx, snapshotFile.Spec.NodeName)
-		if err != nil {
-			return fmt.Errorf("failed to find machine to take a snapshot: %w", err)
-		}
-
-		if machineName == "" {
-			log.V(5).Info("Machine not found to take a snapshot, skipping. Will try again later.")
-			continue
-		}
-
 		if snapshotFile.Spec.S3 != nil {
 			s3Snapshots = append(s3Snapshots, snapshotrestorev1.S3SnapshotFile{
 				Name:         snapshotFile.Name,
@@ -81,6 +71,16 @@ func (s *RKE2Snapshotter) Sync(ctx context.Context) error {
 				CreationTime: snapshotFile.Status.CreationTime,
 			})
 		} else {
+			machineName, err := s.findMachineForSnapshot(ctx, snapshotFile.Spec.NodeName)
+			if err != nil {
+				return fmt.Errorf("failed to find machine to take a snapshot: %w", err)
+			}
+
+			if machineName == "" {
+				log.V(5).Info("Machine not found to take a snapshot, skipping. Will try again later.")
+				continue
+			}
+
 			snapshots = append(snapshots, snapshotrestorev1.ETCDMachineSnapshotFile{
 				Name:         snapshotFile.Name,
 				Location:     snapshotFile.Spec.Location,
