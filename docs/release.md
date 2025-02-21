@@ -109,8 +109,8 @@ git clone git@github.com:rancher/turtles-docs.git
 2. Export the tag of the minor/major release, create a signed/annotated tag and push it:
 
 ```bash
-# Export the tag of the minor/major release in a format of v0.X/v1.X, e.g.:
-export RELEASE_TAG=v0.4
+# Export the tag of the minor/major release in a format of v0.Y.Z/v1.Y.Z, e.g.:
+export RELEASE_TAG=v0.4.0
 
 # Create tags locally
 git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
