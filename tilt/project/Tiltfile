@@ -109,7 +109,7 @@ def update_manager(yaml, containerName, debug, env, name, project):
 
     Args:
         yaml: the controller yaml.
-        debug: Is the debug configuration for the project. See note below on format.
+        debug: Is the debug configuration for the project.
         containerName: the name of the container to update
     Notes:
         The debug section is expected to be in this format:
@@ -129,48 +129,47 @@ def update_manager(yaml, containerName, debug, env, name, project):
             for c in containers:
                 if c["name"] != containerName:
                     continue
-                if name != "turtles": # use custom image for projects except turtles
+                if name != "turtles":  # use custom image for projects except turtles
                     c["image"] = project.get("image")
                 if project.get("command"):
                     c["command"] = project.get("command")
+                # Append additional args from the main file to any existing container args
+                if project.get("args"):
+                    current_args = c.get("args", [])
+                    c["args"] = current_args + project.get("args")
 
                 cmd = ["sh", "/start.sh", "/manager"]
                 if debug != {}:
                     debugArgs = []
-                    containerArgs = c.get("args")
-                    if containerArgs  != None:
-                        for arg in c["args"]:
-                            if arg == "--leader-elect" or arg == "--leader-elect=true":
-                                continue
-                            debugArgs.append(arg)
+                    # Directly iterate over any existing args without a None check.
+                    for arg in c.get("args", []):
+                        if arg == "--leader-elect" or arg == "--leader-elect=true":
+                            continue
+                        debugArgs.append(arg)
                     if debug_insecure_skip_verify:
                         debugArgs.append("--insecure-skip-verify=true")
                         debugArgs.append("--v=5")
                     c["command"] = cmd
                     print(cmd)
                     if len(debugArgs) == 0:
-                        c.pop("args",{})
+                        c.pop("args", None)
                     else:
                         c["args"] = debugArgs
-                    c.pop("readinessProbe",{})
-                    c.pop("livenessProbe",{})
-                    c.pop("resources", {})
+                    c.pop("readinessProbe", None)
+                    c.pop("livenessProbe", None)
+                    c.pop("resources", None)
                 if env != {}:
-                    debugEnv = dict([])
-                    containerEnvVars = c.get("env")
-                    if containerEnvVars  == None:
-                        info("no env, creating new")
-                        containerEnvVars = []
+                    debugEnv = {}
+                    containerEnvVars = c.get("env", [])
                     for containerEnv in containerEnvVars:
                         debugEnv[containerEnv.get("name")] = containerEnv.get("value")
                     for envName in env:
                         debugEnv[envName] = env[envName]
-                    containerEnvVars = []
+                    newEnv = []
                     for dvName in debugEnv:
-                        containerEnvVars.append({"name": dvName, "value": debugEnv[dvName]})
-                    c["env"] = containerEnvVars
+                        newEnv.append({"name": dvName, "value": debugEnv[dvName]})
+                    c["env"] = newEnv
 
-    # Save the changes
     yaml = encode_yaml_stream(objs)
     return yaml
 

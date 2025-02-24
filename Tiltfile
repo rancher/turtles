@@ -65,6 +65,7 @@ projects = {
         "kustomize_dir": "config/default",
         "label": "turtles-day2",
         "command": ["/manager"],
+        "args": ["--feature-gates=etcd-backup-restore=true"],
         "binary_name" : "turtles-day2-operations"
     },
     "turtles-capiproviders": {
