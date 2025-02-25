@@ -17,3 +17,4 @@ resources:
 patches:
   - path: manager_image_patch.yaml
   - path: manager_pull_policy.yaml
+  - path: manager_role_aggregation_patch.yaml
