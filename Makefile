@@ -108,10 +108,10 @@ get_go_version = $(shell go list -m $1 | awk '{print $$2}')
 GO_INSTALL := ./scripts/go-install.sh
 
 # Binaries
-KUSTOMIZE_VER := v4.5.2
+KUSTOMIZE_VER := v5.6.0
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER))
-KUSTOMIZE_PKG := sigs.k8s.io/kustomize/kustomize/v4
+KUSTOMIZE_PKG := sigs.k8s.io/kustomize/kustomize/v5
 
 SETUP_ENVTEST_VER := release-0.20
 SETUP_ENVTEST_BIN := setup-envtest
