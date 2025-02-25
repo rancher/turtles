@@ -15,8 +15,8 @@ env:
   CONTROLLER_IMG: controller
   CONTROLLER_IMAGE_VERSION: v0.0.1
   PULL_POLICY: Never
-  CERT_MANAGER_VERSION: v1.15.2
-  RANCHER_VERSION: v2.10.0
+  CERT_MANAGER_VERSION: v1.16.3
+  RANCHER_VERSION: v2.10.2
 
 jobs:
   lint-test:
@@ -63,7 +63,7 @@ jobs:
         uses: helm/kind-action@v1.12.0
         with:
           cluster_name: kind
-          node_image: kindest/node:v1.30.0
+          node_image: kindest/node:v1.31.4
 
       - name: Add local docker image
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}

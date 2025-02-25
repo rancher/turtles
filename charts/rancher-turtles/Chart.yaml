@@ -23,7 +23,7 @@ annotations:
   catalog.cattle.io/namespace: rancher-turtles-system
   catalog.cattle.io/os: linux
   catalog.cattle.io/permits-os: linux
-  catalog.cattle.io/rancher-version: '>= 2.10.0-1'
+  catalog.cattle.io/rancher-version: '>= 2.10.2-1'
   catalog.cattle.io/release-name: rancher-turtles
   catalog.cattle.io/scope: management
   catalog.cattle.io/type: cluster-tool
