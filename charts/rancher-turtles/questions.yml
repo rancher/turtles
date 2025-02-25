@@ -13,6 +13,11 @@ questions:
         type: boolean
         description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually."
         label: "Enable Cert Manager"
+      - variable: turtlesUI.enabled
+        default: false
+        type: boolean
+        description: "Flag to enable or disable installation of CAPI UI extension. If set to false then you will need to install CAPI UI extension manually."
+        label: "Install CAPI UI (Experimental)"
       - variable: rancherTurtles.cluster-api-operator.cleanup
         default: true
         description: "Specify that the CAPI Operator post-delete cleanup job will be performed."
