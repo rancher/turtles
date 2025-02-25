@@ -11,5 +11,5 @@ resources:
 - leader_election_role_binding.yaml
 - aggregated_role.yaml
 
-patchesStrategicMerge:
-- manager_role_aggregation_patch.yaml
+patches:
+- path: manager_role_aggregation_patch.yaml
