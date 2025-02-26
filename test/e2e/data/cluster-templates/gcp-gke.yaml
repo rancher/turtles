@@ -24,9 +24,9 @@ metadata:
   namespace: "${NAMESPACE}"
 spec:
   project: "${GCP_PROJECT}"
-  region: "europe-west2"
+  region: "${GCP_REGION}"
   network:
-    name: "highlander-ci"
+    name: "${GCP_NETWORK_NAME}"
 ---
 kind: GCPManagedControlPlane
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -35,7 +35,7 @@ metadata:
   namespace: "${NAMESPACE}"
 spec:
   project: "${GCP_PROJECT}"
-  location: "europe-west2"
+  location: "${GCP_REGION}"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
@@ -62,4 +62,4 @@ metadata:
   namespace: "${NAMESPACE}"
 spec:
   nodeLocations:
-    - "europe-west2-a"
+    - "${GCP_REGION}-a"
