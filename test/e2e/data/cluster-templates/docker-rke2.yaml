@@ -2,6 +2,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
 metadata:
   name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
   annotations:
     "helm.sh/resource-policy": keep
 spec:
@@ -13,6 +14,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster 
 metadata:
   name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
   annotations:
     cluster-api.cattle.io/upstream-system-agent: "true"
   labels:
@@ -39,6 +41,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name:  ${CLUSTER_NAME}-control-plane
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -49,6 +52,7 @@ apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: RKE2ControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
+  namespace: ${NAMESPACE}
 spec:
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${RKE2_VERSION}
@@ -89,6 +93,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -99,12 +104,14 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: ${NAMESPACE}
 spec: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: ${NAMESPACE}
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -189,5 +196,6 @@ data:
 kind: ConfigMap
 metadata:
   name: ${CLUSTER_NAME}-lb-config
+  namespace: ${NAMESPACE}
   annotations:
     "helm.sh/resource-policy": keep
