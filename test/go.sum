@@ -444,8 +444,8 @@ sigs.k8s.io/cluster-api-operator v0.16.0 h1:q19kIYLPCHjXdXGgLjEDAuBslJs8AkIp3JBV
 sigs.k8s.io/cluster-api-operator v0.16.0/go.mod h1:2TraYRvf4Os2vuB6HQhSwDMJATmnNAuCuLQZNj460U8=
 sigs.k8s.io/cluster-api-operator/test v0.16.0 h1:XWqa7emSE1CJXCQ7U2yJ71cJ7P5Avhux6Y0FPWyQNpo=
 sigs.k8s.io/cluster-api-operator/test v0.16.0/go.mod h1:bo4mf0AVIGn3EnJqlvfH9szdD396TDUoODXugHGXH3w=
-sigs.k8s.io/cluster-api/test v1.9.4 h1:ZZ+IPK/lfyc4d/QPtompt+cxXYC6tGJ4kTHhhocgbIM=
-sigs.k8s.io/cluster-api/test v1.9.4/go.mod h1:dHLUcNc9vBNyQyY6NTcqcfpFvIiXmcL5Iqe2sETFD1c=
+sigs.k8s.io/cluster-api/test v1.9.5 h1:DtiiDWCIGaWhp4cA7xzGPWeM796XIRQwOptLATe0yFg=
+sigs.k8s.io/cluster-api/test v1.9.5/go.mod h1:YL2wANe8TFWFBka9CDkxjPj7KALqUtK+PtKa4ChNIok=
 sigs.k8s.io/controller-runtime v0.19.6 h1:fuq53qTLQ7aJTA7aNsklNnu7eQtSFqJUomOyM+phPLk=
 sigs.k8s.io/controller-runtime v0.19.6/go.mod h1:iRmWllt8IlaLjvTTDLhRBXIEtkCK6hwVBJJsYS9Ajf4=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
