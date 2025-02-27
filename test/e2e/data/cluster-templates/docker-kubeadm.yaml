@@ -2,6 +2,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
 metadata:
   name: ${CLUSTER_NAME}
+  namespace: "${NAMESPACE}"
   annotations:
     "helm.sh/resource-policy": keep
 spec:
@@ -29,6 +30,7 @@ metadata:
   labels:
     cni: ${CLUSTER_NAME}-crs-0
   name: ${CLUSTER_NAME}
+  namespace: "${NAMESPACE}"
 spec:
   clusterNetwork:
     pods:
@@ -51,6 +53,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec:
@@ -62,6 +65,7 @@ apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
+  namespace: "${NAMESPACE}"
   annotations:
     "helm.sh/resource-policy": keep
 spec:
@@ -98,6 +102,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec:
@@ -109,6 +114,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: "${NAMESPACE}"
   annotations:
     "helm.sh/resource-policy": keep
 spec:
@@ -124,6 +130,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: "${NAMESPACE}"
   annotations:
     "helm.sh/resource-policy": keep
 spec:
