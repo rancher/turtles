@@ -399,7 +399,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
 			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
-				ContainSubstring("key not found: vmwarevsphere-password, key not found: vmwarevsphere-username"))
+				ContainSubstring("key not found: vmwarevspherecredentialConfig-password, key not found: vmwarevspherecredentialConfig-username"))
 			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
 				"VSPHERE_PASSWORD": "",
 				"VSPHERE_USERNAME": "",
