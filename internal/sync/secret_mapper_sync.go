@@ -80,8 +80,8 @@ var (
 			{to: "AZURE_TENANT_ID_B64", from: B64{source: "azurecredentialConfig-tenantId"}},
 		},
 		"vsphere": {
-			{to: "VSPHERE_PASSWORD", from: Raw{source: "vmwarevsphere-password"}},
-			{to: "VSPHERE_USERNAME", from: Raw{source: "vmwarevsphere-username"}},
+			{to: "VSPHERE_PASSWORD", from: Raw{source: "vmwarevspherecredentialConfig-password"}},
+			{to: "VSPHERE_USERNAME", from: Raw{source: "vmwarevspherecredentialConfig-username"}},
 		},
 		"gcp": {
 			{to: "GCP_B64ENCODED_CREDENTIALS", from: B64{source: "googlecredentialConfig-authEncodedJson"}},
