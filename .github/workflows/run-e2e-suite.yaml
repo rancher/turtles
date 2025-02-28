@@ -34,28 +34,37 @@ permissions:
   packages: read
 
 env:
-  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
+  # GitHub Credentials
+  GITHUB_USERNAME: ${{ github.actor }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Rancher Credentials
   RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
   RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
+  # Ngrok Credentials
+  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
+  # AWS Credentials
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_SSH_KEY_NAME: ${{ secrets.AWS_SSH_KEY_NAME }}
   CAPA_ENCODED_CREDS: ${{ secrets.CAPA_ENCODED_CREDS }}
-  CAPG_ENCODED_CREDS: ${{ secrets.CAPG_ENCODED_CREDS }}
+  # GCP Credentials and Configuration
   GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
   GCP_REGION: ${{ secrets.GCP_REGION }}
   GCP_NETWORK_NAME: ${{ secrets.GCP_NETWORK_NAME }}
+  CAPG_ENCODED_CREDS: ${{ secrets.CAPG_ENCODED_CREDS }}
+  # Azure Credentials
   AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  GITHUB_USERNAME: ${{ github.actor }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  AWS_REGION: eu-west-2
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # Cluster Configuration
   MANAGEMENT_CLUSTER_ENVIRONMENT: ${{ inputs.MANAGEMENT_CLUSTER_ENVIRONMENT }}
+  # Ginkgo Test Configurations
   GINKGO_LABEL_FILTER: full 
   GINKGO_TESTS: ${{ github.workspace }}/${{ inputs.test_suite }}
   GINKGO_NODES: 5
+  # Version Tag
   TAG: v0.0.1
 
 jobs:

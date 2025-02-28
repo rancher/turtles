@@ -6,3 +6,8 @@ metadata:
   namespace: capz-system
 spec:
   type: infrastructure
+  deployment:
+    containers:
+      - name: manager
+        args:
+          "--v": "5" # CAPZ only displays meaningful logs at level 5
