@@ -8,13 +8,12 @@ namespace: rancher-turtles-system
 # field above.
 namePrefix: rancher-turtles-
 
-# Labels to add to all resources and selectors.
-#labels:
-#- includeSelectors: true
-#  pairs:
-#    someName: someValue
+labels:
+- includeSelectors: true
+  pairs:
+    turtles-capi.cattle.io: "turtles"
 
-bases:
+resources:
 - ../crd
 - ../rbac
 - ../manager
@@ -28,9 +27,9 @@ bases:
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
 #- ../prometheus
 
-patchesStrategicMerge:
+patches:
 # Protect the /metrics endpoint by putting it behind auth.
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
-- manager_image_patch.yaml
-- manager_pull_policy.yaml
+- path: manager_image_patch.yaml
+- path: manager_pull_policy.yaml

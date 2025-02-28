@@ -4,6 +4,6 @@ images:
   newName: "{{ .Values.rancherTurtles.image }}"
   newTag: "{{ .Values.rancherTurtles.imageVersion }}"
 namePrefix: rancher-turtles-
-bases:
+resources:
 - ../rbac
 - ../crd
