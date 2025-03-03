@@ -151,6 +151,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			Namespace:        rancherCluster.Spec.FleetWorkspaceName,
 			RancherServerURL: input.RancherServerURL,
 			WriteToTempFile:  true,
+			WaitInterval:     input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		}, rancherKubeconfig)
 
 		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
