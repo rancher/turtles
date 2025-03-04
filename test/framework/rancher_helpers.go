@@ -57,6 +57,9 @@ type RancherGetClusterKubeconfigInput struct {
 
 	// WriteToTempFile indicates whether to write the kubeconfig to a temporary file.
 	WriteToTempFile bool
+
+	// WaitInterval is the interval to wait for the secret to be available.
+	WaitInterval []interface{}
 }
 
 // RancherGetClusterKubeconfigResult represents the result of getting the kubeconfig for a Rancher cluster.
@@ -74,6 +77,7 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	Expect(input.Getter).ToNot(BeNil(), "Invalid argument. input.Getter can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.SecretName).ToNot(BeEmpty(), "Invalid argument. input.SecretName can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.RancherServerURL).ToNot(BeEmpty(), "Invalid argument. input.RancherServerURL can't be nil when calling RancherGetClusterKubeconfig")
+	Expect(input.WaitInterval).ToNot(BeEmpty(), "Invalid argument. input.WaitInterval can't be nil when calling RancherGetClusterKubeconfig")
 
 	if input.Namespace == "" {
 		input.Namespace = DefaultNamespace
@@ -82,8 +86,10 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	By("Getting Rancher kubeconfig secret")
 	secret := &corev1.Secret{}
 
-	err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret)
-	Expect(err).ShouldNot(HaveOccurred(), "Getting Rancher kubeconfig secret for %s", input.SecretName)
+	Eventually(
+		input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret),
+		input.WaitInterval...).
+		Should(Succeed(), "Getting Rancher kubeconfig secret for %s", input.SecretName)
 
 	content, ok := secret.Data["value"]
 	Expect(ok).To(BeTrue(), "Failed to find expected key in kubeconfig secret")
