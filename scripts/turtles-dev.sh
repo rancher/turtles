@@ -55,7 +55,8 @@ helm upgrade ngrok ngrok/ngrok-operator \
     --wait \
     --timeout 5m \
     --set credentials.apiKey=$NGROK_API_KEY \
-    --set credentials.authtoken=$NGROK_AUTHTOKEN
+    --set credentials.authtoken=$NGROK_AUTHTOKEN \
+    --version v0.16.4
 
 kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
 
