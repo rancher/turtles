@@ -30,8 +30,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	awsinfrav1 "sigs.k8s.io/cluster-api-provider-aws/v2/api/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -387,6 +389,42 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 
 		By("Waiting for the rancher cluster record to be removed")
 		Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+
+		Eventually(func() error {
+			cl := input.BootstrapClusterProxy.GetClient()
+
+			cluster := &managementv3.Cluster{}
+			err := cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					return nil
+				}
+				return err
+			}
+
+			listOptions := []client.ListOption{
+				client.InNamespace(capiCluster.Namespace),
+				client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: capiCluster.Name}),
+			}
+
+			machines := &awsinfrav1.AWSMachineList{}
+			if err := cl.List(ctx, machines, listOptions...); err != nil {
+				return fmt.Errorf("failed to list AWSMachines, waiting for Rancher Cluster deletion: %w", err)
+			}
+			if len(machines.Items) == 0 {
+				return fmt.Errorf("no machines found, waiting for Rancher Cluster deletion")
+			}
+
+			awsClusters := &awsinfrav1.AWSClusterList{}
+			if err := cl.List(ctx, awsClusters, listOptions...); err != nil {
+				return fmt.Errorf("failed to list AWSClusters, waiting for Rancher Cluster deletion: %w", err)
+			}
+			if len(awsClusters.Items) == 0 {
+				return nil
+			}
+
+			return fmt.Errorf("AWSClusters still present")
+		}, deleteClusterWait...).Should(Succeed(), "Rancher cluster deletion or cleanup of AWS resources should complete")
 
 		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
