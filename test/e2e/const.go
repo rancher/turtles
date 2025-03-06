@@ -183,12 +183,9 @@ const (
 
 	RKE2VersionVar = "RKE2_VERSION"
 
-	CapaEncodedCredentialsVar = "CAPA_ENCODED_CREDS"
-	CapgEncodedCredentialsVar = "CAPG_ENCODED_CREDS"
-	GCPProjectVar             = "GCP_PROJECT"
-	AzureSubIDVar             = "AZURE_SUBSCRIPTION_ID"
-	AzureClientIDVar          = "AZURE_CLIENT_ID"
-	AzureClientSecretVar      = "AZURE_CLIENT_SECRET"
+	AzureSubIDVar        = "AZURE_SUBSCRIPTION_ID"
+	AzureClientIDVar     = "AZURE_CLIENT_ID"
+	AzureClientSecretVar = "AZURE_CLIENT_SECRET"
 
 	AuthSecretName = "basic-auth-secret"
 

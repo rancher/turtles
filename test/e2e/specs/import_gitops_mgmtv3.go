@@ -245,11 +245,6 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			"RKE2_CNI":                    "none",
 		}
 
-		// These variables (secrets) are not accessible when using the pr webhook (aka `ShortTestLabel`)
-		if input.IsGCPCluster {
-			additionalVars["GCP_PROJECT"] = input.E2EConfig.GetVariable(e2e.GCPProjectVar)
-		}
-
 		for k, v := range input.AdditionalTemplateVariables {
 			additionalVars[k] = v
 		}
