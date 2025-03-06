@@ -108,12 +108,12 @@ get_go_version = $(shell go list -m $1 | awk '{print $$2}')
 GO_INSTALL := ./scripts/go-install.sh
 
 # Binaries
-KUSTOMIZE_VER := v4.5.2
+KUSTOMIZE_VER := v5.6.0
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER))
-KUSTOMIZE_PKG := sigs.k8s.io/kustomize/kustomize/v4
+KUSTOMIZE_PKG := sigs.k8s.io/kustomize/kustomize/v5
 
-SETUP_ENVTEST_VER := release-0.19
+SETUP_ENVTEST_VER := release-0.20
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
@@ -123,7 +123,7 @@ CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(abspath $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER))
 CONTROLLER_GEN_PKG := sigs.k8s.io/controller-tools/cmd/controller-gen
 
-CONVERSION_GEN_VER := v0.29.2
+CONVERSION_GEN_VER := v0.31.0
 CONVERSION_GEN_BIN := conversion-gen
 # We are intentionally using the binary without version suffix, to avoid the version
 # in generated files.
@@ -146,10 +146,10 @@ GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
 UPDATECLI_BIN := updatecli
-UPDATECLI_VER := v0.85.0
+UPDATECLI_VER := v0.94.0
 UPDATECLI := $(abspath $(TOOLS_BIN_DIR)/$(UPDATECLI_BIN)-$(UPDATECLI_VER))
 
-HELM_VER := v3.16.4
+HELM_VER := v3.17.1
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 

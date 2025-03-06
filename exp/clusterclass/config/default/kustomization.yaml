@@ -3,8 +3,11 @@ namespace: rancher-turtles-system
 
 namePrefix: rancher-turtles-clusterclass-
 
-commonLabels:
-  turtles-capi.cattle.io: "clusterclass"
+labels:
+- includeSelectors: true
+  pairs:
+    turtles-capi.cattle.io: "clusterclass"
+
 
 resources:
 - ../crd

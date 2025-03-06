@@ -42,12 +42,12 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 	})
 
-	It("Should perform upgrade from GA version to latest", func() {
+	It("Should perform upgrade from latest N-1 version to latest", func() {
 		rtInput := testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			TurtlesChartPath:      "https://rancher.github.io/turtles",
 			CAPIProvidersYAML:     e2e.CapiProvidersLegacy,
-			Version:               "v0.6.0",
+			Version:               "v0.16.0",
 			AdditionalValues:      map[string]string{},
 			WaitForDeployments:    testenv.DefaultDeployments,
 		}
