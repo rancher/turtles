@@ -248,7 +248,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 			CAPIProvidersSecretsYAML: [][]byte{
 				e2e.VSphereProviderSecret,
 			},
-			CAPIProvidersYAML: [][]byte{e2e.CapvProvider},
+			CAPIProvidersYAML: [][]byte{e2e.CapvProvider, e2e.CapiProviders},
 			WaitForDeployments: []testenv.NamespaceName{
 				{
 					Name:      "capv-controller-manager",
@@ -285,6 +285,22 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		By("Running local vSphere tests, deploying vSphere infrastructure provider")
+
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.VSphereProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{e2e.CapvProvider},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capv-controller-manager",
+					Namespace: "capv-system",
+				},
+			},
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
