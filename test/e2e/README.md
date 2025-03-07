@@ -77,7 +77,7 @@ This will consequently:
 From the project root directory:
 
 ```bash
-GINKGO_LABEL_FILTER=local make test-e2e
+TAG=v0.0.1 GINKGO_LABEL_FILTER=local make test-e2e
 ```
 
 **Important note:** The vSphere e2e tests require a VPN connection, which makes their integration into the daily e2e CI job challenging. Therefore,
