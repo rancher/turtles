@@ -52,16 +52,15 @@ for arg in "$@"; do
             usage
             ;;
         --ngrok)
-            echo "Ngrok option selected."
             NGROK=1
             ;;
         --with-example)
-            echo "Provision example cluster with CAPI Docker provider."
             CAPIDEMO=1
             ;;
-        --with-rancher)
-            echo "Install Rancher along with turtles."
-            WITH_RANCHER=1
+        --without-rancher)
+            echo
+            echo "Installing Rancher Turtles without Rancher"
+            WITHOUT_RANCHER=1
             ;;
         *)
             echo "Unknown option: $arg"
@@ -92,7 +91,7 @@ show_step() {
 
 #### script starts here
 
-if [ "$WITH_RANCHER" -eq 1 ]; then
+if [ "$WITHOUT_RANCHER" -eq 1 ]; then
     current_watches=$(sysctl -n fs.inotify.max_user_watches)
     current_instances=$(sysctl -n fs.inotify.max_user_instances)
 
@@ -233,7 +232,7 @@ EOF
         --set bootstrapPassword="$RANCHER_PASSWORD" \
         --set replicas=1 \
         --set hostname="$RANCHER_HOSTNAME" \
-        --set ingress.ingressClassName=${INGRESS_CLASS} \
+        --set ingress.ingressClassName="$INGRESS_CLASS" \
         --version="$RANCHER_VERSION" \
         --wait
 
@@ -413,7 +412,7 @@ echo
 echo "SUCCESS: Turtles installation completed successfully!"
 echo
 
-if [ "$WITH_RANCHER" -eq 1 ]; then
+if [ "$WITHOUT_RANCHER" -eq 1 ]; then
     echo "Rancher is ready at:"
     echo "        https://$RANCHER_HOSTNAME"
     echo
