@@ -61,6 +61,7 @@ spec:
       maxSurge: 1
     type: RollingUpdate
   serverConfig:
+    cloudProviderName: external
     cni: ${RKE2_CNI}
     kubeAPIServer:
       extraArgs:
