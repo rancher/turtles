@@ -1,0 +1,37 @@
+name: Run local e2e tests on self-hosted runner
+
+on:
+  workflow_dispatch:
+
+env:
+  VSPHERE_TLS_THUMBPRINT: ${{ secrets.VSPHERE_TLS_THUMBPRINT }} 
+  VSPHERE_SERVER: ${{ secrets.VSPHERE_SERVER }} 
+  VSPHERE_DATACENTER: ${{ secrets.VSPHERE_DATACENTER }}
+  VSPHERE_DATASTORE: ${{ secrets.VSPHERE_DATASTORE }}
+  VSPHERE_FOLDER: ${{ secrets.VSPHERE_FOLDER }}
+  VSPHERE_TEMPLATE: ${{ secrets.VSPHERE_TEMPLATE }}
+  VSPHERE_NETWORK: ${{ secrets.VSPHERE_NETWORK }}
+  VSPHERE_RESOURCE_POOL: ${{ secrets.VSPHERE_RESOURCE_POOL }}
+  VSPHERE_USERNAME: ${{ secrets.VSPHERE_USERNAME }}
+  VSPHERE_PASSWORD: ${{ secrets.VSPHERE_PASSWORD }}
+  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
+  RANCHER_HOSTNAME: ${{ secrets.RANCHER_HOSTNAME }}
+  MANAGEMENT_CLUSTER_ENVIRONMENT: "kind"
+  GINKGO_LABEL_FILTER: "local"
+  TAG: v0.0.1
+
+jobs:
+  e2e:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: setupGo
+        uses: actions/setup-go@v5.3.0
+        with:
+          go-version: "=1.23.0"
+      - name: Run e2e tests
+        run: make test-e2e
