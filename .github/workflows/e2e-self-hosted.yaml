@@ -14,16 +14,18 @@ env:
   VSPHERE_RESOURCE_POOL: ${{ secrets.VSPHERE_RESOURCE_POOL }}
   VSPHERE_USERNAME: ${{ secrets.VSPHERE_USERNAME }}
   VSPHERE_PASSWORD: ${{ secrets.VSPHERE_PASSWORD }}
+  CONTROL_PLANE_ENDPOINT_IP: ${{ secrets.CONTROL_PLANE_ENDPOINT_IP }}
   NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
   NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
-  RANCHER_HOSTNAME: ${{ secrets.RANCHER_HOSTNAME }}
+  RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
   MANAGEMENT_CLUSTER_ENVIRONMENT: "kind"
+  CPI_IMAGE_K8S_VERSION: v1.31.0
   GINKGO_LABEL_FILTER: "local"
   TAG: v0.0.1
 
 jobs:
   e2e:
-    runs-on: self-hosted
+    runs-on: [self-hosted, vsphere]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
