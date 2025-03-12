@@ -67,7 +67,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 	})
 })
 
-var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
