@@ -27,7 +27,22 @@ Now you are ready to start your e2e test run.
 
 **Note:** If you want to run vSphere e2e tests locally, please refer to the instructions provided in the [Running vSphere e2e tests locally](#running-vsphere-e2e-tests-locally) section.
 
-Additionally, you could reuse [`go.work.example`](../../go.work.example) and copy it into `rancher-turtles/../go.work` to allow linting in tests. Be aware that this may break vendoring process used for `make test` task due to incompatibility between the two. You will need to add `e2e` to build tags in your IDE of choice for the imports in the test suite to become resolvable.
+### Workspace Setup
+
+Setup the multi-module workspace, by running the following commands in the turtles root folder.  
+This will generate a `turtles/go.work` file to allow linting in tests. Be aware that this may break vendoring process used for `make test` task due to incompatibility between the two.  
+
+```bash
+go work init
+go work use ./test ./
+```
+
+Additionally, you will need to add `e2e` to build tags in your IDE of choice for the imports in the test suite to become resolvable.  
+For example in VSCode `settings.json`:  
+
+```json
+ "go.buildTags": "e2e",
+```
 
 ### Running the tests
 
