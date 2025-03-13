@@ -255,7 +255,7 @@ EOF
 
     kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 
-    cat << EOF rancher-settings.yaml | kubectl apply -f -
+    cat << EOF | kubectl apply -f -
 apiVersion: management.cattle.io/v3
 kind: Setting
 metadata:
@@ -285,11 +285,18 @@ EOF
 
     show_step "Waiting for Rancher to be READY ..."
 
-    NODE_IP=$(kubectl get nodes -o jsonpath='{ $.items[*].status.addresses[?(@.type=="InternalIP")].address }')
+    if [ "$WITH_NGROK" -eq 1 ]; then
+        until [[ $(curl -ks https://${RANCHER_HOSTNAME}/ping) == "pong" ]]; do
+            sleep 1
+        done
+    else
+        NODE_IP=$(kubectl get nodes -o jsonpath='{ $.items[*].status.addresses[?(@.type=="InternalIP")].address }')
 
-    until [[ $(curl -ks -H "Host: ${RANCHER_HOSTNAME}" https://${NODE_IP}/ping) == "pong" ]]; do
-        sleep 1
-    done
+        until [[ $(curl -ks -H "Host: ${RANCHER_HOSTNAME}" https://${NODE_IP}/ping) == "pong" ]]; do
+            sleep 1
+        done
+    fi
+
     echo "Received pong!"
 fi
 
