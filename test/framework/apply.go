@@ -68,6 +68,15 @@ func KubectlApply(ctx context.Context, kubeconfigPath string, resources []byte, 
 	if len(stdout) > 0 {
 		log.Info("Stdout:", "stdout", string(stdout))
 	}
+
+	if err != nil {
+		if strings.Contains(string(stderr), "Error from server (AlreadyExists)") {
+			log.Info("Ignoring AlreadyExists error")
+			return nil
+		}
+		return err
+	}
+
 	return err
 }
 
