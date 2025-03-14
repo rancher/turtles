@@ -30,7 +30,7 @@ import (
 	"github.com/rancher/turtles/test/testenv"
 )
 
-var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -67,7 +67,7 @@ var _ = Describe("[Docker] [Kubeadm] - [management.cattle.io/v3] Create and dele
 	})
 })
 
-var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.LocalTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -104,7 +104,7 @@ var _ = Describe("[Docker] [RKE2] - [management.cattle.io/v3] Create and delete 
 	})
 })
 
-var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -147,7 +147,7 @@ var _ = Describe("[Azure] [AKS] - [management.cattle.io/v3] Create and delete CA
 	})
 })
 
-var _ = Describe("[AWS] [EKS] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -190,7 +190,55 @@ var _ = Describe("[AWS] [EKS] - [management.cattle.io/v3] Create and delete CAPI
 	})
 })
 
-var _ = Describe("[GCP] [GKE] - [management.cattle.io/v3] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AWSProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.AWSProvider,
+				e2e.CapiProviders,
+			},
+			WaitForDeployments: append([]testenv.NamespaceName{
+				{
+					Name:      "capa-controller-manager",
+					Namespace: "capa-system",
+				},
+			}, testenv.DefaultDeployments...),
+		})
+
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAwsEC2Kubeadm,
+			AdditionalTemplates:            [][]byte{e2e.CAPICalico, e2e.CAPIAWSCPICSI},
+			ClusterName:                    "cluster-ec2",
+			ControlPlaneMachineCount:       ptr.To[int](1),
+			WorkerMachineCount:             ptr.To[int](1),
+			GitAddr:                        gitAddress,
+			SkipDeletionTest:               false,
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
+			DeleteClusterWaitName:          "wait-eks-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariable(e2e.AWSKubernetesVersionVar), // override the default k8s version
+			},
+		}
+	})
+})
+
+var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)

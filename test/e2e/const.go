@@ -90,6 +90,9 @@ var (
 	//go:embed data/cluster-templates/aws-eks-mmp.yaml
 	CAPIAwsEKSMMP []byte
 
+	//go:embed data/cluster-templates/aws-ec2-kubeadm.yaml
+	CAPIAwsEC2Kubeadm []byte
+
 	//go:embed data/cluster-templates/gcp-gke.yaml
 	CAPIGCPGKE []byte
 
@@ -104,6 +107,12 @@ var (
 
 	//go:embed data/cni/kindnet.yaml
 	CAPIKindnet []byte
+
+	//go:embed data/cni/calico.yaml
+	CAPICalico []byte
+
+	//go:embed data/cpi-csi/aws.yaml
+	CAPIAWSCPICSI []byte
 
 	//go:embed data/cluster-api-addon-provider-fleet/host-network-patch.yaml
 	AddonProviderFleetHostNetworkPatch []byte
@@ -141,6 +150,7 @@ const (
 	ClusterctlRepositoryFolderVar = "CLUSTERCTL_REPOSITORY_FOLDER"
 
 	KubernetesVersionVar    = "KUBERNETES_VERSION"
+	AWSKubernetesVersionVar = "AWS_KUBERNETES_VERSION"
 	RancherFeaturesVar      = "RANCHER_FEATURES"
 	RancherHostnameVar      = "RANCHER_HOSTNAME"
 	RancherVersionVar       = "RANCHER_VERSION"

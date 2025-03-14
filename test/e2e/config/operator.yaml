@@ -11,7 +11,7 @@ intervals:
   default/wait-snapshot: ["20m", "30s"]
   default/wait-delete-cluster: ["30m", "30s"]
   default/wait-v2prov-create: ["25m", "30s"]
-  default/wait-capa-create-cluster: ["30m", "30s"]
+  default/wait-capa-create-cluster: ["50m", "30s"]
   default/wait-capz-create-cluster: ["35m", "30s"]
   default/wait-capg-create-cluster: ["30m", "30s"]
   default/wait-capv-create-cluster: ["30m", "30s"]
@@ -30,48 +30,68 @@ intervals:
   default/wait-turtles-uninstall: ["10m", "30s"]
 
 variables:
+  # General Configuration
   NAMESPACE: "default"
-  MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # supported options are eks, isolated-kind, kind
-  RANCHER_ALPHA_VERSION: "v2.10.2-alpha1"
-  CLUSTERCTL_BINARY_PATH: ""
+  MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # supported options: eks, isolated-kind, kind
   USE_EXISTING_CLUSTER: "false"
   SKIP_RESOURCE_CLEANUP: "false"
   ARTIFACTS_FOLDER: "_artifacts"
-  HELM_BINARY_PATH: "helm"
-  HELM_EXTRA_VALUES_FOLDER: "/tmp"
+  SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPA_ENCODED_CREDS,CAPG_ENCODED_CREDS,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,CONTROL_PLANE_ENDPOINT_IP"
+
+  # Kubernetes Configuration
   KUBERNETES_VERSION: "v1.31.4"
   KUBERNETES_MANAGEMENT_VERSION: "v1.31.4"
   RKE2_VERSION: "v1.31.4+rke2r1"
+
+  # AWS Configuration
+  AWS_REGION: "eu-west-2"
+  AWS_KUBERNETES_VERSION: "v1.31.0"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
-  RANCHER_HOSTNAME: "localhost"
-  RANCHER_FEATURES: ""
+  AWS_CONTROL_PLANE_MACHINE_TYPE: "t3.large"
+  AWS_NODE_MACHINE_TYPE: "t3.large"
+
+  # CLI Tool Paths
+  CLUSTERCTL_BINARY_PATH: ""
+  HELM_BINARY_PATH: "helm"
+  HELM_EXTRA_VALUES_FOLDER: "/tmp"
+
+  # Rancher Configuration
+  RANCHER_VERSION: "v2.10.2"
+  RANCHER_ALPHA_VERSION: "v2.10.2-alpha1"
+  RANCHER_REPO_NAME: "rancher-latest"
+  RANCHER_ALPHA_REPO_NAME: "rancher-alpha"
   RANCHER_PATH: "rancher-latest/rancher"
   RANCHER_ALPHA_PATH: "rancher-alpha/rancher"
+  RANCHER_URL: "https://releases.rancher.com/server-charts/latest"
   RANCHER_ALPHA_URL: "https://releases.rancher.com/server-charts/alpha"
-  RANCHER_VERSION: "v2.10.2"
+  RANCHER_FEATURES: ""
+  RANCHER_HOSTNAME: "localhost"
+  RANCHER_PASSWORD: "rancheradmin"
+
+  # Turtles Configuration
   TURTLES_VERSION: "v0.0.1"
   TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e"
   TURTLES_PATH: "turtles/rancher-turtles"
   TURTLES_REPO_NAME: "turtles"
-  TURTLES_URL: https://rancher.github.io/turtles
-  CPI_IMAGE_K8S_VERSION: "v1.31.0"
-  RANCHER_REPO_NAME: "rancher-latest"
-  RANCHER_ALPHA_REPO_NAME: "rancher-alpha"
-  RANCHER_URL: "https://releases.rancher.com/server-charts/latest"
-  CERT_MANAGER_URL: "https://charts.jetstack.io"
+  TURTLES_URL: "https://rancher.github.io/turtles"
+
+  # External Charts and Dependencies
   CERT_MANAGER_REPO_NAME: "jetstack"
+  CERT_MANAGER_URL: "https://charts.jetstack.io"
   CERT_MANAGER_PATH: "jetstack/cert-manager"
-  RANCHER_PASSWORD: "rancheradmin"
-  # Additional setup for establishing rancher ingress
+  CPI_IMAGE_K8S_VERSION: "v1.31.0"
+  
+  # Ingress Configuration (Ngrok)
   NGROK_REPO_NAME: "ngrok"
   NGROK_URL: "https://ngrok.github.io/kubernetes-ingress-controller"
   NGROK_PATH: "ngrok/kubernetes-ingress-controller"
   NGROK_API_KEY: ""
   NGROK_AUTHTOKEN: ""
+
+  # Gitea Configuration
   GITEA_REPO_NAME: "gitea-charts"
   GITEA_REPO_URL: "https://dl.gitea.com/charts/"
   GITEA_CHART_NAME: "gitea"
   GITEA_CHART_VERSION: "10.6.0"
   GITEA_USER_NAME: "gitea_admin"
   GITEA_USER_PWD: "password"
-  SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPA_ENCODED_CREDS,CAPG_ENCODED_CREDS,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,CONTROL_PLANE_ENDPOINT_IP"
