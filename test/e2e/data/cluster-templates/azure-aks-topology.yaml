@@ -54,7 +54,7 @@ spec:
         kind: AzureClusterIdentity
         name: cluster-identity
       location: southcentralus
-      resourceGroupName: "${CLUSTER_NAME}"
+      resourceGroupName: highlander-e2e-azure-aks
       subscriptionID: ${AZURE_SUBSCRIPTION_ID}
       version: ${KUBERNETES_VERSION}
 ---
