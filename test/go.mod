@@ -2,6 +2,8 @@ module github.com/rancher/turtles/test
 
 go 1.23.0
 
+toolchain go1.24.1
+
 replace github.com/rancher/turtles => ../
 
 replace github.com/rancher/turtles/exp/day2 => ../exp/day2
@@ -23,7 +25,7 @@ require (
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/cluster-api v1.9.5
 	sigs.k8s.io/cluster-api-operator v0.17.1
-	sigs.k8s.io/cluster-api-operator/test v0.17.0
+	sigs.k8s.io/cluster-api-operator/test v0.17.1
 	sigs.k8s.io/cluster-api-provider-aws/v2 v2.7.1
 	sigs.k8s.io/cluster-api/test v1.9.5
 	sigs.k8s.io/controller-runtime v0.19.6
