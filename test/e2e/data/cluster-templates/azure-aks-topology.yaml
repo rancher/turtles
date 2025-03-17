@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: ${CLUSTER_CLASS_NAME}
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   controlPlane:
     ref:
@@ -45,7 +45,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlaneTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -62,7 +62,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedClusterTemplate
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec: {}
@@ -71,7 +71,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePoolTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool0
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -83,7 +83,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePoolTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool1
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -95,7 +95,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool0
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec: {}
@@ -104,7 +104,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool1
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec: {}
@@ -117,13 +117,13 @@ metadata:
   labels:
     clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
   name: cluster-identity
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   allowedNamespaces: {}
   clientID: ${AZURE_CLIENT_ID}
   clientSecret:
     name: cluster-identity-secret
-    namespace: capz-system
+    namespace: ${NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
 ---
@@ -131,7 +131,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   clusterNetwork:
     pods:
