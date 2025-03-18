@@ -89,6 +89,9 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 
 	// IsGCPCluster is used to substitute GCP-specific values from secrets
 	IsGCPCluster bool
+
+	// A fixed Namespace to run the spec in, instead of generating a random one.
+	FixedNamespace string
 }
 
 // CreateMgmtV3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -181,7 +184,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
-		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
+		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, input.FixedNamespace)
 		repoName = e2e.CreateRepoName(specName)
 
 		capiClusterCreateWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.CAPIClusterCreateWaitName)

@@ -80,6 +80,39 @@ func KubectlApply(ctx context.Context, kubeconfigPath string, resources []byte, 
 	return err
 }
 
+// CreateNamespace creates a namespace.
+func CreateNamespace(ctx context.Context, p framework.ClusterProxy, namespace string) error {
+	log := log.FromContext(ctx)
+	args := []string{"--kubeconfig", p.GetKubeconfigPath(), "create", "namespace", namespace}
+	createCmd := capiexec.NewCommand(
+		capiexec.WithCommand(kubectlPath()),
+		capiexec.WithArgs(args...),
+	)
+
+	log.Info("Running kubectl", "command", strings.Join(args, " "))
+
+	stdout, stderr, err := createCmd.Run(ctx)
+
+	if len(stderr) > 0 {
+		log.Info("Stderr:", "stderr", string(stderr))
+	}
+
+	if len(stdout) > 0 {
+		log.Info("Stdout:", "stdout", string(stdout))
+	}
+
+	if err != nil {
+		if strings.Contains(string(stderr), "Error from server (AlreadyExists)") {
+			log.Info("Ignoring AlreadyExists error")
+			return nil
+		}
+
+		return err
+	}
+
+	return err
+}
+
 func kubectlPath() string {
 	if kubectlPath, ok := os.LookupEnv("CAPI_KUBECTL_PATH"); ok {
 		return kubectlPath

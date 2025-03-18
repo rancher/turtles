@@ -99,6 +99,9 @@ var (
 	//go:embed data/cluster-templates/azure-aks-topology.yaml
 	CAPIAzureAKSTopology []byte
 
+	//go:embed data/cluster-templates/azure-rke2-topology.yaml
+	CAPIAzureRKE2Topology []byte
+
 	//go:embed data/cluster-templates/vsphere-kubeadm.yaml
 	CAPIvSphereKubeadm []byte
 

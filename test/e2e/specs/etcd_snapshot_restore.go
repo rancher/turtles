@@ -73,6 +73,9 @@ type ETCDSnapshotRestoreInput struct {
 
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool
+
+	// A fixed Namespace to run the spec in, instead of generating a random one.
+	FixedNamespace string
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -141,7 +144,7 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
-		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
+		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, input.FixedNamespace)
 		repoName = e2e.CreateRepoName(specName)
 
 		capiClusterCreateWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.CAPIClusterCreateWaitName)
