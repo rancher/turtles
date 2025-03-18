@@ -1,59 +1,46 @@
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
-metadata:
-  name: ${CLUSTER_NAME}
-  namespace: "${NAMESPACE}"
-  annotations:
-    "helm.sh/resource-policy": keep
-spec:
-  failureDomains:
-    fd1:
-      controlPlane: true
-    fd2:
-      controlPlane: true
-    fd3:
-      controlPlane: true
-    fd4:
-      controlPlane: false
-    fd5:
-      controlPlane: false
-    fd6:
-      controlPlane: false
-    fd7:
-      controlPlane: false
-    fd8:
-      controlPlane: false
----
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cni: ${CLUSTER_NAME}-crs-0
   name: ${CLUSTER_NAME}
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
+  labels:
+    cni: kindnet
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
         - 10.1.0.0/16
+    serviceDomain: cluster.local
     services:
       cidrBlocks:
         - 10.10.0.0/16
   topology:
     class: ${CLUSTER_CLASS_NAME}
+    controlPlane:
+      metadata: {}
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     version: ${KUBERNETES_VERSION}
     workers:
       machineDeployments:
         - class: default-worker
-          name: ${CLUSTER_NAME}-worker
+          name: md-0
+          replicas: ${WORKER_MACHINE_COUNT}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: ${CLUSTER_CLASS_NAME}
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   controlPlane:
+    machineHealthCheck:
+      unhealthyConditions:
+        - status: Unknown
+          timeout: 300s
+          type: Ready
+        - status: "False"
+          timeout: 300s
+          type: Ready
     machineInfrastructure:
       ref:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -68,6 +55,28 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: DockerClusterTemplate
       name: ${CLUSTER_NAME}-cluster
+  workers:
+    machineDeployments:
+      - class: default-worker
+        machineHealthCheck:
+          unhealthyConditions:
+            - status: Unknown
+              timeout: 300s
+              type: Ready
+            - status: "False"
+              timeout: 300s
+              type: Ready
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: ${CLUSTER_NAME}-default-worker-bootstraptemplate
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: DockerMachineTemplate
+              name: ${CLUSTER_NAME}-default-worker-machinetemplate
   patches:
     - definitions:
         - jsonPatches:
@@ -238,43 +247,24 @@ spec:
                 mode. One of privileged, baseline, restricted.
               type: string
           type: object
-  workers:
-    machineDeployments:
-      - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-              kind: KubeadmConfigTemplate
-              name: ${CLUSTER_NAME}-default-worker-bootstraptemplate
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-              kind: DockerMachineTemplate
-              name: ${CLUSTER_NAME}-default-worker-machinetemplate
+
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerClusterTemplate
 metadata:
   name: ${CLUSTER_NAME}-cluster
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
-    metadata:
-      annotations:
-        "helm.sh/resource-policy": keep
     spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
-    metadata:
-      annotations:
-        "helm.sh/resource-policy": keep
     spec:
       kubeadmConfigSpec:
         clusterConfiguration:
@@ -296,7 +286,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -308,7 +298,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-default-worker-machinetemplate
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -320,7 +310,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-default-worker-bootstraptemplate
-  namespace: "${NAMESPACE}"
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
