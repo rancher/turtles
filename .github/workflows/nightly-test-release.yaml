@@ -7,6 +7,7 @@ on:
 
 env:
   RELEASE_TAG: t9.9.9-fake
+  GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
 jobs:
   nightly-test-release:

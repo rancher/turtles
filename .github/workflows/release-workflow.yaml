@@ -52,6 +52,7 @@ jobs:
       PROD_ORG: rancher
       RELEASE_DIR: .cr-release-packages
       CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
