@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: ${CLUSTER_CLASS_NAME}
-  namespace: default
+  namespace: "${NAMESPACE}"
 spec:
   controlPlane:
     ref:
@@ -45,7 +45,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlaneTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
-  namespace: default
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec:
@@ -54,7 +54,7 @@ spec:
         kind: AzureClusterIdentity
         name: cluster-identity
       location: southcentralus
-      resourceGroupName: "${CLUSTER_NAME}"
+      resourceGroupName: highlander-e2e-azure-aks
       subscriptionID: ${AZURE_SUBSCRIPTION_ID}
       version: ${KUBERNETES_VERSION}
 ---
@@ -62,7 +62,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedClusterTemplate
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: default
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec: {}
@@ -71,7 +71,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePoolTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool0
-  namespace: default
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec:
@@ -83,7 +83,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePoolTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool1
-  namespace: default
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec:
@@ -95,7 +95,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-pool0
-  namespace: default
+  namespace: "${NAMESPACE}"
 spec:
   template:
     spec: {}
@@ -123,7 +123,7 @@ spec:
   clientID: ${AZURE_CLIENT_ID}
   clientSecret:
     name: cluster-identity-secret
-    namespace: default
+    namespace: capz-system
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
 ---
