@@ -247,7 +247,6 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			"CLUSTER_CLASS_NAME":          fmt.Sprintf("%s-class", input.ClusterName),
 			"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
 			"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
-			"RKE2_CNI":                    "none",
 		}
 
 		for k, v := range input.AdditionalTemplateVariables {

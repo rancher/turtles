@@ -13,7 +13,7 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   topology:
-    class: turtles
+    class: ${CLUSTER_NAME}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
@@ -35,24 +35,24 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
-  name: turtles
+  name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
   controlPlane:
     ref:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: KubeadmControlPlaneTemplate
-      name: turtles-control-plane
+      name: ${CLUSTER_NAME}-control-plane
     machineInfrastructure:
       ref:
         kind: AWSMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        name: turtles-control-plane
+        name: ${CLUSTER_NAME}-control-plane
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSClusterTemplate
-      name: turtles
+      name: ${CLUSTER_NAME}
   workers:
     machineDeployments:
       - class: default-worker
@@ -61,12 +61,12 @@ spec:
             ref:
               apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
               kind: KubeadmConfigTemplate
-              name: turtles-worker-bootstraptemplate
+              name: ${CLUSTER_NAME}-worker-bootstraptemplate
           infrastructure:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: AWSMachineTemplate
-              name: turtles-worker-machinetemplate
+              name: ${CLUSTER_NAME}-worker-machinetemplate
   variables:
     - name: region
       required: true
@@ -160,7 +160,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSClusterTemplate
 metadata:
-  name: turtles
+  name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
   template:
@@ -172,7 +172,7 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
-  name: turtles-control-plane
+  name: ${CLUSTER_NAME}-control-plane
   namespace: ${NAMESPACE}
 spec:
   template:
@@ -199,7 +199,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
-  name: turtles-control-plane
+  name: ${CLUSTER_NAME}-control-plane
   namespace: ${NAMESPACE}
 spec:
   template:
@@ -213,7 +213,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
-  name: turtles-worker-machinetemplate
+  name: ${CLUSTER_NAME}-worker-machinetemplate
   namespace: ${NAMESPACE}
 spec:
   template:
@@ -227,7 +227,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: "turtles-worker-bootstraptemplate"
+  name: "${CLUSTER_NAME}-worker-bootstraptemplate"
   namespace: ${NAMESPACE}
 spec:
   template:

@@ -42,6 +42,7 @@ variables:
   KUBERNETES_VERSION: "v1.31.4"
   KUBERNETES_MANAGEMENT_VERSION: "v1.31.4"
   RKE2_VERSION: "v1.31.4+rke2r1"
+  RKE2_CNI: "none"
 
   # AWS Configuration
   AWS_REGION: "eu-west-2"
