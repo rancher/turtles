@@ -378,45 +378,48 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
-		By("Deleting GitRepo from Rancher")
-		turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
-			Name:         repoName,
-			ClusterProxy: input.BootstrapClusterProxy,
-		})
+		// If SKIP_RESOURCE_CLEANUP=true or if the SkipDeletionTest is true, all the resources should stay as they are,
+		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
+		if !input.SkipCleanup || !input.SkipDeletionTest {
+			By("Deleting GitRepo from Rancher")
+			turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
+				Name:         repoName,
+				ClusterProxy: input.BootstrapClusterProxy,
+			})
 
-		By("Waiting for the CAPI cluster to be deleted")
-		Eventually(func() error {
-			cl := input.BootstrapClusterProxy.GetClient()
+			By("Waiting for the CAPI cluster to be deleted")
+			Eventually(func() error {
+				cl := input.BootstrapClusterProxy.GetClient()
 
-			cluster := &clusterv1.Cluster{}
-			err := cl.Get(ctx, *capiCluster, cluster)
-			if err != nil {
-				if apierrors.IsNotFound(err) {
+				cluster := &clusterv1.Cluster{}
+				err := cl.Get(ctx, *capiCluster, cluster)
+				if err != nil {
+					if apierrors.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+
+				listOptions := []client.ListOption{
+					client.InNamespace(capiCluster.Namespace),
+					client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: capiCluster.Name}),
+				}
+
+				awsClusters := &awsinfrav1.AWSClusterList{}
+				if err := cl.List(ctx, awsClusters, listOptions...); err != nil {
+					return fmt.Errorf("failed to list AWSClusters, waiting for CAPI Cluster deletion: %w", err)
+				}
+
+				if len(awsClusters.Items) == 0 {
 					return nil
 				}
-				return err
-			}
 
-			listOptions := []client.ListOption{
-				client.InNamespace(capiCluster.Namespace),
-				client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: capiCluster.Name}),
-			}
+				return fmt.Errorf("AWSClusters still present")
+			}, deleteClusterWait...).Should(Succeed(), "CAPI cluster deletion or cleanup of AWS resources should complete")
 
-			awsClusters := &awsinfrav1.AWSClusterList{}
-			if err := cl.List(ctx, awsClusters, listOptions...); err != nil {
-				return fmt.Errorf("failed to list AWSClusters, waiting for CAPI Cluster deletion: %w", err)
-			}
-
-			if len(awsClusters.Items) == 0 {
-				return nil
-			}
-
-			return fmt.Errorf("AWSClusters still present")
-		}, deleteClusterWait...).Should(Succeed(), "CAPI cluster deletion or cleanup of AWS resources should complete")
-
-		By("Waiting for the rancher cluster  record to be removed")
-		Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
-
+			By("Waiting for the rancher cluster record to be removed")
+			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+		}
 		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }

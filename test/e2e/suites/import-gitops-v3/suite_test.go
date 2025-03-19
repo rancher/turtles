@@ -21,6 +21,7 @@ package import_gitops_v3
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -107,17 +108,22 @@ var _ = SynchronizedAfterSuite(
 	func() {
 	},
 	func() {
-		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-		})
+		config := e2e.LoadE2EConfig()
+		// skipping error check since it is already done at the beginning of the test
+		skipCleanup, _ := strconv.ParseBool(config.GetVariable(e2e.SkipResourceCleanupVar))
+		if !skipCleanup {
+			testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+			})
 
-		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-		})
+			testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+			})
 
-		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
-			SetupTestClusterResult: *setupClusterResult,
-		})
+			testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
+				SetupTestClusterResult: *setupClusterResult,
+			})
+		}
 	},
 )
 
