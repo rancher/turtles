@@ -1,4 +1,4 @@
-name: Run local e2e tests on self-hosted runner
+name: Run vsphere e2e tests on self-hosted runner
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ env:
   RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
   MANAGEMENT_CLUSTER_ENVIRONMENT: "internal-kind"
   CPI_IMAGE_K8S_VERSION: v1.31.0
-  GINKGO_LABEL_FILTER: "local"
+  GINKGO_LABEL_FILTER: "vsphere"
   TAG: v0.0.1
 
 jobs:
