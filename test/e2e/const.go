@@ -69,6 +69,9 @@ var (
 	//go:embed data/rancher/nginx-ingress.yaml
 	NginxIngress []byte
 
+	//go:embed data/rancher/ingress-nginx-lb.yaml
+	NginxIngressLoadBalancer []byte
+
 	//go:embed data/chartmuseum/deployment.yaml
 	ChartMuseum []byte
 
@@ -140,6 +143,7 @@ const (
 	ManagementClusterEnvironmentEKS          ManagementClusterEnvironmentType = "eks"
 	ManagementClusterEnvironmentIsolatedKind ManagementClusterEnvironmentType = "isolated-kind"
 	ManagementClusterEnvironmentKind         ManagementClusterEnvironmentType = "kind"
+	ManagementClusterEnvironmentInternalKind ManagementClusterEnvironmentType = "internal-kind"
 )
 
 const (

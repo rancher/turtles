@@ -18,6 +18,7 @@ package testenv
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -222,7 +223,19 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		result.GitAddress = fmt.Sprintf("http://%s:%d", svcRes.Hostname, port.Port)
 	case string(corev1.ServiceTypeClusterIP):
 		By("Creating custom ingress for gitea")
-		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), os.Getenv)
+		var ingress string
+		var err error
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+			ingress, err = envsubst.Eval(string(input.CustomIngressConfig), func(s string) string {
+				if s == "GITEA_INGRESS_CLASS_NAME" {
+					return "nginx"
+				}
+				return os.Getenv(s)
+			})
+		} else {
+			ingress, err = envsubst.Eval(string(input.CustomIngressConfig), os.Getenv)
+		}
+
 		Expect(err).ToNot(HaveOccurred())
 		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
 
@@ -245,6 +258,9 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	By("Waiting for Gitea endpoint to be available")
 	url := fmt.Sprintf("%s/api/v1/version", result.GitAddress)
 	Eventually(func() error {
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		}
 		resp, err := http.Get(url)
 		if err != nil {
 			return err
@@ -318,6 +334,7 @@ func PreGiteaInstallHook(giteaInput *DeployGiteaInput) {
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		giteaInput.ServiceType = corev1.ServiceTypeNodePort
 	case e2e.ManagementClusterEnvironmentKind:
+	case e2e.ManagementClusterEnvironmentInternalKind:
 		giteaInput.ServiceType = corev1.ServiceTypeClusterIP
 	}
 }
