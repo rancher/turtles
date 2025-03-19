@@ -69,6 +69,7 @@ spec:
         openAPIV3Schema:
           description: "The AzureClusterIdentity resource name referencing the credentials to create the Cluster."
           type: string
+          default: "cluster-identity"
     - name: imageGallery
       required: true
       schema:

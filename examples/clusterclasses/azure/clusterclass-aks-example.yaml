@@ -1,0 +1,210 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: azure-aks-example
+spec:
+  controlPlane:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureManagedControlPlaneTemplate
+      name: aks-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureManagedClusterTemplate
+      name: aks-cluster
+  workers:
+    machinePools:
+    - class: default-system
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            name: aks-dummy-system
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            name: aks-default-system
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            name: aks-dummy-worker
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            name: aks-default-worker
+  variables:
+    - name: subscriptionID
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Azure Subscription ID where the Cluster will be created."
+          type: string
+    - name: location
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Azure location where the Cluster will be created."
+          type: string
+          enum:
+            - australiaeast
+            - eastus
+            - eastus2
+            - francecentral
+            - germanywestcentral
+            - northcentralus
+            - northeurope
+            - switzerlandnorth
+            - uksouth
+            - westeurope
+            - westus2
+    - name: resourceGroup
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Azure Resource Group where the Cluster will be created."
+          type: string
+    - name: azureClusterIdentityName
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The AzureClusterIdentity resource name referencing the credentials to create the Cluster."
+          type: string
+          default: "cluster-identity"
+    - name: autoUpgradeChannel
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Cluster auto-upgrade channel. Use 'none' to disable auto upgrades."
+          type: string
+          enum:
+            - none
+            - patch
+            - stable
+            - rapid
+          default: stable
+    - name: sku
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The size of the VMs in the node pool"
+          type: string
+          default: Standard_D2s_v3
+  patches:
+    - name: azureManagedControlPlaneTemplate
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/subscriptionID"
+              valueFrom:
+                variable: subscriptionID
+            - op: add
+              path: "/spec/template/spec/location"
+              valueFrom:
+                variable: location
+            - op: add
+              path: "/spec/template/spec/resourceGroupName"
+              valueFrom:
+                variable: resourceGroup
+            - op: add
+              path: "/spec/template/spec/identityRef/name"
+              valueFrom:
+                variable: azureClusterIdentityName
+            - op: add
+              path: "/spec/template/spec/autoUpgradeProfile/upgradeChannel"
+              valueFrom:
+                variable: autoUpgradeChannel
+            # Builtins
+            - op: add
+              path: "/spec/template/spec/version"
+              valueFrom:
+                variable: builtin.cluster.topology.version
+    - name: azureManagedMachinePoolTemplate
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureManagedMachinePoolTemplate
+            matchResources:
+              machinePoolClass:
+                names:
+                  - default-system
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/sku"
+              valueFrom:
+                variable: sku
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlaneTemplate
+metadata:
+  name: aks-control-plane
+spec:
+  template:
+    spec:
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+        name: cluster-identity
+      version: "v0.0.0" #To be replaced by patch
+      autoUpgradeProfile:
+        upgradeChannel: none
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedClusterTemplate
+metadata:
+  name: aks-cluster
+spec:
+  template:
+    spec: {}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: aks-default-system
+spec:
+  template:
+    spec:
+      mode: System
+      name: "system" #To be replaced by patch
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePoolTemplate
+metadata:
+  name: aks-default-worker
+spec:
+  template:
+    spec:
+      mode: User
+      name: "worker" #To be replaced by patch
+--- 
+# These RKE2ConfigTemplates are only referenced to fulfill the CAPI contract.
+# This requires however the cluster-api-provider-rke2 to be installed.
+# It can be replaced by KubeadmConfigTemplates.
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: aks-dummy-worker
+spec:
+  template:
+    spec: {}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: aks-dummy-system
+spec:
+  template:
+    spec: {}
+
