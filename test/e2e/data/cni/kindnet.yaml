@@ -127,4 +127,4 @@ spec:
   targets:
   - clusterSelector:
       matchLabels:
-        cni: kindnet
+        cni: ${CLUSTER_NAME}-crs-0

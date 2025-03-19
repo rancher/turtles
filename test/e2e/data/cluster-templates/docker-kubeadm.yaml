@@ -4,7 +4,7 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
   labels:
-    cni: kindnet
+    cni: ${CLUSTER_NAME}-crs-0
 spec:
   clusterNetwork:
     pods:
