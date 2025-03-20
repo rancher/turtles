@@ -44,6 +44,7 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 )
 
 type ETCDSnapshotRestoreInput struct {
@@ -54,6 +55,7 @@ type ETCDSnapshotRestoreInput struct {
 
 	ClusterctlBinaryPath        string `env:"CLUSTERCTL_BINARY_PATH"`
 	ClusterTemplate             []byte
+	AdditionalTemplates         [][]byte
 	ClusterName                 string
 	AdditionalTemplateVariables map[string]string
 
@@ -174,6 +176,14 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			workerMachineCount = *input.WorkerMachineCount
 		}
 
+		turtlesframework.AddLabelsToNamespace(ctx, turtlesframework.AddLabelsToNamespaceInput{ // Set import label to trigger fleet installation
+			ClusterProxy: input.BootstrapClusterProxy,
+			Name:         namespace.Name,
+			Labels: map[string]string{
+				"cluster-api.cattle.io/rancher-auto-import": "true",
+			},
+		})
+
 		By("Create Git repository")
 
 		repoCloneAddr := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
@@ -204,6 +214,15 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			OutputFilePath:                clusterPath,
 			AddtionalEnvironmentVariables: additionalVars,
 		})).To(Succeed())
+
+		for n, template := range input.AdditionalTemplates {
+			templatePath := filepath.Join(clustersDir, fmt.Sprintf("%s-template-%d.yaml", input.ClusterName, n))
+			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+				Template:                      template,
+				OutputFilePath:                templatePath,
+				AddtionalEnvironmentVariables: additionalVars,
+			})).To(Succeed())
+		}
 
 		fleetPath := filepath.Join(clustersDir, "fleet.yaml")
 		turtlesframework.FleetCreateFleetFile(ctx, turtlesframework.FleetCreateFleetFileInput{
@@ -260,6 +279,22 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			Namespace:       capiCluster.Namespace,
 			WriteToTempFile: true,
 		}, originalKubeconfig)
+
+		By("Waiting for the Nodes to be Ready")
+		Eventually(func(g Gomega) {
+			machineList := &clusterv1.MachineList{}
+
+			listOptions := []client.ListOption{
+				client.InNamespace(capiCluster.Namespace),
+				client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: capiCluster.Name}),
+			}
+			g.Expect(input.BootstrapClusterProxy.GetClient().List(ctx, machineList, listOptions...)).To(Succeed())
+
+			for _, machine := range machineList.Items {
+				g.Expect(v1beta2conditions.IsTrue(&machine, clusterv1.MachineNodeReadyV1Beta2Condition)).To(BeTrue())
+			}
+
+		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 		By("Creating snapshot on Rancher cluster")
 		validateETCDSnapshot()
