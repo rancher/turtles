@@ -20,19 +20,15 @@ limitations under the License.
 package import_gitops_v3
 
 import (
-	"os"
-
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"k8s.io/utils/ptr"
 
+	"github.com/rancher/turtles/examples"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
 	"github.com/rancher/turtles/test/testenv"
-
-	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
@@ -130,17 +126,11 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			},
 		})
 
-		// Add the needed ClusterClass
-		fixedNamespace := "creategitops-azure-aks"
-		Expect(turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, fixedNamespace)).Should(Succeed())
-		clusterClass, err := os.ReadFile("../../../../examples/clusterclasses/azure/clusterclass-aks-example.yaml")
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, clusterClass, "-n", fixedNamespace)).Should(Succeed())
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
+			AdditionalTemplates:            [][]byte{examples.CAPIAzureAKSClusterclass},
 			ClusterName:                    "cluster-aks",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -152,7 +142,6 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
-			FixedNamespace:                 fixedNamespace,
 		}
 	})
 })
@@ -180,20 +169,11 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			},
 		})
 
-		// Add the needed ClusterClass and ClusterResourceSet
-		fixedNamespace := "creategitops-azure-rke2"
-		Expect(turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, fixedNamespace)).Should(Succeed())
-		clusterClass, err := os.ReadFile("../../../../examples/clusterclasses/azure/clusterclass-example.yaml")
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, clusterClass, "-n", fixedNamespace)).Should(Succeed())
-		cloudProvider, err := os.ReadFile("../../../../examples/applications/azure/clusterresourceset-cloud-provider.yaml")
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, cloudProvider, "-n", fixedNamespace)).Should(Succeed())
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureRKE2Topology,
+			AdditionalTemplates:            [][]byte{examples.CAPIAzureRKE2Clusterclass, examples.CAPIAzureCPI},
 			ClusterName:                    "cluster-azure-rke2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -206,7 +186,6 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
-			FixedNamespace:                 fixedNamespace,
 		}
 
 	})
