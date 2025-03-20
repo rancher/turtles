@@ -190,13 +190,14 @@ metadata:
 spec:
   template:
     spec:
-      registrationMethod: internal-first
+      registrationMethod: control-plane-endpoint
       rolloutStrategy:
         type: "RollingUpdate"
         rollingUpdate:
           maxSurge: 1
       agentConfig: {}
       serverConfig:
+        cni: none
         cloudProviderName: external
         disableComponents:
           kubernetesComponents:
