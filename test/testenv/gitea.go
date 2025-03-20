@@ -333,8 +333,7 @@ func PreGiteaInstallHook(giteaInput *DeployGiteaInput) {
 		giteaInput.ServiceType = corev1.ServiceTypeLoadBalancer
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		giteaInput.ServiceType = corev1.ServiceTypeNodePort
-	case e2e.ManagementClusterEnvironmentKind:
-	case e2e.ManagementClusterEnvironmentInternalKind:
+	case e2e.ManagementClusterEnvironmentKind, e2e.ManagementClusterEnvironmentInternalKind:
 		giteaInput.ServiceType = corev1.ServiceTypeClusterIP
 	}
 }
