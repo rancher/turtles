@@ -75,7 +75,7 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 	GitAddr string
 
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
-	SkipDeletionTest bool
+	SkipDeletionTest bool `env:"SKIP_DELETION_TEST"`
 
 	LabelNamespace bool
 
@@ -378,9 +378,12 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
-		// If SKIP_RESOURCE_CLEANUP=true or if the SkipDeletionTest is true, all the resources should stay as they are,
+		// If SKIP_RESOURCE_CLEANUP=true & if the SkipDeletionTest is true, all the resources should stay as they are,
 		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
-		if !input.SkipCleanup || !input.SkipDeletionTest {
+		// If SKIP_RESOURCE_CLEANUP=false, everything must be cleaned up.
+		if input.SkipCleanup && input.SkipDeletionTest {
+			log.FromContext(ctx).Info("Skipping GitRepo and Cluster deletion from Rancher")
+		} else {
 			By("Deleting GitRepo from Rancher")
 			turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
 				Name:         repoName,

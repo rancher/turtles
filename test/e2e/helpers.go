@@ -30,8 +30,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	etcdrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,10 +39,14 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	etcdrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
+
+	networkingv1 "k8s.io/api/networking/v1"
+
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
-	networkingv1 "k8s.io/api/networking/v1"
 )
 
 // Setup is a shared data structure for parrallel test setup
@@ -154,4 +156,7 @@ func ValidateE2EConfig(config *clusterctl.E2EConfig) {
 
 	_, err = strconv.ParseBool(config.GetVariable(SkipResourceCleanupVar))
 	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_RESOURCE_CLEANUP %q", config.GetVariable(SkipResourceCleanupVar))
+
+	_, err = strconv.ParseBool(config.GetVariable(SkipDeletionTestVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_DELETION_TEST %q", config.GetVariable(SkipDeletionTestVar))
 }

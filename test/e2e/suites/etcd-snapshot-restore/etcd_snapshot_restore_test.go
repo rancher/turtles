@@ -46,7 +46,6 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 			ControlPlaneMachineCount:    ptr.To[int](1),
 			WorkerMachineCount:          ptr.To[int](0),
 			GitAddr:                     gitAddress,
-			SkipDeletionTest:            false,
 			RancherServerURL:            hostName,
 			CAPIClusterSnapshotWaitName: "wait-snapshot",
 			CAPIClusterCreateWaitName:   "wait-snapshot",

@@ -192,6 +192,7 @@ const (
 	TurtlesUrlVar            = "TURTLES_URL"
 	TurtlesRepoNameVar       = "TURTLES_REPO_NAME"
 	SkipResourceCleanupVar   = "SKIP_RESOURCE_CLEANUP"
+	SkipDeletionTestVar      = "SKIP_DELETION_TEST"
 	ClusterctlBinaryPathVar  = "CLUSTERCTL_BINARY_PATH"
 
 	RKE2VersionVar = "RKE2_VERSION"

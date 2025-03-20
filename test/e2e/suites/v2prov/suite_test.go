@@ -22,6 +22,7 @@ package v2prov
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,10 +30,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/testenv"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+
+	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/testenv"
 )
 
 // Test suite global vars.
@@ -110,6 +112,17 @@ var _ = SynchronizedAfterSuite(
 	func() {
 	},
 	func() {
+		By("Dumping artifacts from the bootstrap cluster")
+		testenv.DumpBootstrapCluster(ctx)
+
+		config := e2e.LoadE2EConfig()
+		// skipping error check since it is already done at the beginning of the test in e2e.ValidateE2EConfig()
+		skipCleanup, _ := strconv.ParseBool(config.GetVariable(e2e.SkipResourceCleanupVar))
+		if skipCleanup {
+			// add a log line about skipping charts uninstallation and cluster cleanup
+			return
+		}
+
 		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 			SetupTestClusterResult: *setupClusterResult,
 		})
