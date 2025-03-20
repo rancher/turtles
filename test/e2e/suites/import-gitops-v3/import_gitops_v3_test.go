@@ -132,13 +132,20 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			},
 		})
 
+		// Add the needed ClusterClass
+		fixedNamespace := "creategitops-azure-aks"
+		Expect(turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, fixedNamespace)).Should(Succeed())
+		clusterClass, err := os.ReadFile("../../../../examples/clusterclasses/azure/clusterclass-aks-example.yaml")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, clusterClass, "-n", fixedNamespace)).Should(Succeed())
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
 			ClusterName:                    "cluster-aks",
-			ControlPlaneMachineCount:       ptr.To[int](1),
-			WorkerMachineCount:             ptr.To[int](1),
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
 			GitAddr:                        gitAddress,
 			SkipDeletionTest:               false,
 			LabelNamespace:                 true,
@@ -148,6 +155,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
+			FixedNamespace:                 fixedNamespace,
 		}
 	})
 })
