@@ -1,0 +1,61 @@
+name: Check PR Area Label
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  manage-area-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and manage PR labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AREA_COMMENT: "Please add an appropriate `area/*` label (e.g., area/feature, area/bug) to this pull request."
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          gh_api() {
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github.v3+json" "$@"
+          }
+          LABELS_URL="https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/labels"
+          COMMENTS_URL="https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+          
+          # Fetch labels and check for errors
+          LABELS=$(gh_api "$LABELS_URL")
+          if echo "$LABELS" | grep -q '"message": "Not Found"'; then
+            echo "Error: Failed to fetch labels for PR #$PR_NUMBER - 404 Not Found"
+            exit 1
+          fi
+          
+          # Fetch comments
+          COMMENTS=$(gh_api "$COMMENTS_URL")
+          
+          # Parse labels
+          HAS_AREA=$(echo "$LABELS" | jq -e 'any(.[]; .name | startswith("area/"))' >/dev/null && echo "true" || echo "false")
+          HAS_NEEDS_AREA=$(echo "$LABELS" | jq -e 'any(.[]; .name == "needs-area")' >/dev/null && echo "true" || echo "false")
+          AREA_COMMENT_IDS=$(echo "$COMMENTS" | jq -r ".[] | select(.body == \"$AREA_COMMENT\" and .user.login == \"github-actions[bot]\") | .id")
+          AREA_COMMENT_ID=$(echo "$AREA_COMMENT_IDS" | head -n1)
+          
+          # Manage labels and comments
+          if [ "$HAS_AREA" = "true" ]; then
+            if [ "$HAS_NEEDS_AREA" = "true" ]; then
+              gh_api -X DELETE "$LABELS_URL/needs-area"
+            fi
+            if [ -n "$AREA_COMMENT_ID" ]; then
+              gh_api -X DELETE "https://api.github.com/repos/${{ github.repository }}/issues/comments/$AREA_COMMENT_ID"
+            fi
+            exit 0
+          else
+            if [ "$HAS_NEEDS_AREA" = "false" ]; then
+              gh_api -X POST -d '{"labels":["needs-area"]}' "$LABELS_URL"
+            fi
+            if [ -z "$AREA_COMMENT_ID" ]; then
+              gh_api -X POST -d "{\"body\":\"$AREA_COMMENT\"}" "$COMMENTS_URL"
+            fi
+            exit 1
+          fi
