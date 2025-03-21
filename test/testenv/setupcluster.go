@@ -100,7 +100,11 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	result := &SetupTestClusterResult{}
 
 	if input.CustomClusterProvider == nil && input.EnvironmentType == e2e.ManagementClusterEnvironmentEKS {
-		input.CustomClusterProvider = EKSBootsrapCluster
+		input.CustomClusterProvider = EKSBootstrapCluster
+	}
+
+	if input.CustomClusterProvider == nil && input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+		input.CustomClusterProvider = KindWithExtraPortMappingsBootstrapCluster
 	}
 
 	By("Setting up the bootstrap cluster")

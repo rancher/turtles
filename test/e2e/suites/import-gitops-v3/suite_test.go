@@ -63,9 +63,10 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
-			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-			CustomIngress:            e2e.NginxIngress,
-			DefaultIngressClassPatch: e2e.IngressClassPatch,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			CustomIngress:             e2e.NginxIngress,
+			CustomIngressLoadBalancer: e2e.NginxIngressLoadBalancer,
+			DefaultIngressClassPatch:  e2e.IngressClassPatch,
 		})
 
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{

@@ -24,6 +24,7 @@ import (
 
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // CustomClusterProvider is a function type that represents a custom cluster provider.
@@ -31,8 +32,8 @@ import (
 // It returns a bootstrap.ClusterProvider.
 type CustomClusterProvider func(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider
 
-// EKSBootsrapCluster is a function that creates a new EKS bootstrap cluster.
-func EKSBootsrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider {
+// EKSBootstrapCluster is a function that creates a new EKS bootstrap cluster.
+func EKSBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider {
 	By("Creating a new EKS bootstrap cluster")
 
 	region := config.Variables["KUBERNETES_MANAGEMENT_AWS_REGION"]
@@ -48,4 +49,19 @@ func EKSBootsrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clust
 	}, eksCreateResult)
 
 	return eksCreateResult.BootstrapClusterProvider
+}
+
+// KindBootstrapCluster is a function that creates a new kind bootstrap cluster with extra port mappings. This is useful for forwarding requests from the host.
+func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider {
+	By("Creating a new kind bootstrap cluster with extra port mappings")
+
+	return bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
+		Name:               clusterName,
+		KubernetesVersion:  kubernetesVersion,
+		RequiresDockerSock: false,
+		Images:             config.Images,
+		ExtraPortMappings: []v1alpha4.PortMapping{
+			{ContainerPort: 443, HostPort: 443, Protocol: v1alpha4.PortMappingProtocolTCP},
+		},
+	})
 }
