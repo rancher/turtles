@@ -17,7 +17,9 @@ limitations under the License.
 package framework
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -140,4 +142,36 @@ func GitCommitAndPush(ctx context.Context, input GitCommitAndPushInput) {
 		}
 		return err
 	}, input.GitPushWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
+}
+
+// defaultToCurrentGitRepo retrieves the repository URL and the current branch
+func defaultToCurrentGitRepo(input *FleetCreateGitRepoInput) {
+	if input.Repo != "" {
+		return
+	}
+
+	// Open the current repository
+	repo, err := git.PlainOpen(cmp.Or(os.Getenv("ROOT_DIR"), "."))
+	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to open git repo: %w", err))
+
+	// Get remote repository URL
+	remotes, err := repo.Remotes()
+	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to get remotes: %w", err))
+
+	// Find origin remote
+	for _, remote := range remotes {
+		if remote.Config().Name == "origin" {
+			input.Repo = remote.Config().URLs[0]
+
+			// Get the current branch
+			head, err := repo.Head()
+			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to get HEAD: %w", err))
+
+			input.Branch = head.Name().Short()
+
+			// Unset secret name to use public repository
+			input.ClientSecretName = ""
+			return
+		}
+	}
 }

@@ -28,6 +28,7 @@ spec:
       - 192.168.0.0/16
   topology:
     class: azure-aks-example
+    classNamespace: ${TOPOLOGY_NAMESPACE}
     variables:
     - name: subscriptionID
       value: ${AZURE_SUBSCRIPTION_ID}

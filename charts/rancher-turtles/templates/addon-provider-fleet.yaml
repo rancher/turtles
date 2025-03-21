@@ -13,9 +13,9 @@ spec:
   deployment:
     containers:
     - name: manager
-      imageUrl: registry.rancher.com/rancher/cluster-api-fleet-controller:v0.6.1
+      imageUrl: registry.rancher.com/rancher/cluster-api-fleet-controller:v0.7.0
     - name: helm-manager
-      imageUrl: registry.rancher.com/rancher/cluster-api-fleet-controller:v0.6.1
+      imageUrl: registry.rancher.com/rancher/cluster-api-fleet-controller:v0.7.0
   additionalManifests:
     name: fleet-addon-config
     namespace: '{{ .Values.rancherTurtles.namespace }}'
@@ -39,6 +39,7 @@ data:
         patchResource: true
         setOwnerReferences: true
       cluster:
+        applyClassGroup: true
         patchResource: true
         setOwnerReferences: true
         hostNetwork: true

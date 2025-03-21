@@ -40,6 +40,9 @@ type FleetCreateGitRepoInput struct {
 	// Namespace is the namespace in which the Git repository will be created.
 	Namespace string `envDefault:"fleet-local"`
 
+	// TargetNamespace is the namespace in which the Git repository will apply its content.
+	TargetNamespace string
+
 	// Repo is the URL of the Git repository.
 	Repo string
 
@@ -50,7 +53,7 @@ type FleetCreateGitRepoInput struct {
 	Paths []string
 
 	// FleetGeneration is the generation of the Fleet instance.
-	FleetGeneration int
+	FleetGeneration int `envDefault:"1"`
 
 	// ClientSecretName is the name of the client secret to use for authentication.
 	ClientSecretName string `envDefault:"basic-auth-secret"`
@@ -64,20 +67,15 @@ type FleetCreateGitRepoInput struct {
 func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
+	defaultToCurrentGitRepo(&input)
+
 	Expect(ctx).NotTo(BeNil(), "ctx is required for FleetCreateGitRepo")
 	Expect(input.Name).ToNot(BeEmpty(), "Invalid argument. input.Name can't be empty when calling FleetCreateGitRepo")
 	Expect(input.Repo).ToNot(BeEmpty(), "Invalid argument. input.Repo can't be empty when calling FleetCreateGitRepo")
 	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.Clusterproxy can't be nil when calling FleetCreateGitRepo")
+	Expect(input.Paths).ToNot(HaveLen(0), "Invalid argument. input.Paths can't be empty when calling FleetCreateGitRepo")
 
-	By("Creating GitRepo from template")
-
-	if input.Namespace == "" {
-		input.Namespace = DefaultNamespace
-	}
-
-	if input.Branch == "" {
-		input.Branch = DefaultBranchName
-	}
+	Byf("Creating GitRepo from template %s with path %s", input.Name, input.Paths[0])
 
 	t := template.New("fleet-repo-template")
 	t, err := t.Parse(gitRepoTemplate)
@@ -87,9 +85,8 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	err = t.Execute(&renderedTemplate, input)
 	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
 
-	By("Applying GitRepo")
-
 	Eventually(func() error {
+		Byf("Applying GitRepo: %s", renderedTemplate.String())
 		return Apply(ctx, input.ClusterProxy, renderedTemplate.Bytes())
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to appl GitRepo")
 }
@@ -181,14 +178,20 @@ spec:
   repo: {{ .Repo }}
   branch: {{ .Branch }}
   forceSyncGeneration: {{ .FleetGeneration }}
-  {{- if .ClientSecretName }}
-  clientSecretName: {{ .ClientSecretName }}
-  {{ end -}}
+
   paths:
   {{ range .Paths }}
   - {{.}}
   {{ end }}
-`
+
+  {{- if .ClientSecretName }}
+  clientSecretName: {{ .ClientSecretName }}
+  {{ end -}}
+
+  {{- if .TargetNamespace }}
+  targetNamespace: {{ .TargetNamespace }}
+  {{ end -}}
+  `
 
 const fleetTemplate = `
 namespace: {{ .Namespace }}
