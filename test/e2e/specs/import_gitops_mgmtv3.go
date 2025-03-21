@@ -32,8 +32,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	awsinfrav1 "sigs.k8s.io/cluster-api-provider-aws/v2/api/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -397,25 +398,40 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 					if apierrors.IsNotFound(err) {
 						return nil
 					}
-					return err
+					return fmt.Errorf("getting CAPI Cluster: %w", err)
 				}
 
-				listOptions := []client.ListOption{
-					client.InNamespace(capiCluster.Namespace),
-					client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: capiCluster.Name}),
+				// (FIXME upstream)
+				// Check if InfaCluster is deleted
+				//
+				// This is to bypass a race condition where the InfraCluster is deleted,
+				// before some other resources (ex. InfraMachinePool) are deleted.
+				if cluster.Spec.InfrastructureRef != nil &&
+					(cluster.Spec.InfrastructureRef.Kind == "AWSCluster" ||
+						cluster.Spec.InfrastructureRef.Kind == "GCPManagedCluster") {
+
+					infraCluster := &unstructured.Unstructured{}
+					infraCluster.SetGroupVersionKind(schema.GroupVersionKind{
+						Group:   cluster.Spec.InfrastructureRef.GroupVersionKind().Group,
+						Kind:    cluster.Spec.InfrastructureRef.GroupVersionKind().Kind,
+						Version: cluster.Spec.InfrastructureRef.GroupVersionKind().Version,
+					})
+					infraClusterKey := types.NamespacedName{
+						Namespace: cluster.Namespace,
+						Name:      cluster.Spec.InfrastructureRef.Name,
+					}
+					if err := cl.Get(ctx, infraClusterKey, infraCluster); err != nil {
+						if apierrors.IsNotFound(err) {
+							// If the InfraCluster is deleted, ignore Cluster deletion (may hang indefinitely)
+							return nil
+						}
+						return fmt.Errorf("getting %s %s/%s: %w", cluster.Spec.InfrastructureRef.Kind, infraClusterKey.Namespace, infraClusterKey.Name, err)
+					}
+					return fmt.Errorf("%s %s/%s is still present", cluster.Spec.InfrastructureRef.Kind, infraClusterKey.Namespace, infraClusterKey.Name)
 				}
 
-				awsClusters := &awsinfrav1.AWSClusterList{}
-				if err := cl.List(ctx, awsClusters, listOptions...); err != nil {
-					return fmt.Errorf("failed to list AWSClusters, waiting for CAPI Cluster deletion: %w", err)
-				}
-
-				if len(awsClusters.Items) == 0 {
-					return nil
-				}
-
-				return fmt.Errorf("AWSClusters still present")
-			}, deleteClusterWait...).Should(Succeed(), "CAPI cluster deletion or cleanup of AWS resources should complete")
+				return fmt.Errorf("CAPI Cluster %s/%s is still present", cluster.Namespace, cluster.Name)
+			}, deleteClusterWait...).Should(Succeed(), "CAPI cluster deletion should complete")
 
 			By("Waiting for the rancher cluster record to be removed")
 			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
