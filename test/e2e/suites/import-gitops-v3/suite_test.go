@@ -21,6 +21,7 @@ package import_gitops_v3
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -107,6 +108,17 @@ var _ = SynchronizedAfterSuite(
 	func() {
 	},
 	func() {
+		By("Dumping artifacts from the bootstrap cluster")
+		testenv.DumpBootstrapCluster(ctx)
+
+		config := e2e.LoadE2EConfig()
+		// skipping error check since it is already done at the beginning of the test in e2e.ValidateE2EConfig()
+		skipCleanup, _ := strconv.ParseBool(config.GetVariable(e2e.SkipResourceCleanupVar))
+		if skipCleanup {
+			// add a log line about skipping charts uninstallation and cluster cleanup
+			return
+		}
+
 		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 		})

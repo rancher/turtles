@@ -40,11 +40,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
+
 	etcdrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
-	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 )
 
 type ETCDSnapshotRestoreInput struct {
@@ -74,7 +75,7 @@ type ETCDSnapshotRestoreInput struct {
 	GitAddr string
 
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
-	SkipDeletionTest bool
+	SkipDeletionTest bool `env:"SKIP_DELETION_TEST"`
 
 	// A fixed Namespace to run the spec in, instead of generating a random one.
 	FixedNamespace string
@@ -316,12 +317,18 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
 		}
 
-		By("Deleting GitRepo from Rancher")
-		turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
-			Name:         repoName,
-			ClusterProxy: input.BootstrapClusterProxy,
-		})
-
+		// If SKIP_RESOURCE_CLEANUP=true & if the SkipDeletionTest is true, all the resources should stay as they are,
+		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
+		// If SKIP_RESOURCE_CLEANUP=false, everything must be cleaned up.
+		if input.SkipCleanup && input.SkipDeletionTest {
+			log.FromContext(ctx).Info("Skipping GitRepo and Cluster deletion from Rancher")
+		} else {
+			By("Deleting GitRepo from Rancher")
+			turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
+				Name:         repoName,
+				ClusterProxy: input.BootstrapClusterProxy,
+			})
+		}
 		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }

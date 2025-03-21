@@ -178,3 +178,17 @@ Import of the resources could be found in `test/e2e/helpers.go`.
 ## Artifacts
 
 Artifacts are located under `./_artifacts` directory and is the default location for the stored logs from both workload and child cluster pods collected after each run.
+
+## Cluster and resource cleanup
+There are 2 environment variables used to handle cluster cleanup:
+1. SKIP_RESOURCE_CLEANUP - Used to decide if management cluster, and supporting charts such as rancher turtles and gitea should be deleted or retained
+2. SKIP_DELETION_TEST - Used to decide if the cluster created during test should be deleted or retained
+
+The following table can help decide how the variables should be used:
+
+| input.SkipDeletionTest | input.SkipCleanup | RancherTurtles & Gitea Charts | Git repo & cluster | Management Cluster |
+|--------|--------|-------------------------------|--------|--------|
+| true | true | no delete                     | no delete | no delete |
+| true | false | delete                        | delete | delete |
+| false | true | no delete                     | delete | no delete |
+| false | false | delete                        | delete | delete |

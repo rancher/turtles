@@ -28,6 +28,14 @@ on:
         required: false
         default: true
         type: boolean
+      skip_resource_cleanup:
+        description: Skip Management Cluster and Charts Cleanup
+        default: false
+        type: boolean
+      skip_deletion_test:
+        description: Skip deleting git repo and cluster tests
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -60,6 +68,8 @@ env:
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   # Cluster Configuration
   MANAGEMENT_CLUSTER_ENVIRONMENT: ${{ inputs.MANAGEMENT_CLUSTER_ENVIRONMENT }}
+  SKIP_RESOURCE_CLEANUP: ${{ inputs.skip_resource_cleanup}}
+  SKIP_DELETION_TEST: ${{ inputs.skip_deletion_test }}
   # Ginkgo Test Configurations
   GINKGO_LABEL_FILTER: full 
   GINKGO_TESTS: ${{ github.workspace }}/${{ inputs.test_suite }}

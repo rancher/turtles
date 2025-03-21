@@ -28,8 +28,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	turtlesframework "github.com/rancher/turtles/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 // CleanupTestClusterInput represents the input parameters for cleaning up a test cluster.
@@ -52,13 +53,6 @@ func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CleanupTestCluster")
 	Expect(input.SetupTestClusterResult).ToNot(BeNil(), "SetupTestClusterResult is required for CleanupTestCluster")
 	Expect(input.ArtifactFolder).ToNot(BeEmpty(), "ArtifactFolder is required for CleanupTestCluster")
-
-	By("Dumping artifacts from the bootstrap cluster")
-	dumpBootstrapCluster(ctx)
-
-	if input.SkipCleanup {
-		return
-	}
 
 	By("Tearing down the management cluster")
 	if input.BootstrapClusterProxy != nil {
@@ -132,7 +126,7 @@ func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
 	return err
 }
 
-func dumpBootstrapCluster(ctx context.Context) {
+func DumpBootstrapCluster(ctx context.Context) {
 	err := CollectArtifacts(ctx, CollectArtifactsInput{})
 	if err != nil {
 		fmt.Printf("Failed to artifacts for the bootstrap cluster: %v\n", err)

@@ -22,15 +22,17 @@ package etcd_snapshot_restore
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/testenv"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/testenv"
 )
 
 // Test suite global vars.
@@ -113,6 +115,17 @@ var _ = SynchronizedAfterSuite(
 	func() {
 	},
 	func() {
+		By("Dumping artifacts from the bootstrap cluster")
+		testenv.DumpBootstrapCluster(ctx)
+
+		config := e2e.LoadE2EConfig()
+		// skipping error check since it is already done at the beginning of the test in e2e.ValidateE2EConfig()
+		skipCleanup, _ := strconv.ParseBool(config.GetVariable(e2e.SkipResourceCleanupVar))
+		if skipCleanup {
+			// add a log line about skipping charts uninstallation and cluster cleanup
+			return
+		}
+
 		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 		})
