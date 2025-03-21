@@ -14,7 +14,7 @@ require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-git/go-git/v5 v5.14.0
-	github.com/onsi/ginkgo/v2 v2.23.1
+	github.com/onsi/ginkgo/v2 v2.23.2
 	github.com/onsi/gomega v1.36.2
 	github.com/rancher/turtles v0.16.1-0.20250217112855-5adeb47014de
 	github.com/rancher/turtles/exp/day2 v0.0.0-20250217112855-5adeb47014de
