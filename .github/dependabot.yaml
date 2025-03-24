@@ -4,12 +4,19 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     labels:
       - "kind/cleanup"
       - "area/dependency"
     groups:
-      dependencies:
+      testing-dependencies:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
+      provider-dependencies:
+        patterns:
+          - "*cluster-api-provider*"
+      other-dependencies:
         patterns:
           - "*"
     ignore:
@@ -22,6 +29,7 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
+
   # Test Go module
   - package-ecosystem: "gomod"
     directory: "/test"
@@ -31,7 +39,14 @@ updates:
       - "kind/cleanup"
       - "area/dependency"
     groups:
-      test-dependencies:
+      testing-dependencies:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
+      provider-dependencies:
+        patterns:
+          - "*cluster-api-provider*"
+      other-dependencies:
         patterns:
           - "*"
     ignore:
@@ -44,6 +59,7 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
+
   # ETCD backup/restore module
   - package-ecosystem: "gomod"
     directory: "exp/day2/"
@@ -53,7 +69,14 @@ updates:
       - "kind/cleanup"
       - "area/dependency"
     groups:
-      test-dependencies:
+      testing-dependencies:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
+      provider-dependencies:
+        patterns:
+          - "*cluster-api-provider*"
+      other-dependencies:
         patterns:
           - "*"
     ignore:
@@ -66,16 +89,24 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
+
   # Clusterclass progressive rebase implementation
   - package-ecosystem: "gomod"
     directory: "/exp/clusterclass"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     labels:
       - "kind/cleanup"
       - "area/dependency"
     groups:
-      dependencies:
+      testing-dependencies:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
+      provider-dependencies:
+        patterns:
+          - "*cluster-api-provider*"
+      other-dependencies:
         patterns:
           - "*"
     ignore:
@@ -86,6 +117,8 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
+
+  # Docker updates
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -93,6 +126,8 @@ updates:
     labels:
       - "kind/cleanup"
       - "area/build-and-release"
+
+  # GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -100,7 +135,9 @@ updates:
     labels:
       - "kind/cleanup"
       - "area/build-and-release"
+
+  # Devcontainers updates
   - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
