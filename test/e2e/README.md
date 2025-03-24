@@ -74,9 +74,10 @@ This will consequently:
 | VSPHERE_SERVER             | The vCenter server IP or FQDN | once logged in vSphere Client, click on second icon from left to right on top left and select vcenter name (top level name in the folders tree) |
 | VSPHERE_DATACENTER         | The vSphere datacenter to deploy the management cluster on | `vcenter` name => select `Datacenters` |
 | VSPHERE_DATASTORE          | The vSphere datastore to deploy the management cluster on  | `vcenter` name => `Datacenter` name => select `Datastores` |
-| VSPHERE_FOLDER             | The VM folder for your VMs. Set to "" to use the root vSphere folder | `vcenter` name => `Datacenter` name => `VMs` => select `VM folders` |
+| VSPHERE_FOLDER             | The VM folder for your VMs. Set to "" to use the root vSphere folder | Inventory => Folder =>`vcenter` name => `Datacenter` name =>  select folder |
 | VSPHERE_TEMPLATE           | The VM template to use for your management cluster | `vcenter` name => `Datacenter` name => `VMs` => select `VM Templates` |
-| VSPHERE_NETWORK            | The VM network to deploy the management cluster on | `vcenter` name => `Datacenter` name => `Networks` => select `Networks` |
+| VSPHERE_NETWORK            | The VM network to deploy the management cluster on | Inventory => Network => `vcenter` name => `Datacenter` name => `Switch` name => select distributed port group |
+| VSPHERE_RESOURCE_POOL      | The resource pool to assign to any VMs created | Inventory => Resource pool => `vcenter` name => `Datacenter` name => `Cluster` name => select resource pool |
 | VSPHERE_PASSWORD           | The password used to access the remote vSphere endpoint | reach out to team lead |
 | VSPHERE_USERNAME           | The username used to access the remote vSphere endpoint | reach out to team lead |
 | VSPHERE_SSH_AUTHORIZED_KEY | The public ssh authorized key on all machines in this cluster | can be left empty |
@@ -93,7 +94,7 @@ This will consequently:
 From the project root directory:
 
 ```bash
-TAG=v0.0.1 GINKGO_LABEL_FILTER=local make test-e2e
+TAG=v0.0.1 GINKGO_LABEL_FILTER=vsphere make test-e2e
 ```
 
 **Important note:** The vSphere e2e tests require a VPN connection, which makes their integration into the daily e2e CI job challenging. Therefore,

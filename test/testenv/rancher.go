@@ -348,6 +348,9 @@ type RancherDeployIngressInput struct {
 	// CustomIngress is the custom ingress to be deployed.
 	CustomIngress []byte
 
+	// CustomIngressLoadBalancer is the custom ingress to be deployed that has a type of LoadBalancer.
+	CustomIngressLoadBalancer []byte
+
 	// CustomIngressNamespace is the namespace for the custom ingress.
 	CustomIngressNamespace string `envDefault:"ingress-nginx"`
 
@@ -415,6 +418,9 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 		deployNgrokIngress(ctx, input)
 	case e2e.ManagementClusterEnvironmentEKS:
 		deployEKSIngress(input)
+	case e2e.ManagementClusterEnvironmentInternalKind:
+		Expect(input.CustomIngressLoadBalancer).ToNot(BeEmpty(), "CustomIngressLoadBalancer is required when using custom ingress with a load balancer")
+		deployNginxIngressLoadBalancer(ctx, input)
 	}
 }
 
@@ -514,6 +520,21 @@ func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
 
 	By("Setting up default ingress class")
 	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.DefaultIngressClassPatch)).To(Succeed())
+}
+
+func deployNginxIngressLoadBalancer(ctx context.Context, input RancherDeployIngressInput) {
+	By("Deploying custom ingress controller of type LoadBalancer")
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(input.CustomIngressLoadBalancer))).To(Succeed())
+
+	By("Getting custom ingress deployment")
+	ingressDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: input.CustomIngressDeployment, Namespace: input.CustomIngressNamespace}}
+	Eventually(
+		komega.Get(ingressDeployment),
+		input.IngressWaitInterval...,
+	).Should(Succeed(), "Failed to get custom ingress controller")
+
+	turtlesframework.Byf("Waiting for %s deployment to be available", input.CustomIngressDeployment)
+	Eventually(komega.Object(ingressDeployment), input.IngressWaitInterval...).Should(HaveField("Status.AvailableReplicas", Equal(int32(1))))
 }
 
 // PreRancherInstallHookInput represents the input parameters for the pre-Rancher install hook.

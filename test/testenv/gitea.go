@@ -222,7 +222,19 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		result.GitAddress = fmt.Sprintf("http://%s:%d", svcRes.Hostname, port.Port)
 	case string(corev1.ServiceTypeClusterIP):
 		By("Creating custom ingress for gitea")
-		ingress, err := envsubst.Eval(string(input.CustomIngressConfig), os.Getenv)
+		var ingress string
+		var err error
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+			ingress, err = envsubst.Eval(string(input.CustomIngressConfig), func(s string) string {
+				if s == "GITEA_INGRESS_CLASS_NAME" {
+					return "nginx"
+				}
+				return os.Getenv(s)
+			})
+		} else {
+			ingress, err = envsubst.Eval(string(input.CustomIngressConfig), os.Getenv)
+		}
+
 		Expect(err).ToNot(HaveOccurred())
 		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
 
@@ -234,7 +246,12 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 			IngressNamespace: "default",
 		})
 
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+			// Fleet fails TLS verification when using a self-signed certificate, hence we use http
+			result.GitAddress = fmt.Sprintf("http://%s", host)
+		} else {
 		result.GitAddress = fmt.Sprintf("https://%s", host)
+		}
 	}
 
 	if input.Username == "" {
@@ -317,7 +334,7 @@ func PreGiteaInstallHook(giteaInput *DeployGiteaInput) {
 		giteaInput.ServiceType = corev1.ServiceTypeLoadBalancer
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		giteaInput.ServiceType = corev1.ServiceTypeNodePort
-	case e2e.ManagementClusterEnvironmentKind:
+	case e2e.ManagementClusterEnvironmentKind, e2e.ManagementClusterEnvironmentInternalKind:
 		giteaInput.ServiceType = corev1.ServiceTypeClusterIP
 	}
 }

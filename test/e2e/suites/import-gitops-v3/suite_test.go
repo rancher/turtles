@@ -63,9 +63,10 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
-			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-			CustomIngress:            e2e.NginxIngress,
-			DefaultIngressClassPatch: e2e.IngressClassPatch,
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			CustomIngress:             e2e.NginxIngress,
+			CustomIngressLoadBalancer: e2e.NginxIngressLoadBalancer,
+			DefaultIngressClassPatch:  e2e.IngressClassPatch,
 		})
 
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
@@ -132,11 +133,3 @@ var _ = SynchronizedAfterSuite(
 		})
 	},
 )
-
-func shortTestOnly() bool {
-	return GinkgoLabelFilter() == e2e.ShortTestLabel
-}
-
-func localTestOnly() bool {
-	return GinkgoLabelFilter() == e2e.LocalTestLabel
-}

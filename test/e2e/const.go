@@ -69,6 +69,9 @@ var (
 	//go:embed data/rancher/nginx-ingress.yaml
 	NginxIngress []byte
 
+	//go:embed data/rancher/ingress-nginx-lb.yaml
+	NginxIngressLoadBalancer []byte
+
 	//go:embed data/chartmuseum/deployment.yaml
 	ChartMuseum []byte
 
@@ -140,6 +143,7 @@ const (
 	ManagementClusterEnvironmentEKS          ManagementClusterEnvironmentType = "eks"
 	ManagementClusterEnvironmentIsolatedKind ManagementClusterEnvironmentType = "isolated-kind"
 	ManagementClusterEnvironmentKind         ManagementClusterEnvironmentType = "kind"
+	ManagementClusterEnvironmentInternalKind ManagementClusterEnvironmentType = "internal-kind"
 )
 
 const (
@@ -203,10 +207,10 @@ const (
 
 	AuthSecretName = "basic-auth-secret"
 
-	ShortTestLabel = "short"
-	FullTestLabel  = "full"
-	DontRunLabel   = "dontrun"
-	LocalTestLabel = "local"
+	ShortTestLabel   = "short"
+	FullTestLabel    = "full"
+	DontRunLabel     = "dontrun"
+	VsphereTestLabel = "vsphere"
 
 	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
 	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
