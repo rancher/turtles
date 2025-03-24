@@ -21,6 +21,8 @@ package import_gitops_v3
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"k8s.io/utils/ptr"
@@ -28,7 +30,10 @@ import (
 	"github.com/rancher/turtles/examples"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
+	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
@@ -126,6 +131,19 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			},
 		})
 
+		// Add the needed ClusterClass
+		topologyNamespace := "creategitops-azure-aks"
+		err := framework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
+
+		By("Applying Azure ClusterClasses")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:            "azure-cluster-classes-aks",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/clusterclasses/azure"},
+			ClusterProxy:    bootstrapClusterProxy,
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -142,6 +160,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
 		}
 	})
 })
@@ -169,11 +188,39 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			},
 		})
 
+		// Add the needed ClusterClass and ClusterResourceSet
+		topologyNamespace := "creategitops-azure-rke2"
+		err := framework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
+
+		By("Applying Azure ClusterClasses")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:            "azure-cluster-classes-regular",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/clusterclasses/azure"},
+			ClusterProxy:    bootstrapClusterProxy,
+		})
+
+		By("Applying Azure CCM")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:            "azure-ccm-regular",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/applications/ccm/azure"},
+			ClusterProxy:    bootstrapClusterProxy,
+		})
+
+		By("Applying Calico CNI")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:         "azure-cni",
+			Namespace:    topologyNamespace,
+			Paths:        []string{"examples/applications/cni/calico"},
+			ClusterProxy: bootstrapClusterProxy,
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureRKE2Topology,
-			AdditionalTemplates:            [][]byte{examples.CAPIAzureRKE2Clusterclass, examples.CAPIAzureCPI},
 			ClusterName:                    "cluster-azure-rke2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -186,6 +233,7 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
 		}
 
 	})
@@ -261,7 +309,6 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEC2Kubeadm,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico, e2e.CAPIAWSCPICSI},
 			ClusterName:                    "cluster-ec2",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),

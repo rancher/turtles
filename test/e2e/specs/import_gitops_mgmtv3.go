@@ -20,6 +20,7 @@ limitations under the License.
 package specs
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"os"
@@ -90,6 +91,9 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 
 	// IsGCPCluster is used to substitute GCP-specific values from secrets
 	IsGCPCluster bool
+
+	// A fixed topology namespace to reference in the cluster spec
+	TopologyNamespace string
 }
 
 // CreateMgmtV3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -241,6 +245,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		os.MkdirAll(clustersDir, os.ModePerm)
 
 		additionalVars := map[string]string{
+			"TOPOLOGY_NAMESPACE":          cmp.Or(input.TopologyNamespace, namespace.Name),
 			"CLUSTER_NAME":                input.ClusterName,
 			"CLUSTER_CLASS_NAME":          fmt.Sprintf("%s-class", input.ClusterName),
 			"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),

@@ -20,7 +20,9 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
+    cluster-api.cattle.io/rancher-auto-import: "true"
     cloud-provider: azure
+    cni: calico
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
@@ -33,6 +35,7 @@ spec:
       - 10.244.0.0/16
   topology:
     class: azure-example
+    classNamespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
       replicas: 3
     variables:
@@ -44,7 +47,7 @@ spec:
       value: highlander-e2e-azure-rke2
     - name: azureClusterIdentityName
       value: cluster-identity
-    version: v1.31.1+rke2r1
+    version: ${KUBERNETES_VERSION}+rke2r1
     workers:
       machineDeployments:
       - class: rke2-default-worker
