@@ -20,13 +20,16 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"strings"
 	"text/template"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,6 +61,9 @@ type FleetCreateGitRepoInput struct {
 	// ClientSecretName is the name of the client secret to use for authentication.
 	ClientSecretName string `envDefault:"basic-auth-secret"`
 
+	// ClusterSelectors is a list of optional target selectors. These will override the default target.
+	ClusterSelectors []*metav1.LabelSelector
+
 	// ClusterProxy is the ClusterProxy instance for interacting with the cluster.
 	ClusterProxy framework.ClusterProxy
 }
@@ -77,7 +83,16 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 
 	Byf("Creating GitRepo from template %s with path %s", input.Name, input.Paths[0])
 
-	t := template.New("fleet-repo-template")
+	t := template.New("fleet-repo-template").Funcs(template.FuncMap{
+		"toYaml": func(v any) (string, error) {
+			data, err := yaml.Marshal(v)
+			return string(data), err
+		},
+		"nindent": func(spaces int, v string) string {
+			pad := strings.Repeat(" ", spaces)
+			return "\n" + pad + strings.Replace(v, "\n", "\n"+pad, -1)
+		},
+	})
 	t, err := t.Parse(gitRepoTemplate)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to pass GitRepo template")
 
@@ -183,6 +198,13 @@ spec:
   {{ range .Paths }}
   - {{.}}
   {{ end }}
+
+  {{- if .ClusterSelectors }}
+  targets:
+  {{ range .ClusterSelectors }}
+  - clusterSelector: {{ . | toYaml | nindent 6 }}
+  {{- end }}
+  {{- end }}
 
   {{- if .ClientSecretName }}
   clientSecretName: {{ .ClientSecretName }}

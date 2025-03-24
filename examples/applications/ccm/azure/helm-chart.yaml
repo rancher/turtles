@@ -7,6 +7,15 @@ spec:
     releaseName: cloud-provider-azure
     repo: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
     chart: cloud-provider-azure
+    templateValues:
+      infra: |-
+        clusterName: ${ .ClusterValues.Cluster.metadata.name }
+      cloudControllerManager: |-
+        clusterCIDR: ${ .ClusterValues.Cluster.spec.clusterNetwork.pods.cidrBlocks | join "," }
+        caCertDir: /etc/ssl
+        hostNetworking: true
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: "true"
   insecureSkipTLSVerify: true
   targets:
   - clusterSelector:
