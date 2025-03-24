@@ -89,11 +89,12 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 	CapiClusterOwnerNamespaceLabel string
 	OwnedLabelName                 string
 
-	// IsGCPCluster is used to substitute GCP-specific values from secrets
-	IsGCPCluster bool
-
-	// A fixed topology namespace to reference in the cluster spec
+	// TopologyNamespace is the namespace to use for topology-related resources (e.g., cluster classes).
 	TopologyNamespace string
+
+	// AdditionalFleetGitRepos specifies additional FleetGitRepos to be created before the main GitRepo.
+	// This is useful for setting up resources like cluster classes/cni/cpi that some tests require.
+	AdditionalFleetGitRepos []turtlesframework.FleetCreateGitRepoInput
 }
 
 // CreateMgmtV3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -227,6 +228,14 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 					"cluster-api.cattle.io/rancher-auto-import": "true",
 				},
 			})
+		}
+
+		if input.TopologyNamespace != "" {
+			Expect(turtlesframework.CreateNamespace(ctx, input.BootstrapClusterProxy, input.TopologyNamespace)).To(Succeed())
+		}
+
+		for _, additionalRepo := range input.AdditionalFleetGitRepos {
+			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
 		}
 
 		By("Create Git repository")
