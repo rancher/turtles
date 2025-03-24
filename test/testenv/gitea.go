@@ -18,7 +18,6 @@ package testenv
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -247,7 +246,12 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 			IngressNamespace: "default",
 		})
 
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+			// Fleet fails TLS verification when using a self-signed certificate, hence we use http
+			result.GitAddress = fmt.Sprintf("http://%s", host)
+		} else {
 		result.GitAddress = fmt.Sprintf("https://%s", host)
+		}
 	}
 
 	if input.Username == "" {
@@ -258,9 +262,6 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	By("Waiting for Gitea endpoint to be available")
 	url := fmt.Sprintf("%s/api/v1/version", result.GitAddress)
 	Eventually(func() error {
-		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
-			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		}
 		resp, err := http.Get(url)
 		if err != nil {
 			return err
