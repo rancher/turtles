@@ -1,0 +1,63 @@
+name: Check PR Labels
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  manage-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and manage PR labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AREA_COMMENT: |
+            This pull request is missing an `area/*` label. These labels indicate **which part of the project** this change affects. Please add an appropriate `area/*` label, examples:
+            - `area/api` for the CRD and API changes
+            - `area/ci` for CI/E2E test changes
+            - `area/clusterclass` for the clusterclass feature changes
+          KIND_COMMENT: |
+            This pull request is missing a `kind/*` label. These labels describe **the type of change** being made (e.g., its purpose or nature). Please add an appropriate `kind/*` label, such as:
+            - `kind/enhancement` for new functionality
+            - `kind/bug` for bug fixes
+            - `kind/refactor` for large refactoring changes e.g. removes files or moves content
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          gh_api() {
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github.v3+json" "$@"
+          }
+          LABELS_URL="https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/labels"
+          COMMENTS_URL="https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+
+          LABELS=$(gh_api "$LABELS_URL")
+          COMMENTS=$(gh_api "$COMMENTS_URL")
+
+          HAS_AREA=$(echo "$LABELS" | jq -e 'any(.[]; .name | startswith("area/"))' >/dev/null && echo "true" || echo "false")
+          HAS_KIND=$(echo "$LABELS" | jq -e 'any(.[]; .name | startswith("kind/"))' >/dev/null && echo "true" || echo "false")
+          HAS_NEEDS_AREA=$(echo "$LABELS" | jq -e 'any(.[]; .name == "needs-area")' >/dev/null && echo "true" || echo "false")
+          HAS_NEEDS_KIND=$(echo "$LABELS" | jq -e 'any(.[]; .name == "needs-kind")' >/dev/null && echo "true" || echo "false")
+
+          AREA_COMMENT_ID=$(echo "$COMMENTS" | jq -r ".[] | select(.body == \"$AREA_COMMENT\" and .user.login == \"github-actions[bot]\") | .id" | head -n1)
+          if [ "$HAS_AREA" = "true" ]; then
+            [ "$HAS_NEEDS_AREA" = "true" ] && gh_api -X DELETE "$LABELS_URL/needs-area"
+            [ -n "$AREA_COMMENT_ID" ] && gh_api -X DELETE "https://api.github.com/repos/${{ github.repository }}/issues/comments/$AREA_COMMENT_ID"
+          else
+            [ "$HAS_NEEDS_AREA" = "false" ] && gh_api -X POST -d '{"labels":["needs-area"]}' "$LABELS_URL"
+            [ -z "$AREA_COMMENT_ID" ] && gh_api -X POST -d "{\"body\":\"$AREA_COMMENT\"}" "$COMMENTS_URL"
+          fi
+
+          KIND_COMMENT_ID=$(echo "$COMMENTS" | jq -r ".[] | select(.body == \"$KIND_COMMENT\" and .user.login == \"github-actions[bot]\") | .id" | head -n1)
+          if [ "$HAS_KIND" = "true" ]; then
+            [ "$HAS_NEEDS_KIND" = "true" ] && gh_api -X DELETE "$LABELS_URL/needs-kind"
+            [ -n "$KIND_COMMENT_ID" ] && gh_api -X DELETE "https://api.github.com/repos/${{ github.repository }}/issues/comments/$KIND_COMMENT_ID"
+          else
+            [ "$HAS_NEEDS_KIND" = "false" ] && gh_api -X POST -d '{"labels":["needs-kind"]}' "$LABELS_URL"
+            [ -z "$KIND_COMMENT_ID" ] && gh_api -X POST -d "{\"body\":\"$KIND_COMMENT\"}" "$COMMENTS_URL"
+          fi
+
+          [ "$HAS_AREA" = "true" ] && [ "$HAS_KIND" = "true" ] && exit 0 || exit 1
