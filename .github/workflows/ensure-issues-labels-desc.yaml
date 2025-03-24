@@ -20,52 +20,49 @@ jobs:
             - `area/api` for the CRD and API changes
             - `area/ci` for CI/E2E test changes
             - `area/clusterclass` for the clusterclass feature changes
+            See available labels at https://github.com/rancher/turtles/labels.
           KIND_COMMENT: |
             This issue is missing a `kind/*` label. These labels describe **the type of change** being made (e.g., its purpose or nature). Please add an appropriate `kind/*` label, such as:
             - `kind/enhancement` for new functionality
             - `kind/bug` for bug fixes
             - `kind/refactor` for large refactoring changes e.g. removes files or moves content
+            See available labels at https://github.com/rancher/turtles/labels.
           DESC_COMMENT: |
             This issue is missing a description. Please provide a description to explain the purpose or details of this issue.
         run: |
           ISSUE_NUMBER=${{ github.event.issue.number }}
-          gh_api() {
-            curl -s -H "Authorization: token $GITHUB_TOKEN" \
-                 -H "Accept: application/vnd.github.v3+json" "$@"
-          }
+          gh_api() { curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" "$@"; }
           ISSUE_URL="https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER"
           COMMENTS_URL="$ISSUE_URL/comments"
-
           LABELS=$(gh_api "$ISSUE_URL/labels")
           COMMENTS=$(gh_api "$COMMENTS_URL")
           ISSUE_BODY=$(gh_api "$ISSUE_URL" | jq -r .body)
-
           HAS_AREA=$(echo "$LABELS" | jq -e 'any(.[]; .name | startswith("area/"))' >/dev/null && echo "true" || echo "false")
           HAS_KIND=$(echo "$LABELS" | jq -e 'any(.[]; .name | startswith("kind/"))' >/dev/null && echo "true" || echo "false")
           HAS_NEEDS_AREA=$(echo "$LABELS" | jq -e 'any(.[]; .name == "needs-area")' >/dev/null && echo "true" || echo "false")
           HAS_NEEDS_KIND=$(echo "$LABELS" | jq -e 'any(.[]; .name == "needs-kind")' >/dev/null && echo "true" || echo "false")
-
-          AREA_COMMENT_ID=$(echo "$COMMENTS" | jq -r ".[] | select(.body == \"$AREA_COMMENT\" and .user.login == \"github-actions[bot]\") | .id" | head -n1)
+          AREA_COMMENT_JSON=$(echo -n "$AREA_COMMENT" | jq -sR '{body: .}')
+          KIND_COMMENT_JSON=$(echo -n "$KIND_COMMENT" | jq -sR '{body: .}')
+          DESC_COMMENT_JSON=$(echo -n "$DESC_COMMENT" | jq -sR '{body: .}')
+          AREA_COMMENT_ID=$(echo "$COMMENTS" | jq --arg comment "$AREA_COMMENT" -r '.[] | select(.body == $comment and .user.login == "github-actions[bot]") | .id' | head -n1)
           if [ "$HAS_AREA" = "true" ]; then
             [ "$HAS_NEEDS_AREA" = "true" ] && gh_api -X DELETE "$ISSUE_URL/labels/needs-area"
             [ -n "$AREA_COMMENT_ID" ] && gh_api -X DELETE "https://api.github.com/repos/${{ github.repository }}/issues/comments/$AREA_COMMENT_ID"
           else
             [ "$HAS_NEEDS_AREA" = "false" ] && gh_api -X POST -d '{"labels":["needs-area"]}' "$ISSUE_URL/labels"
-            [ -z "$AREA_COMMENT_ID" ] && gh_api -X POST -d "{\"body\":\"$AREA_COMMENT\"}" "$COMMENTS_URL"
+            [ -z "$AREA_COMMENT_ID" ] && gh_api -X POST -d "$AREA_COMMENT_JSON" "$COMMENTS_URL"
           fi
-
-          KIND_COMMENT_ID=$(echo "$COMMENTS" | jq -r ".[] | select(.body == \"$KIND_COMMENT\" and .user.login == \"github-actions[bot]\") | .id" | head -n1)
+          KIND_COMMENT_ID=$(echo "$COMMENTS" | jq --arg comment "$KIND_COMMENT" -r '.[] | select(.body == $comment and .user.login == "github-actions[bot]") | .id' | head -n1)
           if [ "$HAS_KIND" = "true" ]; then
             [ "$HAS_NEEDS_KIND" = "true" ] && gh_api -X DELETE "$ISSUE_URL/labels/needs-kind"
             [ -n "$KIND_COMMENT_ID" ] && gh_api -X DELETE "https://api.github.com/repos/${{ github.repository }}/issues/comments/$KIND_COMMENT_ID"
           else
             [ "$HAS_NEEDS_KIND" = "false" ] && gh_api -X POST -d '{"labels":["needs-kind"]}' "$ISSUE_URL/labels"
-            [ -z "$KIND_COMMENT_ID" ] && gh_api -X POST -d "{\"body\":\"$KIND_COMMENT\"}" "$COMMENTS_URL"
+            [ -z "$KIND_COMMENT_ID" ] && gh_api -X POST -d "$KIND_COMMENT_JSON" "$COMMENTS_URL"
           fi
-
-          DESC_COMMENT_ID=$(echo "$COMMENTS" | jq -r ".[] | select(.body == \"$DESC_COMMENT\" and .user.login == \"github-actions[bot]\") | .id" | head -n1)
+          DESC_COMMENT_ID=$(echo "$COMMENTS" | jq --arg comment "$DESC_COMMENT" -r '.[] | select(.body == $comment and .user.login == "github-actions[bot]") | .id' | head -n1)
           if [ -z "$ISSUE_BODY" ] || [ "$ISSUE_BODY" = "null" ]; then
-            [ -z "$DESC_COMMENT_ID" ] && gh_api -X POST -d "{\"body\":\"$DESC_COMMENT\"}" "$COMMENTS_URL"
+            [ -z "$DESC_COMMENT_ID" ] && gh_api -X POST -d "$DESC_COMMENT_JSON" "$COMMENTS_URL"
           else
             [ -n "$DESC_COMMENT_ID" ] && gh_api -X DELETE "https://api.github.com/repos/${{ github.repository }}/issues/comments/$DESC_COMMENT_ID"
           fi
