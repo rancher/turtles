@@ -210,7 +210,6 @@ const (
 	ShortTestLabel   = "short"
 	FullTestLabel    = "full"
 	DontRunLabel     = "dontrun"
-	LocalTestLabel   = "local"
 	VsphereTestLabel = "vsphere"
 
 	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"

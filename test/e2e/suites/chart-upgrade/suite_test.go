@@ -122,11 +122,3 @@ var _ = SynchronizedAfterSuite(
 		})
 	},
 )
-
-func shortTestOnly() bool {
-	return GinkgoLabelFilter() == e2e.ShortTestLabel
-}
-
-func localTestOnly() bool {
-	return GinkgoLabelFilter() == e2e.LocalTestLabel
-}
