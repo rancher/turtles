@@ -132,6 +132,23 @@ spec:
     - name: azureMachineTemplate
       definitions:
         - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/files/-
+              valueFrom:
+                template: |
+                    contentFrom:
+                      secret:
+                        key: control-plane-azure.json
+                        name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
+                    owner: root:root
+                    path: /etc/kubernetes/azure.json
+                    permissions: "0644"
+        - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
             matchResources:
@@ -190,7 +207,7 @@ metadata:
 spec:
   template:
     spec:
-      registrationMethod: control-plane-endpoint
+      registrationMethod: internal-first
       rolloutStrategy:
         type: "RollingUpdate"
         rollingUpdate:
@@ -205,6 +222,10 @@ spec:
         kubeAPIServer:
           extraArgs:
           - --anonymous-auth=true
+      files:
+        - owner: root:root
+          path: /etc/kubernetes/azure.json
+          permissions: "0644"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate

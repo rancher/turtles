@@ -27,11 +27,12 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"github.com/rancher/turtles/examples"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
 	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
@@ -148,7 +149,6 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
-			AdditionalTemplates:            [][]byte{examples.CAPIAzureAKSClusterclass},
 			ClusterName:                    "cluster-aks",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -215,6 +215,11 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			Namespace:    topologyNamespace,
 			Paths:        []string{"examples/applications/cni/calico"},
 			ClusterProxy: bootstrapClusterProxy,
+			ClusterSelectors: []*metav1.LabelSelector{{
+				MatchLabels: map[string]string{
+					"cni": "calico",
+				},
+			}},
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{

@@ -1,4 +1,0 @@
-targets:
-- clusterSelector:
-    matchLabels:
-      cni: calico
