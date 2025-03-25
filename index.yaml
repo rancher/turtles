@@ -8,6 +8,40 @@ entries:
       catalog.cattle.io/namespace: rancher-turtles-system
       catalog.cattle.io/os: linux
       catalog.cattle.io/permits-os: linux
+      catalog.cattle.io/rancher-version: '>= 2.10.2-1'
+      catalog.cattle.io/release-name: rancher-turtles
+      catalog.cattle.io/scope: management
+      catalog.cattle.io/type: cluster-tool
+    apiVersion: v2
+    appVersion: 0.18.0-rc.0
+    created: "2025-03-25T14:19:55.069744511Z"
+    dependencies:
+    - condition: cluster-api-operator.enabled
+      name: cluster-api-operator
+      repository: https://kubernetes-sigs.github.io/cluster-api-operator
+      version: v0.17.1
+    description: Rancher Turtles is an extension to Rancher that brings full Cluster
+      API integration to Rancher.
+    digest: 2de2ac07510ac68a581b3dd4e4d09e5c47832d841f88c4d33481d44520604318
+    home: https://github.com/rancher/turtles/
+    icon: https://raw.githubusercontent.com/rancher/turtles/main/logos/capi.svg
+    keywords:
+    - rancher
+    - cluster-api
+    - capi
+    - provisioning
+    name: rancher-turtles
+    type: application
+    urls:
+    - https://github.com/rancher/turtles/releases/download/v0.18.0-rc.0/rancher-turtles-0.18.0-rc.0.tgz
+    version: 0.18.0-rc.0
+  - annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/display-name: Rancher Turtles - the Cluster API Extension
+      catalog.cattle.io/kube-version: '>= 1.23.0-0'
+      catalog.cattle.io/namespace: rancher-turtles-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/permits-os: linux
       catalog.cattle.io/rancher-version: '>= 2.10.0-1'
       catalog.cattle.io/release-name: rancher-turtles
       catalog.cattle.io/scope: management
@@ -758,4 +792,4 @@ entries:
     urls:
     - https://github.com/rancher-sandbox/rancher-turtles/releases/download/v0.1.0-rc1/rancher-turtles-0.1.0-rc1.tgz
     version: 0.1.0-rc1
-generated: "2025-02-27T10:39:21.508924372Z"
+generated: "2025-03-25T14:19:55.069931599Z"
