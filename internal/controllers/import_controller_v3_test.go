@@ -98,6 +98,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 					capiClusterOwnerNamespace: capiCluster.Namespace,
 					ownedLabelName:            "",
 				},
+				Annotations: map[string]string{
+					fleetNamespaceMigrated: "cattle-fleet-system",
+				},
 			},
 		}
 
@@ -552,6 +555,12 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)).To(Succeed())
+			annoations := rancherCluster.GetAnnotations()
+			if annoations == nil {
+				annoations = map[string]string{}
+			}
+			annoations[fleetNamespaceMigrated] = "cattle-fleet-system"
+			rancherCluster.SetAnnotations(annoations)
 			conditions.Set(rancherCluster, conditions.TrueCondition(managementv3.ClusterConditionReady))
 			g.Expect(conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)).To(BeTrue())
 			g.Expect(cl.Status().Update(ctx, rancherCluster)).To(Succeed())

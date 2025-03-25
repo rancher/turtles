@@ -33,6 +33,7 @@ data:
         patchResource: true
         setOwnerReferences: true
       cluster:
+        agentNamespace: cattle-fleet-system
         applyClassGroup: true
         patchResource: true
         setOwnerReferences: true

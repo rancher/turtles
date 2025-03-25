@@ -52,6 +52,8 @@ const (
 	capiClusterOwner          = "cluster-api.cattle.io/capi-cluster-owner"
 	capiClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
 	v1ClusterMigrated         = "cluster-api.cattle.io/migrated"
+	fleetNamespaceMigrated    = "cluster-api.cattle.io/fleet-namespace-migrated"
+	fleetDisabledLabel        = "cluster-api.cattle.io/disable-fleet-auto-import"
 	externalFleetAnnotation   = "provisioning.cattle.io/externally-managed"
 
 	defaultRequeueDuration = 1 * time.Minute
@@ -171,6 +173,44 @@ func downloadManifest(url string, caCert []byte, insecureSkipVerify bool) (strin
 	}
 
 	return string(data), err
+}
+
+// removeFleetNamespace cleans up previous namespace of the deployed agent on the downstream cluster.
+func removeFleetNamespace(ctx context.Context, cl client.Client, cluster *managementv3.Cluster) (bool, error) {
+	log := log.FromContext(ctx)
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+		Name: "fleet-addon-agent",
+	}}
+
+	if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); client.IgnoreNotFound(err) != nil {
+		return true, fmt.Errorf("unable to check fleet agent namespace on downstream cluster: %w", err)
+	} else if err == nil {
+		if err := cl.Delete(ctx, ns); err != nil {
+			return true, fmt.Errorf("unable to remove old fleet agent namespace on downstream cluster: %w", err)
+		}
+	}
+
+	if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); apierrors.IsNotFound(err) {
+		ns = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+			Name: "cattle-fleet-system",
+		}}
+
+		if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); err != nil {
+			return true, fmt.Errorf("cattle-fleet-system namespace is not present yet: %w", err)
+		}
+
+		log.Info("fleet agent namespace is migrated")
+
+		annotations := cluster.GetAnnotations()
+		annotations[fleetNamespaceMigrated] = ns.Name
+		cluster.SetAnnotations(annotations)
+
+		return false, nil
+	} else if err == nil {
+		log.Info("fleet agent namespace is not migrated yet")
+	}
+
+	return true, nil
 }
 
 func createImportManifest(ctx context.Context, remoteClient client.Client, in io.Reader) error {
