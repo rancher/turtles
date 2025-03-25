@@ -286,6 +286,9 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 				capiClusterOwnerNamespace: capiCluster.Namespace,
 				ownedLabelName:            "",
 			},
+			Annotations: map[string]string{
+				fleetNamespaceMigrated: "cattle-fleet-system",
+			},
 			Finalizers: []string{
 				managementv3.CapiClusterFinalizer,
 			},
@@ -318,8 +321,31 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
+	fleetMigrated := false
+	if labels := capiCluster.GetLabels(); labels != nil {
+		_, fleetMigrated = labels[fleetDisabledLabel]
+	}
+
+	annotations := rancherCluster.GetAnnotations()
+	fleetMigrated = annotations[fleetNamespaceMigrated] == "cattle-fleet-system" || fleetMigrated
+
+	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) && fleetMigrated {
 		log.Info("agent is ready, no action needed")
+
+		return ctrl.Result{}, nil
+	} else if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
+		// Delete old agent namespace on the downstream cluster
+		remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, client.ObjectKeyFromObject(capiCluster))
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
+		}
+
+		if requeue, err := removeFleetNamespace(ctx, remoteClient, rancherCluster); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cleaning up fleet namespace: %w", err)
+		} else if requeue {
+			return ctrl.Result{Requeue: true}, nil
+		}
+
 		return ctrl.Result{}, nil
 	}
 
