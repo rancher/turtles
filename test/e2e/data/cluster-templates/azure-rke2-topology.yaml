@@ -29,12 +29,9 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 10.96.0.0/12
-    services:
-      cidrBlocks:
-      - 10.244.0.0/16
+      - 192.168.0.0/16
   topology:
-    class: azure-example
+    class: azure-rke2-example
     classNamespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
       replicas: 3
