@@ -1,6 +1,6 @@
 turtlesUI:
   enabled: false
-  version: v0.8.2
+  version: 0.8.2
 rancherTurtles:
   image: controller
   imageVersion: v0.0.0

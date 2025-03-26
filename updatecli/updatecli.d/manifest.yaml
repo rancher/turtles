@@ -108,7 +108,6 @@ sources:
         latest: true
     transformers:
     - trimprefix: "capi-"
-    - addprefix: "v"
 
 # update config.yaml accordingly
 targets:
