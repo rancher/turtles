@@ -32,8 +32,6 @@ import (
 	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
@@ -211,15 +209,10 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 
 		By("Applying Calico CNI")
 		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:         "azure-cni",
-			Namespace:    topologyNamespace,
-			Paths:        []string{"examples/applications/cni/calico"},
-			ClusterProxy: bootstrapClusterProxy,
-			ClusterSelectors: []*metav1.LabelSelector{{
-				MatchLabels: map[string]string{
-					"cni": "calico",
-				},
-			}},
+			Name:            "azure-cni",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/applications/cni/calico"},
+			ClusterProxy:    bootstrapClusterProxy,
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{

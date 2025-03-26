@@ -25,6 +25,12 @@ var (
 	//go:embed clusterclasses/azure/clusterclass-aks-example.yaml
 	CAPIAzureAKSClusterclass []byte
 
-	//go:embed clusterclasses/azure/clusterclass-example.yaml
+	//go:embed clusterclasses/azure/clusterclass-rke2-example.yaml
 	CAPIAzureRKE2Clusterclass []byte
+
+	//go:embed applications/ccm/azure/helm-chart.yaml
+	CAAPFAzureCCMHelmApp []byte
+
+	//go:embed applications/cni/calico/helm-chart.yaml
+	CAAPFCalicoCNIHelmApp []byte
 )
