@@ -3,7 +3,7 @@
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
 metadata:
-  name: rancher-fleet
+  name: fleet
   namespace: '{{ .Values.rancherTurtles.namespace }}'
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
