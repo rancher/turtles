@@ -233,7 +233,6 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
 		}
-
 	})
 })
 
@@ -369,7 +368,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel), func() {
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -392,20 +391,44 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster functionali
 			},
 		})
 
+		// Add the needed ClusterClass
+		topologyNamespace := "creategitops-vsphere-kubeadm"
+		err := framework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
+
+		By("Applying Vsphere ClusterClasses")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:            "vsphere-cluster-classes-kubeadm",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/clusterclasses/vsphere"},
+			ClusterProxy:    bootstrapClusterProxy,
+		})
+
+		By("Applying Calico CNI")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:            "vsphere-cni",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/applications/cni/calico"},
+			ClusterProxy:    bootstrapClusterProxy,
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                 e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterTemplate:           e2e.CAPIvSphereKubeadm,
-			ClusterName:               "cluster-vsphere-kubeadm",
-			ControlPlaneMachineCount:  ptr.To[int](1),
-			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   gitAddress,
-			LabelNamespace:            true,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
-			DeleteClusterWaitName:     "wait-vsphere-delete",
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
+			ClusterName:                    "cluster-vsphere-kubeadm",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			GitAddr:                        gitAddress,
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
+			DeleteClusterWaitName:          "wait-vsphere-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
 			AdditionalTemplateVariables: map[string]string{
-				"NAMESPACE":             "default",
 				"VIP_NETWORK_INTERFACE": "",
 			},
 		}
