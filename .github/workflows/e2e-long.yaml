@@ -29,8 +29,8 @@ jobs:
       run_azure_janitor: true
       artifact_name: artifacts_import_gitops_v3
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-      skip_resource_cleanup: ${{ inputs.skip_resource_cleanup }}
-      skip_deletion_test: ${{ inputs.skip_deletion_test }}
+      skip_resource_cleanup: ${{ inputs.skip_resource_cleanup != '' && inputs.skip_resource_cleanup || false }}
+      skip_deletion_test: ${{ inputs.skip_deletion_test != '' && inputs.skip_deletion_test || false }}
     secrets: inherit
   e2e_v2prov:
     needs: publish_e2e_image
