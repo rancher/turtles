@@ -33,4 +33,7 @@ var (
 
 	//go:embed applications/cni/calico/helm-chart.yaml
 	CAAPFCalicoCNIHelmApp []byte
+
+	//go:embed clusterclasses/vsphere/clusterclass-kubeadm-example.yaml
+	CAPIVsphereKubeadmClusterclass []byte
 )
