@@ -121,26 +121,6 @@ jobs:
         with:
           name: artifacts_${{ inputs.artifact_name }}
           path: _artifacts
-      - name: Cleanup Azure Resources
-        if: ${{ inputs.run_azure_janitor && always() }}
-        uses: rancher/azure-janitor@v0.1.2
-        with:
-          resource-groups: highlander-e2e*
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
-          client-id: ${{ secrets.AZURE_CLIENT_ID}}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID}}
-          commit: true
-      - name: Cleanup GCP Resources
-        if: ${{ inputs.run_gcp_janitor && always() }}
-        uses: rancher/gcp-janitor@v0.1.0
-        with:
-          credentials-json: ${{ secrets.GCP_CREDENTIALS }}
-          zones: ${{ secrets.GCP_ZONE }}
-          project-id: ${{ secrets.GCP_PROJECT }}
-          age-in-hours: 6
-          resource-label-key: ${{ secrets.GCP_LABEL_KEY }}
-          resource-label-value: ${{ secrets.GCP_LABEL_VALUE }}
       - name: Send failed status to slack
         if: failure()
         uses: slackapi/slack-github-action@v2.0.0
