@@ -35,3 +35,5 @@ spec:
         values:
           - azure-rke2-example
           - vsphere-kubeadm-example
+          - docker-kubeadm-example
+          - docker-rke2-example

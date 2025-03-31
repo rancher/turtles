@@ -1,0 +1,139 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: docker-rke2-example
+spec:
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerClusterTemplate
+      name: docker-rke2-clustertemplate
+  controlPlane:
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: RKE2ControlPlaneTemplate
+      name: docker-rke2-control-plane
+    machineInfrastructure:
+      ref:
+        kind: DockerMachineTemplate
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        name: docker-rke2-control-plane
+  workers:
+    machineDeployments:
+      - class: default-worker
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: RKE2ConfigTemplate
+              name: docker-rke2-worker-bootstraptemplate
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: DockerMachineTemplate
+              name: docker-rke2-worker-machinetemplate
+  variables:
+    - name: rke2CNI
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: dockerImage
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+  patches:
+    - name: rke2CNI
+      definitions:
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/serverConfig/cni
+              valueFrom:
+                variable: rke2CNI
+    - name: dockerImage
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: DockerMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom: 
+                variable: dockerImage
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerClusterTemplate
+metadata:
+  name: docker-rke2-clustertemplate
+spec:
+  template:
+    spec:
+      loadBalancer:
+        customHAProxyConfigTemplateRef:
+          name: docker-rke2-lb-config
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: RKE2ControlPlaneTemplate
+metadata:
+  name: docker-rke2-control-plane
+spec:
+  template:
+    spec:
+      rolloutStrategy:
+        rollingUpdate:
+          maxSurge: 1
+        type: RollingUpdate
+      serverConfig:
+        cloudProviderName: external
+        kubeAPIServer:
+          extraArgs:
+          - --anonymous-auth=true
+        disableComponents:
+          pluginComponents:
+          - rke2-ingress-nginx
+          kubernetesComponents:
+          - cloudController
+        etcd:
+          backupConfig:
+            scheduleCron: '*/30 * * * *'
+            retention: "1"
+      agentConfig:
+        nodeAnnotations:
+          test: "true"
+      nodeDrainTimeout: 30s
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-rke2-control-plane
+spec:
+  template:
+    spec:
+      bootstrapTimeout: 15m  
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-rke2-worker-machinetemplate
+spec:
+  template:
+    spec:
+      customImage: kindest/node:v1.31.6
+      bootstrapTimeout: 15m
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: docker-rke2-worker-bootstraptemplate
+spec: {}
