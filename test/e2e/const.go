@@ -108,8 +108,8 @@ var (
 	//go:embed data/cluster-templates/vsphere-kubeadm.yaml
 	CAPIvSphereKubeadm []byte
 
-	//go:embed data/cluster-templates/vsphere-rke2.yaml
-	CAPIvSphereRKE2 []byte
+	//go:embed data/cluster-templates/vsphere-rke2-topology.yaml
+	CAPIvSphereRKE2Topology []byte
 
 	//go:embed data/cni/kindnet.yaml
 	CAPIKindnet []byte
