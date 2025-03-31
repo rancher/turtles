@@ -65,7 +65,6 @@ This will trigger a [release GitHub action](https://github.com/rancher/turtles/a
 
 When the new release is available, we need to notify a list of Slack channels so users and relevant stakeholders can stay up to date with the latest version and changes:
 - SUSE Software Solutions `discuss-rancher-cluster-api`
-- SUSE Software Solutions `team-engs-on-rancher-manager`
 - Rancher Users `cluster-api`
 
 You can use the following notification template and adapt it to the specifics of the release you are announcing:
