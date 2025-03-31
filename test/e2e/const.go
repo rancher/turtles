@@ -87,8 +87,14 @@ var (
 	//go:embed data/cluster-templates/docker-kubeadm.yaml
 	CAPIDockerKubeadm []byte
 
+	//go:embed data/cluster-templates/docker-kubeadm-topology.yaml
+	CAPIDockerKubeadmTopology []byte
+
 	//go:embed data/cluster-templates/docker-rke2.yaml
 	CAPIDockerRKE2 []byte
+
+	//go:embed data/cluster-templates/docker-rke2-topology.yaml
+	CAPIDockerRKE2Topology []byte
 
 	//go:embed data/cluster-templates/aws-eks-mmp.yaml
 	CAPIAwsEKSMMP []byte
