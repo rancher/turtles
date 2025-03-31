@@ -26,7 +26,6 @@ jobs:
     with:
       test_suite: test/e2e/suites/import-gitops-v3
       test_name: Import via GitOps [v3]
-      run_azure_janitor: true
       artifact_name: artifacts_import_gitops_v3
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
       skip_resource_cleanup: ${{ inputs.skip_resource_cleanup != '' && inputs.skip_resource_cleanup || false }}
@@ -38,12 +37,11 @@ jobs:
     with:
       test_suite: test/e2e/suites/v2prov
       test_name: v2 provisioning
-      run_azure_janitor: false
       artifact_name: artifacts_v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
-  clean_e2e_image:
-    if: always()
+  e2e_cleanup:
+    if: ${{ inputs.skip_resource_cleanup == '' || !inputs.skip_resource_cleanup }}
     needs: [e2e_import_gitops_v3, e2e_v2prov]
-    uses: ./.github/workflows/e2e-image-clean.yaml
+    uses: ./.github/workflows/e2e-cleanup.yaml
     secrets: inherit
