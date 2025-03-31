@@ -34,9 +34,13 @@ import (
 )
 
 var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.KubeadmTestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-docker-rke2"
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
@@ -51,8 +55,7 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerKubeadm,
-			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
+			ClusterTemplate:                e2e.CAPIDockerKubeadmTopology,
 			ClusterName:                    "clusterv3-auto-import-kubeadm",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
@@ -65,14 +68,32 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/docker"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "docker-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
 		}
 	})
 })
 
 var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.Rke2TestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-docker-rke2"
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
@@ -87,8 +108,7 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerRKE2,
-			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
+			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
 			ClusterName:                    "clusterv3-auto-import-rke2",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
@@ -101,6 +121,20 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/docker"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "docker-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
 		}
 	})
 })
