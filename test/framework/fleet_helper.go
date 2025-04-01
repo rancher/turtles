@@ -103,7 +103,7 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	Eventually(func() error {
 		Byf("Applying GitRepo: %s", renderedTemplate.String())
 		return Apply(ctx, input.ClusterProxy, renderedTemplate.Bytes())
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to appl GitRepo")
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to apply GitRepo")
 }
 
 // FleetDeleteGitRepoInput represents the input parameters for deleting a Git repository in the fleet.
