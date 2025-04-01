@@ -22,7 +22,7 @@ jobs:
       contents: read
       security-events: write
     name: Scan
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-latest
     steps:
       - name: Docker login
         uses: docker/login-action@v3
