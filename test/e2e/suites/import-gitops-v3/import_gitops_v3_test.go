@@ -21,6 +21,7 @@ package import_gitops_v3
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -394,7 +395,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 
 		// Add the needed ClusterClass
 		topologyNamespace := "creategitops-vsphere-kubeadm"
-		err := framework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
+		err := turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
 
 		By("Applying Vsphere ClusterClasses")
@@ -454,7 +455,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 
 		// Add the needed ClusterClass and ClusterResourceSet
 		topologyNamespace := "creategitops-vsphere-rke2"
-		err := framework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
+		err := turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
 
 		By("Applying vSphere ClusterClasses")
