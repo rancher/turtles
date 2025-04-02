@@ -75,7 +75,7 @@ func (r *UIPluginReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	plugin.SetKind("UIPlugin")
 	plugin.SetAPIVersion("catalog.cattle.io/v1")
 
-	if err := r.Client.Get(ctx, req.NamespacedName, plugin); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, plugin); err != nil {
 		log.Error(err, "Unable to get UIPlugin")
 
 		return ctrl.Result{}, client.IgnoreNotFound(err)

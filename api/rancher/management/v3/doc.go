@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package rancher contains the rancher provisioning.cattle.io/v1 and
+// Package v3 rancher contains the rancher provisioning.cattle.io/v1 and
 // management.cattle.io/v3 API proxy implementations.
 package v3

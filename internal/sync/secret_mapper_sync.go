@@ -289,9 +289,9 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 // Sync updates the credentials secret with required values from rancher manager secret.
 func (s *SecretMapperSync) Sync(ctx context.Context) error {
 	log := log.FromContext(ctx)
-	s.SecretSync.Secret.StringData = map[string]string{}
+	s.Secret.StringData = map[string]string{}
 
-	if err := Into(s.Source.ProviderName(), s.RancherSecret.Data, s.SecretSync.Secret.StringData); err != nil {
+	if err := Into(s.Source.ProviderName(), s.RancherSecret.Data, s.Secret.StringData); err != nil {
 		log.Error(err, "failed to map credential keys")
 
 		conditions.Set(s.Source, conditions.FalseCondition(

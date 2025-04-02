@@ -1,58 +1,57 @@
-# Options for analysis running.
+version: "2"
 run:
   go: "1.23"
   allow-parallel-runners: true
-issues:
-  exclude-files:
-    - ".*_test\\.go$"
-  include:
-    - EXC0012
-    - EXC0014
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - testpackage
-        - gochecknoglobals
-    - path: internal/controllers/import_controller(_v3)?\.go
-      linters:
-        - dupl
-    - path: exp/day2/controllers/.*.go
-      linters:
-        - dupl
-    - text: var-naming
-      linters:
-        - revive
-    - text: ST1003
-      linters: 
-        - stylecheck
-    - linters:
-      - revive
-      text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
-      path: exp/day2/controllers/.*.go
-    - path: exp/day2/controllers/.*.go
-      linters:
-        - unused
-linters-settings:
-  funlen:
-    lines: 110
-    statements: 60
-  lll:
-    line-length: 150
-  goimports:
-    local-prefixes: github.com/rancher/turtles
-  gci:
-    custom-order: true
-    sections:
-      - "standard"
-      - "blank"
-      - "dot"
-      - "default"
-      - "prefix(sigs.k8s.io/cluster-api)"
-      - "prefix(github.com/rancher/turtles)"
-  importas:
-      no-unaliased: true
+linters:
+  default: all
+  disable:
+    - containedctx
+    - cyclop
+    - depguard
+    - err113
+    - exhaustive
+    - exhaustruct
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocritic
+    - godox
+    - ireturn
+    - mnd
+    - nlreturn
+    - nolintlint
+    - nonamedreturns
+    - paralleltest
+    - rowserrcheck
+    - sqlclosecheck
+    - tagliatelle
+    - varnamelen
+    - wastedassign
+    - wrapcheck
+  settings:
+    funlen:
+      lines: 110
+      statements: 60
+    goheader:
+      values:
+        regexp:
+          copyright_regex: 'Copyright © (\d{4})(?: - (\d{4}))? SUSE LLC'
+      template: |-
+        {{copyright_regex}}
+
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    importas:
       alias:
-        # Kubernetes
         - pkg: k8s.io/api/core/v1
           alias: corev1
         - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
@@ -65,22 +64,21 @@ linters-settings:
           alias: utilruntime
         - pkg: k8s.io/client-go/kubernetes/scheme
           alias: clientgoscheme
-       # Rancher Turtles
         - pkg: github.com/rancher/turtles/util/naming
           alias: turtlesnaming
         - pkg: github.com/rancher/turtles/api/rancher/provisioning/v1
           alias: provisioningv1
         - pkg: github.com/rancher/turtles/api/rancher/management/v3
           alias: managementv3
-        # Controller Runtime
         - pkg: sigs.k8s.io/controller-runtime
           alias: ctrl
-        # CAPI
         - pkg: sigs.k8s.io/cluster-api/api/v1beta1
           alias: clusterv1
-  revive:
+      no-unaliased: true
+    lll:
+      line-length: 150
+    revive:
       rules:
-        # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
         - name: blank-imports
         - name: context-as-argument
         - name: context-keys-type
@@ -105,53 +103,70 @@ linters-settings:
         - name: unused-parameter
         - name: unreachable-code
         - name: redefines-builtin-id
-        #
-        # Rules in addition to the recommended configuration above.
-        #
         - name: bool-literal-in-expr
         - name: constant-logical-expr
-  goheader:
-    values:
-      regexp:
-        copyright_regex: "Copyright © (\\d{4})(?: - (\\d{4}))? SUSE LLC"
-    template: |-
-      {{copyright_regex}}
-  
-      Licensed under the Apache License, Version 2.0 (the "License");
-      you may not use this file except in compliance with the License.
-      You may obtain a copy of the License at
-      
-          http://www.apache.org/licenses/LICENSE-2.0
-      
-      Unless required by applicable law or agreed to in writing, software
-      distributed under the License is distributed on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-      See the License for the specific language governing permissions and
-      limitations under the License.
-linters:
-  enable-all: true
-  disable:
-    - nolintlint
-    - tagliatelle
-    - exhaustruct
-    - exhaustive
-    - funlen
-    - wrapcheck
-    - goerr113  
-    - paralleltest
-    - varnamelen
-    - cyclop
-    - gochecknoglobals
-    - gochecknoinits
-    - nonamedreturns
-    - gocritic
-    - nlreturn
-    - mnd
-    - ireturn
-    - depguard
-    - containedctx 
-    - godox
-    # Disabled because of generics
-    - rowserrcheck
-    - sqlclosecheck
-    - wastedassign
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gochecknoglobals
+          - testpackage
+        path: _test\.go
+      - linters:
+          - dupl
+        path: internal/controllers/import_controller(_v3)?\.go
+      - linters:
+          - dupl
+        path: exp/day2/controllers/.*.go
+      - linters:
+          - revive
+        text: var-naming
+      - linters:
+          - staticcheck
+        text: ST1003
+      - linters:
+          - revive
+        path: exp/day2/controllers/.*.go
+        text: 'exported: exported method .*\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported'
+      - linters:
+          - unused
+        path: exp/day2/controllers/.*.go
+      - linters:
+          - revive
+        text: 'package-comments: should have a package comment'
+    paths:
+      - examples/examples.go
+      - .*_test\.go$
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - blank
+        - dot
+        - default
+        - prefix(sigs.k8s.io/cluster-api)
+        - prefix(github.com/rancher/turtles)
+      custom-order: true
+    goimports:
+      local-prefixes:
+        - github.com/rancher/turtles
+  exclusions:
+    generated: lax
+    paths:
+      - .*_test\.go$
+      - third_party$
+      - builtin$
+      - examples$
