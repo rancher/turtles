@@ -74,7 +74,7 @@ func (SecretSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object {
 func (s *SecretSync) Sync(_ context.Context) error {
 	s.SyncObjects()
 
-	s.Source.Spec.ProviderSpec.ConfigSecret = cmp.Or(s.Source.Spec.ProviderSpec.ConfigSecret, &operatorv1.SecretReference{
+	s.Source.Spec.ConfigSecret = cmp.Or(s.Source.Spec.ConfigSecret, &operatorv1.SecretReference{
 		Name: s.Source.Name,
 	})
 
@@ -85,10 +85,10 @@ func (s *SecretSync) Sync(_ context.Context) error {
 // Direction of updates:
 // Spec.Features + Spec.Variables -> Status.Variables -> Secret.
 func (s *SecretSync) SyncObjects() {
-	setVariables(s.DefaultSynchronizer.Source)
-	setFeatures(s.DefaultSynchronizer.Source)
+	setVariables(s.Source)
+	setFeatures(s.Source)
 
-	s.Secret.StringData = s.DefaultSynchronizer.Source.Status.Variables
+	s.Secret.StringData = s.Source.Status.Variables
 }
 
 func setVariables(capiProvider *turtlesv1.CAPIProvider) {

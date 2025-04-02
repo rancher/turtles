@@ -25,9 +25,9 @@ jobs:
         with:
           go-version: '=1.23.0'
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6.5.2
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.64.5
+          version: v2.0.2
           working-directory: ${{matrix.working-directory}}
           args: --timeout=5m0s
           skip-cache: true

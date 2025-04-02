@@ -156,7 +156,7 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 
 	log = log.WithValues("cluster", capiCluster.Name)
 
-	if capiCluster.ObjectMeta.DeletionTimestamp.IsZero() && !turtlesannotations.HasClusterImportAnnotation(capiCluster) &&
+	if capiCluster.DeletionTimestamp.IsZero() && !turtlesannotations.HasClusterImportAnnotation(capiCluster) &&
 		controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
 		log.Info("CAPI cluster is marked for import, adding finalizer")
 
@@ -232,7 +232,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		rancherCluster = &rancherClusterList.Items[0]
 	}
 
-	if rancherCluster != nil && !rancherCluster.ObjectMeta.DeletionTimestamp.IsZero() {
+	if rancherCluster != nil && !rancherCluster.DeletionTimestamp.IsZero() {
 		if err := r.reconcileDelete(ctx, capiCluster); err != nil {
 			log.Error(err, "Removing CAPI Cluster failed, retrying")
 			return ctrl.Result{}, err
@@ -245,7 +245,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		}
 	}
 
-	if !capiCluster.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !capiCluster.DeletionTimestamp.IsZero() {
 		if err := r.deleteDependentRancherCluster(ctx, capiCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error deleting associated managementv3.Cluster resources: %w", err)
 		}

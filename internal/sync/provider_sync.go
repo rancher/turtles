@@ -124,7 +124,7 @@ func (s *ProviderSync) SyncObjects() {
 }
 
 func (s *ProviderSync) syncStatus() {
-	s.DefaultSynchronizer.Source.SetProviderName()
+	s.Source.SetProviderName()
 
 	switch {
 	case conditions.IsTrue(s.Source, operatorv1.ProviderInstalledCondition):

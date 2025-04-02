@@ -76,7 +76,7 @@ func (r *ClusterctlConfigReconciler) SetupWithManager(ctx context.Context, mgr c
 	configMapTemplate := clusterctl.Config()
 	configMapTemplate.Data = nil
 
-	err = r.Client.Patch(ctx, configMapTemplate, client.Apply, []client.PatchOption{
+	err = r.Patch(ctx, configMapTemplate, client.Apply, []client.PatchOption{
 		client.ForceOwnership,
 		client.FieldOwner("clusterctl-controller"),
 	}...)
@@ -113,7 +113,7 @@ func (r *ClusterctlConfigReconciler) Reconcile(ctx context.Context, _ reconcile.
 	configMap := clusterctl.Config()
 	configMap.Data["clusterctl.yaml"] = string(clusterctlYaml)
 
-	if err := r.Client.Patch(ctx, configMap, client.Apply, []client.PatchOption{
+	if err := r.Patch(ctx, configMap, client.Apply, []client.PatchOption{
 		client.ForceOwnership,
 		client.FieldOwner("clusterctlconfig-controller"),
 	}...); err != nil {
