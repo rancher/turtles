@@ -57,8 +57,10 @@ func TestE2E(t *testing.T) {
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
+		e2eConfig := e2e.LoadE2EConfig()
+		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-import-gitops"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-			E2EConfig: e2e.LoadE2EConfig(),
+			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
 		})
 

@@ -1,0 +1,64 @@
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # AWS Credentials
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: eu-west-2
+  # Test image tag to clean
+  TAG: v0.0.1
+
+jobs:
+  e2e-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install eksctl
+        run: |
+          ARCH=amd64
+          PLATFORM=$(uname -s)_$ARCH
+
+          curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+          curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+
+          tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+
+          sudo mv /tmp/eksctl /usr/local/bin
+      - name: Cleanup EKS Resources
+        run: |
+          ./scripts/ekstcl-e2e-cleanup.sh
+      - name: Cleanup Azure Resources
+        if: ${{ always() }}
+        uses: rancher/azure-janitor@v0.1.2
+        with:
+          resource-groups: highlander-e2e*
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+          client-id: ${{ secrets.AZURE_CLIENT_ID}}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET}}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID}}
+          commit: true
+      - name: Cleanup GCP Resources
+        if: ${{ always() }}
+        uses: rancher/gcp-janitor@v0.1.0
+        with:
+          credentials-json: ${{ secrets.GCP_CREDENTIALS }}
+          zones: ${{ secrets.GCP_ZONE }}
+          project-id: ${{ secrets.GCP_PROJECT }}
+          age-in-hours: 6
+          resource-label-key: ${{ secrets.GCP_LABEL_KEY }}
+          resource-label-value: ${{ secrets.GCP_LABEL_VALUE }}
+      - name: Cleanup e2e test image
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE_URL="$(gh api /orgs/rancher/packages/container/turtles-e2e/versions | jq ".[] | select( .metadata.container.tags | contains([\"$TAG\"])) | .url" | sed 's/\"//g')"
+          gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "$IMAGE_URL"

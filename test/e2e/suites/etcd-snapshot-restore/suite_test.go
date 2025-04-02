@@ -52,14 +52,15 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	RunSpecs(t, "rancher-turtles-e2e-import-gitops")
+	RunSpecs(t, "rancher-turtles-e2e-etcd-restore")
 }
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
-
+		e2eConfig := e2e.LoadE2EConfig()
+		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-etcd-restore"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-			E2EConfig: e2e.LoadE2EConfig(),
+			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
 		})
 
