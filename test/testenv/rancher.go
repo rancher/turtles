@@ -212,7 +212,8 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 			Wait: true,
 		}
 		_, err = certManagerChart.Run(map[string]string{
-			"installCRDs": "true",
+			"crds.enabled": "true",
+			"crds.keep":    "true",
 		})
 		Expect(err).ToNot(HaveOccurred())
 	}
