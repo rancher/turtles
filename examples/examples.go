@@ -33,4 +33,7 @@ var (
 
 	//go:embed applications/cni/calico/helm-chart.yaml
 	CAAPFCalicoCNIHelmApp []byte
+
+	//go:embed clusterclasses/vsphere/clusterclass-rke2-example.yaml
+	CAPIVSphereRKE2Clusterclass []byte
 )

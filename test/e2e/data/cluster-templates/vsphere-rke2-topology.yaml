@@ -1,71 +1,50 @@
----
 apiVersion: cluster.x-k8s.io/v1beta1
-kind: Cluster 
+kind: Cluster
 metadata:
-  namespace: ${NAMESPACE}
-  name: ${CLUSTER_NAME}
   labels:
-    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
 spec:
-  clusterNetwork:
-    pods:
-      cidrBlocks:
-      - 10.0.0.0/16
-    serviceDomain: cluster.local
-  controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: RKE2ControlPlane
-    name: ${CLUSTER_NAME}
-  infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: VSphereCluster
-    name: ${CLUSTER_NAME}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: VSphereCluster
-metadata:
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  controlPlaneEndpoint:
-    host: ${CONTROL_PLANE_ENDPOINT_IP}
-    port: 6443
-  identityRef:
-    kind: Secret
-    name: ${CLUSTER_NAME}
-  server: ${VSPHERE_SERVER}
-  thumbprint: ${VSPHERE_TLS_THUMBPRINT}
----
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1 
-kind: RKE2ControlPlane
-metadata:
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  serverConfig:
-    disableComponents:
-      kubernetesComponents:
-        - cloudController
-  files:
-    - path: "/var/lib/rancher/rke2/server/manifests/coredns-config.yaml"
-      owner: "root:root"
-      permissions: "0640"
-      content: |
-        apiVersion: helm.cattle.io/v1
-        kind: HelmChartConfig
-        metadata:
-          name: rke2-coredns
-          namespace: kube-system
-        spec:
-          valuesContent: |-
-            tolerations:
-              - key: "node.cloudprovider.kubernetes.io/uninitialized"
-                value: "true"
-                effect: "NoSchedule"
-    - path: "/var/lib/rancher/rke2/server/manifests/kubevip.yaml"
-      owner: "root:root"
-      permissions: "0640"
-      content: |
+  topology:
+    class: vsphere-rke2-example
+    classNamespace: ${TOPOLOGY_NAMESPACE}
+    version: ${KUBERNETES_VERSION}
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    workers:
+      machineDeployments:
+      - class: vsphere-rke2-example-worker
+        name: md-0
+        replicas: ${WORKER_MACHINE_COUNT}
+        metadata: {}
+    variables:
+    - name: credsSecretName
+      value: '${CLUSTER_NAME}'
+    - name: infraServer
+      value:
+        url: '${VSPHERE_SERVER}'
+        thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+    - name: vsphereDataCenter
+      value: '${VSPHERE_DATACENTER}'
+    - name: vsphereDataStore
+      value: '${VSPHERE_DATASTORE}'
+    - name: vsphereFolder
+      value: '${VSPHERE_FOLDER}'
+    - name: vsphereNetwork
+      value: '${VSPHERE_NETWORK}'
+    - name: vsphereResourcePool
+      value: '${VSPHERE_RESOURCE_POOL}'
+    - name: vsphereServer
+      value: '${VSPHERE_SERVER}'
+    - name: vsphereTemplate
+      value: '${VSPHERE_TEMPLATE}'
+    - name: controlPlaneIpAddr
+      value: '${CONTROL_PLANE_ENDPOINT_IP}'
+    - name: controlPlanePort
+      value: 6443
+    - name: kubeVipPodManifest
+      value: |
         apiVersion: v1
         kind: ServiceAccount
         metadata:
@@ -155,142 +134,27 @@ spec:
               path: /etc/rancher/rke2/rke2.yaml
               type: File
             name: kubeconfig
-  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-  machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: VSphereMachineTemplate
-      name: vsphere-controlplane
-    nodeDrainTimeout: 2m
-  preRKE2Commands:
-    - sleep 30 #fix to give OS time to become ready
-  version: ${RKE2_VERSION}
-  agentConfig:
-    additionalUserData:
-      config: |
-        users:
-          - name: capv
-            sudo: ALL=(ALL) NOPASSWD:ALL
-            ssh-authorized-keys:
-              - '${VSPHERE_SSH_AUTHORIZED_KEY}'     
-    kubelet:
-      extraArgs:
-      - --cloud-provider=external
-  registrationMethod: "internal-first"
-  rolloutStrategy:
-    type: "RollingUpdate"
-    rollingUpdate:
-      maxSurge: 1
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: VSphereMachineTemplate
+apiVersion: v1
+kind: Secret
 metadata:
-  name: vsphere-controlplane
-  namespace: ${NAMESPACE}
-spec:
-  template:
-    spec:
-      cloneMode: linkedClone
-      datacenter: ${VSPHERE_DATACENTER}
-      datastore: ${VSPHERE_DATASTORE}
-      diskGiB: 25
-      folder: ${VSPHERE_FOLDER}
-      memoryMiB: 8192
-      network:
-        devices:
-        - dhcp4: true
-          networkName: ${VSPHERE_NETWORK}
-      numCPUs: 2
-      os: Linux
-      resourcePool: "${VSPHERE_RESOURCE_POOL}"
-      server: ${VSPHERE_SERVER}
-      storagePolicyName: ""
-      template: ${VSPHERE_TEMPLATE}
-      thumbprint: ${VSPHERE_TLS_THUMBPRINT}
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
-metadata:
-  labels:
-    cluster.x-k8s.io/cluster-name: ${NAMESPACE}
-  name: worker-md-0
-  namespace: ${NAMESPACE}
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: {}
-  template:
-    metadata:
-      labels:
-        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
-    spec:
-      version: ${RKE2_VERSION}
-      clusterName: ${CLUSTER_NAME}
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: RKE2ConfigTemplate
-          name: rke2-agent
-          namespace: ${NAMESPACE}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: VSphereMachineTemplate
-        name: vsphere-worker
-        namespace: ${NAMESPACE}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: RKE2ConfigTemplate
-metadata:
-  namespace: ${NAMESPACE}
-  name: rke2-agent
-spec: 
-  template:
-    spec:
-      preRKE2Commands:
-        - sleep 30 # fix to give OS time to become ready
-      agentConfig:
-        kubelet:
-          extraArgs:
-            - "--cloud-provider=external"
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: VSphereMachineTemplate
-metadata:
-  name: vsphere-worker
-  namespace: ${NAMESPACE}
-spec:
-  template:
-    spec:
-      cloneMode: linkedClone
-      datacenter: ${VSPHERE_DATACENTER}
-      datastore: ${VSPHERE_DATASTORE}
-      diskGiB: 25
-      folder: ${VSPHERE_FOLDER}
-      memoryMiB: 8192
-      network:
-        devices:
-        - dhcp4: true
-          networkName: ${VSPHERE_NETWORK}
-      numCPUs: 2
-      os: Linux
-      resourcePool: "${VSPHERE_RESOURCE_POOL}"
-      server: ${VSPHERE_SERVER}
-      storagePolicyName: ""
-      template: ${VSPHERE_TEMPLATE}
-      thumbprint: ${VSPHERE_TLS_THUMBPRINT}
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+stringData:
+  password: '${VSPHERE_PASSWORD}'
+  username: '${VSPHERE_USERNAME}'
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
   labels:
-    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
-  name: ${CLUSTER_NAME}-crs-0
-  namespace: ${NAMESPACE}
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}-crs-0'
+  namespace: '${NAMESPACE}'
 spec:
   clusterSelector:
     matchLabels:
-      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
   - kind: Secret
     name: vsphere-config-secret
@@ -304,17 +168,8 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
-stringData:
-  password: "${VSPHERE_PASSWORD}"
-  username: "${VSPHERE_USERNAME}"
----
-apiVersion: v1
-kind: Secret
-metadata:
   name: vsphere-config-secret
-  namespace: ${NAMESPACE}
+  namespace: '${NAMESPACE}'
 stringData:
   data: |-
     apiVersion: v1
@@ -1185,13 +1040,13 @@ data:
 kind: ConfigMap
 metadata:
   name: csi-manifests
-  namespace: ${NAMESPACE}
+  namespace: '${NAMESPACE}'
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: cloud-provider-vsphere-credentials
-  namespace: ${NAMESPACE}
+  namespace: '${NAMESPACE}'
 stringData:
   data: |-
     apiVersion: v1
@@ -1372,7 +1227,7 @@ data:
           priorityClassName: system-node-critical
           containers:
           - name: vsphere-cpi
-            image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${CPI_IMAGE_K8S_VERSION}
+            image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.31.1
             imagePullPolicy: IfNotPresent
             args:
               - --cloud-provider=vsphere
@@ -1448,4 +1303,4 @@ data:
 kind: ConfigMap
 metadata:
   name: cpi-manifests
-  namespace: ${NAMESPACE}
+  namespace: '${NAMESPACE}'

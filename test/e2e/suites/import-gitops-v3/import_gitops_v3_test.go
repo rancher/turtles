@@ -435,20 +435,36 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			},
 		})
 
+		// Add the needed ClusterClass and ClusterResourceSet
+		topologyNamespace := "creategitops-vsphere-rke2"
+		err := framework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
+
+		By("Applying vSphere ClusterClasses")
+		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
+			Name:            "vsphere-cluster-classes",
+			TargetNamespace: topologyNamespace,
+			Paths:           []string{"examples/clusterclasses/vsphere"},
+			ClusterProxy:    bootstrapClusterProxy,
+		})
+
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                 e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterTemplate:           e2e.CAPIvSphereRKE2,
-			ClusterName:               "cluster-vsphere-rke2",
-			ControlPlaneMachineCount:  ptr.To[int](1),
-			WorkerMachineCount:        ptr.To[int](1),
-			GitAddr:                   gitAddress,
-			LabelNamespace:            true,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
-			DeleteClusterWaitName:     "wait-vsphere-delete",
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIvSphereRKE2Topology,
+			TopologyNamespace:              topologyNamespace,
+			ClusterName:                    "cluster-vsphere-rke2",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			GitAddr:                        gitAddress,
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
+			DeleteClusterWaitName:          "wait-vsphere-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
 			AdditionalTemplateVariables: map[string]string{
-				"NAMESPACE":             "default",
 				"VIP_NETWORK_INTERFACE": "",
 			},
 		}
