@@ -36,4 +36,7 @@ var (
 
 	//go:embed clusterclasses/vsphere/clusterclass-rke2-example.yaml
 	CAPIVSphereRKE2Clusterclass []byte
+
+	//go:embed clusterclasses/vsphere/clusterclass-kubeadm-example.yaml
+	CAPIVsphereKubeadmClusterclass []byte
 )
