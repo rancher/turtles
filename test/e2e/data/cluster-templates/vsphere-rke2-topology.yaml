@@ -9,7 +9,7 @@ spec:
   topology:
     class: vsphere-rke2-example
     classNamespace: ${TOPOLOGY_NAMESPACE}
-    version: ${KUBERNETES_VERSION}
+    version: ${RKE2_VERSION}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     workers:
