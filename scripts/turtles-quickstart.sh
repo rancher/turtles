@@ -17,7 +17,7 @@
 # Exit if a command fails
 set -e
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.10.2}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.11.0-rc7}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 RANCHER_CLUSTER_NAME=${RANCHER_CLUSTER_NAME:-rancher-cluster}
 RANCHER_TURTLES_VERSION=${RANCHER_TURTLES_VERSION:-v0.18.0}
@@ -241,6 +241,9 @@ EOF
 
     show_step "Install Rancher ${RANCHER_VERSION} on ${RANCHER_CLUSTER_NAME}"
 
+    docker pull $RANCHER_IMAGE
+    kind load docker-image $RANCHER_IMAGE --name $RANCHER_CLUSTER_NAME
+
     helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
     helm repo update
     helm install rancher rancher-latest/rancher \
@@ -308,7 +311,6 @@ helm install rancher-turtles turtles/rancher-turtles --version ${RANCHER_TURTLES
     -n rancher-turtles-system \
     --set rancherTurtles.managerArguments={--insecure-skip-verify} \
     --set turtlesUI.enabled=true \
-    --set turtlesUI.version=0.7.0 \
     --dependency-update \
     --create-namespace --wait \
     --timeout 180s
