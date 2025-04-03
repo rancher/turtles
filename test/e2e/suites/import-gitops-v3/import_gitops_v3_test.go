@@ -444,7 +444,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			CAPIProvidersSecretsYAML: [][]byte{
 				e2e.VSphereProviderSecret,
 			},
-			CAPIProvidersYAML: [][]byte{e2e.CapvProvider},
+			CAPIProvidersYAML: [][]byte{e2e.CapvProvider, e2e.CapiProviders},
 			WaitForDeployments: []testenv.NamespaceName{
 				{
 					Name:      "capv-controller-manager",
