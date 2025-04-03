@@ -1,0 +1,36 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmApp
+metadata:
+  name: calico-cni-aws
+spec:
+  helm:
+    releaseName: projectcalico
+    repo: https://docs.tigera.io/calico/charts
+    chart: tigera-operator
+    templateValues:
+      installation: |-
+        cni:
+          type: Calico
+        calicoNetwork:
+          bgp: Enabled
+          mtu: 1440
+          ipPools:
+            ${- range $cidr := .ClusterValues.Cluster.spec.clusterNetwork.pods.cidrBlocks }
+            - cidr: "${ $cidr }"
+            ${- end}
+  diff:
+    comparePatches:
+    - apiVersion: operator.tigera.io/v1
+      kind: Installation
+      name: default
+      operations:
+      - {"op":"remove", "path":"/spec/kubernetesProvider"}
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cni: calico
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values:
+          - aws-kubeadm-example
