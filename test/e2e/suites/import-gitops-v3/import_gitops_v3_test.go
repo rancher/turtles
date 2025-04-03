@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.KubeadmTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -71,7 +71,7 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 	})
 })
 
-var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel), func() {
+var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.Rke2TestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -164,7 +164,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 	})
 })
 
-var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
 	var (
 		topologyNamespace string
 	)
@@ -281,7 +281,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -370,7 +370,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel), func() {
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -430,7 +430,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 	})
 })
 
-var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel), func() {
+var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -444,7 +444,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			CAPIProvidersSecretsYAML: [][]byte{
 				e2e.VSphereProviderSecret,
 			},
-			CAPIProvidersYAML: [][]byte{e2e.CapvProvider},
+			CAPIProvidersYAML: [][]byte{e2e.CapvProvider, e2e.CapiProviders},
 			WaitForDeployments: []testenv.NamespaceName{
 				{
 					Name:      "capv-controller-manager",

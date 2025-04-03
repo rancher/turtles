@@ -211,6 +211,8 @@ const (
 	FullTestLabel    = "full"
 	DontRunLabel     = "dontrun"
 	VsphereTestLabel = "vsphere"
+	KubeadmTestLabel = "kubeadm"
+	Rke2TestLabel    = "rke2"
 
 	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
 	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
