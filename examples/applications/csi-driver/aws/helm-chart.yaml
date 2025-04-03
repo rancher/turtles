@@ -1,0 +1,21 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmApp
+metadata:
+  name: aws-csi-driver
+spec:
+  helm:
+    releaseName: aws-ebs-csi-driver
+    repo: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+    chart: aws-ebs-csi-driver
+    templateValues:
+      node: |-
+        hostNetwork: true
+  insecureSkipTLSVerify: true
+  targets:
+  - clusterSelector:
+      matchLabels:
+        csi: aws-ebs-csi-driver
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values: [aws-kubeadm-example]
