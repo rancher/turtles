@@ -1,0 +1,20 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmApp
+metadata:
+  name: aws-ccm
+spec:
+  helm:
+    releaseName: aws-cloud-controller-manager
+    repo: https://kubernetes.github.io/cloud-provider-aws
+    chart: aws-cloud-controller-manager
+    templateValues:
+      hostNetworking: true
+  insecureSkipTLSVerify: true
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cloud-provider: aws
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values: [aws-kubeadm-example]
