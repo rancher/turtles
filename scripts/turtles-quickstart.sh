@@ -394,6 +394,7 @@ EOF
     kubectl create namespace capi-clusters
 
     export CLUSTER_NAME=${CAPI_CLUSTER_NAME}
+    export CLUSTER_CLASS_NAME=docker-cc
     export NAMESPACE=capi-clusters
     export CONTROL_PLANE_MACHINE_COUNT=1
     export WORKER_MACHINE_COUNT=1
