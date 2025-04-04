@@ -31,8 +31,6 @@ import (
 	"github.com/rancher/turtles/test/e2e/specs"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.KubeadmTestLabel), func() {
@@ -224,14 +222,9 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 					TargetNamespace: topologyNamespace,
 				},
 				{
-					Name:         "azure-cni",
-					Paths:        []string{"examples/applications/cni/calico"},
-					ClusterProxy: bootstrapClusterProxy,
-					ClusterSelectors: []*metav1.LabelSelector{{
-						MatchLabels: map[string]string{
-							"cni": "calico",
-						},
-					}},
+					Name:            "azure-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
 			},
