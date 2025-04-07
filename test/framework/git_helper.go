@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -161,7 +162,16 @@ func defaultToCurrentGitRepo(input *FleetCreateGitRepoInput) {
 	// Find origin remote
 	for _, remote := range remotes {
 		if remote.Config().Name == "origin" {
-			input.Repo = remote.Config().URLs[0]
+			sshURL := remote.Config().URLs[0]
+
+			httpURL := sshURL
+			if strings.HasPrefix(sshURL, "git@") {
+				parts := strings.SplitN(strings.TrimPrefix(sshURL, "git@"), ":", 2)
+				if len(parts) == 2 {
+					httpURL = fmt.Sprintf("https://%s/%s", parts[0], parts[1])
+				}
+			}
+			input.Repo = httpURL
 
 			// Get the current branch
 			head, err := repo.Head()

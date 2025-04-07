@@ -1293,18 +1293,3 @@ kind: ConfigMap
 metadata:
   name: cpi-manifests
   namespace: '${NAMESPACE}'
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: crs-cni
-  namespace: ${NAMESPACE}
-spec:
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  resources:
-  - kind: ConfigMap
-    name: calico-cni
-  strategy: ApplyOnce
----

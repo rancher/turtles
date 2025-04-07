@@ -364,9 +364,15 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 })
 
 var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
+	var (
+		topologyNamespace string
+	)
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-vsphere-kubeadm"
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
@@ -384,19 +390,6 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 					Namespace: "capv-system",
 				},
 			},
-		})
-
-		// Add the needed ClusterClass
-		topologyNamespace := "creategitops-vsphere-kubeadm"
-		err := turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
-		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
-
-		By("Applying Vsphere ClusterClasses")
-		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:            "vsphere-cluster-classes-kubeadm",
-			TargetNamespace: topologyNamespace,
-			Paths:           []string{"examples/clusterclasses/vsphere"},
-			ClusterProxy:    bootstrapClusterProxy,
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
@@ -418,6 +411,20 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			TopologyNamespace:              topologyNamespace,
 			AdditionalTemplateVariables: map[string]string{
 				"VIP_NETWORK_INTERFACE": "",
+			},
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "vsphere-cluster-classes-kubeadm",
+					TargetNamespace: topologyNamespace,
+					Paths:           []string{"examples/clusterclasses/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+				},
+				{
+					Name:            "vsphere-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})
