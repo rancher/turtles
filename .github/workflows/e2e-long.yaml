@@ -4,15 +4,6 @@ on:
   schedule:
     - cron: "0 0 1/2 * *"
   workflow_dispatch:
-    inputs:
-      skip_resource_cleanup:
-        description: Skip Management Cluster and Charts Cleanup
-        default: false
-        type: boolean
-      skip_deletion_test:
-        description: Skip deleting git repo and cluster tests
-        default: false
-        type: boolean
 
 concurrency: ci_e2e_tests
 
@@ -28,8 +19,6 @@ jobs:
       test_name: Import via GitOps [v3]
       artifact_name: artifacts_import_gitops_v3
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-      skip_resource_cleanup: ${{ inputs.skip_resource_cleanup != '' && inputs.skip_resource_cleanup || false }}
-      skip_deletion_test: ${{ inputs.skip_deletion_test != '' && inputs.skip_deletion_test || false }}
     secrets: inherit
   e2e_v2prov:
     needs: publish_e2e_image
@@ -41,7 +30,7 @@ jobs:
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_cleanup:
-    if: ${{ inputs.skip_resource_cleanup == '' || !inputs.skip_resource_cleanup }}
+    if: always()
     needs: [e2e_import_gitops_v3, e2e_v2prov]
     uses: ./.github/workflows/e2e-cleanup.yaml
     secrets: inherit
