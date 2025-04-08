@@ -425,6 +425,18 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
+				{
+					Name:            "vsphere-cpi",
+					Paths:           []string{"examples/applications/ccm/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-csi",
+					Paths:           []string{"examples/applications/csi/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})

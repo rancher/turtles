@@ -1,0 +1,22 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmApp
+metadata:
+  name: vsphere-ccm
+spec:
+  defaultNamespace: kube-system
+  helm:
+    releaseName: vsphere-cpi
+    repo: https://kubernetes.github.io/cloud-provider-vsphere
+    chart: vsphere-cpi
+    templateValues:
+      config: |-
+        enabled: false
+  insecureSkipTLSVerify: true
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cloud-provider: vsphere
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values: [vsphere-kubeadm-example]

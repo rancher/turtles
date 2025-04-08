@@ -29,3 +29,9 @@ spec:
   - clusterSelector:
       matchLabels:
         cni: calico
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values:
+          - azure-rke2-example
+          - vsphere-kubeadm-example

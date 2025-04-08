@@ -39,4 +39,7 @@ var (
 
 	//go:embed clusterclasses/vsphere/clusterclass-kubeadm-example.yaml
 	CAPIVsphereKubeadmClusterclass []byte
+
+	//go:embed applications/ccm/vsphere/helm-chart.yaml
+	CAPIVsphereCPIHelmApp []byte
 )
