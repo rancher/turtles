@@ -47,8 +47,6 @@ spec:
           type: string
           enum:
             - australiaeast
-            - eastus
-            - eastus2
             - francecentral
             - germanywestcentral
             - northcentralus
