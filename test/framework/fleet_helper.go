@@ -46,6 +46,9 @@ type FleetCreateGitRepoInput struct {
 	// TargetNamespace is the namespace in which the Git repository will apply its content.
 	TargetNamespace string
 
+	// TargetClusterNamespace is defining git repo to use cluster namespace as a target namespace by default.
+	TargetClusterNamespace bool
+
 	// Repo is the URL of the Git repository.
 	Repo string
 
