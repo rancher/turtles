@@ -151,6 +151,16 @@ func defaultToCurrentGitRepo(input *FleetCreateGitRepoInput) {
 		return
 	}
 
+	if input.SourceRepo != "" && input.SourceBranch != "" {
+		input.Repo = input.SourceRepo
+		input.Branch = input.SourceBranch
+
+		// Unset secret name to use public repository
+		input.ClientSecretName = ""
+
+		return
+	}
+
 	// Open the current repository
 	repo, err := git.PlainOpen(cmp.Or(os.Getenv("ROOT_DIR"), "."))
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to open git repo: %w", err))

@@ -76,6 +76,10 @@ type ETCDSnapshotRestoreInput struct {
 
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool `env:"SKIP_DELETION_TEST"`
+
+	// AdditionalFleetGitRepos specifies additional FleetGitRepos to be created before the main GitRepo.
+	// This is useful for setting up resources like cluster classes/cni/cpi that some tests require.
+	AdditionalFleetGitRepos []turtlesframework.FleetCreateGitRepoInput
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -172,6 +176,14 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 		workerMachineCount := 1
 		if input.WorkerMachineCount != nil {
 			workerMachineCount = *input.WorkerMachineCount
+		}
+
+		for _, additionalRepo := range input.AdditionalFleetGitRepos {
+			if additionalRepo.TargetClusterNamespace {
+				additionalRepo.TargetNamespace = namespace.Name
+			}
+
+			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
 		}
 
 		turtlesframework.AddLabelsToNamespace(ctx, turtlesframework.AddLabelsToNamespaceInput{ // Set import label to trigger fleet installation

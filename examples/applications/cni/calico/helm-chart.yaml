@@ -35,6 +35,9 @@ spec:
         operator: In
         values:
           - azure-rke2-example
+          - cluster-ec2-rke2
+          - cluster-ec2
           - vsphere-kubeadm-example
           - docker-kubeadm-example
           - docker-rke2-example
+          - etcd-snapshot-restore

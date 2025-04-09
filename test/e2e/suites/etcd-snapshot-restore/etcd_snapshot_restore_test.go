@@ -28,6 +28,7 @@ import (
 
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the cluster", Label(e2e.ShortTestLabel), func() {
@@ -38,10 +39,17 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 
 	specs.ETCDSnapshotRestore(ctx, func() specs.ETCDSnapshotRestoreInput {
 		return specs.ETCDSnapshotRestoreInput{
-			E2EConfig:                   e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:       bootstrapClusterProxy,
-			ClusterTemplate:             e2e.CAPIDockerRKE2,
-			AdditionalTemplates:         [][]byte{e2e.CAPIKindnet},
+			E2EConfig:             e2e.LoadE2EConfig(),
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ClusterTemplate:       e2e.CAPIDockerRKE2,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:                   "etcd-snapshot-restore-calico",
+					Paths:                  []string{"examples/applications/cni/calico"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
+				},
+			},
 			ClusterName:                 "etcd-snapshot-restore",
 			ControlPlaneMachineCount:    ptr.To[int](1),
 			WorkerMachineCount:          ptr.To[int](0),

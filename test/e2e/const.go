@@ -117,17 +117,8 @@ var (
 	//go:embed data/cluster-templates/vsphere-rke2-topology.yaml
 	CAPIvSphereRKE2Topology []byte
 
-	//go:embed data/cni/kindnet.yaml
-	CAPIKindnet []byte
-
-	//go:embed data/cni/calico.yaml
-	CAPICalico []byte
-
 	//go:embed data/cpi-csi/aws.yaml
 	CAPIAWSCPICSI []byte
-
-	//go:embed data/cluster-api-addon-provider-fleet/host-network-patch.yaml
-	AddonProviderFleetHostNetworkPatch []byte
 
 	//go:embed data/gitea/ingress.yaml
 	GiteaIngress []byte
