@@ -200,6 +200,7 @@ metadata:
 spec:
   template:
     spec:
+      registrationMethod: internal-first
       rolloutStrategy:
         type: "RollingUpdate"
         rollingUpdate:
