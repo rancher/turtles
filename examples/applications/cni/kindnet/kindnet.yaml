@@ -2,7 +2,7 @@
 kind: Bundle
 apiVersion: fleet.cattle.io/v1alpha1
 metadata:
-  name: kindnet-cni-${CLUSTER_NAME}
+  name: kindnet-cni
 spec:
   resources:
   # List of all resources that will be deployed

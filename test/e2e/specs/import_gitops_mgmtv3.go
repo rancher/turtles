@@ -229,6 +229,10 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		}
 
 		for _, additionalRepo := range input.AdditionalFleetGitRepos {
+			if additionalRepo.TargetClusterNamespace {
+				additionalRepo.TargetNamespace = namespace.Name
+			}
+
 			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
 		}
 

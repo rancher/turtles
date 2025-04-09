@@ -183,6 +183,14 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			workerMachineCount = *input.WorkerMachineCount
 		}
 
+		for _, additionalRepo := range input.AdditionalFleetGitRepos {
+			if additionalRepo.TargetClusterNamespace {
+				additionalRepo.TargetNamespace = namespace.Name
+			}
+
+			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+		}
+
 		turtlesframework.AddLabelsToNamespace(ctx, turtlesframework.AddLabelsToNamespaceInput{ // Set import label to trigger fleet installation
 			ClusterProxy: input.BootstrapClusterProxy,
 			Name:         namespace.Name,
