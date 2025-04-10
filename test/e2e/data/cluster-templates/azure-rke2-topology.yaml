@@ -44,6 +44,8 @@ spec:
       value: highlander-e2e-azure-rke2
     - name: azureClusterIdentityName
       value: cluster-identity
+    - name: registrationMethod
+      value: internal-first
     version: ${KUBERNETES_VERSION}+rke2r1
     workers:
       machineDeployments:
