@@ -337,6 +337,28 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		By("Running checks on Rancher cluster")
 		validateRancherCluster()
 
+		By("Waiting for the CAPI Cluster to be Ready")
+		Eventually(func() error {
+			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
+				return fmt.Errorf("getting Cluster: %w", err)
+			}
+
+			readyCondition := conditions.Get(capiCluster, clusterv1.ReadyCondition)
+			if readyCondition == nil {
+				return fmt.Errorf("Cluster Ready condition is not found")
+			}
+
+			switch readyCondition.Status {
+			case corev1.ConditionTrue:
+				//Cluster is ready
+				return nil
+			case corev1.ConditionFalse:
+				return fmt.Errorf("Cluster is not Ready")
+			default:
+				return fmt.Errorf("Cluster Ready condition is unknown")
+			}
+		}, capiClusterCreateWait...).Should(Succeed(), "CAPI Cluster should be Ready")
+
 		if input.TestClusterReimport {
 			By("Deleting Rancher cluster record to simulate unimporting the cluster")
 			err := input.BootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
