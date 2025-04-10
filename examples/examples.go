@@ -19,9 +19,6 @@ package examples
 import _ "embed"
 
 var (
-	//go:embed applications/azure/clusterresourceset-cloud-provider.yaml
-	CAPIAzureCPI []byte
-
 	//go:embed clusterclasses/azure/clusterclass-aks-example.yaml
 	CAPIAzureAKSClusterclass []byte
 
