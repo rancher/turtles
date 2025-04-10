@@ -1,0 +1,37 @@
+#apiVersion: fleet.cattle.io/v1alpha1
+#kind: HelmApp
+#metadata:
+#  name: aws-ccm
+#spec:
+#  helm:
+#    releaseName: aws-cloud-controller-manager
+#    repo: https://kubernetes.github.io/cloud-provider-aws
+#    chart: aws-cloud-controller-manager
+#    templateValues:
+#      image: |-
+#        repository: registry.k8s.io/provider-aws/cloud-controller-manager
+#        tag: v1.32.0
+#      tolerations: |
+#        - key: node.cloudprovider.kubernetes.io/uninitialized
+#          value: "true"
+#          effect: NoSchedule
+#        - key: node-role.kubernetes.io/control-plane
+#          effect: NoSchedule
+#      args: |-
+#        - --v=2
+#        - --cloud-provider=aws
+#        - --use-service-account-credentials=true
+#        - --allocate-node-cidrs=false
+#        - --configure-cloud-routes=false
+#      dnsPolicy: "ClusterFirst"
+#      nodeSelector: |-
+#        node-role.kubernetes.io/control-plane: "true"
+#  insecureSkipTLSVerify: true
+#  targets:
+#  - clusterSelector:
+#      matchLabels:
+#        cloud-provider: aws
+#      matchExpressions:
+#      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+#        operator: In
+#        values: [aws-kubeadm-example]
