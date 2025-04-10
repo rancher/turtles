@@ -49,10 +49,17 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerKubeadm,
-			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
+			E2EConfig:             e2e.LoadE2EConfig(),
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ClusterTemplate:       e2e.CAPIDockerKubeadm,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:                   "calico",
+					Paths:                  []string{"examples/applications/cni/calico"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
+				},
+			},
 			ClusterName:                    "clusterv3-auto-import-kubeadm",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
@@ -85,10 +92,17 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerRKE2,
-			AdditionalTemplates:            [][]byte{e2e.CAPIKindnet},
+			E2EConfig:             e2e.LoadE2EConfig(),
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ClusterTemplate:       e2e.CAPIDockerRKE2,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:                   "calico",
+					Paths:                  []string{"examples/applications/cni/calico"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
+				},
+			},
 			ClusterName:                    "clusterv3-auto-import-rke2",
 			ControlPlaneMachineCount:       ptr.To[int](1),
 			WorkerMachineCount:             ptr.To[int](1),
@@ -299,10 +313,18 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsEC2Kubeadm,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico, e2e.CAPIAWSCPICSI},
+			E2EConfig:             e2e.LoadE2EConfig(),
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ClusterTemplate:       e2e.CAPIAwsEC2Kubeadm,
+			AdditionalTemplates:   [][]byte{e2e.CAPIAWSCPICSI},
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:                   "calico",
+					Paths:                  []string{"examples/applications/cni/calico"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
+				},
+			},
 			ClusterName:                    "cluster-ec2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -396,7 +418,6 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico},
 			ClusterName:                    "cluster-vsphere-kubeadm",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
