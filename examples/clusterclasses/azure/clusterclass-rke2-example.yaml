@@ -89,6 +89,20 @@ spec:
           description: "The VM size used by machines."
           type: string
           default: "Standard_D2s_v3"
+    - name: registrationMethod
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "Registration method to use. Defaults to control-plane endpoint (empty string). Immutable once is set."
+          type: string
+          default: ""
+          enum:
+            - internal-first
+            - internal-only-ips
+            - external-only-ips
+            - address
+            - control-plane-endpoint
+            - ""
   patches:
     - name: azureClusterTemplate
       definitions:
@@ -137,6 +151,10 @@ spec:
                     owner: root:root
                     path: /etc/kubernetes/azure.json
                     permissions: "0644"
+            - op: add
+              path: /spec/template/spec/registrationMethod
+              valueFrom:
+                variable: registrationMethod
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
@@ -198,7 +216,6 @@ metadata:
 spec:
   template:
     spec:
-      registrationMethod: internal-first
       rolloutStrategy:
         type: "RollingUpdate"
         rollingUpdate:
