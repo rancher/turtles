@@ -51,6 +51,7 @@ variables:
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   AWS_CONTROL_PLANE_MACHINE_TYPE: "t3.large"
   AWS_NODE_MACHINE_TYPE: "t3.large"
+  AWS_AMI_ID: "ami-0054630107ba40e56" # Public upstream AMI
 
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""

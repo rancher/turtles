@@ -1,0 +1,295 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: aws-rke2-example
+spec:
+  controlPlane:
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: RKE2ControlPlaneTemplate
+      name: rke2-control-plane
+    machineInfrastructure:
+      ref:
+        kind: AWSMachineTemplate
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        name: rke2-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSClusterTemplate
+      name: rke2-cluster
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            name: rke2-worker-bootstraptemplate
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSMachineTemplate
+            name: rke2-worker-machinetemplate
+  variables:
+  - name: region
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+        default: us-east-1
+  - name: sshKeyName
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+        default: default
+  - name: controlPlaneMachineType
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+        default: t3.large
+  - name: workerMachineType
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+        default: t3.large
+  - name: amiID
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: string
+  - name: cni
+    schema:
+      openAPIV3Schema:
+        type: string
+        default: calico
+  patches:
+  - name: awsClusterTemplate
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+      jsonPatches:
+      - op: add
+        path: /spec/template/spec/region
+        valueFrom:
+          variable: region
+      - op: add
+        path: /spec/template/spec/sshKeyName
+        valueFrom:
+          variable: sshKeyName
+  - name: awsMachineTemplateControlPlane
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        matchResources:
+          controlPlane: true
+      jsonPatches:
+      - op: replace
+        path: /spec/template/spec/instanceType
+        valueFrom:
+          variable: controlPlaneMachineType
+      - op: add
+        path: /spec/template/spec/sshKeyName
+        valueFrom:
+          variable: sshKeyName
+      - op: add
+        path: /spec/template/spec/ami/id
+        valueFrom:
+          variable: amiID
+  - name: awsMachineTemplateWorker
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - default-worker
+      jsonPatches:
+      - op: replace
+        path: /spec/template/spec/instanceType
+        valueFrom:
+          variable: workerMachineType
+      - op: add
+        path: /spec/template/spec/sshKeyName
+        valueFrom:
+          variable: sshKeyName
+      - op: add
+        path: /spec/template/spec/ami/id
+        valueFrom:
+          variable: amiID
+  - name: rke2ControlPlaneTemplate
+    definitions:
+    - selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: RKE2ControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+      jsonPatches:
+      - op: add
+        path: /spec/template/spec/serverConfig/cni
+        valueFrom:
+          variable: cni
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSClusterTemplate
+metadata:
+  name: rke2-cluster
+spec:
+  template:
+    spec:
+      bastion:
+        enabled: true
+      controlPlaneLoadBalancer:
+        additionalListeners:
+        - port: 9345
+          protocol: TCP
+        - port: 2379
+          protocol: TCP
+        ingressRules:
+        - description: RKE2 Control Plane
+          fromPort: 9345
+          natGatewaysIPsSource: true
+          protocol: tcp
+          toPort: 9345
+        - cidrBlocks:
+          - 0.0.0.0/0
+          description: Kubernetes API
+          fromPort: 6443
+          protocol: tcp
+          toPort: 6443
+        - description: Etcd
+          fromPort: 2379
+          natGatewaysIPsSource: true
+          protocol: tcp
+          toPort: 2379
+        - description: Etcd peer
+          fromPort: 2380
+          natGatewaysIPsSource: true
+          protocol: tcp
+          toPort: 2380
+        loadBalancerType: nlb
+      network:
+        additionalControlPlaneIngressRules:
+        - description: RKE2 Control Plane additional group
+          fromPort: 9345
+          protocol: tcp
+          sourceSecurityGroupRoles:
+          - node
+          - controlplane
+          - apiserver-lb
+          - lb
+          toPort: 9345
+        - description: Etcd
+          fromPort: 2379
+          natGatewaysIPsSource: true
+          protocol: tcp
+          toPort: 2379
+        - description: Etcd peer
+          fromPort: 2380
+          natGatewaysIPsSource: true
+          protocol: tcp
+          toPort: 2380
+        - description: Calico Typha
+          fromPort: 5473
+          protocol: tcp
+          toPort: 5473
+          sourceSecurityGroupRoles:
+          - node
+          - controlplane
+          - apiserver-lb
+          - lb
+        - description: Calico Typha health check
+          fromPort: 9098
+          protocol: tcp
+          toPort: 9098
+          sourceSecurityGroupRoles:
+          - node
+          - controlplane
+          - apiserver-lb
+          - lb
+        - description: Calico health check
+          fromPort: 9099
+          protocol: tcp
+          toPort: 9099
+          sourceSecurityGroupRoles:
+          - node
+          - controlplane
+          - apiserver-lb
+          - lb
+        vpc:
+          availabilityZoneUsageLimit: 1
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: RKE2ControlPlaneTemplate
+metadata:
+  name: rke2-control-plane
+spec:
+  template:
+    spec:
+      preRKE2Commands:
+      - sudo hostnamectl set-hostname $(curl -s http://169.254.169.254/1.0/meta-data/hostname)
+      agentConfig:
+        kubelet:
+          extraArgs:
+          - --cloud-provider=external
+      serverConfig:
+        cloudProviderName: external
+        etcd:
+          backupConfig:
+            retention: "10"
+            scheduleCron: "*/15 * * * *"
+      rolloutStrategy:
+        type: "RollingUpdate"
+        rollingUpdate:
+          maxSurge: 1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: rke2-control-plane
+spec:
+  template:
+    spec:
+      ami: 
+        id: to_be_replaced
+      iamInstanceProfile: control-plane.cluster-api-provider-aws.sigs.k8s.io
+      instanceType: t3.large
+      rootVolume:
+        size: 50
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: rke2-worker-machinetemplate
+spec:
+  template:
+    spec:
+      ami: 
+        id: to_be_replaced
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      instanceType: t3.large
+      rootVolume:
+        size: 50
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: RKE2ConfigTemplate
+metadata:
+  name: rke2-worker-bootstraptemplate
+spec:
+  template:
+    spec:
+      agentConfig:
+        kubelet:
+          extraArgs:
+          - --cloud-provider=external
+      preRKE2Commands:
+      - sudo hostnamectl set-hostname $(curl -s http://169.254.169.254/1.0/meta-data/hostname)
