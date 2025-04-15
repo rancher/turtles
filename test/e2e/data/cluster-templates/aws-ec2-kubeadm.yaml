@@ -1,6 +1,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
+  annotations:
+    calico.io/aws-ec2: ""
   labels:
     cni: calico
     ccm: external

@@ -11,6 +11,7 @@ spec:
       installation: |-
         cni:
           type: Calico
+        ${- if not (hasKey .ClusterAnnotations "calico.io/aws-ec2") }
         calicoNetwork:
           bgp: Disabled
           mtu: 1350
@@ -18,6 +19,7 @@ spec:
             ${- range $cidr := .ClusterValues.Cluster.spec.clusterNetwork.pods.cidrBlocks }
             - cidr: "${ $cidr }"
               encapsulation: VXLAN${- end}
+        {- end}
   diff:
     comparePatches:
     - apiVersion: operator.tigera.io/v1
