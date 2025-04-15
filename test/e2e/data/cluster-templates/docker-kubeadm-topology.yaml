@@ -5,7 +5,6 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     cni: calico
-    ccm: docker
 spec:
   clusterNetwork:
     pods:
