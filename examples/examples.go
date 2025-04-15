@@ -25,6 +25,9 @@ var (
 	//go:embed clusterclasses/azure/clusterclass-rke2-example.yaml
 	CAPIAzureRKE2Clusterclass []byte
 
+	//go:embed clusterclasses/aws/clusterclass-ec2-rke2-example.yaml
+	CAPIAWSRKE2Clusterclass []byte
+
 	//go:embed applications/ccm/azure/helm-chart.yaml
 	CAAPFAzureCCMHelmApp []byte
 
