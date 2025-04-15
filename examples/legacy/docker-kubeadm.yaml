@@ -1,30 +1,3 @@
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: Cluster
-metadata:
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
-  labels:
-    cni: kindnet
-spec:
-  clusterNetwork:
-    pods:
-      cidrBlocks:
-        - 10.1.0.0/16
-    serviceDomain: cluster.local
-    services:
-      cidrBlocks:
-        - 10.10.0.0/16
-  topology:
-    class: ${CLUSTER_CLASS_NAME}
-    controlPlane:
-      metadata: {}
-      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-    version: ${KUBERNETES_VERSION}
-    workers:
-      machineDeployments:
-        - class: default-worker
-          name: md-0
-          replicas: ${WORKER_MACHINE_COUNT}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
@@ -316,3 +289,31 @@ spec:
     spec:
       joinConfiguration:
         nodeRegistration: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    cni: kindnet
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.1.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.10.0.0/16
+  topology:
+    class: ${CLUSTER_CLASS_NAME}
+    controlPlane:
+      metadata: {}
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    version: ${KUBERNETES_VERSION}
+    workers:
+      machineDeployments:
+        - class: default-worker
+          name: md-0
+          replicas: ${WORKER_MACHINE_COUNT}
