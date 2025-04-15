@@ -12,6 +12,7 @@ env:
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind"
   GINKGO_LABEL_FILTER: "short"
   TAG: v0.0.1
+  SOURCE_REPO: https://github.com/${{ github.event.pull_request.head.repo.full_name }}
 
 jobs:
   e2e:

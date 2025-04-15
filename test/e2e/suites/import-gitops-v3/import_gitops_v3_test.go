@@ -335,10 +335,18 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsEC2Kubeadm,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico, e2e.CAPIAWSCPICSI},
+			E2EConfig:             e2e.LoadE2EConfig(),
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ClusterTemplate:       e2e.CAPIAwsEC2Kubeadm,
+			AdditionalTemplates:   [][]byte{e2e.CAPIAWSCPICSI},
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:                   "calico",
+					Paths:                  []string{"examples/applications/cni/calico"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
+				},
+			},
 			ClusterName:                    "cluster-ec2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -391,7 +399,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEC2RKE2Topology,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico, e2e.CAPIAWSCPICSI},
+			AdditionalTemplates:            [][]byte{e2e.CAPIAWSCPICSI},
 			ClusterName:                    "cluster-ec2-rke2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -410,6 +418,12 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 					Paths:           []string{"examples/clusterclasses/aws"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:                   "calico-aws-ec2-rke2",
+					Paths:                  []string{"examples/applications/cni/calico"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
 				},
 			},
 		}
@@ -491,7 +505,6 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico},
 			ClusterName:                    "cluster-vsphere-kubeadm",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),

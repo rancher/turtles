@@ -6,7 +6,7 @@ metadata:
   annotations:
     cluster-api.cattle.io/upstream-system-agent: "true"
   labels:
-    cni: kindnet
+    cni: calico
 spec:
   clusterNetwork:
     pods:
