@@ -38,37 +38,39 @@ spec:
               value: "true"
             - name: port
               value: "6443"
+            - name: vip_nodename
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: vip_interface
               value: ${VIP_NETWORK_INTERFACE:=""}
             - name: vip_cidr
               value: "32"
+            - name: dns_mode
+              value: first
             - name: cp_enable
               value: "true"
             - name: cp_namespace
               value: kube-system
-            - name: vip_ddns
-              value: "false"
             - name: svc_enable
               value: "true"
             - name: svc_leasename
               value: plndr-svcs-lock
-            - name: svc_election
-              value: "true"
             - name: vip_leaderelection
               value: "true"
             - name: vip_leasename
               value: plndr-cp-lock
             - name: vip_leaseduration
-              value: "15"
+              value: "5"
             - name: vip_renewdeadline
-              value: "10"
+              value: "3"
             - name: vip_retryperiod
-              value: "2"
+              value: "1"
             - name: address
               value: ${CONTROL_PLANE_ENDPOINT_IP}
             - name: prometheus_server
               value: :2112
-            image: ghcr.io/kube-vip/kube-vip:v0.6.4
+            image: ghcr.io/kube-vip/kube-vip:v0.8.10
             imagePullPolicy: IfNotPresent
             name: kube-vip
             resources: {}
@@ -77,6 +79,8 @@ spec:
                 add:
                 - NET_ADMIN
                 - NET_RAW
+                drop:
+                - ALL
             volumeMounts:
             - mountPath: /etc/kubernetes/admin.conf
               name: kubeconfig
@@ -85,13 +89,13 @@ spec:
           hostNetwork: true
           volumes:
           - hostPath:
-              path: /etc/kubernetes/admin.conf
+              path: /etc/kubernetes/super-admin.conf
+              type: File
             name: kubeconfig
           - hostPath:
               path: /etc/kube-vip.hosts
               type: File
             name: etchosts
-        status: {}
     - name: controlPlaneIpAddr
       value: ${CONTROL_PLANE_ENDPOINT_IP}
     - name: controlPlanePort

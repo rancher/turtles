@@ -93,25 +93,43 @@ spec:
           - args:
             - manager
             env:
-            - name: cp_enable
-              value: "true"
-            - name: vip_interface
-              value: eth0
-            - name: address
-              value: ${CONTROL_PLANE_ENDPOINT_IP}
-            - name: port
-              value: "6443"
             - name: vip_arp
               value: "true"
+            - name: port
+              value: "6443"
+            - name: vip_nodename
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: vip_interface
+              value: eth0
+            - name: vip_cidr
+              value: "32"
+            - name: dns_mode
+              value: first
+            - name: cp_enable
+              value: "true"
+            - name: cp_namespace
+              value: kube-system
+            - name: svc_enable
+              value: "true"
+            - name: svc_leasename
+              value: plndr-svcs-lock
             - name: vip_leaderelection
               value: "true"
+            - name: vip_leasename
+              value: plndr-cp-lock
             - name: vip_leaseduration
-              value: "15"
+              value: "5"
             - name: vip_renewdeadline
-              value: "10"
+              value: "3"
             - name: vip_retryperiod
-              value: "2"
-            image: ghcr.io/kube-vip/kube-vip:v0.5.5
+              value: "1"
+            - name: address
+              value: ${CONTROL_PLANE_ENDPOINT_IP}
+            - name: prometheus_server
+              value: :2112
+            image: ghcr.io/kube-vip/kube-vip:v0.8.10
             imagePullPolicy: IfNotPresent
             name: kube-vip
             resources: {}
@@ -120,8 +138,10 @@ spec:
                 add:
                 - NET_ADMIN
                 - NET_RAW
+                drop:
+                - ALL
             volumeMounts:
-            - mountPath: /etc/rancher/rke2/rke2.yaml
+            - mountPath: /etc/kubernetes/admin.conf
               name: kubeconfig
           hostAliases:
           - hostnames:
