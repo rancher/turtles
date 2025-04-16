@@ -1,58 +1,23 @@
 apiVersion: cluster.x-k8s.io/v1beta1
-kind: Cluster
-metadata:
-  labels:
-    cni: calico
-    ccm: external
-    csi: external
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  clusterNetwork:
-    pods:
-      cidrBlocks:
-      - 192.168.0.0/16
-  topology:
-    class: ${CLUSTER_NAME}
-    controlPlane:
-      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-    variables:
-    - name: region
-      value: ${AWS_REGION}
-    - name: sshKeyName
-      value: ${AWS_SSH_KEY_NAME}
-    - name: controlPlaneMachineType
-      value: ${AWS_CONTROL_PLANE_MACHINE_TYPE}
-    - name: workerMachineType
-      value: ${AWS_NODE_MACHINE_TYPE}
-    version: ${KUBERNETES_VERSION}
-    workers:
-      machineDeployments:
-      - class: default-worker
-        name: md-0
-        replicas: ${WORKER_MACHINE_COUNT}
----
-apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
+  name: aws-kubeadm-example
 spec:
   controlPlane:
     ref:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: KubeadmControlPlaneTemplate
-      name: ${CLUSTER_NAME}-control-plane
+      name: aws-kubeadm-example-control-plane
     machineInfrastructure:
       ref:
         kind: AWSMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        name: ${CLUSTER_NAME}-control-plane
+        name: aws-kubeadm-example-control-plane
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSClusterTemplate
-      name: ${CLUSTER_NAME}
+      name: aws-kubeadm-example
   workers:
     machineDeployments:
       - class: default-worker
@@ -61,12 +26,12 @@ spec:
             ref:
               apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
               kind: KubeadmConfigTemplate
-              name: ${CLUSTER_NAME}-worker-bootstraptemplate
+              name: aws-kubeadm-example-worker-bootstraptemplate
           infrastructure:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: AWSMachineTemplate
-              name: ${CLUSTER_NAME}-worker-machinetemplate
+              name: aws-kubeadm-example-worker-machinetemplate
   variables:
     - name: region
       required: true
@@ -160,8 +125,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSClusterTemplate
 metadata:
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
+  name: aws-kubeadm-example
 spec:
   template:
     spec:
@@ -172,8 +136,7 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
-  name: ${CLUSTER_NAME}-control-plane
-  namespace: ${NAMESPACE}
+  name: aws-kubeadm-example-control-plane
 spec:
   template:
     spec:
@@ -199,8 +162,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-control-plane
-  namespace: ${NAMESPACE}
+  name: aws-kubeadm-example-control-plane
 spec:
   template:
     spec:
@@ -213,8 +175,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-worker-machinetemplate
-  namespace: ${NAMESPACE}
+  name: aws-kubeadm-example-worker-machinetemplate
 spec:
   template:
     spec:
@@ -227,8 +188,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: "${CLUSTER_NAME}-worker-bootstraptemplate"
-  namespace: ${NAMESPACE}
+  name: "aws-kubeadm-example-worker-bootstraptemplate"
 spec:
   template:
     spec:
@@ -237,45 +197,3 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
           name: '{{ ds.meta_data.local_hostname }}'
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: crs-cni
-  namespace: ${NAMESPACE}
-spec:
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  resources:
-  - kind: ConfigMap
-    name: calico-cni
-  strategy: ApplyOnce
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: crs-ccm
-  namespace: ${NAMESPACE}
-spec:
-  clusterSelector:
-    matchLabels:
-      ccm: external
-  resources:
-  - kind: ConfigMap
-    name: cloud-controller-manager-addon
-  strategy: ApplyOnce
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: crs-csi
-  namespace: ${NAMESPACE}
-spec:
-  clusterSelector:
-    matchLabels:
-      csi: external
-  resources:
-  - kind: ConfigMap
-    name: aws-ebs-csi-driver-addon
-  strategy: ApplyOnce
