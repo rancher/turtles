@@ -102,6 +102,9 @@ var (
 	//go:embed data/cluster-templates/aws-ec2-rke2-topology.yaml
 	CAPIAwsEC2RKE2Topology []byte
 
+	//go:embed data/cluster-templates/aws-kubeadm-topology.yaml
+	CAPIAwsKubeadmTopology []byte
+
 	//go:embed data/cluster-templates/gcp-gke.yaml
 	CAPIGCPGKE []byte
 
