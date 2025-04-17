@@ -28,20 +28,24 @@ import (
 
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the cluster", Label(e2e.ShortTestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
+
+		topologyNamespace = "creategitops-docker-rke2"
 	})
 
 	specs.ETCDSnapshotRestore(ctx, func() specs.ETCDSnapshotRestoreInput {
 		return specs.ETCDSnapshotRestoreInput{
 			E2EConfig:                   e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:       bootstrapClusterProxy,
-			ClusterTemplate:             e2e.CAPIDockerRKE2,
-			AdditionalTemplates:         [][]byte{e2e.CAPIKindnet},
+			ClusterTemplate:             e2e.CAPIDockerRKE2Topology,
 			ClusterName:                 "etcd-snapshot-restore",
 			ControlPlaneMachineCount:    ptr.To[int](1),
 			WorkerMachineCount:          ptr.To[int](0),
@@ -50,6 +54,21 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 			CAPIClusterSnapshotWaitName: "wait-snapshot",
 			CAPIClusterCreateWaitName:   "wait-snapshot",
 			DeleteClusterWaitName:       "wait-controllers",
+			TopologyNamespace:           topologyNamespace,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/docker"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "docker-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
 		}
 	})
 })
