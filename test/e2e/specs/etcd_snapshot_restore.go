@@ -20,6 +20,7 @@ limitations under the License.
 package specs
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"os"
@@ -76,6 +77,13 @@ type ETCDSnapshotRestoreInput struct {
 
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool `env:"SKIP_DELETION_TEST"`
+
+	// TopologyNamespace is the namespace to use for topology-related resources (e.g., cluster classes).
+	TopologyNamespace string
+
+	// AdditionalFleetGitRepos specifies additional FleetGitRepos to be created before the main GitRepo.
+	// This is useful for setting up resources like cluster classes/cni/cpi that some tests require.
+	AdditionalFleetGitRepos []turtlesframework.FleetCreateGitRepoInput
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -182,6 +190,14 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			},
 		})
 
+		if input.TopologyNamespace != "" {
+			Expect(turtlesframework.CreateNamespace(ctx, input.BootstrapClusterProxy, input.TopologyNamespace)).To(Succeed())
+		}
+
+		for _, additionalRepo := range input.AdditionalFleetGitRepos {
+			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+		}
+
 		By("Create Git repository")
 
 		repoCloneAddr := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
@@ -198,6 +214,7 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 		os.MkdirAll(clustersDir, os.ModePerm)
 
 		additionalVars := map[string]string{
+			"TOPOLOGY_NAMESPACE":          cmp.Or(input.TopologyNamespace, namespace.Name),
 			"CLUSTER_NAME":                input.ClusterName,
 			"WORKER_MACHINE_COUNT":        strconv.Itoa(workerMachineCount),
 			"CONTROL_PLANE_MACHINE_COUNT": strconv.Itoa(controlPlaneMachineCount),
