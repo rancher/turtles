@@ -44,7 +44,6 @@ var (
 
 	setupClusterResult    *testenv.SetupTestClusterResult
 	bootstrapClusterProxy capiframework.ClusterProxy
-	gitAddress            string
 )
 
 func TestE2E(t *testing.T) {
@@ -80,16 +79,9 @@ var _ = SynchronizedBeforeSuite(
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 		})
 
-		giteaResult := testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			ValuesFile:            e2e.GiteaValues,
-			CustomIngressConfig:   e2e.GiteaIngress,
-		})
-
 		data, err := json.Marshal(e2e.Setup{
 			ClusterName:     setupClusterResult.ClusterName,
 			KubeconfigPath:  setupClusterResult.KubeconfigPath,
-			GitAddress:      giteaResult.GitAddress,
 			RancherHostname: rancherHookResult.Hostname,
 		})
 		Expect(err).ToNot(HaveOccurred())
@@ -99,7 +91,6 @@ var _ = SynchronizedBeforeSuite(
 		setup := e2e.Setup{}
 		Expect(json.Unmarshal(sharedData, &setup)).To(Succeed())
 
-		gitAddress = setup.GitAddress
 		hostName = setup.RancherHostname
 
 		bootstrapClusterProxy = capiframework.NewClusterProxy(setup.ClusterName, setup.KubeconfigPath, e2e.InitScheme(), capiframework.WithMachineLogCollector(capiframework.DockerLogCollector{}))
@@ -121,10 +112,6 @@ var _ = SynchronizedAfterSuite(
 			// add a log line about skipping charts uninstallation and cluster cleanup
 			return
 		}
-
-		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-		})
 
 		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,

@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -74,8 +73,6 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 	// If not specified, 1 will be used.
 	WorkerMachineCount *int
 
-	GitAddr string
-
 	SkipCleanup      bool `env:"SKIP_RESOURCE_CLEANUP"`
 	SkipDeletionTest bool `env:"SKIP_DELETION_TEST"`
 
@@ -104,7 +101,6 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		specName              = "creategitops"
 		input                 CreateMgmtV3UsingGitOpsSpecInput
 		namespace             *corev1.Namespace
-		repoName              string
 		cancelWatches         context.CancelFunc
 		capiCluster           *types.NamespacedName
 		rancherKubeconfig     *turtlesframework.RancherGetClusterKubeconfigResult
@@ -181,14 +177,12 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		input = inputGetter()
 		Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
-		Expect(input.GitAddr).ToNot(BeEmpty(), "Invalid argument. input.GitAddr can't be empty when calling %s spec", specName)
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
 		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
-		repoName = e2e.CreateRepoName(specName)
 
 		capiClusterCreateWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.CAPIClusterCreateWaitName)
 		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
@@ -238,22 +232,8 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
 		}
 
-		By("Create Git repository")
-
-		repoCloneAddr := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
-			ServerAddr: input.GitAddr,
-			RepoName:   repoName,
-		})
-		repoDir := turtlesframework.GitCloneRepo(ctx, turtlesframework.GitCloneRepoInput{
-			Address: repoCloneAddr,
-		})
-
-		By("Create fleet repository structure")
-
-		clustersDir := filepath.Join(repoDir, "clusters")
-		os.MkdirAll(clustersDir, os.ModePerm)
-
 		additionalVars := map[string]string{
+			"NAMESPACE":                   namespace.Name,
 			"TOPOLOGY_NAMESPACE":          cmp.Or(input.TopologyNamespace, namespace.Name),
 			"CLUSTER_NAME":                input.ClusterName,
 			"CLUSTER_CLASS_NAME":          fmt.Sprintf("%s-class", input.ClusterName),
@@ -265,44 +245,19 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			additionalVars[k] = v
 		}
 
-		clusterPath := filepath.Join(clustersDir, fmt.Sprintf("%s.yaml", input.ClusterName))
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Template:                      input.ClusterTemplate,
-			OutputFilePath:                clusterPath,
 			AddtionalEnvironmentVariables: additionalVars,
+			Proxy:                         input.BootstrapClusterProxy,
 		})).To(Succeed())
 
-		for n, template := range input.AdditionalTemplates {
-			templatePath := filepath.Join(clustersDir, fmt.Sprintf("%s-template-%d.yaml", input.ClusterName, n))
+		for _, template := range input.AdditionalTemplates {
 			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 				Template:                      template,
-				OutputFilePath:                templatePath,
 				AddtionalEnvironmentVariables: additionalVars,
+				Proxy:                         input.BootstrapClusterProxy,
 			})).To(Succeed())
 		}
-
-		fleetPath := filepath.Join(clustersDir, "fleet.yaml")
-		turtlesframework.FleetCreateFleetFile(ctx, turtlesframework.FleetCreateFleetFileInput{
-			Namespace: namespace.Name,
-			FilePath:  fleetPath,
-		})
-
-		By("Committing changes to fleet repo and pushing")
-
-		turtlesframework.GitCommitAndPush(ctx, turtlesframework.GitCommitAndPushInput{
-			CloneLocation: repoDir,
-			CommitMessage: "ci: add clusters bundle",
-		})
-
-		By("Applying GitRepo")
-
-		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:            repoName,
-			Repo:            repoCloneAddr,
-			FleetGeneration: 1,
-			Paths:           []string{"clusters"},
-			ClusterProxy:    input.BootstrapClusterProxy,
-		})
 
 		By("Waiting for the CAPI cluster to appear")
 		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
@@ -416,13 +371,15 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
 		// If SKIP_RESOURCE_CLEANUP=false, everything must be cleaned up.
 		if input.SkipCleanup && input.SkipDeletionTest {
-			log.FromContext(ctx).Info("Skipping GitRepo and Cluster deletion from Rancher")
+			log.FromContext(ctx).Info("Skipping Cluster deletion from Rancher")
 		} else {
-			By("Deleting GitRepo from Rancher")
-			turtlesframework.FleetDeleteGitRepo(ctx, turtlesframework.FleetDeleteGitRepoInput{
-				Name:         repoName,
-				ClusterProxy: input.BootstrapClusterProxy,
-			})
+			By("Deleting Cluster")
+			Expect(input.BootstrapClusterProxy.GetClient().Delete(ctx, &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      capiCluster.Name,
+					Namespace: capiCluster.Namespace,
+				},
+			})).To(Succeed())
 
 			By("Waiting for the CAPI cluster to be deleted")
 			Eventually(func() error {

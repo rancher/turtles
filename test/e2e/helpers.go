@@ -53,7 +53,6 @@ import (
 type Setup struct {
 	ClusterName     string
 	KubeconfigPath  string
-	GitAddress      string
 	RancherHostname string
 }
 
@@ -67,10 +66,6 @@ func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy frame
 	})
 
 	return namespace, cancelWatches
-}
-
-func CreateRepoName(specName string) string {
-	return fmt.Sprintf("repo-%s-%s", specName, util.RandomString(6))
 }
 
 func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
