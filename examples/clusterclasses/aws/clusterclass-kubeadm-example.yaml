@@ -129,6 +129,21 @@ metadata:
 spec:
   template:
     spec:
+      network:
+          cni:
+            cniIngressRules:
+              - description: BGP
+                fromPort: 179
+                protocol: tcp
+                toPort: 179
+              - description: IP-in-IP
+                fromPort: -1
+                protocol: "4"
+                toPort: 65535
+              - description: Calico Typha
+                fromPort: 5473
+                protocol: tcp
+                toPort: 5473
       controlPlaneLoadBalancer:
         loadBalancerType: nlb
         healthCheckProtocol: HTTPS

@@ -338,7 +338,6 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsKubeadmTopology,
-			AdditionalTemplates:            [][]byte{e2e.CAPICalico},
 			ClusterName:                    "cluster-aws-kubeadm",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -363,8 +362,20 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 					TargetNamespace: topologyNamespace,
 				},
 				{
+					Name:            "aws-cni",
+					Paths:           []string{"examples/applications/cni/aws/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
 					Name:            "aws-ccm",
 					Paths:           []string{"examples/applications/ccm/aws"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "aws-csi",
+					Paths:           []string{"examples/applications/csi/aws"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
