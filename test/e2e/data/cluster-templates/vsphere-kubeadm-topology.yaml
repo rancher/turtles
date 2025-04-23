@@ -139,100 +139,66 @@ stringData:
   password: "${VSPHERE_PASSWORD}"
   username: "${VSPHERE_USERNAME}"
 ---
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
+apiVersion: fleet.cattle.io/v1alpha1
+kind: Bundle
 metadata:
-  labels:
-    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
-  name: ${CLUSTER_NAME}-crs-0
+  name: '${CLUSTER_NAME}-vsphere-cpi'
   namespace: '${NAMESPACE}'
 spec:
-  clusterSelector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
-  - kind: Secret
-    name: vsphere-config-secret
-  - kind: Secret
-    name: cloud-provider-vsphere-credentials
-  - kind: ConfigMap
-    name: cpi-configmap
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: vsphere-config-secret
-  namespace: '${NAMESPACE}'
-stringData:
-  data: |-
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: vsphere-config-secret
-      namespace: vmware-system-csi
-    stringData:
-      csi-vsphere.conf: |+
-        [Global]
-        thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
+  - name: vsphere-cpi-config.yaml
+    content: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: vsphere-config-secret
+        namespace: vmware-system-csi
+      stringData:
+        csi-vsphere.conf: |+
+          [Global]
+          thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
 
-        [VirtualCenter "${VSPHERE_SERVER}"]
-        user = "${VSPHERE_USERNAME}"
-        password = "${VSPHERE_PASSWORD}"
-        datacenters = "${VSPHERE_DATACENTER}"
+          [VirtualCenter "${VSPHERE_SERVER}"]
+          user = "${VSPHERE_USERNAME}"
+          password = "${VSPHERE_PASSWORD}"
+          datacenters = "${VSPHERE_DATACENTER}"
 
-        [Network]
-        public-network = "${VSPHERE_NETWORK}"
-
-    type: Opaque
-type: addons.cluster.x-k8s.io/resource-set
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: cloud-provider-vsphere-credentials
-  namespace: '${NAMESPACE}'
-stringData:
-  data: |-
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      labels:
-        component: cloud-controller-manager
-        vsphere-cpi-infra: secret
-      name: cloud-provider-vsphere-credentials
-      namespace: kube-system
-    stringData:
-      ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
-      ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
-    type: Opaque
-type: addons.cluster.x-k8s.io/resource-set
----
-apiVersion: v1
-data:
-  data: |-
-    ---
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: cloud-config
-      labels:
-        app: "cpi"
-        vsphere-cpi-infra: cloud-config
-        component: cloud-controller-manager
-      namespace: kube-system
-    data:
-      vsphere.conf: |
-        global:
-          port: 443
-          thumbprint: "${VSPHERE_TLS_THUMBPRINT}"
-          secretName: cloud-provider-vsphere-credentials
-          secretNamespace: kube-system
-        vcenter:
-          "${VSPHERE_SERVER}":
-            server: "${VSPHERE_SERVER}"
-            datacenters:
-              - "${VSPHERE_DATACENTER}"
-kind: ConfigMap
-metadata:
-  name: cpi-configmap
-  namespace: '${NAMESPACE}'
+          [Network]
+          public-network = "${VSPHERE_NETWORK}"
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        labels:
+          component: cloud-controller-manager
+          vsphere-cpi-infra: secret
+        name: cloud-provider-vsphere-credentials
+        namespace: kube-system
+      stringData:
+        ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
+        ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
+      type: Opaque
+      ---
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: cloud-config
+        labels:
+          app: "cpi"
+          vsphere-cpi-infra: cloud-config
+          component: cloud-controller-manager
+        namespace: kube-system
+      data:
+        vsphere.conf: |
+          global:
+            port: 443
+            thumbprint: "${VSPHERE_TLS_THUMBPRINT}"
+            secretName: cloud-provider-vsphere-credentials
+            secretNamespace: kube-system
+          vcenter:
+            "${VSPHERE_SERVER}":
+              server: "${VSPHERE_SERVER}"
+              datacenters:
+                - "${VSPHERE_DATACENTER}"
+  targets:
+  - clusterName: '${CLUSTER_NAME}'
