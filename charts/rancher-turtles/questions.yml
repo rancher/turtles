@@ -42,7 +42,7 @@ questions:
         label: Enable Agent TLS Mode
         group: "Rancher Turtles Features Settings"
       - variable: rancherTurtles.kubectlImage
-        default: "registry.k8s.io/kubernetes/kubectl:v1.30.0"
+        default: "registry.k8s.io/kubernetes/kubectl:v1.32.0"
         description: "Specify the image to use when running kubectl in jobs."
         type: string
         label: Kubectl Image
