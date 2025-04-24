@@ -68,15 +68,16 @@ func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy frame
 	return namespace, cancelWatches
 }
 
-func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, clusterctlConfigPath string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, capiCluster *types.NamespacedName, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
 	if !skipCleanup {
 		turtlesframework.Byf("Deleting cluster %s", capiCluster)
 		// While https://github.com/kubernetes-sigs/cluster-api/issues/2955 is addressed in future iterations, there is a chance
 		// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
 		// instead of DeleteClusterAndWait
 		framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-			Client:    clusterProxy.GetClient(),
-			Namespace: namespace.Name,
+			ClusterProxy:         clusterProxy,
+			ClusterctlConfigPath: clusterctlConfigPath,
+			Namespace:            namespace.Name,
 		}, intervalsGetter(specName, "wait-delete-cluster")...)
 
 		turtlesframework.Byf("Deleting namespace used for hosting the %q test spec", specName)
@@ -137,16 +138,16 @@ func CreateClusterctlLocalRepository(ctx context.Context, input CreateClusterctl
 }
 
 func ValidateE2EConfig(config *clusterctl.E2EConfig) {
-	Expect(os.MkdirAll(config.GetVariable(ArtifactsFolderVar), 0o755)).To(Succeed(), "Invalid test suite argument. Can't create artifacts folder %q", config.GetVariable(ArtifactsFolderVar))
-	Expect(config.GetVariable(HelmBinaryPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. HELM_BINARY_PATH should be an existing file.")
-	Expect(config.GetVariable(TurtlesPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. TURTLES_PATH should be an existing file.")
+	Expect(os.MkdirAll(config.MustGetVariable(ArtifactsFolderVar), 0o755)).To(Succeed(), "Invalid test suite argument. Can't create artifacts folder %q", config.MustGetVariable(ArtifactsFolderVar))
+	Expect(config.MustGetVariable(HelmBinaryPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. HELM_BINARY_PATH should be an existing file.")
+	Expect(config.MustGetVariable(TurtlesPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. TURTLES_PATH should be an existing file.")
 
-	_, err := strconv.ParseBool(config.GetVariable(UseExistingClusterVar))
-	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse USE_EXISTING_CLUSTER %q", config.GetVariable(UseExistingClusterVar))
+	_, err := strconv.ParseBool(config.MustGetVariable(UseExistingClusterVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse USE_EXISTING_CLUSTER %q", config.MustGetVariable(UseExistingClusterVar))
 
-	_, err = strconv.ParseBool(config.GetVariable(SkipResourceCleanupVar))
-	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_RESOURCE_CLEANUP %q", config.GetVariable(SkipResourceCleanupVar))
+	_, err = strconv.ParseBool(config.MustGetVariable(SkipResourceCleanupVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_RESOURCE_CLEANUP %q", config.MustGetVariable(SkipResourceCleanupVar))
 
-	_, err = strconv.ParseBool(config.GetVariable(SkipDeletionTestVar))
-	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_DELETION_TEST %q", config.GetVariable(SkipDeletionTestVar))
+	_, err = strconv.ParseBool(config.MustGetVariable(SkipDeletionTestVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_DELETION_TEST %q", config.MustGetVariable(SkipDeletionTestVar))
 }
