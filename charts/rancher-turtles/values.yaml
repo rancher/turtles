@@ -39,10 +39,6 @@ rancherTurtles:
       etcdBackupRestore:
         # enabled: Turn on (true) or off (false).
         enabled: false
-    # addon-provider-fleet: Beta feature for fleet addons.
-    addon-provider-fleet:
-      # enabled: Turn on or off.
-      enabled: true
     # agent-tls-mode: Alpha feature for agent TLS.
     agent-tls-mode:
       # enabled: Turn on or off.
