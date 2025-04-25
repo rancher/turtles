@@ -23,9 +23,9 @@ spec:
     - name: sshKeyName
       value: ${AWS_SSH_KEY_NAME}
     - name: controlPlaneMachineType
-      value: ${AWS_CONTROL_PLANE_MACHINE_TYPE}
+      value: ${AWS_RKE2_CONTROL_PLANE_MACHINE_TYPE}
     - name: workerMachineType
-      value: ${AWS_NODE_MACHINE_TYPE}
+      value: ${AWS_RKE2_NODE_MACHINE_TYPE}
     - name: amiID
       value: ${AWS_AMI_ID}
     version: ${KUBERNETES_VERSION}+rke2r1
