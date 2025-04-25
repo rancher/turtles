@@ -29,6 +29,16 @@ data:
     metadata:
       name: fleet-addon-config
     spec:
+      config:
+        featureGates:
+          configMap:
+            ref:
+              kind: ConfigMap
+              apiVersion: v1
+              name: rancher-config
+              namespace: cattle-system
+          experimentalOciStorage: true
+          experimentalHelmOps: true
       clusterClass:
         patchResource: true
         setOwnerReferences: true
