@@ -31,12 +31,14 @@ data:
     spec:
       config:
         featureGates:
+        {{- if index .Values "rancherTurtles" "rancherInstalled" }}
           configMap:
             ref:
               kind: ConfigMap
               apiVersion: v1
               name: rancher-config
               namespace: cattle-system
+        {{- end }}
           experimentalOciStorage: true
           experimentalHelmOps: true
       clusterClass:
