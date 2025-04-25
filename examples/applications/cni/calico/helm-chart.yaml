@@ -38,3 +38,4 @@ spec:
           - vsphere-kubeadm-example
           - docker-kubeadm-example
           - docker-rke2-example
+          - etcd-snapshot-restore

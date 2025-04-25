@@ -46,11 +46,23 @@ type FleetCreateGitRepoInput struct {
 	// TargetNamespace is the namespace in which the Git repository will apply its content.
 	TargetNamespace string
 
+	// TargetClusterNamespace is defining git repo to use cluster namespace as a target namespace by default.
+	TargetClusterNamespace bool
+
+	// SourceRepo is the default source URL of the Git repository to use in a CI setting.
+	SourceRepo string `env:"SOURCE_REPO"`
+
 	// Repo is the URL of the Git repository.
 	Repo string
 
+	// SourceBranch is the default source branch of the Git repository to use in a CI setting.
+	SourceBranch string `env:"GITHUB_HEAD_REF"`
+
 	// Branch is the branch of the Git repository to use.
 	Branch string `envDefault:"main"`
+
+	// Revision is the specific commit in the Git repository to use.
+	Revision string
 
 	// Paths are the paths within the Git repository to sync.
 	Paths []string
@@ -191,7 +203,13 @@ metadata:
   namespace: {{ .Namespace }}
 spec:
   repo: {{ .Repo }}
+  {{- if .Branch }}
   branch: {{ .Branch }}
+  {{ end -}}
+  {{- if .Revision }}
+  revision: {{ .Revision }}
+  {{ end -}}
+
   forceSyncGeneration: {{ .FleetGeneration }}
 
   paths:

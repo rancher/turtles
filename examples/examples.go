@@ -42,4 +42,7 @@ var (
 
 	//go:embed applications/ccm/vsphere/helm-chart.yaml
 	CAPIVsphereCPIHelmApp []byte
+
+	//go:embed applications/cni/kindnet/kindnet.yaml
+	CAPIKindnet []byte
 )
