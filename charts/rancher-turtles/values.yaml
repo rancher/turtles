@@ -9,7 +9,7 @@ rancherTurtles:
   managerArguments: []
   imagePullSecrets: []
   rancherInstalled: true
-  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
+  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.32.0
   features:
     day2operations:
       enabled: false
