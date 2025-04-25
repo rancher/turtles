@@ -57,7 +57,7 @@ git push upstream ${RELEASE_TAG}
 git push upstream test/${RELEASE_TAG}
 ```
 
-This will trigger a [release GitHub action](https://github.com/rancher/turtles/actions/workflows/release.yaml) that creates a release with Rancher Turtles components.
+This will trigger a [release GitHub action](https://github.com/rancher/turtles/actions/workflows/release-workflow.yaml) that creates a release with Rancher Turtles components.
 
 **Note:** If you are cutting a new minor/major release, please follow the [next step](#post-release-steps-in-rancher-turtles-docs) below, otherwise skip.
 
