@@ -114,9 +114,6 @@ var (
 	//go:embed data/cluster-templates/vsphere-rke2-topology.yaml
 	CAPIvSphereRKE2Topology []byte
 
-	//go:embed data/cpi-csi/aws.yaml
-	CAPIAWSCPICSI []byte
-
 	//go:embed data/gitea/ingress.yaml
 	GiteaIngress []byte
 

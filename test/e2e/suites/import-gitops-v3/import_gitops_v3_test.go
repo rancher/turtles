@@ -410,7 +410,6 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEC2RKE2Topology,
-			AdditionalTemplates:            [][]byte{e2e.CAPIAWSCPICSI},
 			ClusterName:                    "cluster-ec2-rke2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -432,6 +431,12 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 				{
 					Name:            "aws-ccm-ec2-rke2",
 					Paths:           []string{"examples/applications/ccm/aws-helm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "aws-csi-ec2-rke2",
+					Paths:           []string{"examples/applications/csi/aws"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
