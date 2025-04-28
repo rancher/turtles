@@ -42,8 +42,8 @@ To deploy an RKE2 cluster with automatic snapshots enabled:
 export CONTROL_PLANE_MACHINE_COUNT=1
 export WORKER_MACHINE_COUNT=1
 export CLUSTER_NAME=rke2
-export KUBERNETES_VERSION=v1.32.0
-export RKE2_VERSION=v1.32.0+rke2r1
+export KUBERNETES_VERSION=v1.31.4
+export RKE2_VERSION=v1.31.4+rke2r1
 export RKE2_CNI=calico
 
 envsubst '${CLUSTER_NAME} ${WORKER_MACHINE_COUNT} ${RKE2_VERSION} ${CONTROL_PLANE_MACHINE_COUNT} ${KUBERNETES_VERSION} ${RKE2_CNI}' < test/e2e/data/cluster-templates/docker-rke2.yaml | kubectl apply -f -
