@@ -118,6 +118,11 @@ spec:
               valueFrom:
                 variable: resourceGroup
             - op: add
+              path: "/spec/template/spec/nodeResourceGroupName"
+              valueFrom:
+                template: |
+                  {{ .resourceGroup }}-nodes
+            - op: add
               path: "/spec/template/spec/identityRef/name"
               valueFrom:
                 variable: azureClusterIdentityName
