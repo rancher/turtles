@@ -47,7 +47,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			TurtlesChartPath:      "https://rancher.github.io/turtles",
 			CAPIProvidersYAML:     e2e.CapiProvidersLegacy,
-			Version:               "v0.17.0",
+			Version:               "v0.16.0",
 			AdditionalValues:      map[string]string{},
 			WaitForDeployments:    testenv.DefaultDeployments,
 		}
