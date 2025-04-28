@@ -429,6 +429,12 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
+				{
+					Name:            "aws-ccm-ec2-rke2",
+					Paths:           []string{"examples/applications/ccm/aws-helm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})
