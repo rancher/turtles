@@ -2,6 +2,8 @@ module github.com/rancher/turtles/test
 
 go 1.23.0
 
+toolchain go1.24.1
+
 replace github.com/rancher/turtles => ../
 
 replace github.com/rancher/turtles/exp/day2 => ../exp/day2
