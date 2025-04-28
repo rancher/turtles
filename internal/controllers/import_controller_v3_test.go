@@ -52,6 +52,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		capiCluster              *clusterv1.Cluster
 		rancherClusters          *managementv3.ClusterList
 		rancherCluster           *managementv3.Cluster
+		agentTlsModeSetting      *managementv3.Setting
 		clusterRegistrationToken *managementv3.ClusterRegistrationToken
 		v1rancherCluster         *provisioningv1.Cluster
 		capiKubeconfigSecret     *corev1.Secret
@@ -105,6 +106,14 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}
 
 		rancherClusters = &managementv3.ClusterList{}
+
+		agentTlsModeSetting = &managementv3.Setting{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "agent-tls-mode",
+			},
+			Default: "strict",
+			Value:   "system-store",
+		}
 
 		selectors = []client.ListOption{
 			client.MatchingLabels{
@@ -270,6 +279,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+
+		Expect(cl.Create(ctx, agentTlsModeSetting)).To(Succeed())
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
