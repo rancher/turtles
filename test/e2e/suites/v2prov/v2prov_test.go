@@ -56,14 +56,14 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	It("Should create a RKE2 cluster in Azure", func() {
-		azSubId := e2eConfig.MustGetVariable(e2e.AzureSubIDVar)
+		azSubId := e2eConfig.GetVariable(e2e.AzureSubIDVar)
 		Expect(azSubId).ToNot(BeEmpty(), "Azure Subscription ID is required")
-		azClientId := e2eConfig.MustGetVariable(e2e.AzureClientIDVar)
+		azClientId := e2eConfig.GetVariable(e2e.AzureClientIDVar)
 		Expect(azSubId).ToNot(BeEmpty(), "Azure Client ID is required")
-		azClientSecret := e2eConfig.MustGetVariable(e2e.AzureClientSecretVar)
+		azClientSecret := e2eConfig.GetVariable(e2e.AzureClientSecretVar)
 		Expect(azSubId).ToNot(BeEmpty(), "Azure Client Secret is required")
 
-		rke2Version := e2eConfig.MustGetVariable(e2e.RKE2VersionVar)
+		rke2Version := e2eConfig.GetVariable(e2e.RKE2VersionVar)
 		Expect(rke2Version).ToNot(BeEmpty(), "RKE2 version is required")
 
 		credsSecretName := "cc-test99"

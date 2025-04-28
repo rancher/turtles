@@ -53,7 +53,6 @@ import (
 
 type ETCDSnapshotRestoreInput struct {
 	E2EConfig             *clusterctl.E2EConfig
-	ClusterctlConfigPath  string
 	BootstrapClusterProxy framework.ClusterProxy
 	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
 	RancherServerURL      string
@@ -363,6 +362,6 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			}, capiClusterDeleteWait...).Should(Succeed(), "CAPI cluster deletion should complete")
 
 		}
-		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ClusterctlConfigPath, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }
