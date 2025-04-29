@@ -1,0 +1,60 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmApp
+metadata:
+  name: aws-ccm
+spec:
+  helm:
+    releaseName: aws-cloud-controller-manager
+    repo: https://kubernetes.github.io/cloud-provider-aws
+    chart: aws-cloud-controller-manager
+    templateValues:
+      hostNetworking: "true"
+      args: |-
+        - --v=2
+        - --cloud-provider=aws
+        - --use-service-account-credentials=true
+        - --configure-cloud-routes=false
+      image: |-
+        tag: ${ trimSuffix "+rke2r1" .ClusterValues.Cluster.spec.topology.version }
+      nodeSelector: |-
+        ${- if contains "RKE2ControlPlane" ( .ClusterValues | quote ) }
+        node-role.kubernetes.io/control-plane: "true"
+        ${- else }
+        node-role.kubernetes.io/control-plane: ""
+        ${- end }
+    values:
+      clusterRoleRules:
+      - apiGroups:
+        - ""
+        resources:
+        - events
+        - nodes
+        - nodes/status
+        - services
+        - services/status
+        - serviceaccounts
+        - persistentvolumes
+        - configmaps
+        - serviceaccounts/token
+        - endpoints
+        verbs:
+        - '*'
+      - apiGroups:
+        - coordination.k8s.io
+        resources:
+        - leases
+        verbs:
+        - create
+        - get
+        - list
+        - watch
+        - update
+  insecureSkipTLSVerify: true
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cloud-provider: aws
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values: [aws-rke2-example]

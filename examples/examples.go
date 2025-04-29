@@ -31,6 +31,9 @@ var (
 	//go:embed applications/ccm/azure/helm-chart.yaml
 	CAAPFAzureCCMHelmApp []byte
 
+	//go:embed applications/ccm/aws-helm/helm-chart.yaml
+	CAAPFAWSCCMHelmApp []byte
+
 	//go:embed applications/cni/calico/helm-chart.yaml
 	CAAPFCalicoCNIHelmApp []byte
 
