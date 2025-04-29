@@ -591,7 +591,7 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfFleetManagement(ctx context.C
 		annotations = map[string]string{}
 	}
 
-	if _, found := annotations[externalFleetAnnotation]; !found && feature.Gates.Enabled(feature.ExternalFleet) {
+	if _, found := annotations[externalFleetAnnotation]; !found {
 		annotations[externalFleetAnnotation] = "true"
 		rancherCluster.SetAnnotations(annotations)
 

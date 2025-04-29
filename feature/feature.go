@@ -22,11 +22,6 @@ import (
 )
 
 const (
-	// ExternalFleet allows to disable in-tree management of the Fleet clusters
-	// in the imported rancher clusters, by setting "provisioning.cattle.io/externally-managed"
-	// annotation.
-	ExternalFleet featuregate.Feature = "addon-provider-fleet"
-
 	// AgentTLSMode if enabled Turtles will use the agent-tls-mode setting to determine
 	// CA cert trust mode for importing clusters.
 	AgentTLSMode featuregate.Feature = "agent-tls-mode"
@@ -40,7 +35,6 @@ func init() {
 }
 
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ExternalFleet: {Default: true, PreRelease: featuregate.Beta},
-	AgentTLSMode:  {Default: false, PreRelease: featuregate.Beta},
-	UIPlugin:      {Default: false, PreRelease: featuregate.Alpha},
+	AgentTLSMode: {Default: false, PreRelease: featuregate.Beta},
+	UIPlugin:     {Default: false, PreRelease: featuregate.Alpha},
 }

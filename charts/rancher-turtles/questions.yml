@@ -29,12 +29,6 @@ questions:
         description: "Flag to enable or disable installation of the RKE2 provider for Cluster API. By default this is enabled."
         label: "Enable RKE2 Provider"
         type: boolean
-      - variable: rancherTurtles.features.addon-provider-fleet.enabled
-        default: true
-        description: "[BETA] Enable Fleet Addon Provider functionality in Rancher Turtles."
-        type: boolean
-        label: Seamless integration with Fleet and CAPI
-        group: "Rancher Turtles Features Settings"
       - variable: rancherTurtles.features.agent-tls-mode.enabled
         default: false
         description: "[ALPHA] If enabled Turtles will use the agent-tls-mode setting to determine CA cert trust mode for importing clusters."
