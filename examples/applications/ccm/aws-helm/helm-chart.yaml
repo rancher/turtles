@@ -15,7 +15,7 @@ spec:
         - --use-service-account-credentials=true
         - --configure-cloud-routes=false
       image: |-
-        tag: ${ trimSuffix "+rke2r1" .ClusterValues.Cluster.spec.topology.version }
+        tag: v1.32.1
       nodeSelector: |-
         ${- if contains "RKE2ControlPlane" ( .ClusterValues | quote ) }
         node-role.kubernetes.io/control-plane: "true"
