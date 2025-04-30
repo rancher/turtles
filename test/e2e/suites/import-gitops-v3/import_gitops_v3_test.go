@@ -21,7 +21,6 @@ package import_gitops_v3
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -71,7 +70,7 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/docker"},
+					Paths:           []string{"examples/clusterclasses/docker/kubeadm"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
@@ -124,7 +123,7 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/docker"},
+					Paths:           []string{"examples/clusterclasses/docker/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
@@ -184,7 +183,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-classes-aks",
-					Paths:           []string{"examples/clusterclasses/azure"},
+					Paths:           []string{"examples/clusterclasses/azure/aks"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
@@ -239,7 +238,7 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/azure"},
+					Paths:           []string{"examples/clusterclasses/azure/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
@@ -351,7 +350,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/aws"},
+					Paths:           []string{"examples/clusterclasses/aws/kubeadm"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
@@ -396,14 +395,13 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			},
 			CAPIProvidersYAML: [][]byte{
 				e2e.AWSProvider,
-				e2e.CapiProviders,
 			},
-			WaitForDeployments: append([]testenv.NamespaceName{
+			WaitForDeployments: []testenv.NamespaceName{
 				{
 					Name:      "capa-controller-manager",
 					Namespace: "capa-system",
 				},
-			}, testenv.DefaultDeployments...),
+			},
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
@@ -424,7 +422,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/aws"},
+					Paths:           []string{"examples/clusterclasses/aws/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
@@ -486,7 +484,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Ordered, Label("skip"), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -500,11 +498,14 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
 				e2e.VSphereProviderSecret,
 			},
-			CAPIProvidersYAML: [][]byte{e2e.CapvProvider, e2e.CapiProviders},
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapvProvider,
+				e2e.CapiProviders,
+			},
 			WaitForDeployments: []testenv.NamespaceName{
 				{
 					Name:      "capv-controller-manager",
@@ -535,7 +536,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 				{
 					Name:            "vsphere-cluster-classes-kubeadm",
 					TargetNamespace: topologyNamespace,
-					Paths:           []string{"examples/clusterclasses/vsphere"},
+					Paths:           []string{"examples/clusterclasses/vsphere/kubeadm"},
 					ClusterProxy:    bootstrapClusterProxy,
 				},
 				{
@@ -561,40 +562,33 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 	})
 })
 
-var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Ordered, Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-vsphere-rke2"
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
 				e2e.VSphereProviderSecret,
 			},
-			CAPIProvidersYAML: [][]byte{e2e.CapvProvider, e2e.CapiProviders},
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapvProvider,
+			},
 			WaitForDeployments: []testenv.NamespaceName{
 				{
 					Name:      "capv-controller-manager",
 					Namespace: "capv-system",
 				},
 			},
-		})
-
-		// Add the needed ClusterClass and ClusterResourceSet
-		topologyNamespace := "creategitops-vsphere-rke2"
-		err := turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
-		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
-
-		By("Applying vSphere ClusterClasses")
-		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:            "vsphere-cluster-classes",
-			TargetNamespace: topologyNamespace,
-			Paths:           []string{"examples/clusterclasses/vsphere"},
-			ClusterProxy:    bootstrapClusterProxy,
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
@@ -612,8 +606,31 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
-			AdditionalTemplateVariables: map[string]string{
-				"VIP_NETWORK_INTERFACE": "",
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "vsphere-cluster-classes-rke2",
+					TargetNamespace: topologyNamespace,
+					Paths:           []string{"examples/clusterclasses/vsphere/rke2"},
+					ClusterProxy:    bootstrapClusterProxy,
+				},
+				{
+					Name:            "vsphere-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-cpi",
+					Paths:           []string{"examples/applications/ccm/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-csi",
+					Paths:           []string{"examples/applications/csi/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})

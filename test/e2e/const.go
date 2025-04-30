@@ -51,7 +51,7 @@ var (
 	//go:embed data/capi-operator/capg-variables.yaml
 	GCPProviderSecret []byte
 
-	//go:embed data/capi-operator/capv-variables.yaml
+	//go:embed data/capi-operator/capv-identity-secret.yaml
 	VSphereProviderSecret []byte
 
 	//go:embed data/rancher/ingress.yaml

@@ -1,6 +1,7 @@
 name: Run vsphere e2e tests on self-hosted runner
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 env:
@@ -17,12 +18,11 @@ env:
   CONTROL_PLANE_ENDPOINT_IP: ${{ secrets.CONTROL_PLANE_ENDPOINT_IP }}
   RANCHER_HOSTNAME: ${{ secrets.INTERNAL_DOMAIN }}
   MANAGEMENT_CLUSTER_ENVIRONMENT: "internal-kind"
-  CPI_IMAGE_K8S_VERSION: v1.31.0
   GINKGO_LABEL_FILTER: "vsphere"
   TAG: v0.0.1
 
 jobs:
-  e2e:
+  run_vsphere_e2e:
     runs-on: [self-hosted, vsphere]
     steps:
       - name: Checkout
@@ -35,3 +35,9 @@ jobs:
           go-version: "=1.23.0"
       - name: Run e2e tests
         run: make test-e2e
+      - name: Collect run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts_vsphere
+          path: _artifacts

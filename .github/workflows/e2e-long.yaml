@@ -17,7 +17,7 @@ jobs:
     with:
       test_suite: test/e2e/suites/import-gitops-v3
       test_name: Import via GitOps [v3]
-      artifact_name: artifacts_import_gitops_v3
+      artifact_name: import_gitops_v3
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_v2prov:
@@ -26,8 +26,11 @@ jobs:
     with:
       test_suite: test/e2e/suites/v2prov
       test_name: v2 provisioning
-      artifact_name: artifacts_v2prov
+      artifact_name: v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
+    secrets: inherit
+  e2e_vsphere:
+    uses: ./.github/workflows/run-vsphere-tests.yaml
     secrets: inherit
   e2e_cleanup:
     if: always()

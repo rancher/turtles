@@ -19,13 +19,13 @@ package examples
 import _ "embed"
 
 var (
-	//go:embed clusterclasses/azure/clusterclass-aks-example.yaml
+	//go:embed clusterclasses/azure/aks/clusterclass-aks-example.yaml
 	CAPIAzureAKSClusterclass []byte
 
-	//go:embed clusterclasses/azure/clusterclass-rke2-example.yaml
+	//go:embed clusterclasses/azure/rke2/clusterclass-rke2-example.yaml
 	CAPIAzureRKE2Clusterclass []byte
 
-	//go:embed clusterclasses/aws/clusterclass-ec2-rke2-example.yaml
+	//go:embed clusterclasses/aws/rke2/clusterclass-ec2-rke2-example.yaml
 	CAPIAWSRKE2Clusterclass []byte
 
 	//go:embed applications/ccm/azure/helm-chart.yaml
@@ -37,10 +37,10 @@ var (
 	//go:embed applications/cni/calico/helm-chart.yaml
 	CAAPFCalicoCNIHelmApp []byte
 
-	//go:embed clusterclasses/vsphere/clusterclass-rke2-example.yaml
+	//go:embed clusterclasses/vsphere/rke2/clusterclass-rke2-example.yaml
 	CAPIVSphereRKE2Clusterclass []byte
 
-	//go:embed clusterclasses/vsphere/clusterclass-kubeadm-example.yaml
+	//go:embed clusterclasses/vsphere/kubeadm/clusterclass-kubeadm-example.yaml
 	CAPIVsphereKubeadmClusterclass []byte
 
 	//go:embed applications/ccm/vsphere/helm-chart.yaml
