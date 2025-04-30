@@ -46,7 +46,7 @@ spec:
       value: cluster-identity
     - name: registrationMethod
       value: internal-first
-    version: ${KUBERNETES_VERSION}+rke2r1
+    version: ${RKE2_VERSION}
     workers:
       machineDeployments:
       - class: rke2-default-worker
