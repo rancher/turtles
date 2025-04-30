@@ -28,7 +28,7 @@ spec:
       value: ${AWS_RKE2_NODE_MACHINE_TYPE}
     - name: amiID
       value: ${AWS_AMI_ID}
-    version: ${RKE2_VERSION}
+    version: ${KUBERNETES_VERSION}+rke2r1
     workers:
       machineDeployments:
       - class: default-worker
