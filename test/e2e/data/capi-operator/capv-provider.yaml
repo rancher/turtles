@@ -6,3 +6,6 @@ metadata:
   namespace: capv-system
 spec:
   type: infrastructure
+  variables:
+    VSPHERE_USERNAME: ""
+    VSPHERE_PASSWORD: ""

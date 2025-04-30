@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -249,11 +250,13 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			additionalVars[k] = v
 		}
 
-		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-			Template:                      input.ClusterTemplate,
-			AddtionalEnvironmentVariables: additionalVars,
-			Proxy:                         input.BootstrapClusterProxy,
-		})).To(Succeed())
+		Eventually(func() error {
+			return turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+				Template:                      input.ClusterTemplate,
+				AddtionalEnvironmentVariables: additionalVars,
+				Proxy:                         input.BootstrapClusterProxy,
+			})
+		}).WithTimeout(2*time.Minute).WithPolling(2*time.Second).To(Succeed(), "Cluster must be created")
 
 		for _, template := range input.AdditionalTemplates {
 			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{

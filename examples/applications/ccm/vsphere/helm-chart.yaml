@@ -9,8 +9,28 @@ spec:
     repo: https://kubernetes.github.io/cloud-provider-vsphere
     chart: vsphere-cpi
     templateValues:
-      config: |-
-        enabled: false
+      config: |
+        region: ""
+        zone: ""
+        enabled: true
+        ${- range $variable := .ClusterValues.Cluster.spec.topology.variables }
+          ${- if eq $variable.name "vSphereServer" }
+        vcenter: "${ $variable.value }"
+          ${- end}
+        ${- end } 
+        ${- range $variable := .ClusterValues.Cluster.spec.topology.variables }
+          ${- if eq $variable.name "vSphereDataCenter" }
+        datacenter: "${ $variable.value }"
+          ${- end}
+        ${- end }
+        ${- range $variable := .ClusterValues.Cluster.spec.topology.variables }
+          ${- if eq $variable.name "vSphereTLSThumbprint" }
+        thumbprint: "${ $variable.value }"
+          ${- end}
+        ${- end }
+        secret: 
+          create: false
+          name: vsphere-cloud-secret
   insecureSkipTLSVerify: true
   targets:
   - clusterSelector:
@@ -19,4 +39,6 @@ spec:
       matchExpressions:
       - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
         operator: In
-        values: [vsphere-kubeadm-example]
+        values: 
+        - vsphere-kubeadm-example
+        - vsphere-rke2-example
