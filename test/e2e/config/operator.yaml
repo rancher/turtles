@@ -88,8 +88,8 @@ variables:
 
   # Ingress Configuration (Ngrok)
   NGROK_REPO_NAME: "ngrok"
-  NGROK_URL: "https://ngrok.github.io/kubernetes-ingress-controller"
-  NGROK_PATH: "ngrok/kubernetes-ingress-controller"
+  NGROK_URL: "https://charts.ngrok.com"
+  NGROK_PATH: "ngrok/ngrok-operator"
   NGROK_API_KEY: ""
   NGROK_AUTHTOKEN: ""
 
