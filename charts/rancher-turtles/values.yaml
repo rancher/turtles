@@ -39,10 +39,10 @@ rancherTurtles:
       etcdBackupRestore:
         # enabled: Turn on (true) or off (false).
         enabled: false
-    # agent-tls-mode: Alpha feature for agent TLS.
+    # agent-tls-mode: Beta feature for agent TLS.
     agent-tls-mode:
       # enabled: Turn on or off.
-      enabled: false
+      enabled: true
     # clusterclass-operations: Alpha feature. Manages cluster class ops. Not ready for testing yet.
     clusterclass-operations:
       # enabled: Turn on or off.
