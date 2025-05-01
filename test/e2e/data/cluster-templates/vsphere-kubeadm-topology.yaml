@@ -1,235 +1,120 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: VSphereClusterIdentity
+metadata:
+  name: cluster-identity
+spec:
+  secretName: cluster-identity
+  allowedNamespaces:
+    selector:
+      matchLabels: {}
+---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    cni: calico
-    cloud-provider: vsphere
-    csi: vsphere
   name: '${CLUSTER_NAME}'
   namespace: '${NAMESPACE}'
+  labels:
+    cni: calico
+    csi: vsphere
+    cloud-provider: vsphere
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
       - 192.168.0.0/16
   topology:
-    class: 'vsphere-kubeadm-example'
+    class: vsphere-kubeadm-example
     classNamespace: ${TOPOLOGY_NAMESPACE}
+    version: ${KUBERNETES_VERSION}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-    variables:
-    - name: sshKey
-      value: '${VSPHERE_SSH_AUTHORIZED_KEY}'
-    - name: kubeVipPodManifest
-      value: |
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          creationTimestamp: null
-          name: kube-vip
-          namespace: kube-system
-        spec:
-          containers:
-          - args:
-            - manager
-            env:
-            - name: vip_arp
-              value: "true"
-            - name: port
-              value: "6443"
-            - name: vip_nodename
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-            - name: vip_interface
-              value: eth0
-            - name: vip_cidr
-              value: "32"
-            - name: dns_mode
-              value: first
-            - name: cp_enable
-              value: "true"
-            - name: cp_namespace
-              value: kube-system
-            - name: svc_enable
-              value: "true"
-            - name: svc_leasename
-              value: plndr-svcs-lock
-            - name: vip_leaderelection
-              value: "true"
-            - name: vip_leasename
-              value: plndr-cp-lock
-            - name: vip_leaseduration
-              value: "5"
-            - name: vip_renewdeadline
-              value: "3"
-            - name: vip_retryperiod
-              value: "1"
-            - name: address
-              value: ${CONTROL_PLANE_ENDPOINT_IP}
-            - name: prometheus_server
-              value: :2112
-            image: ghcr.io/kube-vip/kube-vip:v0.8.10
-            imagePullPolicy: IfNotPresent
-            name: kube-vip
-            resources: {}
-            securityContext:
-              capabilities:
-                add:
-                - NET_ADMIN
-                - NET_RAW
-                drop:
-                - ALL
-            volumeMounts:
-            - mountPath: /etc/kubernetes/admin.conf
-              name: kubeconfig
-            - mountPath: /etc/hosts
-              name: etchosts
-          hostNetwork: true
-          volumes:
-          - hostPath:
-              path: /etc/kubernetes/super-admin.conf
-              type: File
-            name: kubeconfig
-          - hostPath:
-              path: /etc/kube-vip.hosts
-              type: File
-            name: etchosts
-    - name: controlPlaneIpAddr
-      value: ${CONTROL_PLANE_ENDPOINT_IP}
-    - name: controlPlanePort
-      value: 6443
-    - name: infraServer
-      value:
-        thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
-        url: '${VSPHERE_SERVER}'
-    - name: credsSecretName
-      value: '${CLUSTER_NAME}'
-    - name: vsphereDataCenter
-      value: '${VSPHERE_DATACENTER}'
-    - name: vsphereDataStore
-      value: '${VSPHERE_DATASTORE}'
-    - name: vsphereFolder
-      value: '${VSPHERE_FOLDER}'
-    - name: vsphereNetwork
-      value: '${VSPHERE_NETWORK}'
-    - name: vsphereResourcePool
-      value: '${VSPHERE_RESOURCE_POOL}'
-    - name: vsphereServer
-      value: '${VSPHERE_SERVER}'
-    - name: vsphereStorageServer
-      value: '${VSPHERE_STORAGE_SERVER}'
-    - name: vsphereTemplate
-      value: '${VSPHERE_TEMPLATE}'
-    version: '${KUBERNETES_VERSION}'
     workers:
       machineDeployments:
       - class: vsphere-kubeadm-example-worker
-        metadata: {}
         name: md-0
         replicas: ${WORKER_MACHINE_COUNT}
+    variables:
+    - name: vSphereClusterIdentityName
+      value: cluster-identity
+    - name: vSphereTLSThumbprint
+      value: '${VSPHERE_TLS_THUMBPRINT}'
+    - name: vSphereDataCenter
+      value: '${VSPHERE_DATACENTER}'
+    - name: vSphereDataStore
+      value: '${VSPHERE_DATASTORE}'
+    - name: vSphereFolder
+      value: '${VSPHERE_FOLDER}'
+    - name: vSphereNetwork
+      value: '${VSPHERE_NETWORK}'
+    - name: vSphereResourcePool
+      value: '${VSPHERE_RESOURCE_POOL}'
+    - name: vSphereServer
+      value: '${VSPHERE_SERVER}'
+    - name: vSphereTemplate
+      value: '${VSPHERE_TEMPLATE}'
+    - name: controlPlaneIpAddr
+      value: '${CONTROL_PLANE_ENDPOINT_IP}'
+    - name: controlPlanePort
+      value: 6443
+    - name: kubeVIPInterface
+      value: eth0
 ---
-apiVersion: v1
-kind: Secret
+kind: Bundle
+apiVersion: fleet.cattle.io/v1alpha1
 metadata:
-  name: '${CLUSTER_NAME}'
-  namespace: '${NAMESPACE}'
-stringData:
-  password: "${VSPHERE_PASSWORD}"
-  username: "${VSPHERE_USERNAME}"
----
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-crs-0
+  name: vsphere-csi-config
   namespace: '${NAMESPACE}'
 spec:
-  clusterSelector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
-  - kind: Secret
-    name: vsphere-config-secret
-  - kind: Secret
-    name: cloud-provider-vsphere-credentials
-  - kind: ConfigMap
-    name: cpi-configmap
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: vsphere-config-secret
-  namespace: '${NAMESPACE}'
-stringData:
-  data: |-
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: vsphere-config-secret
-      namespace: vmware-system-csi
-    stringData:
-      csi-vsphere.conf: |+
-        [Global]
-        thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
+  - content: |-
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: vsphere-config-secret
+        namespace: vmware-system-csi
+      stringData:
+        csi-vsphere.conf: |+
+          [Global]
+          thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
 
-        [VirtualCenter "${VSPHERE_SERVER}"]
-        user = "${VSPHERE_USERNAME}"
-        password = "${VSPHERE_PASSWORD}"
-        datacenters = "${VSPHERE_DATACENTER}"
+          [VirtualCenter "${VSPHERE_SERVER}"]
+          user = "${VSPHERE_USERNAME}"
+          password = "${VSPHERE_PASSWORD}"
+          datacenters = "${VSPHERE_DATACENTER}"
 
-        [Network]
-        public-network = "${VSPHERE_NETWORK}"
+          [Network]
+          public-network = "${VSPHERE_NETWORK}"
 
-    type: Opaque
-type: addons.cluster.x-k8s.io/resource-set
+          [Labels]
+          region = ""
+          zone = ""
+  targets:
+  - clusterSelector:
+      matchLabels:
+        csi: vsphere
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
 ---
-apiVersion: v1
-kind: Secret
+kind: Bundle
+apiVersion: fleet.cattle.io/v1alpha1
 metadata:
-  name: cloud-provider-vsphere-credentials
+  name: vsphere-cloud-credentials
   namespace: '${NAMESPACE}'
-stringData:
-  data: |-
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      labels:
-        component: cloud-controller-manager
-        vsphere-cpi-infra: secret
-      name: cloud-provider-vsphere-credentials
-      namespace: kube-system
-    stringData:
-      ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
-      ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
-    type: Opaque
-type: addons.cluster.x-k8s.io/resource-set
+spec:
+  resources:
+  - content: |-
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: vsphere-cloud-secret
+        namespace: kube-system
+      stringData:
+        ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
+        ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cloud-provider: vsphere
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
 ---
-apiVersion: v1
-data:
-  data: |-
-    ---
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: cloud-config
-      labels:
-        app: "cpi"
-        vsphere-cpi-infra: cloud-config
-        component: cloud-controller-manager
-      namespace: kube-system
-    data:
-      vsphere.conf: |
-        global:
-          port: 443
-          thumbprint: "${VSPHERE_TLS_THUMBPRINT}"
-          secretName: cloud-provider-vsphere-credentials
-          secretNamespace: kube-system
-        vcenter:
-          "${VSPHERE_SERVER}":
-            server: "${VSPHERE_SERVER}"
-            datacenters:
-              - "${VSPHERE_DATACENTER}"
-kind: ConfigMap
-metadata:
-  name: cpi-configmap
-  namespace: '${NAMESPACE}'
