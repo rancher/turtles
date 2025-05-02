@@ -484,7 +484,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Ordered, Label("skip"), func() {
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Ordered, Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -506,18 +506,19 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 				e2e.CapvProvider,
 				e2e.CapiProviders,
 			},
-			WaitForDeployments: []testenv.NamespaceName{
+			WaitForDeployments: append([]testenv.NamespaceName{
 				{
 					Name:      "capv-controller-manager",
 					Namespace: "capv-system",
 				},
-			},
+			}, testenv.DefaultDeployments...),
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
+			TopologyNamespace:              topologyNamespace,
 			ClusterName:                    "cluster-vsphere-kubeadm",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
@@ -528,10 +529,6 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
-			AdditionalTemplateVariables: map[string]string{
-				"VIP_NETWORK_INTERFACE": "",
-			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "vsphere-cluster-classes-kubeadm",

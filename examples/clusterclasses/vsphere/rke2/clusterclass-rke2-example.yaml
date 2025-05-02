@@ -204,44 +204,11 @@ spec:
       - op: add
         path: /spec/template/spec/files
         valueFrom:
-          template: |-
-            - path: "/var/lib/rancher/rke2/server/manifests/kubevip.yaml"
+          template: |
+            - path: "/var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
               owner: "root:root"
               permissions: "0640"
-              content: |-
-                apiVersion: v1
-                kind: ServiceAccount
-                metadata:
-                  name: kube-vip
-                  namespace: kube-system
-                ---
-                apiVersion: rbac.authorization.k8s.io/v1
-                kind: ClusterRole
-                metadata:
-                  annotations:
-                    rbac.authorization.kubernetes.io/autoupdate: "true"
-                  name: system:kube-vip-role
-                rules:
-                  - apiGroups: [""]
-                    resources: ["services", "services/status", "nodes"]
-                    verbs: ["list","get","watch", "update"]
-                  - apiGroups: ["coordination.k8s.io"]
-                    resources: ["leases"]
-                    verbs: ["list", "get", "watch", "update", "create"]
-                ---
-                kind: ClusterRoleBinding
-                apiVersion: rbac.authorization.k8s.io/v1
-                metadata:
-                  name: system:kube-vip-binding
-                roleRef:
-                  apiGroup: rbac.authorization.k8s.io
-                  kind: ClusterRole
-                  name: system:kube-vip-role
-                subjects:
-                - kind: ServiceAccount
-                  name: kube-vip
-                  namespace: kube-system
-                ---
+              content: |
                 apiVersion: v1
                 kind: Pod
                 metadata:
@@ -270,7 +237,7 @@ spec:
                           fieldPath: spec.nodeName
                     - name: vip_interface
                       value: "{{ .kubeVIPInterface }}"
-                    - name: vip_cidr
+                    - name: vip_subnet
                       value: "32"
                     - name: dns_mode
                       value: first
@@ -296,7 +263,7 @@ spec:
                       value: "{{ .controlPlaneIpAddr }}"
                     - name: prometheus_server
                       value: :2112
-                    image: ghcr.io/kube-vip/kube-vip:v0.8.10
+                    image: ghcr.io/kube-vip/kube-vip:v0.9.1
                     imagePullPolicy: IfNotPresent
                     name: kube-vip
                     resources: {}
@@ -315,11 +282,9 @@ spec:
                     - kubernetes
                     ip: 127.0.0.1
                   hostNetwork: true
-                  serviceAccountName: kube-vip
                   volumes:
                   - hostPath:
                       path: /etc/rancher/rke2/rke2.yaml
-                      type: File
                     name: kubeconfig
       - op: add
         path: /spec/template/spec/agentConfig/additionalUserData
