@@ -1,11 +1,16 @@
-name: Run nightly e2e tests
+name: Run long e2e tests
 
 on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
+  merge_group:
 
-concurrency: ci_e2e_tests
+concurrency:
+  group: ci-${{ github.ref }}
+
+env:
+  GINKGO_LABEL_FILTER: ${{ github.event.pull_request.labels && (contains(join(github.event.pull_request.labels.*.name, ','), 'test/full') && 'full' || '') || 'full' }}
 
 jobs:
   publish_e2e_image:
