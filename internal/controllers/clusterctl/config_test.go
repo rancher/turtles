@@ -99,7 +99,7 @@ data:
 							{
 								Name: "fleet",
 								Type: "AddonProvider",
-								URL:  "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.4.0/addon-components.yaml",
+								URL:  "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/v0.4.0/addon-components.yaml",
 							},
 						},
 						Images: []v1alpha1.Image{
@@ -153,7 +153,7 @@ data:
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "fleet",
 			Type: "AddonProvider",
-			URL:  "https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/v0.4.0/addon-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/v0.4.0/addon-components.yaml",
 		}))
 	})
 })

@@ -197,8 +197,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/(.*)/'
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
+      matchpattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
     scmid: turtles
     sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
   bumpcapioperator:

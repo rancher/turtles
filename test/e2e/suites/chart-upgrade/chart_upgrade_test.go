@@ -119,6 +119,17 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}, func() {
 			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+				Getter: bootstrapClusterProxy.GetClient(),
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "caapf-controller-manager",
+					Namespace: "rancher-turtles-system",
+				}},
+				Image:     "registry.suse.com/rancher/cluster-api-addon-provider-fleet:",
+				Name:      "fleet",
+				Namespace: "rancher-turtles-system",
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+		}, func() {
+			framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 				Getter:    bootstrapClusterProxy.GetClient(),
 				Version:   e2e.CAPIVersion,
 				Name:      "docker",
