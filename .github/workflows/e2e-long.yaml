@@ -4,8 +4,7 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
-
-concurrency: ci_e2e_tests
+  merge_group:
 
 jobs:
   publish_e2e_image:
