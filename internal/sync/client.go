@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -54,7 +55,12 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object, options ...
 	}
 	patchOptions = append(patchOptions, options...)
 
-	return cl.Patch(ctx, obj, client.Merge, patchOptions...)
+	err := cl.Patch(ctx, obj, client.Merge, patchOptions...)
+	if apierrors.IsNotFound(err) {
+		return cl.Create(ctx, obj, []client.CreateOption{client.FieldOwner(fieldOwner)}...)
+	}
+
+	return err
 }
 
 // PatchStatus will only patch the status subresource of the provided object.
