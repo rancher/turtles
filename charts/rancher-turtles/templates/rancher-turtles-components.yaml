@@ -3103,9 +3103,9 @@ spec:
             - message: Config secret namespace is always equal to the resource namespace
                 and should not be set.
               rule: '!has(self.configSecret) || !has(self.configSecret.__namespace__)'
-            - message: One of fetchConfig url or selector should be set.
-              rule: '!has(self.fetchConfig) || [has(self.fetchConfig.url), has(self.fetchConfig.selector)].exists_one(e,
-                e)'
+            - message: One of fetchConfig oci, url or selector should be set.
+              rule: '!has(self.fetchConfig) || [has(self.fetchConfig.oci), has(self.fetchConfig.url),
+                has(self.fetchConfig.selector)].exists_one(e, e)'
           status:
             default: {}
             description: CAPIProviderStatus defines the observed state of CAPIProvider.

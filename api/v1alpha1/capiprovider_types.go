@@ -30,7 +30,7 @@ const (
 // CAPIProviderSpec defines the desired state of CAPIProvider.
 // +kubebuilder:validation:XValidation:message="CAPI Provider version should be in the semver format prefixed with 'v'. Example: v1.9.3",rule="!has(self.version) || self.version.matches(r\"\"\"^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?$\"\"\")"
 // +kubebuilder:validation:XValidation:message="Config secret namespace is always equal to the resource namespace and should not be set.",rule="!has(self.configSecret) || !has(self.configSecret.__namespace__)"
-// +kubebuilder:validation:XValidation:message="One of fetchConfig url or selector should be set.",rule="!has(self.fetchConfig) || [has(self.fetchConfig.url), has(self.fetchConfig.selector)].exists_one(e, e)"
+// +kubebuilder:validation:XValidation:message="One of fetchConfig oci, url or selector should be set.",rule="!has(self.fetchConfig) || [has(self.fetchConfig.oci), has(self.fetchConfig.url), has(self.fetchConfig.selector)].exists_one(e, e)"
 //
 //nolint:lll
 type CAPIProviderSpec struct {
