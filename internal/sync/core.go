@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/ptr"
@@ -51,22 +50,8 @@ func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	objKey := client.ObjectKeyFromObject(s.Destination)
-
-	err := s.client.Get(ctx, objKey, s.Destination)
-	if apierrors.IsNotFound(err) {
-		log.Info("Mirrored manifest is missing. Creating a new one.")
-
-		if err := s.client.Create(ctx, s.Destination); err != nil {
-			return fmt.Errorf("creating mirrored manifest: %w", err)
-		}
-
-		return nil
-	}
-
-	if err != nil {
+	if err := s.client.Get(ctx, objKey, s.Destination); client.IgnoreNotFound(err) != nil {
 		log.Error(err, "Unable to get mirrored manifest: "+objKey.String())
-
-		return err
 	}
 
 	return nil

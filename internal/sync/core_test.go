@@ -105,6 +105,7 @@ var _ = Describe("Core provider", func() {
 
 		s := sync.NewDefaultSynchronizer(testEnv, capiProvider, secret)
 		Expect(s.Get(ctx)).To(Succeed())
+		s.Apply(ctx, &err)
 
 		Eventually(func() error {
 			return testEnv.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
