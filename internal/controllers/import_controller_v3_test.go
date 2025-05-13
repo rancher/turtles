@@ -206,7 +206,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
@@ -214,7 +214,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).ToNot(HaveOccurred())
 			g.Expect(capiCluster.Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}).Should(Succeed())
@@ -236,7 +236,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -248,7 +248,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		capiCluster.Status.ControlPlaneReady = true
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -259,7 +259,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -282,7 +282,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, agentTlsModeSetting)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Finalizers).ToNot(ContainElement(managementv3.CapiClusterFinalizer))
@@ -299,7 +299,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		token.Status.ManifestURL = server.URL
 		Expect(cl.Status().Update(ctx, token)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			_, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -342,7 +342,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -352,7 +352,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -371,7 +371,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -406,7 +406,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -422,7 +422,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		token.Status.ManifestURL = server.URL
 		Expect(cl.Status().Update(ctx, token)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -464,7 +464,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		token.Status.ManifestURL = server.URL
 		Expect(cl.Status().Update(ctx, token)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			_, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -493,7 +493,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -505,7 +505,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -527,7 +527,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -540,7 +540,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cl.Create(ctx, clusterRegistrationToken)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
@@ -564,7 +564,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)).To(Succeed())
 			annoations := rancherCluster.GetAnnotations()
 			if annoations == nil {
@@ -592,7 +592,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
@@ -622,7 +622,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(res.Requeue).To(BeTrue())
 		}).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
+		Eventually(func(g Gomega) {
 			Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			Expect(rancherClusters.Items).To(HaveLen(0))
 		}).Should(Succeed())

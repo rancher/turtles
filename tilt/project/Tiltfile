@@ -147,7 +147,6 @@ def update_manager(yaml, containerName, debug, env, name, project):
                             continue
                         debugArgs.append(arg)
                     if debug_insecure_skip_verify:
-                        debugArgs.append("--insecure-skip-verify=true")
                         debugArgs.append("--v=5")
                     c["command"] = cmd
                     print(cmd)
