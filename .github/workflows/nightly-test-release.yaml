@@ -74,7 +74,7 @@ jobs:
       - name: setupGo
         uses: actions/setup-go@v5.4.0
         with:
-          go-version: '=1.23.0'
+          go-version: '=1.23.9'
       - name: Package operator chart
         run: RELEASE_TAG=${{ env.RELEASE_TAG }} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
 
