@@ -276,12 +276,6 @@ kind: Setting
 metadata:
   name: eula-agreed
 value: "2023-08-16T20:39:11.062Z"
----
-apiVersion: management.cattle.io/v3
-kind: Setting
-metadata:
-  name: agent-tls-mode
-value: "system-store"
 EOF
 
     kubectl rollout status deployment rancher -n cattle-system --timeout=180s
@@ -309,7 +303,6 @@ helm repo add turtles https://rancher.github.io/turtles
 helm repo update
 helm install rancher-turtles turtles/rancher-turtles --version ${RANCHER_TURTLES_VERSION} \
     -n rancher-turtles-system \
-    --set rancherTurtles.managerArguments={--insecure-skip-verify} \
     --set turtlesUI.enabled=true \
     --dependency-update \
     --create-namespace --wait \
