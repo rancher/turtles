@@ -115,13 +115,14 @@ def update_manager(yaml, containerName, debug, env, name, project):
         The debug section is expected to be in this format:
             {
                 "continue": true,
-                "port": 30000
+                "port": 30000,
+                "verbose": false
             },
     """
     print("update manager")
     debug_port = int(debug.get("port", 0))
     debug_continue = bool(debug.get("continue", "true"))
-    debug_insecure_skip_verify = bool(debug.get("insecure_skip_verify", "false"))
+    debug_verbose = bool(debug.get("verbose", "false"))
     objs = decode_yaml_stream(yaml)
     for o in objs:
         if o["kind"] == "Deployment":
@@ -146,7 +147,7 @@ def update_manager(yaml, containerName, debug, env, name, project):
                         if arg == "--leader-elect" or arg == "--leader-elect=true":
                             continue
                         debugArgs.append(arg)
-                    if debug_insecure_skip_verify:
+                    if debug_verbose:
                         debugArgs.append("--v=5")
                     c["command"] = cmd
                     print(cmd)
