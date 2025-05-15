@@ -74,6 +74,14 @@ kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 kubectl apply -f test/e2e/data/rancher/rancher-service-patch.yaml
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 
+cat << EOF | kubectl apply -f -
+apiVersion: management.cattle.io/v3
+kind: Setting
+metadata:
+  name: agent-tls-mode
+value: "system-store"
+EOF
+
 # Install the locally build chart of Rancher Turtles
 install_local_rancher_turtles_chart() {
     # Remove the previous chart directory
