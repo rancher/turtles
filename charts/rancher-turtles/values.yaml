@@ -74,6 +74,14 @@ cluster-api-operator:
       configMap:
         # name: ConfigMap for clusterctl.
         name: clusterctl-config
+  resources:
+    manager:
+      limits:
+        cpu: 100m
+        memory: 300Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
   # image: Operator manager image.
   image:
     manager:
