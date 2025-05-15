@@ -278,6 +278,18 @@ metadata:
 value: "2023-08-16T20:39:11.062Z"
 EOF
 
+    if [ "$WITH_NGROK" -eq 1 ]; then
+    show_step "Using Rancher agent-tls-mode SystemStore setting"
+
+    cat << EOF | kubectl apply -f -
+apiVersion: management.cattle.io/v3
+kind: Setting
+metadata:
+  name: agent-tls-mode
+value: "system-store"
+EOF
+    fi 
+
     kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 
     show_step "Waiting for Rancher to be READY ..."
