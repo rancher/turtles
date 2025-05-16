@@ -26,6 +26,7 @@ spec:
       name: default
       operations:
       - {"op":"remove", "path":"/spec/kubernetesProvider"}
+  insecureSkipTLSVerify: true
   targets:
   - clusterSelector:
       matchLabels:
