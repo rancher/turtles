@@ -26,7 +26,7 @@ spec:
       value: ${AWS_CONTROL_PLANE_MACHINE_TYPE}
     - name: workerMachineType
       value: ${AWS_NODE_MACHINE_TYPE}
-    version: ${KUBERNETES_VERSION}
+    version: ${AWS_KUBERNETES_VERSION}
     workers:
       machineDeployments:
       - class: default-worker

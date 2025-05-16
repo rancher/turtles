@@ -57,4 +57,6 @@ spec:
       matchExpressions:
       - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
         operator: In
-        values: [aws-rke2-example]
+        values: 
+        - aws-rke2-example
+        - aws-kubeadm-example

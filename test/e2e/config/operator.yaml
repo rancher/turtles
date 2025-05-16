@@ -46,8 +46,12 @@ variables:
   RKE2_CNI: "none"
 
   # AWS Configuration
-  AWS_REGION: "eu-west-2"
+  #
+  # AWS Kubeadm tests need specific k8s version.
+  # This is due to the limited availability of published AMIs.
+  # For a complete list, run: clusterawsadm ami list
   AWS_KUBERNETES_VERSION: "v1.31.0"
+  AWS_REGION: "eu-west-2"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   AWS_CONTROL_PLANE_MACHINE_TYPE: "t3.large"
   AWS_NODE_MACHINE_TYPE: "t3.large"
