@@ -108,6 +108,9 @@ var (
 	//go:embed data/cluster-templates/azure-rke2-topology.yaml
 	CAPIAzureRKE2Topology []byte
 
+	//go:embed data/cluster-templates/azure-kubeadm-topology.yaml
+	CAPIAzureKubeadmTopology []byte
+
 	//go:embed data/cluster-templates/vsphere-kubeadm-topology.yaml
 	CAPIvSphereKubeadmTopology []byte
 
@@ -147,23 +150,24 @@ const (
 
 	ClusterctlRepositoryFolderVar = "CLUSTERCTL_REPOSITORY_FOLDER"
 
-	KubernetesVersionVar    = "KUBERNETES_VERSION"
-	AWSKubernetesVersionVar = "AWS_KUBERNETES_VERSION"
-	RancherFeaturesVar      = "RANCHER_FEATURES"
-	RancherHostnameVar      = "RANCHER_HOSTNAME"
-	RancherVersionVar       = "RANCHER_VERSION"
-	RancherAlphaVersionVar  = "RANCHER_ALPHA_VERSION"
-	RancherPathVar          = "RANCHER_PATH"
-	RancherAlphaPathVar     = "RANCHER_ALPHA_PATH"
-	RancherUrlVar           = "RANCHER_URL"
-	RancherAlphaUrlVar      = "RANCHER_ALPHA_URL"
-	RancherRepoNameVar      = "RANCHER_REPO_NAME"
-	RancherAlphaRepoNameVar = "RANCHER_ALPHA_REPO_NAME"
-	RancherPasswordVar      = "RANCHER_PASSWORD"
-	CertManagerUrlVar       = "CERT_MANAGER_URL"
-	CertManagerRepoNameVar  = "CERT_MANAGER_REPO_NAME"
-	CertManagerPathVar      = "CERT_MANAGER_PATH"
-	CapiInfrastructureVar   = "CAPI_INFRASTRUCTURE"
+	KubernetesVersionVar      = "KUBERNETES_VERSION"
+	AWSKubernetesVersionVar   = "AWS_KUBERNETES_VERSION"
+	AzureKubernetesVersionVar = "AZURE_KUBERNETES_VERSION"
+	RancherFeaturesVar        = "RANCHER_FEATURES"
+	RancherHostnameVar        = "RANCHER_HOSTNAME"
+	RancherVersionVar         = "RANCHER_VERSION"
+	RancherAlphaVersionVar    = "RANCHER_ALPHA_VERSION"
+	RancherPathVar            = "RANCHER_PATH"
+	RancherAlphaPathVar       = "RANCHER_ALPHA_PATH"
+	RancherUrlVar             = "RANCHER_URL"
+	RancherAlphaUrlVar        = "RANCHER_ALPHA_URL"
+	RancherRepoNameVar        = "RANCHER_REPO_NAME"
+	RancherAlphaRepoNameVar   = "RANCHER_ALPHA_REPO_NAME"
+	RancherPasswordVar        = "RANCHER_PASSWORD"
+	CertManagerUrlVar         = "CERT_MANAGER_URL"
+	CertManagerRepoNameVar    = "CERT_MANAGER_REPO_NAME"
+	CertManagerPathVar        = "CERT_MANAGER_PATH"
+	CapiInfrastructureVar     = "CAPI_INFRASTRUCTURE"
 
 	NgrokRepoNameVar  = "NGROK_REPO_NAME"
 	NgrokUrlVar       = "NGROK_URL"

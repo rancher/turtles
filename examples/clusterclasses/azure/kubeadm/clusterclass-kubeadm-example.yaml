@@ -1,0 +1,331 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: azure-kubeadm-example
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: azure-machine-control-plane
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: KubeadmControlPlaneTemplate
+      name: kubeadm-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureClusterTemplate
+      name: azure-kubeadm-cluster
+  workers:
+    machineDeployments:
+      - class: kubeadm-default-worker
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: kubeadm-default-worker-bootstrap
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: AzureMachineTemplate
+              name: kubeadm-default-worker
+  variables:
+    - name: subscriptionID
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Azure Subscription ID where the Cluster will be created."
+          type: string
+    - name: location
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Azure location where the Cluster will be created."
+          type: string
+          enum:
+            - australiaeast
+            - francecentral
+            - germanywestcentral
+            - northcentralus
+            - northeurope
+            - switzerlandnorth
+            - uksouth
+            - westeurope
+            - westus2
+    - name: resourceGroup
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The Azure Resource Group where the Cluster will be created."
+          type: string
+    - name: azureClusterIdentityName
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The AzureClusterIdentity resource name referencing the credentials to create the Cluster."
+          type: string
+          default: "cluster-identity"
+    - name: imageGallery
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The image Public gallery name."
+          type: string
+          default: "ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019"
+    - name: imageName
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The image name"
+          type: string
+          default: "capi-ubun2-2404"
+    - name: vmSize
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "The VM size used by machines."
+          type: string
+          default: "Standard_D2s_v3"
+  patches:
+    - name: azureClusterTemplate
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/subscriptionID"
+              valueFrom:
+                variable: subscriptionID
+            - op: add
+              path: "/spec/template/spec/location"
+              valueFrom:
+                variable: location
+            - op: add
+              path: "/spec/template/spec/resourceGroup"
+              valueFrom:
+                variable: resourceGroup
+            - op: add
+              path: "/spec/template/spec/identityRef/name"
+              valueFrom:
+                variable: azureClusterIdentityName
+    - definitions:
+        - jsonPatches:
+            - op: add
+              path: /spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/cluster-name
+              valueFrom:
+                variable: builtin.cluster.name
+            - op: replace
+              path: /spec/template/spec/kubeadmConfigSpec/files
+              valueFrom:
+                template: |
+                  - contentFrom:
+                      secret:
+                        key: control-plane-azure.json
+                        name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
+                    owner: root:root
+                    path: /etc/kubernetes/azure.json
+                    permissions: "0644"
+          selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            kind: KubeadmControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - kubeadm-default-worker
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/image/computeGallery/gallery"
+              valueFrom:
+                variable: imageGallery
+            - op: add
+              path: "/spec/template/spec/image/computeGallery/name"
+              valueFrom:
+                variable: imageName
+            - op: replace
+              path: /spec/template/spec/image/computeGallery/version
+              valueFrom:
+                template: '{{ trimPrefix "v" (trimSuffix "+rke2r1" .builtin.cluster.topology.version) }}'
+            - op: add
+              path: "/spec/template/spec/vmSize"
+              valueFrom:
+                variable: vmSize
+      name: controlPlaneAzureJsonSecretName
+    - definitions:
+        - jsonPatches:
+            - op: replace
+              path: /spec/template/spec/files
+              valueFrom:
+                template: |
+                  - contentFrom:
+                      secret:
+                        key: worker-node-azure.json
+                        name: "{{ .builtin.machineDeployment.infrastructureRef.name }}-azure-json"
+                    owner: root:root
+                    path: /etc/kubernetes/azure.json
+                    permissions: "0644"
+          selector:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - kubeadm-default-worker
+      name: workerAzureJsonSecretName
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterTemplate
+metadata:
+  name: azure-kubeadm-cluster
+spec:
+  template:
+    spec:
+      identityRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureClusterIdentity
+        name: cluster-identity
+      location: "TO_BE_REPLACED_BY_PATCH"
+      networkSpec:
+        subnets:
+          - name: control-plane-subnet
+            role: control-plane
+          - name: node-subnet
+            natGateway:
+              name: node-natgateway
+            role: node
+      subscriptionID: "TO_BE_REPLACED_BY_PATCH"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: azure-machine-control-plane
+spec:
+  template:
+    spec:
+      dataDisks:
+        - diskSizeGB: 256
+          lun: 0
+          nameSuffix: etcddisk
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      vmSize: "TO_BE_REPLACED_BY_PATCH"
+      image:
+        computeGallery:
+          gallery: "TO_BE_REPLACED_BY_PATCH"
+          name: "TO_BE_REPLACED_BY_PATCH"
+          version: "TO_BE_REPLACED_BY_PATCH"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: kubeadm-default-worker
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: "TO_BE_REPLACED_BY_PATCH"
+          name: "TO_BE_REPLACED_BY_PATCH"
+          version: "TO_BE_REPLACED_BY_PATCH"
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      vmSize: "TO_BE_REPLACED_BY_PATCH"
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlaneTemplate
+metadata:
+  name: kubeadm-control-plane
+spec:
+  template:
+    spec:
+      kubeadmConfigSpec:
+        clusterConfiguration:
+          apiServer:
+            extraArgs: {}
+            timeoutForControlPlane: 20m
+          controllerManager:
+            extraArgs:
+              allocate-node-cidrs: "false"
+              cloud-provider: external
+              cluster-name: "TO_BE_REPLACED_BY_PATCH"
+          etcd:
+            local:
+              dataDir: /var/lib/etcddisk/etcd
+              extraArgs:
+                quota-backend-bytes: "8589934592"
+        diskSetup:
+          filesystems:
+            - device: /dev/disk/azure/scsi1/lun0
+              extraOpts:
+                - -E
+                - lazy_itable_init=1,lazy_journal_init=1
+              filesystem: ext4
+              label: etcd_disk
+            - device: ephemeral0.1
+              filesystem: ext4
+              label: ephemeral0
+              replaceFS: ntfs
+          partitions:
+            - device: /dev/disk/azure/scsi1/lun0
+              layout: true
+              overwrite: false
+              tableType: gpt
+        files:
+          - contentFrom:
+              secret:
+                key: control-plane-azure.json
+                name: replace_me
+            owner: root:root
+            path: /etc/kubernetes/azure.json
+            permissions: "0644"
+        initConfiguration:
+          nodeRegistration:
+            kubeletExtraArgs:
+              cloud-provider: external
+            name: '{{ ds.meta_data["local_hostname"] }}'
+        joinConfiguration:
+          nodeRegistration:
+            kubeletExtraArgs:
+              cloud-provider: external
+            name: '{{ ds.meta_data["local_hostname"] }}'
+        mounts:
+          - - LABEL=etcd_disk
+            - /var/lib/etcddisk
+        postKubeadmCommands: []
+        preKubeadmCommands: []
+        verbosity: 10
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: kubeadm-default-worker-bootstrap
+spec:
+  template:
+    spec:
+      files:
+        - contentFrom:
+            secret:
+              key: worker-node-azure.json
+              name: replace_me
+          owner: root:root
+          path: /etc/kubernetes/azure.json
+          permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands: []

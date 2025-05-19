@@ -45,6 +45,9 @@ variables:
   RKE2_VERSION: "v1.31.7+rke2r1"
   RKE2_CNI: "none"
 
+  # Azure Configuration
+  AZURE_KUBERNETES_VERSION: "v1.31.1"
+
   # AWS Configuration
   #
   # AWS Kubeadm tests need specific k8s version.
