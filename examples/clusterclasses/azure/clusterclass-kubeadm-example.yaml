@@ -76,7 +76,7 @@ spec:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
               kind: AzureMachineTemplate
-              name: ${CLUSTER_NAME}-md-0
+              name: kubeadm-default-worker
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterTemplate
@@ -120,7 +120,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: kubeadm-default-worker
 spec:
   template:
     spec:
