@@ -61,11 +61,11 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - ${CLUSTER_NAME}-worker
+                  - kubeadm-default-worker-bootstrap
       name: workerAzureJsonSecretName
   workers:
     machineDeployments:
-      - class: ${CLUSTER_NAME}-worker
+      - class: kubeadm-default-worker
         template:
           bootstrap:
             ref:
