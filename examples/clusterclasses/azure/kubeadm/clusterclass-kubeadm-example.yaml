@@ -86,7 +86,7 @@ spec:
               controlPlane: true
           jsonPatches:
             - op: add
-              path: /spec/template/spec/files/-
+              path: /spec/template/spec/kubeadmConfigSpec/files/-
               valueFrom:
                 template: |
                   contentFrom:
