@@ -18,6 +18,20 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureClusterTemplate
       name: azure-kubeadm-cluster
+  workers:
+    machineDeployments:
+      - class: kubeadm-default-worker
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: kubeadm-default-worker-bootstrap
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: AzureMachineTemplate
+              name: kubeadm-default-worker
   patches:
     - definitions:
         - jsonPatches:
@@ -61,7 +75,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - kubeadm-default-worker-bootstrap
+                  - kubeadm-default-worker
       name: workerAzureJsonSecretName
     - name: azureMachineTemplate
       definitions:
@@ -90,7 +104,6 @@ spec:
               machineDeploymentClass:
                 names:
                   - kubeadm-default-worker
-                  - azure-machine-control-plane
           jsonPatches:
             - op: add
               path: "/spec/template/spec/vmSize"
@@ -124,20 +137,6 @@ spec:
               path: "/spec/template/spec/networkSpec/vnet/name"
               valueFrom:
                 variable: builtin.cluster.name
-  workers:
-    machineDeployments:
-      - class: kubeadm-default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-              kind: KubeadmConfigTemplate
-              name: kubeadm-default-worker-bootstrap
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-              kind: AzureMachineTemplate
-              name: kubeadm-default-worker
   variables:
     - name: subscriptionID
       required: true
