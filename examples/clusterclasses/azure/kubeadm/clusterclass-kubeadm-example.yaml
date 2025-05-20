@@ -55,7 +55,20 @@ spec:
             kind: KubeadmControlPlaneTemplate
             matchResources:
               controlPlane: true
-      name: controlPlaneAzureJsonSecretName
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - kubeadm-default-worker
+          jsonPatches:
+            - op: add
+              path: "/spec/template/spec/vmSize"
+              valueFrom:
+                variable: vmSize
+      name: azureMachineTemplate
     - definitions:
         - jsonPatches:
             - op: replace
@@ -77,38 +90,6 @@ spec:
                 names:
                   - kubeadm-default-worker
       name: workerAzureJsonSecretName
-    - name: azureMachineTemplate
-      definitions:
-        - selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-            kind: KubeadmControlPlaneTemplate
-            matchResources:
-              controlPlane: true
-          jsonPatches:
-            - op: add
-              path: /spec/template/spec/kubeadmConfigSpec/files/-
-              valueFrom:
-                template: |
-                  contentFrom:
-                    secret:
-                      key: control-plane-azure.json
-                      name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
-                  owner: root:root
-                  path: /etc/kubernetes/azure.json
-                  permissions: "0644"
-        - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: AzureMachineTemplate
-            matchResources:
-              controlPlane: true
-              machineDeploymentClass:
-                names:
-                  - kubeadm-default-worker
-          jsonPatches:
-            - op: add
-              path: "/spec/template/spec/vmSize"
-              valueFrom:
-                variable: vmSize
     - name: azureClusterTemplate
       definitions:
         - selector:
