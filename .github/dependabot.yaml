@@ -118,6 +118,34 @@ updates:
       - dependency-name: "go.etcd.io/*"
       - dependency-name: "google.golang.org/grpc"
 
+  # Examples package
+  - package-ecosystem: "gomod"
+    directory: "/examples"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "kind/cleanup"
+      - "area/dependency"
+    groups:
+      testing-dependencies:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
+      provider-dependencies:
+        patterns:
+          - "*cluster-api-provider*"
+      other-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Ignore controller-runtime as its upgraded manually.
+      - dependency-name: "sigs.k8s.io/controller-runtime"
+      # Ignore k8s and its transitives modules as they are upgraded manually
+      # together with controller-runtime.
+      - dependency-name: "k8s.io/*"
+      - dependency-name: "go.etcd.io/*"
+      - dependency-name: "google.golang.org/grpc"
+
   # Docker updates
   - package-ecosystem: "docker"
     directory: "/"
