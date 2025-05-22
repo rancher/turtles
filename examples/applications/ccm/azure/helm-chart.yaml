@@ -15,7 +15,11 @@ spec:
         caCertDir: /etc/ssl
         hostNetworking: true
         nodeSelector:
+          ${- if contains "KubeadmControlPlane" ( .ClusterValues | quote ) }
+          node-role.kubernetes.io/control-plane: ""
+          ${- else }
           node-role.kubernetes.io/control-plane: "true"
+          ${- end }
   insecureSkipTLSVerify: true
   targets:
   - clusterSelector:
