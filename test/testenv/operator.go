@@ -20,9 +20,11 @@ import (
 	"bytes"
 	"context"
 	"html/template"
+	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +48,9 @@ type CAPIOperatorDeployProviderInput struct {
 	// CAPIProvidersYAML is the YAML representation of the CAPI providers.
 	CAPIProvidersYAML [][]byte
 
+	// CAPIProvidersOCIYAML is the YAML representation of the CAPI providers with OCI.
+	CAPIProvidersOCIYAML []OCIProvider
+
 	// TemplateData is the data used for templating.
 	TemplateData TemplateData
 
@@ -62,9 +67,34 @@ type TemplateData struct {
 	GCPEncodedCredentials string `env:"CAPG_ENCODED_CREDS"`
 }
 
+// ProviderTemplateData contains variables used for templating
+type ProviderTemplateData struct {
+	// ProviderVersion is the version of the provider
+	ProviderVersion string
+}
+
 type NamespaceName struct {
 	Name      string
 	Namespace string
+}
+
+type OCIProvider struct {
+	Name string
+	File string
+}
+
+// Provider represents a cluster-api provider with version
+type Provider struct {
+	Name    string `yaml:"name"`
+	Type    string `yaml:"type"`
+	URL     string `yaml:"url"`
+	Version string // Parsed from URL
+}
+
+// ClusterctlConfig represents the structure of clusterctl.yaml
+type ClusterctlConfig struct {
+	Images    map[string]interface{} `yaml:"images"`
+	Providers []Provider             `yaml:"providers"`
 }
 
 // CAPIOperatorDeployProvider deploys the CAPI operator providers.
@@ -76,7 +106,11 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
-	Expect(input.CAPIProvidersYAML).ToNot(BeNil(), "CAPIProvidersYAML is required for CAPIOperatorDeployProvider")
+	// Ensure at least one provider source is available
+	if (input.CAPIProvidersYAML == nil || len(input.CAPIProvidersYAML) == 0) &&
+		(input.CAPIProvidersOCIYAML == nil || len(input.CAPIProvidersOCIYAML) == 0) {
+		Expect(false).To(BeTrue(), "Either CAPIProvidersYAML or CAPIProvidersOCIYAML must be provided")
+	}
 
 	for _, secret := range input.CAPIProvidersSecretsYAML {
 		secret := secret
@@ -93,6 +127,27 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 
 		By("Adding CAPI Operator provider")
 		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, provider)).To(Succeed(), "Failed to add CAPI operator providers")
+	}
+
+	for _, ociProvider := range input.CAPIProvidersOCIYAML {
+		if ociProvider.Name != "" && ociProvider.File != "" {
+			By("Adding CAPI Operator provider from OCI: " + ociProvider.Name)
+
+			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
+				GetLister:          input.BootstrapClusterProxy.GetClient(),
+				ConfigMapNamespace: "rancher-turtles-system",
+				ConfigMapName:      "clusterctl-config",
+			})
+
+			providerVersion := getProviderVersion(clusterctl, ociProvider.Name)
+			By("Using provider version " + providerVersion + " provider " + ociProvider.Name)
+			Expect(providerVersion).ToNot(BeEmpty(), "Failed to get provider versions from file")
+
+			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+				Proxy:    input.BootstrapClusterProxy,
+				Template: renderProviderTemplate(ociProvider.File, ProviderTemplateData{ProviderVersion: providerVersion}),
+			})).To(Succeed(), "Failed to apply secret for capi providers")
+		}
 	}
 
 	if len(input.WaitForDeployments) == 0 {
@@ -128,4 +183,45 @@ func getFullProviderVariables(operatorTemplate string, data TemplateData) []byte
 	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
 
 	return renderedTemplate.Bytes()
+}
+
+func renderProviderTemplate(operatorTemplateFile string, data ProviderTemplateData) []byte {
+	Expect(turtlesframework.Parse(&data)).To(Succeed(), "Failed to parse environment variables")
+
+	t := template.New("capi-operator")
+	t, err := t.Parse(operatorTemplateFile)
+	Expect(err).ShouldNot(HaveOccurred(), "Failed to parse template")
+
+	var renderedTemplate bytes.Buffer
+	err = t.Execute(&renderedTemplate, data)
+	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
+
+	return renderedTemplate.Bytes()
+}
+
+// getProviderVersionsFromFile reads the local config.yaml file and parses provider versions
+func getProviderVersion(clusterctlYaml string, name string) string {
+	var config ClusterctlConfig
+	err := yaml.Unmarshal([]byte(clusterctlYaml), &config)
+	Expect(err).ShouldNot(HaveOccurred(), "Failed to parse clusterctl.yaml content")
+
+	// Extract versions from provider URLs
+	versionRegex := regexp.MustCompile(`/releases/(v?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?)/`)
+
+	for _, provider := range config.Providers {
+		if provider.Name == name {
+			return extractVersionFromURL(provider.URL, versionRegex)
+		}
+	}
+
+	return ""
+}
+
+// extractVersionFromURL extracts version from GitHub release URL
+func extractVersionFromURL(url string, regex *regexp.Regexp) string {
+	matches := regex.FindStringSubmatch(url)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }
