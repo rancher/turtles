@@ -1,0 +1,18 @@
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: aws
+  namespace: capa-system
+spec:
+  type: infrastructure
+  name: aws
+  version: "{{ .ProviderVersion }}"
+  fetchConfig:
+    oci: registry.rancher.com/rancher/cluster-api-aws-controller-components:"{{ .ProviderVersion }}"
+  variables:
+    EXP_MACHINE_POOL: "true"
+    EXP_EXTERNAL_RESOURCE_GC: "true"
+    CAPA_LOGLEVEL: "4"
+  manager:
+    syncPeriod: "5m"
