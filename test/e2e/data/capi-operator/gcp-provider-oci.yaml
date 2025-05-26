@@ -6,5 +6,7 @@ metadata:
   namespace: capg-system
 spec:
   type: infrastructure
+  name: gcp
+  version: "{{ .ProviderVersion }}"
   fetchConfig:
-    oci: registry.rancher.com/rancher/cluster-api-gcp-controller-components:v1.9.0
+    oci: registry.rancher.com/rancher/cluster-api-gcp-controller-components:"{{ .ProviderVersion }}"
