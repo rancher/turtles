@@ -6,3 +6,5 @@ metadata:
   namespace: capz-system
 spec:
   type: infrastructure
+  fetchConfig:
+    oci: registry.rancher.com/rancher/cluster-api-azure-controller-components:v1.19.1

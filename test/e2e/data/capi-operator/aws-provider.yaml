@@ -6,6 +6,8 @@ metadata:
   namespace: capa-system
 spec:
   type: infrastructure
+  fetchConfig:
+    oci: registry.rancher.com/rancher/cluster-api-aws-controller-components:v2.8.1
   variables:
     EXP_MACHINE_POOL: "true"
     EXP_EXTERNAL_RESOURCE_GC: "true"
