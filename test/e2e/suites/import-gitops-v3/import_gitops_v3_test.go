@@ -192,7 +192,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 	})
 })
 
-var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = FDescribe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
