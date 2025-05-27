@@ -199,7 +199,7 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureClusterIdentity
         name: cluster-identity
-      location: "REPLACE_ME"
+      location: "TO_BE_REPLACED_BY_PATCH"
       networkSpec:
         subnets:
           - name: control-plane-subnet
@@ -208,7 +208,7 @@ spec:
             natGateway:
               name: node-natgateway
             role: node
-      subscriptionID: "REPLACE_ME"
+      subscriptionID: "TO_BE_REPLACED_BY_PATCH"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
@@ -224,7 +224,7 @@ spec:
       osDisk:
         diskSizeGB: 128
         osType: Linux
-      vmSize: "REPLACE_ME"
+      vmSize: "TO_BE_REPLACED_BY_PATCH"
       image:
         computeGallery:
           gallery: "TO_BE_REPLACED_BY_PATCH"
@@ -246,7 +246,7 @@ spec:
       osDisk:
         diskSizeGB: 128
         osType: Linux
-      vmSize: "REPLACE_ME"
+      vmSize: "TO_BE_REPLACED_BY_PATCH"
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
@@ -264,7 +264,7 @@ spec:
             extraArgs:
               allocate-node-cidrs: "false"
               cloud-provider: external
-              cluster-name: "REPLACE_ME"
+              cluster-name: "TO_BE_REPLACED_BY_PATCH"
           etcd:
             local:
               dataDir: /var/lib/etcddisk/etcd
