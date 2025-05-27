@@ -21,6 +21,8 @@ kind: Cluster
 metadata:
   labels:
     cluster-api.cattle.io/rancher-auto-import: "true"
+    cni: calico
+    cloud-provider: azure
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
@@ -32,7 +34,7 @@ spec:
     class: azure-kubeadm-example
     classNamespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
-      replicas: 3
+      replicas: 1
     variables:
       - name: subscriptionID
         value: ${AZURE_SUBSCRIPTION_ID}
@@ -42,12 +44,10 @@ spec:
         value: highlander-e2e-azure-kubeadm
       - name: azureClusterIdentityName
         value: cluster-identity
-      - name: registrationMethod
-        value: internal-first
     version: ${KUBERNETES_VERSION}
     workers:
       machineDeployments:
         - class: default-worker
           name: md-0
-          replicas: 3
+          replicas: 1
 
