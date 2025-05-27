@@ -158,8 +158,8 @@ github.com/prometheus/common v0.62.0 h1:xasJaQlnWAeyHdUBeGjXmutelfJHWMRr+Fg4QszZ
 github.com/prometheus/common v0.62.0/go.mod h1:vyBcEuLSvWos9B1+CyL7JZ2up+uFzXhkqml0W5zIY1I=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
-github.com/rancher/cluster-api-provider-rke2 v0.15.1 h1:TbSV0JPvX47AhMJY9j9u12LunAcfOkYcjJ3YI9X27a4=
-github.com/rancher/cluster-api-provider-rke2 v0.15.1/go.mod h1:Vn0kxG/FmSiP3lvPoSKpt43Yd3yvVyi9jZe03e+Agps=
+github.com/rancher/cluster-api-provider-rke2 v0.16.0 h1:tInXIpl57sS+SObwq9QPWUv8mpsnwvQrHzmiSCxurZ0=
+github.com/rancher/cluster-api-provider-rke2 v0.16.0/go.mod h1:Vn0kxG/FmSiP3lvPoSKpt43Yd3yvVyi9jZe03e+Agps=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
 github.com/shopspring/decimal v1.4.0 h1:bxl37RwXBklmTi0C79JfXCEBD1cqqHt0bbgBAGFp81k=
