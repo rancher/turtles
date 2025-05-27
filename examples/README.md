@@ -4,6 +4,15 @@ This CLI tool is designed to extract and apply cluster class examples.
 
 ## Usage
 
+From the `examples/` directory, configure the go workspace and download the dependencies:
+
+```bash
+go work use ./
+go mod download
+```
+
+Run the program with:
+
 ```bash
 go run main.go <search_key>
 ```
