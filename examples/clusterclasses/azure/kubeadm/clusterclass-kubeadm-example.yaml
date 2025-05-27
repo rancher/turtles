@@ -143,6 +143,11 @@ spec:
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - kubeadm-default-worker
           jsonPatches:
             - op: add
               path: "/spec/template/spec/image/computeGallery/gallery"
@@ -180,7 +185,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                  - kubeadm-default-worker-bootstrap
+                  - kubeadm-default-worker
       name: workerAzureJsonSecretName
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
