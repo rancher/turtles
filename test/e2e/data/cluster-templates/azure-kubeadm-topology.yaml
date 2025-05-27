@@ -47,7 +47,7 @@ spec:
     version: ${KUBERNETES_VERSION}
     workers:
       machineDeployments:
-        - class: default-worker
+        - class: kubeadm-default-worker
           name: md-0
           replicas: 1
 
