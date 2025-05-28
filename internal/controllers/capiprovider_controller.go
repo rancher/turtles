@@ -59,6 +59,28 @@ func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, capiProvider *tu
 	return r.reconcileNormal(ctx, capiProvider)
 }
 
+// SetupWithManager sets up the controller with the Manager.
+func (r *CAPIProviderReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) (err error) {
+	b := ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
+		For(&turtlesv1.CAPIProvider{})
+
+	resources := []client.Object{
+		&operatorv1.CoreProvider{},
+		&operatorv1.ControlPlaneProvider{},
+		&operatorv1.InfrastructureProvider{},
+		&operatorv1.BootstrapProvider{},
+		&operatorv1.AddonProvider{},
+		&corev1.Secret{},
+	}
+
+	for _, resource := range resources {
+		b = b.Owns(resource)
+	}
+
+	return b.Complete(reconcile.AsReconciler(r.Client, r))
+}
+
 func (r *CAPIProviderReconciler) reconcileNormal(ctx context.Context, capiProvider *turtlesv1.CAPIProvider) (_ ctrl.Result, err error) {
 	return r.sync(ctx, capiProvider)
 }
@@ -90,26 +112,4 @@ func (r *CAPIProviderReconciler) sync(ctx context.Context, capiProvider *turtles
 
 func (r *CAPIProviderReconciler) patchStatus(ctx context.Context, capiProvider *turtlesv1.CAPIProvider, err *error) {
 	*err = sync.PatchStatus(ctx, r.Client, capiProvider)
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *CAPIProviderReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) (err error) {
-	b := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
-		For(&turtlesv1.CAPIProvider{})
-
-	resources := []client.Object{
-		&operatorv1.CoreProvider{},
-		&operatorv1.ControlPlaneProvider{},
-		&operatorv1.InfrastructureProvider{},
-		&operatorv1.BootstrapProvider{},
-		&operatorv1.AddonProvider{},
-		&corev1.Secret{},
-	}
-
-	for _, resource := range resources {
-		b = b.Owns(resource)
-	}
-
-	return b.Complete(reconcile.AsReconciler(r.Client, r))
 }
