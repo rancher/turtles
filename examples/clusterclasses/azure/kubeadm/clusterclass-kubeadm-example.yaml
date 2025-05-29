@@ -114,10 +114,6 @@ spec:
               path: "/spec/template/spec/identityRef/name"
               valueFrom:
                 variable: azureClusterIdentityName
-            - op: add
-              path: "/spec/template/spec/networkSpec/vnet/name"
-              valueFrom:
-                variable: builtin.cluster.name
     - definitions:
         - jsonPatches:
             - op: add
