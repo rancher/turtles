@@ -280,6 +280,29 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
 			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
 
+		if capiCluster.Spec.InfrastructureRef.Kind == "AzureCluster" && capiCluster.Spec.ControlPlaneRef.Kind == "KubeadmControlPlane" {
+			// Temporarily modify FleetAddonConfig .spec.cluster.patchResource = false to get past the race condition for installing fleet agent in the workload/downstream cluster.
+			// This value will be restored by the CAAPF provider.
+			// Ref: https://github.com/rancher/cluster-api-addon-provider-fleet/issues/313
+			cmdResult := new(turtlesframework.RunCommandResult)
+			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+				Command: "kubectl",
+				Args: []string{
+					"--kubeconfig",
+					rancherKubeconfig.TempFilePath,
+					"apply",
+					"FleetAddonConfig",
+					"fleet-addon-config",
+					"--type=json",
+					"-p",
+					"'[{\"op\": \"replace\", \"path\": \"/spec/cluster/patchResource\", \"value\": false}]'",
+					"--insecure-skip-tls-verify",
+				},
+			}, cmdResult)
+			Expect(cmdResult.Error).NotTo(HaveOccurred(), "Failed apply the patch")
+			Expect(cmdResult.ExitCode).To(Equal(0), "Applying patch returned non-zero exit code")
+		}
+
 		By("Waiting for cluster control plane to be Ready")
 		Eventually(komega.Object(capiCluster), capiClusterCreateWait...).Should(HaveField("Status.ControlPlaneReady", BeTrue()))
 

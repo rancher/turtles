@@ -21,8 +21,6 @@ package import_gitops_v3
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"k8s.io/utils/ptr"
@@ -201,26 +199,8 @@ var _ = FDescribe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and dele
 		komega.SetContext(ctx)
 
 		topologyNamespace = "creategitops-azure-kubeadm"
-		// TODO: Modify FleetAddonConfig .spec.cluster.patchResource = false
-		cmdResult := new(turtlesframework.RunCommandResult)
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-			Command: "kubectl",
-			Args: []string{
-				"--kubeconfig",
-				bootstrapClusterProxy.GetKubeconfigPath(),
-				"apply",
-				"FleetAddonConfig",
-				"fleet-addon-config",
-				"--type=json",
-				"-p",
-				"'[{\"op\": \"replace\", \"path\": \"/spec/cluster/patchResource\", \"value\": false}]'",
-				"--insecure-skip-tls-verify",
-			},
-		}, cmdResult)
-		gomega.Expect(cmdResult.Error).NotTo(gomega.HaveOccurred(), "Failed apply the patch")
-		gomega.Expect(cmdResult.ExitCode).To(gomega.Equal(0), "Applying patch returned non-zero exit code")
-
 	})
+
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
