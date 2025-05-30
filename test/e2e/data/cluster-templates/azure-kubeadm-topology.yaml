@@ -44,7 +44,7 @@ spec:
         value: highlander-e2e-azure-kubeadm
       - name: azureClusterIdentityName
         value: cluster-identity
-    version: ${KUBERNETES_VERSION}
+    version: ${AZURE_KUBERNETES_VERSION}
     workers:
       machineDeployments:
         - class: kubeadm-default-worker

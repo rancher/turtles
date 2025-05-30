@@ -234,6 +234,9 @@ var _ = FDescribe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariable(e2e.AzureKubernetesVersionVar), // override the default k8s version
+			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-classes-regular",
