@@ -209,13 +209,14 @@ var _ = FDescribe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and dele
 			},
 			CAPIProvidersYAML: [][]byte{
 				e2e.AzureProvider,
+				e2e.CapiProviders,
 			},
-			WaitForDeployments: []testenv.NamespaceName{
+			WaitForDeployments: append([]testenv.NamespaceName{
 				{
 					Name:      "capz-controller-manager",
 					Namespace: "capz-system",
 				},
-			},
+			}, testenv.DefaultDeployments...),
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
