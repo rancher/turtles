@@ -280,7 +280,8 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
 			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
 
-		if capiCluster.Spec.InfrastructureRef.Kind == "AzureCluster" && capiCluster.Spec.ControlPlaneRef.Kind == "KubeadmControlPlane" {
+		cluster := &clusterv1.Cluster{}
+		if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiCluster), cluster); err != nil && cluster.Spec.InfrastructureRef.Kind == "AzureCluster" && cluster.Spec.ControlPlaneRef.Kind == "KubeadmControlPlane" {
 			// Temporarily modify FleetAddonConfig .spec.cluster.patchResource = false to get past the race condition for installing fleet agent in the workload/downstream cluster.
 			// This value will be restored by the CAAPF provider.
 			// Ref: https://github.com/rancher/cluster-api-addon-provider-fleet/issues/313
