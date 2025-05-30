@@ -83,7 +83,7 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 		input.Namespace = DefaultNamespace
 	}
 
-	By("Getting Rancher kubeconfig secret")
+	Byf("Getting Rancher kubeconfig secret: %s/%s", input.Namespace, input.SecretName)
 	secret := &corev1.Secret{}
 
 	Eventually(
