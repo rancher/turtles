@@ -240,18 +240,21 @@ var _ = FDescribe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and dele
 					Paths:           []string{"examples/clusterclasses/azure/kubeadm"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
+					Branch:          "azure-kubeadm-clusterclass",
 				},
 				{
 					Name:            "azure-ccm-regular",
 					Paths:           []string{"examples/applications/ccm/azure"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
+					Branch:          "azure-kubeadm-clusterclass",
 				},
 				{
 					Name:            "azure-cni",
 					Paths:           []string{"examples/applications/cni/calico"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
+					Branch:          "azure-kubeadm-clusterclass",
 				},
 			},
 		}
