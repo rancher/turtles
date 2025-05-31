@@ -13,7 +13,7 @@ keywords:
 - provisioning
 dependencies:
   - name: cluster-api-operator
-    version: v0.18.1
+    version: v0.20.0
     repository: https://kubernetes-sigs.github.io/cluster-api-operator
     condition: cluster-api-operator.enabled
 annotations:
