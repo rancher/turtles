@@ -36,3 +36,4 @@ spec:
         operator: In
         values:
           - aws-kubeadm-example
+          - aws-rke2-example

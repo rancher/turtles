@@ -4,6 +4,7 @@ kind: Cluster
 metadata:
   labels:
     cloud-provider: aws
+    cni: calico
     csi: aws-ebs-csi-driver
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
@@ -28,6 +29,8 @@ spec:
       value: ${AWS_RKE2_NODE_MACHINE_TYPE}
     - name: amiID
       value: ${AWS_AMI_ID}
+    - name: cni
+      value: none
     version: ${RKE2_VERSION}
     workers:
       machineDeployments:
