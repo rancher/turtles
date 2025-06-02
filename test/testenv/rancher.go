@@ -264,6 +264,18 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	_, err = chart.Run(values)
 	Expect(err).ToNot(HaveOccurred())
 
+	if len(input.RancherIngressConfig) > 0 { // only true when using kind + ngrok
+		By("Setting up ingress")
+		ingress, err := envsubst.Eval(string(input.RancherIngressConfig), os.Getenv)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
+		input.RancherPatches = append(input.RancherPatches, e2e.SystemStoreSettingPatch)
+	}
+	if len(input.RancherServicePatch) > 0 {
+		By("Updating rancher svc")
+		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.RancherServicePatch)).To(Succeed())
+	}
+
 	By("Updating rancher configuration")
 	for _, patch := range input.RancherPatches {
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
@@ -273,17 +285,6 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 				e2e.RancherHostnameVar: input.RancherHost,
 			},
 		})).To(Succeed())
-	}
-
-	if len(input.RancherIngressConfig) > 0 {
-		By("Setting up ingress")
-		ingress, err := envsubst.Eval(string(input.RancherIngressConfig), os.Getenv)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
-	}
-	if len(input.RancherServicePatch) > 0 {
-		By("Updating rancher svc")
-		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.RancherServicePatch)).To(Succeed())
 	}
 
 	By("Waiting for rancher webhook rollout")
