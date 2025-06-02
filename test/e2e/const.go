@@ -57,6 +57,9 @@ var (
 	//go:embed data/rancher/ingress.yaml
 	IngressConfig []byte
 
+	//go:embed data/rancher/system-store-setting-patch.yaml
+	SystemStoreSettingPatch []byte
+
 	//go:embed data/rancher/rancher-service-patch.yaml
 	RancherServicePatch []byte
 
