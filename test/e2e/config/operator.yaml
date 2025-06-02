@@ -46,6 +46,10 @@ variables:
   RKE2_CNI: "none"
 
   # Azure Configuration
+  #
+  # Azure Kubeadm tests need specific k8s version.
+  # This is due to the limited availability of published AMIs.
+  # For example: https://portal.azure.com/#@suseazuredev.onmicrosoft.com/resource/providers/Microsoft.Compute/locations/FranceCentral/CommunityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/Images/capi-ubun2-2204/overview
   AZURE_KUBERNETES_VERSION: "v1.31.1"
 
   # AWS Configuration
