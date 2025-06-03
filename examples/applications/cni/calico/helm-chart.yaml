@@ -36,6 +36,7 @@ spec:
         operator: In
         values:
           - azure-rke2-example
+          - azure-kubeadm-example
           - docker-kubeadm-example
           - docker-rke2-example
           - etcd-snapshot-restore
