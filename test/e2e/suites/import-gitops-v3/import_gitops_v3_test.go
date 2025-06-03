@@ -240,7 +240,7 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
-					Name:            "azure-cluster-classes-regular",
+					Name:            "azure-cluster-class-kubeadm",
 					Paths:           []string{"examples/clusterclasses/azure/kubeadm"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
@@ -308,7 +308,7 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 			TopologyNamespace:              topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
-					Name:            "azure-cluster-classes-regular",
+					Name:            "azure-cluster-class-rke2",
 					Paths:           []string{"examples/clusterclasses/azure/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
@@ -492,7 +492,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			TopologyNamespace:              topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
-					Name:            "aws-cluster-classes-regular",
+					Name:            "aws-cluster-class-rke2",
 					Paths:           []string{"examples/clusterclasses/aws/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
