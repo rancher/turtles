@@ -509,6 +509,12 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
+				{
+					Name:            "aws-cni",
+					Paths:           []string{"examples/applications/cni/aws/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})
