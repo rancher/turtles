@@ -56,8 +56,8 @@ var _ = Describe("[Docker] [RKE2] Perform an ETCD backup and restore of the clus
 			TopologyNamespace:           topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
-					Name:            "docker-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/docker"},
+					Name:            "docker-cluster-class-rke2",
+					Paths:           []string{"examples/clusterclasses/docker/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},

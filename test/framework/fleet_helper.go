@@ -19,6 +19,7 @@ package framework
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -94,6 +96,10 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	Expect(input.Paths).ToNot(HaveLen(0), "Invalid argument. input.Paths can't be empty when calling FleetCreateGitRepo")
 
 	Byf("Creating GitRepo from template %s with path %s", input.Name, input.Paths[0])
+
+	input.Name = fmt.Sprintf("%s-%s", input.Name, util.RandomString(6))
+
+	Byf("Ensuring uniqueness of GitRepo by naming it %s with path %s", input.Name, input.Paths[0])
 
 	t := template.New("fleet-repo-template").Funcs(template.FuncMap{
 		"toYaml": func(v any) (string, error) {
