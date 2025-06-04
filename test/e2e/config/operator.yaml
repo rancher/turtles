@@ -111,3 +111,6 @@ variables:
   GITEA_CHART_VERSION: "10.6.0"
   GITEA_USER_NAME: "gitea_admin"
   GITEA_USER_PWD: "password"
+
+  # Credentials used to pull images from docker.io
+  DOCKER_REGISTRY_TOKEN: ""
