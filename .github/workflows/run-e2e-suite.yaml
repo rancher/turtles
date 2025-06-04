@@ -63,7 +63,7 @@ env:
   # Ginkgo Test Configurations
   GINKGO_LABEL_FILTER: full 
   GINKGO_TESTS: ${{ github.workspace }}/${{ inputs.test_suite }}
-  GINKGO_NODES: 5
+  GINKGO_NODES: 7
   # Version Tag
   TAG: v0.0.1
 
