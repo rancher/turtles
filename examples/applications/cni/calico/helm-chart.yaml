@@ -18,7 +18,14 @@ spec:
           ipPools:
             ${- range $cidr := .ClusterValues.Cluster.spec.clusterNetwork.pods.cidrBlocks }
             - cidr: "${ $cidr }"
-              encapsulation: VXLAN${- end}
+              encapsulation: VXLAN
+            ${- end}
+        ${- range $variable := .ClusterValues.Cluster.spec.topology.variables }
+          ${- if eq $variable.name "imagePullSecret" }
+        imagePullSecrets:
+        - name: "${ $variable.value }"
+          ${- end}
+        ${- end } 
   diff:
     comparePatches:
     - apiVersion: operator.tigera.io/v1
