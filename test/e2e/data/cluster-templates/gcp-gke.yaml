@@ -4,6 +4,8 @@ kind: Cluster
 metadata:
   name: "${CLUSTER_NAME}"
   namespace: "${NAMESPACE}"
+  labels:
+    cluster-api.cattle.io/disable-fleet-auto-import: "true"
 spec:
   clusterNetwork:
     pods:
