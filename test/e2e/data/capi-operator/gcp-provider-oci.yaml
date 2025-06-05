@@ -1,0 +1,12 @@
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: gcp
+  namespace: capg-system
+spec:
+  type: infrastructure
+  name: gcp
+  version: "{{ .ProviderVersion }}"
+  fetchConfig:
+    oci: registry.rancher.com/rancher/cluster-api-gcp-controller-components:"{{ .ProviderVersion }}"

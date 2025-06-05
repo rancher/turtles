@@ -1,0 +1,12 @@
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: azure
+  namespace: capz-system
+spec:
+  type: infrastructure
+  name: azure
+  version: "{{ .ProviderVersion }}"
+  fetchConfig:
+    oci: registry.rancher.com/rancher/cluster-api-azure-controller-components:"{{ .ProviderVersion }}"
