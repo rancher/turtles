@@ -147,7 +147,7 @@ spec:
   template:
     spec:
       bastion:
-        enabled: true
+        enabled: false
       controlPlaneLoadBalancer:
         additionalListeners:
         - port: 9345

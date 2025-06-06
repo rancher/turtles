@@ -64,7 +64,7 @@ variables:
   AWS_NODE_MACHINE_TYPE: "t3.large"
   AWS_RKE2_CONTROL_PLANE_MACHINE_TYPE: "t3.xlarge"
   AWS_RKE2_NODE_MACHINE_TYPE: "t3.xlarge"
-  AWS_AMI_ID: "ami-0054630107ba40e56" # Public upstream AMI
+  AWS_AMI_ID: "ami-012e88f0aa221423a" # Public upstream AMI
 
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""
