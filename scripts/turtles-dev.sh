@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -x
+
 RANCHER_HOSTNAME=$1
 if [ -z "$RANCHER_HOSTNAME" ]; then
     echo "You must pass a rancher host name"
@@ -56,9 +58,7 @@ helm upgrade ngrok ngrok/ngrok-operator \
     --timeout 5m \
     --set credentials.apiKey=$NGROK_API_KEY \
     --set credentials.authtoken=$NGROK_AUTHTOKEN \
-    --version v0.16.4
-
-kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
+    --version v0.18.1
 
 helm install rancher rancher-latest/rancher \
     --namespace cattle-system \
@@ -71,16 +71,11 @@ helm install rancher rancher-latest/rancher \
 
 kubectl rollout status deployment rancher -n cattle-system --timeout=180s
 
+kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
 kubectl apply -f test/e2e/data/rancher/rancher-service-patch.yaml
+envsubst <test/e2e/data/rancher/ingress.yaml | kubectl apply -f -
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
-
-cat << EOF | kubectl apply -f -
-apiVersion: management.cattle.io/v3
-kind: Setting
-metadata:
-  name: agent-tls-mode
-value: "system-store"
-EOF
+kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
 
 # Install the locally build chart of Rancher Turtles
 install_local_rancher_turtles_chart() {
