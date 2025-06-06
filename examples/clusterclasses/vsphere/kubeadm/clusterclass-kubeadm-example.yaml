@@ -113,6 +113,12 @@ spec:
       openAPIV3Schema:
         description: The VM template to use for your Cluster.
         type: string
+  - name: imagePullSecret
+    required: false
+    schema:
+      openAPIV3Schema:
+        description: The name of a dockerconfigjson secret on the Cluster that can be used to pull images.
+        type: string
   patches:
   - name: infraCluster
     definitions:
