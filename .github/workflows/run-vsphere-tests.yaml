@@ -20,6 +20,7 @@ env:
   MANAGEMENT_CLUSTER_ENVIRONMENT: "internal-kind"
   GINKGO_LABEL_FILTER: "vsphere"
   TAG: v0.0.1
+  DOCKER_REGISTRY_TOKEN: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
 jobs:
   run_vsphere_e2e:

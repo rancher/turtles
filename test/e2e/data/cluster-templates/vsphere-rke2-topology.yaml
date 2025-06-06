@@ -8,6 +8,15 @@ spec:
     selector:
       matchLabels: {}
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: '${CLUSTER_NAME}-docker-token'
+  namespace: '${NAMESPACE}'
+type: Opaque
+stringData:
+  identity-token: "${DOCKER_REGISTRY_TOKEN}"
+---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
@@ -58,6 +67,8 @@ spec:
       value: 6443
     - name: kubeVIPInterface
       value: eth0
+    - name: dockerAuthSecret
+      value: '${CLUSTER_NAME}-docker-token'
 ---
 kind: Bundle
 apiVersion: fleet.cattle.io/v1alpha1

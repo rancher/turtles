@@ -119,6 +119,12 @@ spec:
       openAPIV3Schema:
         description: The SUSE Linux Micro 6.1 product key to register the nodes with.
         type: string
+  - name: dockerAuthSecret
+    required: false
+    schema:
+      openAPIV3Schema:
+        description: The name of the secret containing docker.io credentials.
+        type: string
   patches:
   - name: infraCluster
     definitions:
@@ -311,6 +317,16 @@ spec:
             - transactional-update register -r {{ .productKey }}
             - transactional-update register -p SL-Micro-Extras/6.1/x86_64
             {{- end }}
+      - op: add
+        path: /spec/template/spec/privateRegistriesConfig/configs
+        valueFrom:
+          template: |-
+            {{- if .dockerAuthSecret }}
+            "docker.io":
+              authSecret:
+                name: {{ .dockerAuthSecret }}
+                namespace: {{ .builtin.cluster.namespace }}
+            {{- end }}
       selector:
         apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: RKE2ControlPlaneTemplate
@@ -337,6 +353,16 @@ spec:
             # Register SL Micro 6.1 and add the SL Micro Extras repository
             - transactional-update register -r {{ .productKey }}
             - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+            {{- end }}
+      - op: add
+        path: /spec/template/spec/privateRegistriesConfig/configs
+        valueFrom:
+          template: |-
+            {{- if .dockerAuthSecret }}
+            "docker.io":
+              authSecret:
+                name: {{ .dockerAuthSecret }}
+                namespace: {{ .builtin.cluster.namespace }}
             {{- end }}
       selector:
         apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
