@@ -19,7 +19,7 @@ data:
       url:          "https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/v2.8.1/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "azure"
-      url:          "https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/v1.19.1/infrastructure-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/v1.19.4/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "gcp"
       url:          "https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/v1.9.0/infrastructure-components.yaml"
