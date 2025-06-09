@@ -112,6 +112,8 @@ variables:
   GITEA_USER_NAME: "gitea_admin"
   GITEA_USER_PWD: "password"
 
+  # Credentials used to pull images from docker.io
+  DOCKER_REGISTRY_TOKEN: ""
   # The '.dockerconfigjson' value for the dockerconfigjson Secret
   # See: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials
   # This can be used to configure a downstream cluster with a imagePullSecret.
