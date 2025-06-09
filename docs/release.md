@@ -51,10 +51,12 @@ git clone git@github.com:rancher/turtles.git
 # Create tags locally
 git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git tag -s  -a test/${RELEASE_TAG} -m "Testing framework ${RELEASE_TAG}"
+git tag -s  -a examples/${RELEASE_TAG} -m "ClusterClass examples ${RELEASE_TAG}"
 
 # Push tags
 git push upstream ${RELEASE_TAG}
 git push upstream test/${RELEASE_TAG}
+git push upstream examples/${RELEASE_TAG}
 ```
 
 This will trigger a [release GitHub action](https://github.com/rancher/turtles/actions/workflows/release-workflow.yaml) that creates a release with Rancher Turtles components.
