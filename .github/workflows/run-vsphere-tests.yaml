@@ -21,6 +21,7 @@ env:
   GINKGO_LABEL_FILTER: "vsphere"
   TAG: v0.0.1
   DOCKER_REGISTRY_TOKEN: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+  DOCKER_REGISTRY_CONFIG: ${{ secrets.DOCKER_REGISTRY_CONFIG }}
 
 jobs:
   run_vsphere_e2e:

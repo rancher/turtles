@@ -58,6 +58,30 @@ spec:
       value: 6443
     - name: kubeVIPInterface
       value: eth0
+    - name: imagePullSecret
+      value: docker-config
+---
+kind: Bundle
+apiVersion: fleet.cattle.io/v1alpha1
+metadata:
+  name: docker-image-pull-secret
+  namespace: '${NAMESPACE}'
+spec:
+  resources:
+  - content: |-
+      apiVersion: v1
+      kind: Secret
+      type: kubernetes.io/dockerconfigjson
+      metadata:
+        name: docker-config
+        namespace: default
+      data:
+        .dockerconfigjson: "${DOCKER_REGISTRY_CONFIG}"
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cni: calico
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
 ---
 kind: Bundle
 apiVersion: fleet.cattle.io/v1alpha1
