@@ -30,17 +30,32 @@ var (
 	//go:embed data/capi-operator/capi-providers-legacy.yaml
 	CapiProvidersLegacy []byte
 
+	//go:embed data/capi-operator/capi-providers-oci.yaml
+	CapiProvidersOci []byte
+
 	//go:embed data/capi-operator/capv-provider.yaml
 	CapvProvider []byte
+
+	//go:embed data/capi-operator/capv-provider-oci.yaml
+	CapvProviderOci []byte
 
 	//go:embed data/capi-operator/aws-provider.yaml
 	AWSProvider []byte
 
+	//go:embed data/capi-operator/aws-provider-oci.yaml
+	AWSProviderOci []byte
+
 	//go:embed data/capi-operator/gcp-provider.yaml
 	GCPProvider []byte
 
+	//go:embed data/capi-operator/gcp-provider-oci.yaml
+	GCPProviderOci []byte
+
 	//go:embed data/capi-operator/azure-provider.yaml
 	AzureProvider []byte
+
+	//go:embed data/capi-operator/azure-provider-oci.yaml
+	AzureProviderOci []byte
 
 	//go:embed data/capi-operator/capa-variables.yaml
 	AWSProviderSecret []byte

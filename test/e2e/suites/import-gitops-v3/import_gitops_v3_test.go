@@ -330,6 +330,76 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 	})
 })
 
+var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class using OCI artifact", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-azure-rke2"
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AzureIdentitySecret,
+			},
+			CAPIProvidersOCIYAML: []testenv.OCIProvider{
+				{
+					Name: "azure",
+					File: string(e2e.AzureProviderOci),
+				},
+			},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capz-controller-manager",
+					Namespace: "capz-system",
+				},
+			},
+		})
+
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAzureRKE2Topology,
+			ClusterName:                    "cluster-azure-rke2",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			SkipDeletionTest:               false,
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
+			DeleteClusterWaitName:          "wait-aks-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "azure-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/azure/rke2"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "azure-ccm-regular",
+					Paths:           []string{"examples/applications/ccm/azure"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "azure-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
@@ -390,6 +460,88 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			CAPIProvidersYAML: [][]byte{
 				e2e.AWSProvider,
 				e2e.CapiProviders,
+			},
+			WaitForDeployments: append([]testenv.NamespaceName{
+				{
+					Name:      "capa-controller-manager",
+					Namespace: "capa-system",
+				},
+			}, testenv.DefaultDeployments...),
+		})
+
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAwsKubeadmTopology,
+			ClusterName:                    "cluster-aws-kubeadm",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			SkipDeletionTest:               false,
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
+			DeleteClusterWaitName:          "wait-eks-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariable(e2e.AWSKubernetesVersionVar), // override the default k8s version
+			},
+			TopologyNamespace: topologyNamespace,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "aws-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/aws/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "aws-cni",
+					Paths:           []string{"examples/applications/cni/aws/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "aws-ccm",
+					Paths:           []string{"examples/applications/ccm/aws"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "aws-csi",
+					Paths:           []string{"examples/applications/csi/aws"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
+var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import using OCI artifact", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-aws-kubeadm"
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AWSProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapiProviders,
+			},
+			CAPIProvidersOCIYAML: []testenv.OCIProvider{
+				{
+					Name: "aws",
+					File: string(e2e.AWSProviderOci),
+				},
 			},
 			WaitForDeployments: append([]testenv.NamespaceName{
 				{
@@ -582,6 +734,86 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			CAPIProvidersYAML: [][]byte{
 				e2e.CapvProvider,
 				e2e.CapiProviders,
+			},
+			WaitForDeployments: append([]testenv.NamespaceName{
+				{
+					Name:      "capv-controller-manager",
+					Namespace: "capv-system",
+				},
+			}, testenv.DefaultDeployments...),
+		})
+
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
+			TopologyNamespace:              topologyNamespace,
+			ClusterName:                    "cluster-vsphere-kubeadm",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
+			DeleteClusterWaitName:          "wait-vsphere-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "vsphere-cluster-classes-kubeadm",
+					TargetNamespace: topologyNamespace,
+					Paths:           []string{"examples/clusterclasses/vsphere/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+				},
+				{
+					Name:            "vsphere-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-cpi",
+					Paths:           []string{"examples/applications/ccm/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-csi",
+					Paths:           []string{"examples/applications/csi/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class using OCI artifact", Ordered, Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-vsphere-kubeadm"
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		By("Running local vSphere tests, deploying vSphere infrastructure provider")
+
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.VSphereProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapiProviders,
+			},
+			CAPIProvidersOCIYAML: []testenv.OCIProvider{
+				{
+					Name: "vsphere",
+					File: string(e2e.CapvProviderOci),
+				},
 			},
 			WaitForDeployments: append([]testenv.NamespaceName{
 				{
