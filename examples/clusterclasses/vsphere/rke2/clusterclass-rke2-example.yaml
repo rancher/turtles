@@ -217,16 +217,17 @@ spec:
         path: /spec/template/spec/files
         valueFrom:
           template: |
-            - path: "/var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
+            - path: "/var/lib/rancher/rke2/agent/pod-manifests/kube-vip.yaml"
               owner: "root:root"
               permissions: "0640"
               content: |
                 apiVersion: v1
                 kind: Pod
                 metadata:
-                  creationTimestamp: null
                   name: kube-vip
                   namespace: kube-system
+                  labels:
+                    app: kube-vip
                 spec:
                   tolerations:
                   - effect: NoSchedule
