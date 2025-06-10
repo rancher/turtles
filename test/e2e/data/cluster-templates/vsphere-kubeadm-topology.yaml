@@ -53,7 +53,7 @@ spec:
     - name: vSphereTemplate
       value: '${VSPHERE_TEMPLATE}'
     - name: controlPlaneIpAddr
-      value: '${CONTROL_PLANE_ENDPOINT_IP}'
+      value: '${VSPHERE_KUBE_VIP_IP_KUBEADM}'
     - name: controlPlanePort
       value: 6443
     - name: kubeVIPInterface
