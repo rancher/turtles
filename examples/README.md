@@ -57,3 +57,37 @@ To apply the extracted examples, you can use the following command:
 ```bash
 go run main.go <search_key> | kubectl apply -f -
 ```
+
+## Running from tag or latest
+
+You can run the examples CLI tool using `go run`. This method allows you to execute the tool directly from the module path without needing to clone the repository locally first.
+
+Using a specific tag (`@<tag>`) is recommended for reproducible results, while `@latest` will always fetch the most recent version.
+
+To run the latest version:
+
+```bash
+go run github.com/rancher/turtles/examples@latest
+```
+
+To run from a specific tag:
+
+```bash
+go run github.com/rancher/turtles/examples@<tag>
+```
+
+Make sure to replace `<tag>` with the desired tag name.
+
+### Example: applying a specific cluster class from a specific tag
+
+Apply examples from the `azure-aks` cluster class in the default namespace:
+
+```bash
+go run github.com/rancher/turtles/examples@<tag> azure-aks | kubectl apply -f -
+```
+
+Apply all `azure` example cluster classes in a custom namespace:
+
+```bash
+go run github.com/rancher/turtles/examples@<tag> -r azure | kubectl apply -f -n <namespace> -
+```
