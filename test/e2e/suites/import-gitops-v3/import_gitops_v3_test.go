@@ -561,7 +561,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 	})
 })
 
-var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Ordered, Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -636,7 +636,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 	})
 })
 
-var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Ordered, Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
