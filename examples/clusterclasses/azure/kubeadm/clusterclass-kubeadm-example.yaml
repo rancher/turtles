@@ -114,6 +114,19 @@ spec:
               path: "/spec/template/spec/identityRef/name"
               valueFrom:
                 variable: azureClusterIdentityName
+            - op: add
+              path: "/spec/template/spec/networkSpec"
+              valueFrom:
+                template: |
+                  vnet:
+                    name: {{ .builtin.cluster.name }}
+                  subnets:
+                  - name: {{ .builtin.cluster.name }}-kcps
+                    role: control-plane
+                  - name: {{ .builtin.cluster.name }}-nodes
+                    natGateway:
+                      name: {{ .builtin.cluster.name }}-nodes
+                    role: node
     - definitions:
         - jsonPatches:
             - op: add
@@ -198,12 +211,10 @@ spec:
       location: "TO_BE_REPLACED_BY_PATCH"
       networkSpec:
         subnets:
-          - name: control-plane-subnet
-            role: control-plane
-          - name: node-subnet
-            natGateway:
-              name: node-natgateway
-            role: node
+        - name: control-plane-subnet
+          role: control-plane
+        - name: node-subnet
+          role: node
       subscriptionID: "TO_BE_REPLACED_BY_PATCH"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
