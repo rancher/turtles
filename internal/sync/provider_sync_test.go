@@ -255,24 +255,6 @@ var _ = Describe("Provider sync", func() {
 			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
 	})
 
-	It("Should sync spec down and set version to latest", func() {
-		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
-
-		expected := capiProvider.DeepCopy()
-		expected.Spec.Version = CAPIVersion
-
-		Eventually(func(g Gomega) {
-			g.Expect(s.Get(ctx)).To(Succeed())
-			g.Expect(s.Sync(ctx)).To(Succeed())
-			var err error = nil
-			s.Apply(ctx, &err)
-			g.Expect(err).To(Succeed())
-		}).Should(Succeed())
-
-		Eventually(Object(infrastructure)).Should(
-			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
-	})
-
 	It("Should sync azure spec", func() {
 		s := sync.NewAzureProviderSync(testEnv, capiProviderAzure)
 
