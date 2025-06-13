@@ -42,8 +42,8 @@ var (
 	//go:embed data/capi-operator/azure-provider.yaml
 	AzureProvider []byte
 
-	//go:embed data/capi-operator/capa-variables.yaml
-	AWSProviderSecret []byte
+	//go:embed data/capi-operator/capa-identity-secret.yaml
+	AWSIdentitySecret []byte
 
 	//go:embed data/capi-operator/capz-identity-secret.yaml
 	AzureIdentitySecret []byte
