@@ -1,6 +1,8 @@
 name: Run vsphere e2e tests on self-hosted runner
 
 on:
+  schedule:
+    - cron: "0 0 * * *"
   workflow_call:
   workflow_dispatch:
 
