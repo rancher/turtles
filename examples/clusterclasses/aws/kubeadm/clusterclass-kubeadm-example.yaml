@@ -57,6 +57,11 @@ spec:
         openAPIV3Schema:
           type: string
           default: t3.large
+    - name: amiID
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
   patches:
     - name: region
       definitions:
@@ -121,6 +126,31 @@ spec:
               path: /spec/template/spec/instanceType
               valueFrom:
                 variable: workerMachineType
+    - name: amiID
+      enabledIf: '{{ if .amiID }}true{{end}}'
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSMachineTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/ami/id
+              valueFrom:
+                variable: amiID      
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/ami/id
+              valueFrom:
+                variable: amiID
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSClusterTemplate
@@ -186,6 +216,7 @@ spec:
       iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
       rootVolume:
         size: 50
+      ami: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
@@ -199,6 +230,7 @@ spec:
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       rootVolume:
         size: 50
+      ami: {}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
