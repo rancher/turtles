@@ -123,7 +123,7 @@ variables:
   TURTLES_VERSION: "v0.0.1" # Version of the turtles image to use
   TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e" # Rancher turtles image to use. It is pre-loaded from local docker registry in kind environment, but expected to be pulled and available in `eks` cluster environment
   ARTIFACTS_FOLDER: "_artifacts" # Folder for the e2e run artifacts collection with crust-gather.
-  SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPA_ENCODED_CREDS,CAPG_ENCODED_CREDS,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID" # Is a list of environment variable keys, values of which would be excluded from collected artifacts data.
+  SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2" # Is a list of environment variable keys, values of which would be excluded from collected artifacts data.
 ```
 
 ## Artifacts collection

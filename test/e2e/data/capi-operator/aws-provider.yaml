@@ -10,5 +10,6 @@ spec:
     EXP_MACHINE_POOL: "true"
     EXP_EXTERNAL_RESOURCE_GC: "true"
     CAPA_LOGLEVEL: "4"
+    AWS_B64ENCODED_CREDENTIALS: ""
   manager:
     syncPeriod: "5m"
