@@ -58,8 +58,6 @@ type CAPIOperatorDeployProviderInput struct {
 
 // TemplateData contains secret variables used for templating
 type TemplateData struct {
-	// AWSEncodedCredentials is the AWS credentials
-	AWSEncodedCredentials string `env:"CAPA_ENCODED_CREDS"`
 	// GCPEncodedCredentials is the GCP credentials
 	GCPEncodedCredentials string `env:"CAPG_ENCODED_CREDS"`
 }

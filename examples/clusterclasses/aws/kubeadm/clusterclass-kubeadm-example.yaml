@@ -57,6 +57,13 @@ spec:
         openAPIV3Schema:
           type: string
           default: t3.large
+    - name: awsClusterIdentityName
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: The AWSClusterStaticIdentity resource name referencing the credentials to create the Cluster.
+          type: string
+          default: cluster-identity
   patches:
     - name: region
       definitions:
@@ -70,6 +77,18 @@ spec:
               path: /spec/template/spec/region
               valueFrom:
                 variable: region
+    - name: clusterIdentity
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/identityRef/name
+              valueFrom:
+                variable: awsClusterIdentityName
     - name: sshKeyName
       definitions:
         - selector:
@@ -129,6 +148,9 @@ metadata:
 spec:
   template:
     spec:
+      identityRef:
+        kind: AWSClusterStaticIdentity
+        name: cluster-identity
       network:
           cni:
             cniIngressRules:

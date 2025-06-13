@@ -1,3 +1,12 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSClusterStaticIdentity
+metadata:
+  name: cluster-identity
+spec:
+  secretRef: cluster-identity
+  allowedNamespaces:
+    selector:
+      matchLabels: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
@@ -36,6 +45,9 @@ metadata:
 spec:
   region: "eu-west-2"
   version: "${KUBERNETES_VERSION}"
+  identityRef:
+    name: cluster-identity
+    kind: AWSClusterStaticIdentity
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
