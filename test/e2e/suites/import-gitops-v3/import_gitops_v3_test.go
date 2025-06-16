@@ -340,7 +340,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSProviderSecret,
+				e2e.AWSIdentitySecret,
 			},
 			CAPIProvidersYAML: [][]byte{
 				e2e.AWSProvider,
@@ -385,7 +385,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSProviderSecret,
+				e2e.AWSIdentitySecret,
 			},
 			CAPIProvidersYAML: [][]byte{
 				e2e.AWSProvider,
@@ -462,7 +462,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSProviderSecret,
+				e2e.AWSIdentitySecret,
 			},
 			CAPIProvidersYAML: [][]byte{
 				e2e.AWSProvider,
