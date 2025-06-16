@@ -34,9 +34,6 @@ jobs:
       artifact_name: v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
-  e2e_vsphere:
-    uses: ./.github/workflows/run-vsphere-tests.yaml
-    secrets: inherit
   e2e_cleanup:
     if: always()
     needs: [e2e_import_gitops_v3, e2e_v2prov]
