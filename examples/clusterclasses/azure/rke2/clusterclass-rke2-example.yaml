@@ -129,9 +129,18 @@ spec:
               valueFrom:
                 variable: azureClusterIdentityName
             - op: add
-              path: "/spec/template/spec/networkSpec/vnet/name"
+              path: "/spec/template/spec/networkSpec"
               valueFrom:
-                variable: builtin.cluster.name
+                template: |
+                  vnet:
+                    name: {{ .builtin.cluster.name }}
+                  subnets:
+                  - name: {{ .builtin.cluster.name }}-kcps
+                    role: control-plane
+                  - name: {{ .builtin.cluster.name }}-nodes
+                    natGateway:
+                      name: {{ .builtin.cluster.name }}-nodes
+                    role: node
     - name: azureMachineTemplate
       definitions:
         - selector:
@@ -205,8 +214,6 @@ spec:
         - name: control-plane-subnet
           role: control-plane
         - name: node-subnet
-          natGateway:
-            name: node-natgateway
           role: node
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
