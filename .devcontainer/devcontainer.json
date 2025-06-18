@@ -3,11 +3,11 @@
 {
 	"name": "Go",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/go:1-1.22-bookworm",
+	"image": "mcr.microsoft.com/devcontainers/go:1.23",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
-		"ghcr.io/devcontainers-contrib/features/kind:1": {},
+		"ghcr.io/devcontainers-extra/features/kind:1": {},
 		"ghcr.io/rio/features/k9s:1": {},
 		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
 			"version": "latest",
