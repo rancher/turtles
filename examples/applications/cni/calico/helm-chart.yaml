@@ -49,3 +49,4 @@ spec:
           - etcd-snapshot-restore
           - vsphere-kubeadm-example
           - vsphere-rke2-example
+          - gcp-kubeadm-example

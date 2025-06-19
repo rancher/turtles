@@ -66,6 +66,9 @@ variables:
   AWS_RKE2_NODE_MACHINE_TYPE: "t3.xlarge"
   AWS_AMI_ID: "ami-012e88f0aa221423a" # Public upstream AMI
 
+  # GCP Configuration
+  GCP_MACHINE_TYPE: "n1-standard-2"
+  
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""
   HELM_BINARY_PATH: "helm"
