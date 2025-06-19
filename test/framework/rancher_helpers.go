@@ -40,8 +40,8 @@ import (
 
 // RancherGetClusterKubeconfigInput represents the input parameters for getting the kubeconfig of a cluster in Rancher.
 type RancherGetClusterKubeconfigInput struct {
-	// Getter is the framework getter used to retrieve the kubeconfig.
-	Getter framework.Getter
+	// ClusterProxy is the framework cluster proxy used to retrieve the kubeconfig.
+	ClusterProxy framework.ClusterProxy
 
 	// SecretName is the name of the secret containing the kubeconfig.
 	SecretName string
@@ -74,7 +74,7 @@ type RancherGetClusterKubeconfigResult struct {
 // RancherGetClusterKubeconfig will get the Kubeconfig for a cluster from Rancher.
 func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput, result *RancherGetClusterKubeconfigResult) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherGetClusterKubeconfig")
-	Expect(input.Getter).ToNot(BeNil(), "Invalid argument. input.Getter can't be nil when calling RancherGetClusterKubeconfig")
+	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.SecretName).ToNot(BeEmpty(), "Invalid argument. input.SecretName can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.RancherServerURL).ToNot(BeEmpty(), "Invalid argument. input.RancherServerURL can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.WaitInterval).ToNot(BeEmpty(), "Invalid argument. input.WaitInterval can't be nil when calling RancherGetClusterKubeconfig")
@@ -84,12 +84,11 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	}
 
 	Byf("Getting Rancher kubeconfig secret: %s/%s", input.Namespace, input.SecretName)
+	Byf("Using Cluster %s with kubeconfig path: %s", input.ClusterProxy.GetName(), input.ClusterProxy.GetKubeconfigPath())
 	secret := &corev1.Secret{}
-
-	Eventually(
-		input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret),
-		input.WaitInterval...).
-		Should(Succeed(), "Getting Rancher kubeconfig secret for %s", input.SecretName)
+	Eventually(func() error {
+		return input.ClusterProxy.GetClient().Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret)
+	}, input.WaitInterval...).ShouldNot(HaveOccurred(), "Getting Rancher kubeconfig secret for %s", input.SecretName)
 
 	content, ok := secret.Data["value"]
 	Expect(ok).To(BeTrue(), "Failed to find expected key in kubeconfig secret")
@@ -131,7 +130,7 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 // RancherGetOriginalKubeconfig will get the unmodified Kubeconfig for a cluster from Rancher.
 func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput, result *RancherGetClusterKubeconfigResult) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherGetOriginalKubeconfig")
-	Expect(input.Getter).ToNot(BeNil(), "Invalid argument. input.Getter can't be nil when calling RancherGetOriginalKubeconfig")
+	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling RancherGetOriginalKubeconfig")
 	Expect(input.SecretName).ToNot(BeEmpty(), "Invalid argument. input.SecretName can't be nil when calling RancherGetOriginalKubeconfig")
 
 	if input.Namespace == "" {
@@ -141,7 +140,7 @@ func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKu
 	Byf("Getting Original Rancher kubeconfig secret: %s/%s", input.Namespace, input.SecretName)
 	secret := &corev1.Secret{}
 
-	err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret)
+	err := input.ClusterProxy.GetClient().Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.SecretName}, secret)
 	Expect(err).ShouldNot(HaveOccurred(), "Getting Rancher kubeconfig secret for %s", input.SecretName)
 
 	content, ok := secret.Data["value"]
@@ -186,7 +185,7 @@ func (i *RancherGetClusterKubeconfigInput) isDockerCluster(ctx context.Context) 
 	}
 
 	Eventually(func() error {
-		return i.Getter.Get(ctx, key, cluster)
+		return i.ClusterProxy.GetClient().Get(ctx, key, cluster)
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to get %s", key)
 
 	return cluster.Spec.InfrastructureRef.Kind == "DockerCluster"

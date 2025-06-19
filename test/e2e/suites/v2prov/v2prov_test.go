@@ -145,7 +145,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:           bootstrapClusterProxy.GetClient(),
+			ClusterProxy:     bootstrapClusterProxy,
 			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
 			Namespace:        rancherCluster.Namespace,
 			RancherServerURL: hostName,
