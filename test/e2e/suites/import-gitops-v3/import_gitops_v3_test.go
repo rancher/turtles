@@ -260,7 +260,6 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 			},
 		}
 	})
-
 })
 
 var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
@@ -512,6 +511,73 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 				{
 					Name:            "aws-cni",
 					Paths:           []string{"examples/applications/cni/aws/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
+var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-gcp-kubeadm"
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.GCPProviderSecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.GCPProvider,
+				e2e.CapiProviders,
+			},
+			WaitForDeployments: append([]testenv.NamespaceName{
+				{
+					Name:      "capg-controller-manager",
+					Namespace: "capg-system",
+				},
+			}, testenv.DefaultDeployments...),
+		})
+
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIGCPKubeadmTopology,
+			ClusterName:                    "cluster-gcp-kubeadm",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capg-create-cluster",
+			DeleteClusterWaitName:          "wait-gke-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "gcp-cluster-class-kubeadm",
+					Paths:           []string{"examples/clusterclasses/gcp/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "gcp-ccm",
+					Paths:           []string{"examples/applications/ccm/gcp"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "gcp-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},

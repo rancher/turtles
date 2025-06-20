@@ -1,0 +1,38 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cni: calico
+    cloud-provider: gcp
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: 
+      - 192.168.0.0/16
+  topology:
+    class: gcp-kubeadm-example
+    classNamespace: ${TOPOLOGY_NAMESPACE}
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    workers:
+      machineDeployments:
+        - class: "default-worker"
+          name: "md-0"
+          replicas: ${WORKER_MACHINE_COUNT}
+    variables:
+      - name: gcpProject
+        value: ${GCP_PROJECT}
+      - name: region
+        value: ${GCP_REGION}
+      - name: gcpNetworkName
+        value: ${GCP_NETWORK_NAME}
+      - name: clusterFailureDomains
+        value:
+          - "${GCP_REGION}-a"
+      - name: imageId
+        value: ${GCP_IMAGE_ID}
+      - name: machineType
+        value: ${GCP_MACHINE_TYPE}
+    version: ${KUBERNETES_VERSION}
