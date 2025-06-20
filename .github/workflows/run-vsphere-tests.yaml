@@ -25,6 +25,7 @@ env:
   TAG: v0.0.1
   DOCKER_REGISTRY_TOKEN: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
   DOCKER_REGISTRY_CONFIG: ${{ secrets.DOCKER_REGISTRY_CONFIG }}
+  GINKGO_NODES: 2
 
 jobs:
   run_vsphere_e2e:

@@ -263,7 +263,7 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 
 		By("Storing the original CAPI cluster kubeconfig")
 		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:          input.BootstrapClusterProxy.GetClient(),
+			ClusterProxy:    input.BootstrapClusterProxy,
 			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
 			ClusterName:     capiCluster.Name,
 			Namespace:       capiCluster.Namespace,

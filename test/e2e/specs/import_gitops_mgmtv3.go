@@ -152,7 +152,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:           input.BootstrapClusterProxy.GetClient(),
+			ClusterProxy:     input.BootstrapClusterProxy,
 			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
 			Namespace:        rancherCluster.Spec.FleetWorkspaceName,
 			RancherServerURL: input.RancherServerURL,
@@ -293,7 +293,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 
 		By("Storing the original CAPI cluster kubeconfig")
 		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			Getter:          input.BootstrapClusterProxy.GetClient(),
+			ClusterProxy:    input.BootstrapClusterProxy,
 			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
 			ClusterName:     capiCluster.Name,
 			Namespace:       capiCluster.Namespace,
