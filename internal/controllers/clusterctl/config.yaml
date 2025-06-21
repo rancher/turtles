@@ -11,7 +11,7 @@ data:
     providers:
     # Cluster API core provider
     - name:         "cluster-api"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.9.5/core-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.10.2/core-components.yaml"
       type:         "CoreProvider"
 
     # Infrastructure providers
@@ -33,7 +33,7 @@ data:
 
     # Bootstrap providers
     - name:         "kubeadm"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.9.5/bootstrap-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.10.2/bootstrap-components.yaml"
       type:         "BootstrapProvider"
     - name:         "rke2"
       url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.16.2/bootstrap-components.yaml"
@@ -41,7 +41,7 @@ data:
 
     # ControlPlane providers
     - name:         "kubeadm"
-      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.9.5/control-plane-components.yaml"
+      url:          "https://github.com/rancher-sandbox/cluster-api/releases/v1.10.2/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
     - name:         "rke2"
       url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.16.2/control-plane-components.yaml"
