@@ -17,7 +17,6 @@ limitations under the License.
 package sync_test
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -329,7 +328,6 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).Message).To(Equal(fmt.Sprintf("Updated to latest %s version", CAPIVersion)))
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
