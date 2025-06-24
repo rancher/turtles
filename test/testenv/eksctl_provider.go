@@ -89,8 +89,8 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 			"m5.xlarge",
 		},
 	}, createClusterRes)
-	Expect(createClusterRes.Error).NotTo(HaveOccurred(), "Failed to create cluster using eksctl: %s", createClusterRes.Stderr)
-	Expect(createClusterRes.ExitCode).To(Equal(0), "Creating cluster returned non-zero exit code")
+	Expect(createClusterRes.Error).NotTo(HaveOccurred(), "Failed to create cluster using eksctl. Stderr: %s", createClusterRes.Stderr)
+	Expect(createClusterRes.ExitCode).To(Equal(0), "Creating cluster returned non-zero exit code. Stderr: %s", createClusterRes.Stderr)
 
 	k.kubeconfigPath = tempFile.Name()
 }
@@ -117,8 +117,8 @@ func (k *EKSClusterProvider) Dispose(ctx context.Context) {
 			"--wait",
 		},
 	}, deleteClusterRes)
-	Expect(deleteClusterRes.Error).NotTo(HaveOccurred(), "Failed to delete cluster using eksctl")
-	Expect(deleteClusterRes.ExitCode).To(Equal(0), "Deleting cluster returned non-zero exit code")
+	Expect(deleteClusterRes.Error).NotTo(HaveOccurred(), "Failed to delete cluster using eksctl. Stderr: %s", deleteClusterRes.Stderr)
+	Expect(deleteClusterRes.ExitCode).To(Equal(0), "Deleting cluster returned non-zero exit code. Stderr: %s", deleteClusterRes.Stderr)
 
 	if err := os.Remove(k.kubeconfigPath); err != nil {
 		framework.Byf("Error deleting the kubeconfig file %q file. You may need to remove this by hand.", k.kubeconfigPath)
