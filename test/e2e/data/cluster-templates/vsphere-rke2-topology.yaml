@@ -15,7 +15,8 @@ metadata:
   namespace: '${NAMESPACE}'
 type: Opaque
 stringData:
-  identity-token: "${DOCKER_REGISTRY_TOKEN}"
+  username: "${DOCKER_REGISTRY_USERNAME}"
+  password: "${DOCKER_REGISTRY_TOKEN}"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster

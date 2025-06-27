@@ -323,7 +323,7 @@ spec:
         valueFrom:
           template: |-
             {{- if .dockerAuthSecret }}
-            "docker.io":
+            "registry-1.docker.io":
               authSecret:
                 name: {{ .dockerAuthSecret }}
                 namespace: {{ .builtin.cluster.namespace }}
@@ -360,7 +360,7 @@ spec:
         valueFrom:
           template: |-
             {{- if .dockerAuthSecret }}
-            "docker.io":
+            "registry-1.docker.io":
               authSecret:
                 name: {{ .dockerAuthSecret }}
                 namespace: {{ .builtin.cluster.namespace }}
