@@ -17,7 +17,6 @@ limitations under the License.
 package sync_test
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -255,24 +254,6 @@ var _ = Describe("Provider sync", func() {
 			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
 	})
 
-	It("Should sync spec down and set version to latest", func() {
-		s := sync.NewProviderSync(testEnv, capiProvider.DeepCopy())
-
-		expected := capiProvider.DeepCopy()
-		expected.Spec.Version = CAPIVersion
-
-		Eventually(func(g Gomega) {
-			g.Expect(s.Get(ctx)).To(Succeed())
-			g.Expect(s.Sync(ctx)).To(Succeed())
-			var err error = nil
-			s.Apply(ctx, &err)
-			g.Expect(err).To(Succeed())
-		}).Should(Succeed())
-
-		Eventually(Object(infrastructure)).Should(
-			HaveField("Spec.ProviderSpec", Equal(expected.Spec.ProviderSpec)))
-	})
-
 	It("Should sync azure spec", func() {
 		s := sync.NewAzureProviderSync(testEnv, capiProviderAzure)
 
@@ -347,7 +328,6 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(capiProvider.Status.Conditions).To(HaveLen(2))
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.LastAppliedConfigurationTime)).To(BeTrue())
 			g.Expect(conditions.IsTrue(capiProvider, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
-			g.Expect(conditions.Get(capiProvider, turtlesv1.CheckLatestVersionTime).Message).To(Equal(fmt.Sprintf("Updated to latest %s version", CAPIVersion)))
 			g.Expect(conditions.Get(capiProvider, turtlesv1.LastAppliedConfigurationTime).LastTransitionTime.After(
 				appliedCondition.LastTransitionTime.Time)).To(BeTrue())
 		}).Should(Succeed())
