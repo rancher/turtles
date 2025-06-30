@@ -71,8 +71,16 @@ spec:
           requests:
             cpu: 10m
             memory: 128Mi
+        {{- with .Values.rancherTurtles.volumeMounts.manager }}
+        volumeMounts:
+        {{- toYaml . | nindent 12 }}
+        {{- end }}
       serviceAccountName: rancher-turtles-manager
       terminationGracePeriodSeconds: 10
+      {{- with .Values.rancherTurtles.volumes }}
+      volumes:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master

@@ -28,6 +28,9 @@ const (
 
 	// UIPlugin if enabled Turtles will install and manage UIPlugin resource for CAPI UI.
 	UIPlugin featuregate.Feature = "ui-plugin"
+
+	// EmbeddedOperator is enabled when Turtles will perform operator tasks for CAPI.
+	EmbeddedOperator featuregate.Feature = "embedded-operator"
 )
 
 func init() {
@@ -35,6 +38,7 @@ func init() {
 }
 
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AgentTLSMode: {Default: true, PreRelease: featuregate.Beta},
-	UIPlugin:     {Default: false, PreRelease: featuregate.Alpha},
+	AgentTLSMode:     {Default: true, PreRelease: featuregate.Beta},
+	UIPlugin:         {Default: false, PreRelease: featuregate.Alpha},
+	EmbeddedOperator: {Default: false, PreRelease: featuregate.Alpha},
 }
