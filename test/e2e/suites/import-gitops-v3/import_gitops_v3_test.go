@@ -239,7 +239,7 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
 			AdditionalTemplateVariables: map[string]string{
-				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariable(e2e.AzureKubernetesVersionVar), // override the default k8s version
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.AzureKubernetesVersionVar), // override the default k8s version
 			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
@@ -417,7 +417,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			AdditionalTemplateVariables: map[string]string{
-				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariable(e2e.AWSKubernetesVersionVar), // override the default k8s version
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.AWSKubernetesVersionVar), // override the default k8s version
 			},
 			TopologyNamespace: topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{

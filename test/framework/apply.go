@@ -39,7 +39,7 @@ func Apply(ctx context.Context, p framework.ClusterProxy, resources []byte, args
 	if err := KubectlApply(ctx, p.GetKubeconfigPath(), resources, args...); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return errors.New(fmt.Sprintf("%s: stderr: %s", err.Error(), exitErr.Stderr))
+			return fmt.Errorf("%s: stderr: %s", err.Error(), exitErr.Stderr)
 		}
 		return err
 	}
