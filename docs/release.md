@@ -91,6 +91,15 @@ These commit messages are usually hard to understand for those that are not very
 
 ### Rancher Turtles Community Documentation
 
+#### Update component versions in documentation
+
+Before publishing a new version of the documentation, component versions used in the documentation must be updated.
+
+1. Navigate to the Rancher Turtles Docs repository: [rancher/turtles-docs](https://github.com/rancher/turtles-docs)
+2. Go to `Actions` and start a new run of `Update Component Versions`.
+3. Look up the correct component versions from the [rancher/turtles](https://github.com/rancher/turtles) repository and fill them into the input fields. If any input fields are left blank, the workflow will retain the currently documented versions for those components.
+4. This will generate a new PR in the same repository that updates the documentation with the specified versions.
+
 #### Generate changelog from Turtles release notes
 
 Before publishing a new version of the documentation, a new [Changelog](https://turtles.docs.rancher.com/turtles/next/en/changelogs/index.html) must be generated to include the new release.
