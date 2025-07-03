@@ -163,11 +163,11 @@ func defaultToCurrentGitRepo(input *FleetCreateGitRepoInput) {
 
 	// Open the current repository
 	repo, err := git.PlainOpen(cmp.Or(os.Getenv("ROOT_DIR"), "."))
-	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to open git repo: %w", err))
+	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to open git repo: %s", err.Error()))
 
 	// Get remote repository URL
 	remotes, err := repo.Remotes()
-	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to get remotes: %w", err))
+	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to get remotes: %s", err.Error()))
 
 	// Find origin remote
 	for _, remote := range remotes {
@@ -185,7 +185,7 @@ func defaultToCurrentGitRepo(input *FleetCreateGitRepoInput) {
 
 			// Get the current branch
 			head, err := repo.Head()
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to get HEAD: %w", err))
+			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("failed to get HEAD: %s", err.Error()))
 
 			input.Branch = head.Name().Short()
 

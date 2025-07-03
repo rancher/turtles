@@ -33,7 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha1"
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -75,7 +75,7 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
 		// instead of DeleteClusterAndWait
 		framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-			Client:    clusterProxy.GetClient(),
+			ClusterProxy:    clusterProxy,
 			Namespace: namespace.Name,
 		}, intervalsGetter(specName, "wait-delete-cluster")...)
 
@@ -137,16 +137,16 @@ func CreateClusterctlLocalRepository(ctx context.Context, input CreateClusterctl
 }
 
 func ValidateE2EConfig(config *clusterctl.E2EConfig) {
-	Expect(os.MkdirAll(config.GetVariable(ArtifactsFolderVar), 0o755)).To(Succeed(), "Invalid test suite argument. Can't create artifacts folder %q", config.GetVariable(ArtifactsFolderVar))
-	Expect(config.GetVariable(HelmBinaryPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. HELM_BINARY_PATH should be an existing file.")
-	Expect(config.GetVariable(TurtlesPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. TURTLES_PATH should be an existing file.")
+	Expect(os.MkdirAll(config.GetVariableOrEmpty(ArtifactsFolderVar), 0o755)).To(Succeed(), "Invalid test suite argument. Can't create artifacts folder %q", config.GetVariableOrEmpty(ArtifactsFolderVar))
+	Expect(config.GetVariableOrEmpty(HelmBinaryPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. HELM_BINARY_PATH should be an existing file.")
+	Expect(config.GetVariableOrEmpty(TurtlesPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. TURTLES_PATH should be an existing file.")
 
-	_, err := strconv.ParseBool(config.GetVariable(UseExistingClusterVar))
-	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse USE_EXISTING_CLUSTER %q", config.GetVariable(UseExistingClusterVar))
+	_, err := strconv.ParseBool(config.GetVariableOrEmpty(UseExistingClusterVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse USE_EXISTING_CLUSTER %q", config.GetVariableOrEmpty(UseExistingClusterVar))
 
-	_, err = strconv.ParseBool(config.GetVariable(SkipResourceCleanupVar))
-	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_RESOURCE_CLEANUP %q", config.GetVariable(SkipResourceCleanupVar))
+	_, err = strconv.ParseBool(config.GetVariableOrEmpty(SkipResourceCleanupVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_RESOURCE_CLEANUP %q", config.GetVariableOrEmpty(SkipResourceCleanupVar))
 
-	_, err = strconv.ParseBool(config.GetVariable(SkipDeletionTestVar))
-	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_DELETION_TEST %q", config.GetVariable(SkipDeletionTestVar))
+	_, err = strconv.ParseBool(config.GetVariableOrEmpty(SkipDeletionTestVar))
+	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse SKIP_DELETION_TEST %q", config.GetVariableOrEmpty(SkipDeletionTestVar))
 }
