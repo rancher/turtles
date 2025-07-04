@@ -62,6 +62,7 @@ func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, capiProvider *tu
 // SetupWithManager sets up the controller with the Manager.
 func (r *CAPIProviderReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) (err error) {
 	b := ctrl.NewControllerManagedBy(mgr).
+		Named("CAPIProviderSync").
 		WithOptions(options).
 		For(&turtlesv1.CAPIProvider{})
 

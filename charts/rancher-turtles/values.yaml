@@ -25,6 +25,10 @@ rancherTurtles:
   kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   # features: Optional and experimental features.
   features:
+    # embedded-operator: Embed operator controller loops.
+    embedded-operator:
+      # enabled: Turn on or off.
+      enabled: false
     # day2operations: Alpha feature.
     day2operations:
       # enabled: Turn on or off.
@@ -53,6 +57,16 @@ rancherTurtles:
       imageVersion: v0.0.0
       # imagePullPolicy: Pull policy.
       imagePullPolicy: IfNotPresent
+  # volumes: Volumes for controller pods.
+  volumes:
+    - name: clusterctl-config
+      configMap:
+        name: clusterctl-config
+  # volumeMounts: Volume mounts for controller pods.
+  volumeMounts:
+    manager:
+      - mountPath: /config
+        name: clusterctl-config
 
 # cluster-api-operator: Manages Cluster API components.
 cluster-api-operator:

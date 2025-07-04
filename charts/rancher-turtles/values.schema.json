@@ -128,6 +128,17 @@
                 }
               }
             },
+            "embedded-operator": {
+              "type": "object",
+              "description": "Enable embedded operator controller loops.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Turn on or off."
+                }
+              }
+            },
             "clusterclass-operations": {
               "type": "object",
               "description": "Alpha feature. Not ready for testing yet.",
@@ -151,6 +162,53 @@
                   "type": "string",
                   "default": "IfNotPresent",
                   "description": "Pull policy."
+                }
+              }
+            }
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "description": "Volumes for controller pods.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "configMap"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "configMap": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "default": "clusterctl-config",
+                    "description": "ConfigMap for clusterctl."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "volumeMounts": {
+          "type": "object",
+          "properties": {
+            "manager": {
+              "type": "array",
+              "description": "Mount volumes to pods.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "mountPath": { "type": "string" },
+                  "name": { "type": "string" },
+                  "readOnly": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Mount as read-only."
+                  }
                 }
               }
             }

@@ -235,8 +235,9 @@ manifests: generate
 
 .PHONY: generate-manifests-external
 generate-manifests-external: vendor controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./api/rancher/..." output:crd:artifacts:config=hack/crd/bases
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
+	$(CONTROLLER_GEN) crd paths="./api/rancher/..." output:crd:artifacts:config=hack/crd/bases
+	$(CONTROLLER_GEN) crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
+	$(CONTROLLER_GEN) crd paths="./vendor/sigs.k8s.io/cluster-api-operator/..." output:crd:artifacts:config=./config/operator/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
 
@@ -555,8 +556,10 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 .PHONY: build-chart
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
+	$(KUSTOMIZE) build ./config/operatorchart > $(CHART_DIR)/templates/operator-crds.yaml
 	$(KUSTOMIZE) build ./exp/day2/config/chart > $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
 	$(KUSTOMIZE) build ./exp/clusterclass/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
+	./scripts/process-manifests.sh embedded-operator $(CHART_DIR)/templates/operator-crds.yaml
 	./scripts/process-manifests.sh day2operations $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
 	./scripts/process-manifests.sh clusterclass-operations $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)

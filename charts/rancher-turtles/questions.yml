@@ -52,3 +52,8 @@ questions:
         type: boolean
         group: "ETCD Backup and Restore Settings"
         show_if: "rancherTurtles.features.day2operations.enabled"
+      - variable: rancherTurtles.features.embedded-operator.enabled
+        label: "Enable Turtles Embedded Operator"
+        description: "[ALPHA] Enable Turtles Embedded Operator functionality in Rancher Turtles."
+        type: boolean
+        group: "Embedded operator"
