@@ -9,6 +9,7 @@ resources:
 - bases/operator.cluster.x-k8s.io_infrastructureproviders.yaml
 - bases/operator.cluster.x-k8s.io_ipamproviders.yaml
 - bases/operator.cluster.x-k8s.io_runtimeextensionproviders.yaml
+- bases/operator_role.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
