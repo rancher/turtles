@@ -19,19 +19,19 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-operator/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	"sigs.k8s.io/cluster-api-operator/controller"
 )
 
-// OperatorReconciler is a mapping wrapper for CAPIProvider -> operator provider resources
+// OperatorReconciler is a mapping wrapper for CAPIProvider -> operator provider resources.
 type OperatorReconciler struct{}
 
-// SetupWithManager is a mapping wrapper for CAPIProvider -> operator provider resources
+// SetupWithManager is a mapping wrapper for CAPIProvider -> operator provider resources.
 func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options ctr.Options) error {
 	log := log.FromContext(ctx)
 
@@ -42,7 +42,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Client:                   mgr.GetClient(),
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "CoreProvider")
 		return err
 	}
@@ -55,7 +56,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
 			WatchCoreProviderChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "InfrastructureProvider")
 		return err
 	}
@@ -68,7 +70,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
 			WatchCoreProviderChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "BootstrapProvider")
 		return err
 	}
@@ -81,7 +84,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
 			WatchCoreProviderChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ControlPlaneProvider")
 		return err
 	}
@@ -94,7 +98,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
 			WatchCoreProviderChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "AddonProvider")
 		return err
 	}
@@ -107,7 +112,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
 			WatchCoreProviderChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "IPAMProvider")
 		return err
 	}
@@ -120,7 +126,8 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			Config:                   mgr.GetConfig(),
 			WatchConfigSecretChanges: true,
 			WatchCoreProviderChanges: true,
-		}}).SetupWithManager(ctx, mgr, options); err != nil {
+		},
+	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log.Error(err, "unable to create controller", "controller", "RuntimeExtensionProvider")
 		return err
 	}
@@ -132,12 +139,12 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/finalizers,verbs=update
 
-// CAPIProviderReconcilerWrapper wraps the upstream CAPIProviderReconciler
+// CAPIProviderReconcilerWrapper wraps the upstream CAPIProviderReconciler.
 type CAPIProviderReconcilerWrapper struct {
 	controller.GenericProviderReconciler
 }
 
-// BuildWithManager builds the CAPIProviderReconciler
+// BuildWithManager builds the CAPIProviderReconciler.
 func (r *CAPIProviderReconcilerWrapper) BuildWithManager(ctx context.Context, mgr ctrl.Manager) (*ctrl.Builder, error) {
 	builder, err := r.GenericProviderReconciler.BuildWithManager(ctx, mgr)
 	if err != nil {
@@ -146,7 +153,7 @@ func (r *CAPIProviderReconcilerWrapper) BuildWithManager(ctx context.Context, mg
 
 	reconciler := controller.NewPhaseReconciler(r.GenericProviderReconciler, r.Provider, r.ProviderList)
 
-	r.GenericProviderReconciler.ReconcilePhases = []controller.PhaseFn{
+	r.ReconcilePhases = []controller.PhaseFn{
 		r.setDefaultProviderSpec,
 		reconciler.ApplyFromCache,
 		reconciler.PreflightChecks,
@@ -174,11 +181,12 @@ func (r *CAPIProviderReconcilerWrapper) SetupWithManager(ctx context.Context, mg
 	return builder.WithOptions(options).Complete(r)
 }
 
+// Reconcile wraps the upstream Reconcile method.
 func (r *CAPIProviderReconcilerWrapper) Reconcile(ctx context.Context, req reconcile.Request) (_ reconcile.Result, reterr error) {
 	return r.GenericProviderReconciler.Reconcile(ctx, req)
 }
 
-func (r *CAPIProviderReconcilerWrapper) setDefaultProviderSpec(ctx context.Context) (*controller.Result, error) {
+func (r *CAPIProviderReconcilerWrapper) setDefaultProviderSpec(_ context.Context) (*controller.Result, error) {
 	setDefaultProviderSpec(r.Provider)
 
 	return &controller.Result{}, nil

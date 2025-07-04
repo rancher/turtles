@@ -18,17 +18,17 @@ package controllers
 
 import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"sigs.k8s.io/cluster-api-operator/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	"sigs.k8s.io/cluster-api-operator/controller"
 )
 
-// ProviderHealthCheckReconciler is a health check wrapper for operator provider resources
+// ProviderHealthCheckReconciler is a health check wrapper for operator provider resources.
 type ProviderHealthCheckReconciler struct{}
 
-// SetupWithManager is setup manager wrapper for operator healthcheck
+// SetupWithManager is setup manager wrapper for operator healthcheck.
 func (r *ProviderHealthCheckReconciler) SetupWithManager(mgr ctrl.Manager, options ctr.Options) error {
 	return kerrors.NewAggregate([]error{
 		(&controller.GenericProviderHealthCheckReconciler{
