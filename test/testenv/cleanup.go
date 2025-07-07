@@ -100,6 +100,7 @@ func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
 
 	kubeconfig := cmp.Or(input.KubeconfigPath, input.BootstrapKubeconfigPath)
 	if kubeconfig == "" {
+		log.Info("No kubeconfig provided, skipping artifacts collection")
 		return nil
 	}
 

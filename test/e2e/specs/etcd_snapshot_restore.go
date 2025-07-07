@@ -291,8 +291,10 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 	})
 
 	AfterEach(func() {
+		By(fmt.Sprintf("Collecting artifacts for %s/%s", input.ClusterName, specName))
+
 		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			Path: input.ClusterName + "bootstrap" + specName,
+			Path: input.ClusterName + "-bootstrap-" + specName,
 		})
 		if err != nil {
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
@@ -300,7 +302,7 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 
 		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			KubeconfigPath: originalKubeconfig.TempFilePath,
-			Path:           input.ClusterName + specName,
+			Path:           input.ClusterName + "-workload-" + specName,
 		})
 		if err != nil {
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")

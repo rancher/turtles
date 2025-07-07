@@ -169,8 +169,10 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	})
 
 	AfterEach(func() {
+		By(fmt.Sprintf("Collecting artifacts for %s/%s", clusterName, specName))
+
 		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			Path: clusterName + "bootstrap" + specName,
+			Path: clusterName + "-bootstrap-" + specName,
 		})
 		if err != nil {
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
@@ -178,7 +180,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 
 		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			KubeconfigPath: rancherKubeconfig.TempFilePath,
-			Path:           clusterName + specName,
+			Path:           clusterName + "-workload-" + specName,
 		})
 		if err != nil {
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
