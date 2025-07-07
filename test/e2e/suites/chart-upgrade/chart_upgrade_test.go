@@ -59,6 +59,7 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
+		// Perform upgrade with migration to embedded operator implementation
 		rtInput.AdditionalValues["cluster-api-operator.enabled"] = "false"
 		rtInput.AdditionalValues["rancherTurtles.features.embedded-operator.enabled"] = "true"
 
@@ -67,6 +68,17 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			AdditionalValues:      rtInput.AdditionalValues,
 			PostUpgradeSteps:      []func(){},
 		}
+
+		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
+			By("Waiting for the upstream CAPI operator deployment to be removed")
+			framework.WaitForDeploymentsRemoved(ctx, framework.WaitForDeploymentsRemovedInput{
+				Getter: bootstrapClusterProxy.GetClient(),
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "rancher-turtles-cluster-api-operator",
+					Namespace: e2e.RancherTurtlesNamespace,
+				}},
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+		})
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			By("Waiting for CAAPF deployment to be available")
