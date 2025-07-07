@@ -39,6 +39,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -70,6 +71,7 @@ var (
 	syncPeriod                  time.Duration
 	healthAddr                  string
 	concurrencyNumber           int
+	managerConcurrency          int
 	rancherKubeconfig           string
 	insecureSkipVerify          bool
 )
@@ -118,6 +120,9 @@ func initFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&concurrencyNumber, "concurrency", 1,
 		"Number of resources to process simultaneously")
 
+	fs.IntVar(&managerConcurrency, "manager-concurrency", 15,
+		"Number of concurrent reconciles to process simultaneously across all controllers")
+
 	fs.StringVar(&rancherKubeconfig, "rancher-kubeconfig", "",
 		"Path to the Rancher kubeconfig file. Only required if running out-of-cluster.")
 
@@ -157,6 +162,9 @@ func main() {
 					&turtlesv1.ClusterctlConfig{},
 				},
 			},
+		},
+		Controller: config.Controller{
+			MaxConcurrentReconciles: concurrencyNumber,
 		},
 		Cache: cache.Options{
 			SyncPeriod: &syncPeriod,
