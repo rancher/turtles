@@ -59,10 +59,6 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 
 		testenv.DeployChartMuseum(ctx, chartMuseumDeployInput)
 
-		// Perform upgrade with migration to embedded operator implementation
-		rtInput.AdditionalValues["cluster-api-operator.enabled"] = "false"
-		rtInput.AdditionalValues["rancherTurtles.features.embedded-operator.enabled"] = "true"
-
 		upgradeInput := testenv.UpgradeRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			AdditionalValues:      rtInput.AdditionalValues,

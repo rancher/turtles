@@ -84,10 +84,7 @@ var _ = SynchronizedBeforeSuite(
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			CAPIProvidersYAML:     e2e.CapiProviders,
 			WaitForDeployments:    testenv.DefaultDeployments,
-			AdditionalValues: map[string]string{
-				"cluster-api-operator.enabled":                      "false",
-				"rancherTurtles.features.embedded-operator.enabled": "true",
-			},
+			AdditionalValues:      map[string]string{},
 		})
 
 		testenv.RestartRancher(ctx, testenv.RestartRancherInput{

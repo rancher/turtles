@@ -559,7 +559,6 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	$(KUSTOMIZE) build ./config/operatorchart > $(CHART_DIR)/templates/operator-crds.yaml
 	$(KUSTOMIZE) build ./exp/day2/config/chart > $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
 	$(KUSTOMIZE) build ./exp/clusterclass/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
-	./scripts/process-manifests.sh embedded-operator $(CHART_DIR)/templates/operator-crds.yaml
 	./scripts/process-manifests.sh day2operations $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
 	./scripts/process-manifests.sh clusterclass-operations $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)

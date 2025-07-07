@@ -1,7 +1,5 @@
-{{- if index .Values "rancherTurtles" "features" "embedded-operator" "enabled" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: clusterctl-config
   namespace: '{{ .Values.rancherTurtles.namespace }}'
-{{- end}}

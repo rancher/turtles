@@ -26,7 +26,7 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=agent-tls-mode={{ index .Values "rancherTurtles" "features" "agent-tls-mode" "enabled"}},ui-plugin={{ index .Values "turtlesUI" "enabled"}},embedded-operator={{ index .Values "rancherTurtles" "features" "embedded-operator" "enabled"}}
+        - --feature-gates=agent-tls-mode={{ index .Values "rancherTurtles" "features" "agent-tls-mode" "enabled"}},ui-plugin={{ index .Values "turtlesUI" "enabled"}}
         {{- range .Values.rancherTurtles.managerArguments }}
         - {{ . }}
         {{- end }}  
@@ -71,19 +71,15 @@ spec:
           requests:
             cpu: 10m
             memory: 128Mi
-        {{- if index .Values "rancherTurtles" "features" "embedded-operator" "enabled" }}
         {{- with .Values.rancherTurtles.volumeMounts.manager }}
         volumeMounts:
         {{- toYaml . | nindent 12 }}
         {{- end }}
-        {{- end }}
       serviceAccountName: rancher-turtles-manager
       terminationGracePeriodSeconds: 10
-      {{- if index .Values "rancherTurtles" "features" "embedded-operator" "enabled" }}
       {{- with .Values.rancherTurtles.volumes }}
       volumes:
       {{- toYaml . | nindent 8 }}
-      {{- end }}
       {{- end }}
       tolerations:
       - effect: NoSchedule

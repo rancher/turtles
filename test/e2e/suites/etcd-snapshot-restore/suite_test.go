@@ -80,8 +80,6 @@ var _ = SynchronizedBeforeSuite(
 			AdditionalValues: map[string]string{
 				"rancherTurtles.features.day2operations.enabled":                   "true", // enable day2operations feature
 				"rancherTurtles.features.day2operations.etcdBackupRestore.enabled": "true", // enable etcdBackupRestore feature
-				"cluster-api-operator.enabled":                                     "false",
-				"rancherTurtles.features.embedded-operator.enabled":                "true",
 			},
 			WaitForDeployments: testenv.DefaultDeployments,
 		})

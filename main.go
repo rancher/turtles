@@ -276,20 +276,18 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 	setupLog.Info("enabling CAPI Operator synchronization controller")
 
-	if feature.Gates.Enabled(feature.EmbeddedOperator) {
-		if err := (&controllers.OperatorReconciler{}).SetupWithManager(ctx, mgr, controller.Options{
-			MaxConcurrentReconciles: concurrencyNumber,
-		}); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Operator")
-			os.Exit(1)
-		}
+	if err := (&controllers.OperatorReconciler{}).SetupWithManager(ctx, mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+	}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Operator")
+		os.Exit(1)
+	}
 
-		if err := (&controllers.ProviderHealthCheckReconciler{}).SetupWithManager(mgr, controller.Options{
-			MaxConcurrentReconciles: concurrencyNumber,
-		}); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Healthcheck")
-			os.Exit(1)
-		}
+	if err := (&controllers.ProviderHealthCheckReconciler{}).SetupWithManager(mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+	}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Healthcheck")
+		os.Exit(1)
 	}
 
 	if err := (&controllers.CAPIProviderReconciler{

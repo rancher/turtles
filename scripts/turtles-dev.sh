@@ -92,9 +92,7 @@ install_local_rancher_turtles_chart() {
     # feature flags enabled to run day2 & clusterclass controllers
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
         -n rancher-turtles-system \
-        --set cluster-api-operator.enabled=true \
         --set cluster-api-operator.cluster-api.enabled=false \
-        --set rancherTurtles.features.embedded-operator.enabled=true \
         --set rancherTurtles.features.day2operations.enabled=true \
         --set rancherTurtles.features.day2operations.imageVersion=dev \
         --set rancherTurtles.features.day2operations.etcdBackupRestore.enabled=true \

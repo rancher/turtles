@@ -25,10 +25,6 @@ rancherTurtles:
   kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
   # features: Optional and experimental features.
   features:
-    # embedded-operator: Embed operator controller loops.
-    embedded-operator:
-      # enabled: Turn on or off.
-      enabled: true
     # day2operations: Alpha feature.
     day2operations:
       # enabled: Turn on or off.
@@ -70,48 +66,6 @@ rancherTurtles:
 
 # cluster-api-operator: Manages Cluster API components.
 cluster-api-operator:
-  # enabled: Turn on or off.
-  enabled: true
-  # cert-manager: Cert-manager integration.
-  cert-manager:
-    # enabled: Turn on or off.
-    enabled: false
-  # volumes: Volumes for operator pods (certs, config).
-  volumes:
-    - name: cert
-      secret:
-        # defaultMode: File permissions.
-        defaultMode: 420
-        # secretName: Secret for webhook certs.
-        secretName: capi-operator-webhook-service-cert
-    - name: clusterctl-config
-      configMap:
-        # name: ConfigMap for clusterctl.
-        name: clusterctl-config
-  resources:
-    manager:
-      limits:
-        cpu: 100m
-        memory: 300Mi
-      requests:
-        cpu: 100m
-        memory: 100Mi
-  # image: Operator manager image.
-  image:
-    manager:
-      # repository: Image repo.
-      repository: registry.rancher.com/rancher/cluster-api-operator
-  # volumeMounts: Mount volumes to pods.
-  volumeMounts:
-    manager:
-      - mountPath: /tmp/k8s-webhook-server/serving-certs
-        name: cert
-        # readOnly: Mount as read-only.
-        readOnly: true
-      - mountPath: /config
-        name: clusterctl-config
-        # readOnly: Mount as read-only.
-        readOnly: true
   # cleanup: Enable cleanup tasks.
   cleanup: true
   # cluster-api: Cluster API component settings.

@@ -8,11 +8,6 @@ questions:
     show_subquestion_if: true
     group: "Rancher Turtles Extra Settings"
     subquestions:
-      - variable: cluster-api-operator.cert-manager.enabled
-        default: false
-        type: boolean
-        description: "Flag to enable or disable installation of cert-manager. If set to false then you will need to install cert-manager manually."
-        label: "Enable Cert Manager"
       - variable: turtlesUI.enabled
         default: false
         type: boolean
@@ -52,8 +47,3 @@ questions:
         type: boolean
         group: "ETCD Backup and Restore Settings"
         show_if: "rancherTurtles.features.day2operations.enabled"
-      - variable: rancherTurtles.features.embedded-operator.enabled
-        label: "Enable Turtles Embedded Operator"
-        description: "[ALPHA] Enable Turtles Embedded Operator functionality in Rancher Turtles."
-        type: boolean
-        group: "Embedded operator"
