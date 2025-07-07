@@ -28,7 +28,7 @@ rancherTurtles:
     # embedded-operator: Embed operator controller loops.
     embedded-operator:
       # enabled: Turn on or off.
-      enabled: false
+      enabled: true
     # day2operations: Alpha feature.
     day2operations:
       # enabled: Turn on or off.

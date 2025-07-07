@@ -40,5 +40,5 @@ func init() {
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AgentTLSMode:     {Default: true, PreRelease: featuregate.Beta},
 	UIPlugin:         {Default: false, PreRelease: featuregate.Alpha},
-	EmbeddedOperator: {Default: false, PreRelease: featuregate.Alpha},
+	EmbeddedOperator: {Default: true, PreRelease: featuregate.Beta},
 }
