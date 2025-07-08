@@ -142,8 +142,6 @@ func (r *SetupTestClusterResult) setupCluster(ctx context.Context, config *clust
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
 		Expect(kubeconfigPath).To(BeAnExistingFile(), "Failed to get the kubeconfig file for the bootstrap cluster")
-
-		Expect(os.Setenv(e2e.BootstrapClusterKubeconfigVar, kubeconfigPath)).To(Succeed(), "Failed to setup bootstrap cluster kubeconfig path env")
 	}
 
 	proxy := framework.NewClusterProxy(clusterName, kubeconfigPath, scheme, framework.WithMachineLogCollector(framework.DockerLogCollector{}))

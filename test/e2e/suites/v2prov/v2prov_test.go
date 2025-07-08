@@ -172,7 +172,8 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		By(fmt.Sprintf("Collecting artifacts for %s/%s", clusterName, specName))
 
 		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			Path: clusterName + "-bootstrap-" + specName,
+			Path:                    clusterName + "-bootstrap-" + specName,
+			BootstrapKubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
 		})
 		if err != nil {
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
