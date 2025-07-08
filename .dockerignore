@@ -7,7 +7,6 @@ hack/
 docs/
 scripts/
 **/*.md
-tilt-provider.json
 **/config/**/*.yaml
 **/config/**/*.yaml-e
 _artifacts

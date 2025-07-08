@@ -21,11 +21,8 @@ vendor/
 
 .idea/
 .vscode/
-.tiltbuild/
 .cr-release-packages/
 bin/
-tilt-settings.json
-tilt-settings.yaml
 
 out/
 _artifacts

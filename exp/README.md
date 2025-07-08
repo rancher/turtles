@@ -14,13 +14,9 @@ To set up the environment, navigate to the root of the repository and run:
 export RANCHER_HOSTNAME="<hostname>"
 export NGROK_API_KEY="<api-key>"
 export NGROK_AUTHTOKEN="<api-authtoken>"
-export USE_TILT_DEV=true (default)
 
 make dev-env
 ```
-
-**Note:** setting `USE_TILT_DEV` environment variable to `false` will result in manually deploying Rancher Turtles locally instead
-of Tilt deployment and can be used for testing Rancher Turtles with Helm chart changes (enabling/disabling feature flags when passed as argument to Turtles helm installation command).
 
 The `Makefile` target sets up the environment by executing the `scripts/turtles-dev.sh`
 script with the `RANCHER_HOSTNAME` argument. Under the hood, it performs the following steps:

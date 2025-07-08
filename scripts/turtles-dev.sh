@@ -29,7 +29,6 @@ DAY2_CONTROLLER_IMAGE=${DAY2_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
 DAY2_CONTROLLER_IMAGE_TAG=${DAY2_CONTROLLER_IMAGE_TAG:-dev}
 CLUSTERCLASS_CONTROLLER_IMAGE=${CLUSTERCLASS_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
 CLUSTERCLASS_CONTROLLER_IMAGE_TAG=${CLUSTERCLASS_CONTROLLER_IMAGE_TAG:-dev}
-USE_TILT_DEV=${USE_TILT_DEV:-true}
 
 BASEDIR=$(dirname "$0")
 
@@ -92,7 +91,7 @@ install_local_rancher_turtles_chart() {
     # feature flags enabled to run day2 & clusterclass controllers
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
         -n rancher-turtles-system \
-        --set cluster-api-operator.cluster-api.enabled=false \
+        --set cluster-api-operator.cluster-api.enabled=true \
         --set rancherTurtles.features.day2operations.enabled=true \
         --set rancherTurtles.features.day2operations.imageVersion=dev \
         --set rancherTurtles.features.day2operations.etcdBackupRestore.enabled=true \
@@ -106,8 +105,3 @@ install_local_rancher_turtles_chart() {
 
 echo "Installing local Rancher Turtles chart for development..."
 install_local_rancher_turtles_chart
-
-if [ "$USE_TILT_DEV" == "true" ]; then
-    echo "Using Tilt for development..."
-    tilt up
-fi
