@@ -65,7 +65,7 @@ func CleanupTestCluster(ctx context.Context, input CleanupTestClusterInput) {
 
 type CollectArtifactsInput struct {
 	// BootstrapKubeconfigPath is a path to the bootstrap cluster kubeconfig
-	BootstrapKubeconfigPath string `env:"BOOTSTRAP_CLUSTER_KUBECONFIG_PATH"`
+	BootstrapKubeconfigPath string
 
 	// KubeconfigPath is a path to the cluster kubeconfig
 	KubeconfigPath string

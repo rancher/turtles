@@ -155,7 +155,6 @@ const (
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
 	BootstrapClusterNameVar       = "BOOTSTRAP_CLUSTER_NAME"
-	BootstrapClusterKubeconfigVar = "BOOTSTRAP_CLUSTER_KUBECONFIG_PATH"
 
 	ClusterctlRepositoryFolderVar = "CLUSTERCTL_REPOSITORY_FOLDER"
 

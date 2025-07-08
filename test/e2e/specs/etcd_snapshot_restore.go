@@ -294,7 +294,8 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 		By(fmt.Sprintf("Collecting artifacts for %s/%s", input.ClusterName, specName))
 
 		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			Path: input.ClusterName + "-bootstrap-" + specName,
+			Path:                    input.ClusterName + "-bootstrap-" + specName,
+			BootstrapKubeconfigPath: input.BootstrapClusterProxy.GetKubeconfigPath(),
 		})
 		if err != nil {
 			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
