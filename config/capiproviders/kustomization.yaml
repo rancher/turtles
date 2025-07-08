@@ -1,5 +1,3 @@
+# This is used by the tilt setup, not to build the chart.
 resources:
-- core.yaml
 - docker.yaml
-- bootstrap.yaml
-- controlplane.yaml
