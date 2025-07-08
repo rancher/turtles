@@ -77,6 +77,7 @@ var _ = SynchronizedBeforeSuite(
 
 		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			AdditionalValues:      map[string]string{},
 		})
 
 		data, err := json.Marshal(e2e.Setup{

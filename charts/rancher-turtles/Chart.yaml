@@ -11,11 +11,6 @@ keywords:
 - cluster-api
 - capi
 - provisioning
-dependencies:
-  - name: cluster-api-operator
-    version: v0.18.1
-    repository: https://kubernetes-sigs.github.io/cluster-api-operator
-    condition: cluster-api-operator.enabled
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Rancher Turtles - the Cluster API Extension

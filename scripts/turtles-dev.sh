@@ -40,7 +40,6 @@ kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest --force-update
-helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator --force-update
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo add ngrok https://charts.ngrok.com --force-update
 helm repo update
@@ -93,7 +92,6 @@ install_local_rancher_turtles_chart() {
     # feature flags enabled to run day2 & clusterclass controllers
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
         -n rancher-turtles-system \
-        --set cluster-api-operator.enabled=true \
         --set cluster-api-operator.cluster-api.enabled=false \
         --set rancherTurtles.features.day2operations.enabled=true \
         --set rancherTurtles.features.day2operations.imageVersion=dev \

@@ -20,6 +20,7 @@ import (
 	"context"
 	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 
@@ -70,4 +71,26 @@ func WaitForCAPIProviderRollout(ctx context.Context, input WaitForCAPIProviderRo
 			"Failed to get Deployment %s with image %s. Last observed: %s",
 			client.ObjectKeyFromObject(input.Deployment).String(), input.Image, klog.KObj(input.Deployment))
 	}
+}
+
+// WaitForDeploymentsRemovedInput is the input for WaitForDeploymentsRemoved.
+type WaitForDeploymentsRemovedInput = capiframework.WaitForDeploymentsAvailableInput
+
+// WaitForDeploymentsAvRemoved waits until the Deployment is removed.
+func WaitForDeploymentsRemoved(ctx context.Context, input WaitForDeploymentsRemovedInput, intervals ...interface{}) {
+	Byf("Waiting for deployment %s to be removed", klog.KObj(input.Deployment))
+	deployment := &appsv1.Deployment{}
+	Eventually(func() bool {
+		key := client.ObjectKey{
+			Namespace: input.Deployment.GetNamespace(),
+			Name:      input.Deployment.GetName(),
+		}
+		if err := input.Getter.Get(ctx, key, deployment); err == nil {
+			return false
+		} else if apierrors.IsNotFound(err) {
+			return true
+		}
+
+		return false
+	}, intervals...).Should(BeTrue(), func() string { return capiframework.DescribeFailedDeployment(input, deployment) })
 }

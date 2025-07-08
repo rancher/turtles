@@ -51,9 +51,6 @@ jobs:
       - name: Build docker image
         run: make docker-build
 
-      - name: Add CAPI operator chart repo
-        run: helm repo add capi-operator https://kubernetes-sigs.github.io/cluster-api-operator
-
       - name: Package operator chart
         run: make release-chart
 

@@ -66,6 +66,17 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		}
 
 		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
+			By("Waiting for the upstream CAPI operator deployment to be removed")
+			framework.WaitForDeploymentsRemoved(ctx, framework.WaitForDeploymentsRemovedInput{
+				Getter: bootstrapClusterProxy.GetClient(),
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "rancher-turtles-cluster-api-operator",
+					Namespace: e2e.RancherTurtlesNamespace,
+				}},
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+		})
+
+		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
 			By("Waiting for CAAPF deployment to be available")
 			capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 				Getter: bootstrapClusterProxy.GetClient(),
