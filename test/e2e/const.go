@@ -30,9 +30,6 @@ var (
 	//go:embed data/capi-operator/capi-providers-legacy.yaml
 	CapiProvidersLegacy []byte
 
-	//go:embed data/capi-operator/capi-providers-oci.yaml
-	CapiProvidersOci []byte
-
 	//go:embed data/capi-operator/capv-provider.yaml
 	CapvProvider []byte
 
