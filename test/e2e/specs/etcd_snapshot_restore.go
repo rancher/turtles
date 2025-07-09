@@ -247,14 +247,18 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
 			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
 
-		By("Waiting for cluster control plane to be Ready")
-		Eventually(func(g Gomega) {
-			g.Expect(input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).To(Succeed())
-			g.Expect(capiCluster.Status.ControlPlaneReady).To(BeTrue())
-		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
-
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
+			secret := &corev1.Secret{}
+			key := client.ObjectKey{
+				Name:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
+				Namespace: capiCluster.Namespace,
+			}
+
+			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, secret); err != nil {
+				return err
+			}
+
 			remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
 			namespaces := &corev1.NamespaceList{}
 
@@ -269,6 +273,12 @@ func ETCDSnapshotRestore(ctx context.Context, inputGetter func() ETCDSnapshotRes
 			Namespace:       capiCluster.Namespace,
 			WriteToTempFile: true,
 		}, originalKubeconfig)
+
+		By("Waiting for cluster control plane to be Ready")
+		Eventually(func(g Gomega) {
+			g.Expect(input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).To(Succeed())
+			g.Expect(capiCluster.Status.ControlPlaneReady).To(BeTrue())
+		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 		By("Waiting for the Nodes to be Ready")
 		Eventually(func(g Gomega) {
