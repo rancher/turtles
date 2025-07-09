@@ -8,10 +8,10 @@ replace github.com/rancher/turtles/exp/day2 => ../exp/day2
 
 require (
 	code.gitea.io/sdk/gitea v0.21.0
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
-	github.com/go-git/go-git/v5 v5.16.0
+	github.com/go-git/go-git/v5 v5.16.2
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/rancher/turtles v0.16.1-0.20250217112855-5adeb47014de
@@ -25,10 +25,10 @@ require (
 	sigs.k8s.io/cluster-api v1.10.2
 	sigs.k8s.io/cluster-api-operator v0.21.0
 	sigs.k8s.io/cluster-api-operator/test v0.21.0
-	sigs.k8s.io/cluster-api/test v1.10.2
+	sigs.k8s.io/cluster-api/test v1.10.3
 	sigs.k8s.io/controller-runtime v0.20.4
-	sigs.k8s.io/kind v0.27.0
-	sigs.k8s.io/yaml v1.4.0
+	sigs.k8s.io/kind v0.29.0
+	sigs.k8s.io/yaml v1.5.0
 )
 
 require (
@@ -87,7 +87,6 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
-	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -146,6 +145,8 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
+	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.40.0 // indirect
