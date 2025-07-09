@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -52,24 +51,27 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object, options ...
 
 	patchOptions := []client.PatchOption{
 		client.FieldOwner(fieldOwner),
+		client.ForceOwnership,
 	}
 	patchOptions = append(patchOptions, options...)
 
-	err := cl.Patch(ctx, obj, client.Merge, patchOptions...)
-	if apierrors.IsNotFound(err) {
-		return cl.Create(ctx, obj, []client.CreateOption{client.FieldOwner(fieldOwner)}...)
-	}
-
-	return err
+	return cl.Patch(ctx, obj, client.Apply, patchOptions...)
 }
 
 // PatchStatus will only patch the status subresource of the provided object.
 func PatchStatus(ctx context.Context, cl client.Client, obj client.Object) error {
 	log := log.FromContext(ctx)
 
+	obj.SetManagedFields(nil)
+
+	if err := setKind(cl, obj); err != nil {
+		return err
+	}
+
 	log.Info(fmt.Sprintf("Patching status %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, client.ObjectKeyFromObject(obj)))
 
-	return cl.Status().Patch(ctx, obj, client.Merge, []client.SubResourcePatchOption{
+	return cl.Status().Patch(ctx, obj, client.Apply, []client.SubResourcePatchOption{
 		client.FieldOwner(fieldOwner),
+		client.ForceOwnership,
 	}...)
 }
