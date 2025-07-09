@@ -28,7 +28,7 @@ data:
       url:          "https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/v1.12.0/infrastructure-components.yaml"
       type:         "InfrastructureProvider"
     - name:         "docker"
-      url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.9.5/infrastructure-components-development.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.10.2/infrastructure-components-development.yaml"
       type:         "InfrastructureProvider"
 
     # Bootstrap providers
