@@ -314,33 +314,3 @@ func GetIngressHost(ctx context.Context, input GetIngressHostInput) string {
 	rule := ingress.Spec.Rules[input.IngressRuleIndex]
 	return rule.Host
 }
-
-// GetClusterctlInput represents the input parameters for retrieving the clusterctl config.
-type GetClusterctlInput struct {
-	// GetLister is a function that returns a lister for accessing Kubernetes resources.
-	GetLister framework.GetLister
-
-	// ConfigMapName is the name of the Ingress.
-	ConfigMapName string
-
-	// IngressNamespace is the namespace of the Ingress.
-	ConfigMapNamespace string
-}
-
-// GetClusterctlConfig gets clusterctl config
-func GetClusterctl(ctx context.Context, input GetClusterctlInput) string {
-	Expect(ctx).NotTo(BeNil(), "ctx is required for GetClusterctl")
-	Expect(input.GetLister).ToNot(BeNil(), "Invalid argument. input.GetLister can't be nil when calling GetClusterctl")
-
-	config := &corev1.ConfigMap{}
-	Eventually(func() error {
-		return input.GetLister.Get(ctx, client.ObjectKey{Namespace: input.ConfigMapNamespace, Name: input.ConfigMapName}, config)
-	}).Should(Succeed(), "Failed to get ConfigMap")
-	Byf("Found ConfigMap %s/%s", input.ConfigMapNamespace, input.ConfigMapName)
-	Byf("ConfigMap data: %v", config.Data)
-
-	Expect(config.Data).NotTo(BeNil(), "Expected ConfigMap to have data")
-	Expect(config.Data["clusterctl.yaml"]).NotTo(BeEmpty(), "Expected ConfigMap to have clusterctl.yaml data")
-
-	return config.Data["clusterctl.yaml"]
-}
