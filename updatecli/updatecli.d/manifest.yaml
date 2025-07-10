@@ -86,16 +86,6 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
-  capioperatorrelease:
-    kind: githubrelease
-    name: Get the latest CAPI operator release
-    spec:
-      owner: "rancher-sandbox"
-      repository: "cluster-api-operator"
-      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
-      typeFilter:
-        latest: true
   capiuirelease:
     kind: githubrelease
     name: Get the latest CAPI UI extension release
@@ -201,14 +191,6 @@ targets:
       replacepattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
     scmid: turtles
     sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
-  bumpcapioperator:
-    name: bump CAPI Operator version
-    kind: yaml
-    spec:
-      file: "charts/rancher-turtles/Chart.yaml"
-      key: "$.dependencies[0].version"
-    scmid: turtles
-    sourceid: capioperatorrelease # Will be ignored as `replacepattern` is specified
   bumpcapiui:
     name: bump CAPI UI version
     kind: yaml
