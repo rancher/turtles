@@ -16,6 +16,7 @@ require (
 	github.com/onsi/gomega v1.37.0
 	github.com/rancher/turtles v0.16.1-0.20250217112855-5adeb47014de
 	github.com/rancher/turtles/exp/day2 v0.0.0-20250217112855-5adeb47014de
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.5
 	k8s.io/apimachinery v0.32.5
 	k8s.io/client-go v0.32.5
