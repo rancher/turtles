@@ -280,11 +280,18 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
 			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
 
-		By("Waiting for cluster control plane to be Ready")
-		Eventually(komega.Object(capiCluster), capiClusterCreateWait...).Should(HaveField("Status.ControlPlaneReady", BeTrue()))
-
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
+			secret := &corev1.Secret{}
+			key := client.ObjectKey{
+				Name:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
+				Namespace: capiCluster.Namespace,
+			}
+
+			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, secret); err != nil {
+				return err
+			}
+
 			remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
 			namespaces := &corev1.NamespaceList{}
 
@@ -299,6 +306,9 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 			Namespace:       capiCluster.Namespace,
 			WriteToTempFile: true,
 		}, originalKubeconfig)
+
+		By("Waiting for cluster control plane to be Ready")
+		Eventually(komega.Object(capiCluster), capiClusterCreateWait...).Should(HaveField("Status.ControlPlaneReady", BeTrue()))
 
 		By("Running checks on Rancher cluster")
 		validateRancherCluster()
