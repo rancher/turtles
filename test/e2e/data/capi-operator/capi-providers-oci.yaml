@@ -14,7 +14,7 @@ spec:
   name: docker
   version: {{ .ProviderVersion }}
   fetchConfig:
-    oci: registry.rancher.com/rancher/cluster-api-operator-components:{{ .ProviderVersion }}
+    oci: registry.rancher.com/rancher/cluster-api-controller-components:{{ .ProviderVersion }}
 ---
 apiVersion: v1
 kind: Namespace
