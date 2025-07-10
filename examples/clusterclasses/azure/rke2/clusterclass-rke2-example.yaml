@@ -89,20 +89,6 @@ spec:
           description: "The VM size used by machines."
           type: string
           default: "Standard_D2s_v3"
-    - name: registrationMethod
-      required: true
-      schema:
-        openAPIV3Schema:
-          description: "Registration method to use. Defaults to control-plane endpoint (empty string). Immutable once is set."
-          type: string
-          default: ""
-          enum:
-            - internal-first
-            - internal-only-ips
-            - external-only-ips
-            - address
-            - control-plane-endpoint
-            - ""
   patches:
     - name: azureClusterTemplate
       definitions:
@@ -137,10 +123,25 @@ spec:
                   subnets:
                   - name: {{ .builtin.cluster.name }}-kcps
                     role: control-plane
+                    securityGroup:
+                      securityRules:
+                      - action: Allow
+                        description: Allow port 9345 for RKE2
+                        destination: '*'
+                        destinationPorts: "9345"
+                        direction: Inbound
+                        name: allow_port_9345
+                        priority: 2203
+                        protocol: Tcp
+                        source: '*'
+                        sourcePorts: '*'
                   - name: {{ .builtin.cluster.name }}-nodes
                     natGateway:
                       name: {{ .builtin.cluster.name }}-nodes
                     role: node
+                  additionalAPIServerLBPorts:
+                  - name: rke2
+                    port: 9345
     - name: azureMachineTemplate
       definitions:
         - selector:
@@ -160,10 +161,6 @@ spec:
                     owner: root:root
                     path: /etc/kubernetes/azure.json
                     permissions: "0644"
-            - op: add
-              path: /spec/template/spec/registrationMethod
-              valueFrom:
-                variable: registrationMethod
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
