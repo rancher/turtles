@@ -1,4 +1,4 @@
-name: Run vsphere e2e tests on self-hosted runner
+name: Run vSphere e2e tests
 
 on:
   schedule:
@@ -48,3 +48,32 @@ jobs:
         with:
           name: artifacts_vsphere
           path: _artifacts
+      - name: Send failed status to slack
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "Rancher Turtles E2E test vSphere run failed. Job trigger by ${{ github.event_name }} event."
+                    },
+                    "accessory": {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":github:",
+                          "emoji": true
+                        },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
