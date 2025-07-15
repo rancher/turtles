@@ -84,7 +84,7 @@ jobs:
     if: ${{ failure() || cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: slackapi/slack-github-action@v2.1.0
+      - uses: slackapi/slack-github-action@v2.1.1
         with:
           payload: |
             {
