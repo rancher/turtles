@@ -265,15 +265,6 @@ var _ = Describe("Provider sync", func() {
 			Expect(err).To(Succeed())
 		}).Should(Succeed())
 
-		capiProviderAzure.Spec.Deployment = &operatorv1.DeploymentSpec{
-			Containers: []operatorv1.ContainerSpec{{
-				Name: "manager",
-				Args: map[string]string{
-					"--bootstrap-config-gvk": "RKE2Config.v1beta1.bootstrap.cluster.x-k8s.io",
-				},
-			}},
-		}
-
 		Eventually(Object(infrastructureAzure)).Should(
 			HaveField("Spec.ProviderSpec", Equal(capiProviderAzure.Spec.ProviderSpec)))
 	})

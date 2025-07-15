@@ -39,32 +39,6 @@ func NewAzureProviderSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider
 		spec.Deployment = &operatorv1.DeploymentSpec{}
 	}
 
-	var container *operatorv1.ContainerSpec
-
-	for i := range spec.Deployment.Containers {
-		if spec.Deployment.Containers[i].Name == "manager" {
-			container = &spec.Deployment.Containers[i]
-			break
-		}
-	}
-
-	if container != nil {
-		if len(container.Args) == 0 {
-			container.Args = map[string]string{
-				"--bootstrap-config-gvk": "RKE2Config.v1beta1.bootstrap.cluster.x-k8s.io",
-			}
-		} else if _, found := container.Args["--bootstrap-config-gvk"]; !found {
-			container.Args["--bootstrap-config-gvk"] = "RKE2Config.v1beta1.bootstrap.cluster.x-k8s.io"
-		}
-	} else {
-		spec.Deployment.Containers = append(spec.Deployment.Containers, operatorv1.ContainerSpec{
-			Name: "manager",
-			Args: map[string]string{
-				"--bootstrap-config-gvk": "RKE2Config.v1beta1.bootstrap.cluster.x-k8s.io",
-			},
-		})
-	}
-
 	capiProvider.SetSpec(spec)
 
 	if capiProvider.Spec.Variables == nil {
