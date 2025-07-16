@@ -226,6 +226,9 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(fullCommand, " "))).ToNot(HaveOccurred())
 	}
 
+	By("Applying test ClusterctlConfig")
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
+
 	if input.CAPIProvidersYAML != nil {
 		By("Adding CAPI infrastructure providers")
 		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.CAPIProvidersYAML)).To(Succeed())

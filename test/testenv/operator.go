@@ -19,8 +19,10 @@ package testenv
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"html/template"
 	"regexp"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
@@ -161,13 +164,22 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 
 	for _, nn := range input.WaitForDeployments {
 		turtlesframework.Byf("Waiting for CAPI deployment %s/%s to be available", nn.Namespace, nn.Name)
+		deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Name:      nn.Name,
+			Namespace: nn.Namespace,
+		}}
 		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
-			Getter: input.BootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      nn.Name,
-				Namespace: nn.Namespace,
-			}},
+			Getter:     input.BootstrapClusterProxy.GetClient(),
+			Deployment: deployment,
 		}, input.WaitDeploymentsReadyInterval...)
+		Expect(input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(deployment), deployment)).Should(Succeed())
+		wantRepository := "registry.suse.com/rancher"
+		if strings.HasPrefix(deployment.Name, "capd") {
+			wantRepository = "gcr.io/k8s-staging-cluster-api"
+		}
+		for _, container := range deployment.Spec.Template.Spec.Containers {
+			Expect(strings.HasPrefix(container.Image, wantRepository), fmt.Sprintf("Container image %s does not use expected repository %s", container.Image, wantRepository))
+		}
 	}
 }
 

@@ -101,6 +101,8 @@ install_local_rancher_turtles_chart() {
         --dependency-update \
         --create-namespace --wait \
         --timeout 180s
+
+    kubectl apply -f test/e2e/data/capi-operator/clusterctlconfig.yaml
 }
 
 echo "Installing local Rancher Turtles chart for development..."

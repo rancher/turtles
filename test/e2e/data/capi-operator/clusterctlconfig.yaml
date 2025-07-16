@@ -1,0 +1,9 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: ClusterctlConfig
+metadata:
+  name: clusterctl-config
+  namespace: rancher-turtles-system
+spec:
+  images:
+  - name: docker
+    repository: "gcr.io/k8s-staging-cluster-api"
