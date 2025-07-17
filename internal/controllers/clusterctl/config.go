@@ -29,9 +29,9 @@ import (
 	"github.com/blang/semver/v4"
 	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/yaml"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
@@ -45,6 +45,8 @@ var (
 
 const (
 	latestVersionKey = "latest"
+	// ConfigPath is the path of the mounted clusterctl config.
+	ConfigPath = "/config/clusterctl.yaml"
 )
 
 func init() {
@@ -75,6 +77,33 @@ func Config() *corev1.ConfigMap {
 	configMap.Annotations["meta.helm.sh/release-namespace"] = namespace
 
 	return configMap
+}
+
+// SyncConfigMap updates the Clusterctl ConfigMap with the user-specified
+// overrides from ClusterctlConfig.
+func SyncConfigMap(ctx context.Context, c client.Client, owner string) error {
+	configMap := Config()
+
+	clusterctlConfig, err := ClusterConfig(ctx, c)
+	if err != nil {
+		return fmt.Errorf("getting updated ClusterctlConfig: %w", err)
+	}
+
+	clusterctlYaml, err := yaml.Marshal(clusterctlConfig)
+	if err != nil {
+		return fmt.Errorf("serializing updated ClusterctlConfig: %w", err)
+	}
+
+	configMap.Data["clusterctl.yaml"] = string(clusterctlYaml)
+
+	if err := c.Patch(ctx, configMap, client.Apply, []client.PatchOption{
+		client.ForceOwnership,
+		client.FieldOwner(owner),
+	}...); err != nil {
+		return fmt.Errorf("patching clusterctl ConfigMap: %w", err)
+	}
+
+	return nil
 }
 
 // ClusterConfig collects overrides config from the local in-memory state

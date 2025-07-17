@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/yaml"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
@@ -62,26 +61,12 @@ func configMapMapper(_ context.Context, obj client.Object) []reconcile.Request {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ClusterctlConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, _ controller.Options) error {
-	err := ctrl.NewControllerManagedBy(mgr).
+func (r *ClusterctlConfigReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, _ controller.Options) error {
+	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&turtlesv1.ClusterctlConfig{}).
 		Watches(&corev1.ConfigMap{}, handler.EnqueueRequestsFromMapFunc(configMapMapper)).
-		Complete(r)
-	if err != nil {
+		Complete(r); err != nil {
 		return fmt.Errorf("creating ClusterctlConfigReconciler controller: %w", err)
-	}
-
-	// This needs to be created in the empty state, so that controller can sync the changes
-	// and have the initial resource to receive reconcile request from
-	configMapTemplate := clusterctl.Config()
-	configMapTemplate.Data = nil
-
-	err = r.Patch(ctx, configMapTemplate, client.Apply, []client.PatchOption{
-		client.ForceOwnership,
-		client.FieldOwner("clusterctl-controller"),
-	}...)
-	if err != nil {
-		return fmt.Errorf("creating ClusterctlConfig default ConfigMap: %w", err)
 	}
 
 	return nil
@@ -92,33 +77,12 @@ func (r *ClusterctlConfigReconciler) SetupWithManager(ctx context.Context, mgr c
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlconfigs/finalizers,verbs=get;list;watch;patch;update
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;patch
 
-// Reconcile reconciles the EtcdMachineSnapshot object.
+// Reconcile reconciles the ClusterctlConfig object.
 func (r *ClusterctlConfigReconciler) Reconcile(ctx context.Context, _ reconcile.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	clusterctlConfig, err := clusterctl.ClusterConfig(ctx, r.Client)
-	if err != nil {
-		log.Error(err, "Unable to serialize updated clusterctl config")
-
-		return ctrl.Result{}, err
-	}
-
-	clusterctlYaml, err := yaml.Marshal(clusterctlConfig)
-	if err != nil {
-		log.Error(err, "Unable to serialize updated clusterctl config")
-
-		return ctrl.Result{}, err
-	}
-
-	configMap := clusterctl.Config()
-	configMap.Data["clusterctl.yaml"] = string(clusterctlYaml)
-
-	if err := r.Patch(ctx, configMap, client.Apply, []client.PatchOption{
-		client.ForceOwnership,
-		client.FieldOwner("clusterctlconfig-controller"),
-	}...); err != nil {
-		log.Error(err, "Unable to patch clusterctl ConfigMap")
-
+	if err := clusterctl.SyncConfigMap(ctx, r.Client, "clusterctlconfig-controller"); err != nil {
+		log.Error(err, "Unable to sync clusterctl ConfigMap")
 		return ctrl.Result{}, err
 	}
 

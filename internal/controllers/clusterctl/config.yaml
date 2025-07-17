@@ -64,8 +64,6 @@ data:
         repository: "registry.suse.com/rancher"
       infrastructure-azure:
         repository: "registry.suse.com/rancher"
-      infrastructure-docker:
-        repository: "gcr.io/k8s-staging-cluster-api"
       infrastructure-gcp:
         repository: "registry.suse.com/rancher"
       infrastructure-vsphere:

@@ -131,6 +131,9 @@ var (
 
 	//go:embed data/gitea/values.yaml
 	GiteaValues []byte
+
+	//go:embed data/capi-operator/clusterctlconfig.yaml
+	ClusterctlConfig []byte
 )
 
 const (
@@ -154,7 +157,7 @@ const (
 
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
-	BootstrapClusterNameVar       = "BOOTSTRAP_CLUSTER_NAME"
+	BootstrapClusterNameVar = "BOOTSTRAP_CLUSTER_NAME"
 
 	ClusterctlRepositoryFolderVar = "CLUSTERCTL_REPOSITORY_FOLDER"
 
