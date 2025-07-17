@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  VSPHERE_TLS_THUMBPRINT: ${{ secrets.VSPHERE_TLS_THUMBPRINT }} 
-  VSPHERE_SERVER: ${{ secrets.VSPHERE_SERVER }} 
+  VSPHERE_TLS_THUMBPRINT: ${{ secrets.VSPHERE_TLS_THUMBPRINT }}
+  VSPHERE_SERVER: ${{ secrets.VSPHERE_SERVER }}
   VSPHERE_DATACENTER: ${{ secrets.VSPHERE_DATACENTER }}
   VSPHERE_DATASTORE: ${{ secrets.VSPHERE_DATASTORE }}
   VSPHERE_FOLDER: ${{ secrets.VSPHERE_FOLDER }}
@@ -77,3 +77,18 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      - name: Docker cleanup
+        if: always()
+        run: |
+          CONTAINERS=$(docker ps --all --quiet)
+          if [ -n "$CONTAINERS" ]; then
+            docker stop $CONTAINERS
+          fi
+          docker system prune --all --volumes --force
+          docker network create \
+            --driver=bridge \
+            --subnet=172.19.0.0/16 \
+            --gateway=172.19.0.1 \
+            --opt "com.docker.network.bridge.enable_ip_masquerade"="true" \
+            --opt "com.docker.network.driver.mtu"="1500" \
+            kind
