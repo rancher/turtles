@@ -592,7 +592,7 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfFleetManagement(ctx context.C
 	}
 
 	if _, found := annotations[externalFleetAnnotation]; !found {
-		annotations[externalFleetAnnotation] = "true"
+		annotations[externalFleetAnnotation] = trueAnnotationValue
 		rancherCluster.SetAnnotations(annotations)
 
 		log.Info("Added fleet annotation to Rancher cluster")

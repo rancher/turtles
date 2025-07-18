@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"cmp"
+	"strings"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -57,7 +58,7 @@ func (b *CAPIProvider) SetStatus(in operatorv1.ProviderStatus) {
 
 // GetType returns the type of the CAPIProvider.
 func (b *CAPIProvider) GetType() string {
-	return "capiprovider"
+	return strings.ToLower(string(b.Spec.Type))
 }
 
 // GetItems returns the list of GenericProviders for CAPIProviderList.

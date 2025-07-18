@@ -26,7 +26,6 @@ import (
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -45,7 +44,7 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		r := &CAPIProviderReconciler{
+		r := &SyncReconciler{
 			Client: testEnv.GetClient(),
 			Scheme: testEnv.GetScheme(),
 		}
@@ -60,7 +59,7 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Should create infrastructure docker provider and secret", func() {
+	It("Should create CAPIProvider secret", func() {
 		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      "docker",
 			Namespace: ns.Name,
@@ -69,9 +68,7 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		}}
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 
-		dockerProvider := objectFromKey(client.ObjectKeyFromObject(provider), &operatorv1.InfrastructureProvider{})
 		dockerSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
-		Eventually(Object(dockerProvider)).WithTimeout(5 * time.Second).ShouldNot(BeNil())
 		Eventually(Object(dockerSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
 			"CLUSTER_TOPOLOGY":         []byte("true"),
 			"EXP_CLUSTER_RESOURCE_SET": []byte("true"),
@@ -86,54 +83,9 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		}, Spec: turtlesv1.CAPIProviderSpec{
 			Type: turtlesv1.Infrastructure,
 		}}
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 
-		Eventually(Object(provider)).WithTimeout(5 * time.Second).Should(
-			HaveField("Status.Name", Equal(provider.Name)))
-	})
-
-	It("Should inherit docker provider name from the spec", func() {
-		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: ns.Name,
-		}, Spec: turtlesv1.CAPIProviderSpec{
-			Name: "docker",
-			Type: turtlesv1.Infrastructure,
-		}}
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-
-		Eventually(Object(provider)).WithTimeout(5 * time.Second).Should(
-			HaveField("Status.Name", Equal(provider.Spec.Name)))
-	})
-
-	It("Should update infrastructure docker provider version and secret content from CAPI Provider change", func() {
-		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
-			Name:      "docker",
-			Namespace: ns.Name,
-		}, Spec: turtlesv1.CAPIProviderSpec{
-			Type: turtlesv1.Infrastructure,
-		}}
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-
-		dockerProvider := objectFromKey(client.ObjectKeyFromObject(provider), &operatorv1.InfrastructureProvider{})
-		dockerSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
-		Eventually(Object(dockerProvider)).WithTimeout(5 * time.Second).ShouldNot(BeNil())
-		Eventually(Object(dockerSecret)).WithTimeout(5 * time.Second).ShouldNot(BeNil())
-
-		Eventually(Update(provider, func() {
-			provider.Spec.Version = "v1.2.3"
-			provider.Spec.Variables = map[string]string{
-				"other": "var",
-			}
-		})).Should(Succeed())
-
-		Eventually(Object(dockerProvider)).WithTimeout(5 * time.Second).Should(HaveField("Spec.Version", Equal("v1.2.3")))
-		Eventually(Object(dockerSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
-			"other":                    []byte("var"),
-			"CLUSTER_TOPOLOGY":         []byte("true"),
-			"EXP_CLUSTER_RESOURCE_SET": []byte("true"),
-			"EXP_MACHINE_POOL":         []byte("true"),
-		})))
+		setConditions(provider)
+		Expect(provider).To(HaveField("Status.Name", Equal(provider.Name)))
 	})
 
 	It("Should update infrastructure digitalocean provider features and convert rancher credentials secret on CAPI Provider change", func() {
@@ -146,7 +98,6 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 
 		doSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
-		Eventually(testEnv.GetAs(provider, &operatorv1.InfrastructureProvider{})).ShouldNot(BeNil())
 		Eventually(testEnv.GetAs(provider, doSecret)).ShouldNot(BeNil())
 
 		Expect(cl.Create(ctx, &corev1.Namespace{
@@ -172,7 +123,6 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		Expect(cl.Create(ctx, secret)).To(Succeed())
 
 		Eventually(Update(provider, func() {
-			provider.Spec.Features = &turtlesv1.Features{MachinePool: true}
 			provider.Spec.Credentials = &turtlesv1.Credentials{
 				RancherCloudCredential: "test-rancher-secret",
 			}
@@ -180,8 +130,8 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 
 		Eventually(Object(doSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
 			"EXP_MACHINE_POOL":          []byte("true"),
-			"CLUSTER_TOPOLOGY":          []byte("false"),
-			"EXP_CLUSTER_RESOURCE_SET":  []byte("false"),
+			"CLUSTER_TOPOLOGY":          []byte("true"),
+			"EXP_CLUSTER_RESOURCE_SET":  []byte("true"),
 			"DIGITALOCEAN_ACCESS_TOKEN": []byte("token"),
 			"DO_B64ENCODED_CREDENTIALS": []byte("dG9rZW4="),
 		})))
@@ -210,7 +160,6 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 
 		doSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
-		Eventually(testEnv.GetAs(provider, &operatorv1.InfrastructureProvider{})).ShouldNot(BeNil())
 		Eventually(testEnv.GetAs(provider, doSecret)).ShouldNot(BeNil())
 
 		Eventually(Update(provider, func() {

@@ -22,13 +22,10 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 // Sync is an inteface for mirroring state of the CAPI Operator Provider object on child objects.
 type Sync interface {
-	Template(source *turtlesv1.CAPIProvider) client.Object
 	Get(ctx context.Context) error
 	Sync(ctx context.Context) error
 	Apply(ctx context.Context, reterr *error, options ...client.PatchOption)
