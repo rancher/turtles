@@ -25,6 +25,7 @@ import (
 	"maps"
 	"os"
 	"strconv"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -47,6 +48,7 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
+	"github.com/rancher/turtles/internal/sync"
 )
 
 const (
@@ -66,7 +68,7 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 		GenericProviderReconciler: controller.GenericProviderReconciler{
 			Provider:     &turtlesv1.CAPIProvider{},
 			ProviderList: &turtlesv1.CAPIProviderList{},
-			Client:       &ClientWrapper{Client: mgr.GetClient()},
+			Client:       mgr.GetClient(),
 			Config:       mgr.GetConfig(),
 		},
 	}).SetupWithManager(ctx, mgr, options); err != nil {
@@ -76,22 +78,40 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 		return err
 	}
 
+	if err := (&controller.GenericProviderHealthCheckReconciler{
+		Client:   mgr.GetClient(),
+		Provider: &turtlesv1.CAPIProvider{},
+	}).SetupWithManager(mgr, options); err != nil {
+		log := log.FromContext(ctx)
+		log.Error(err, "unable to create controller", "controller", "GenericProviderHealthCheck")
+
+		return err
+	}
+
 	return nil
 }
 
-// ClientWrapper wraps the upstream client, preventing CAPIProvider spec patch. Status patch is performed as usual.
-type ClientWrapper struct {
-	client.Client
+type SpecStore struct {
+	turtlesv1.CAPIProviderSpec
+	*controller.GenericProviderReconciler
 }
 
-// Patch shadows the upstream patch method, ignoring CAPIProvider spec patch.
-func (c *ClientWrapper) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
-	// Ignore CAPIProvider spec patch
-	if _, ok := obj.(*turtlesv1.CAPIProvider); ok && obj.GetDeletionTimestamp().IsZero() && len(obj.GetFinalizers()) > 0 {
-		return nil
+// storeSpec stores the CAPIProviderSpec for the CAPIProviderReconciler to exclude it from patching.
+func (s *SpecStore) storeSpec(ctx context.Context) (*controller.Result, error) {
+	if capiProvider, ok := s.Provider.(*turtlesv1.CAPIProvider); ok {
+		s.CAPIProviderSpec = *capiProvider.Spec.DeepCopy()
 	}
 
-	return c.Client.Patch(ctx, obj, patch, opts...)
+	return &controller.Result{}, nil
+}
+
+// restoreSpec restores stored CAPIProviderSpec before patching.
+func (s *SpecStore) restoreSpec(ctx context.Context) (*controller.Result, error) {
+	if capiProvider, ok := s.Provider.(*turtlesv1.CAPIProvider); ok {
+		capiProvider.Spec = s.CAPIProviderSpec
+	}
+
+	return &controller.Result{}, nil
 }
 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
@@ -106,20 +126,15 @@ type CAPIProviderReconciler struct {
 
 // BuildWithManager builds the CAPIProviderReconciler.
 func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.Manager) (*ctrl.Builder, error) {
-	return r.GenericProviderReconciler.BuildWithManager(ctx, mgr)
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options ctr.Options) error {
-	builder, err := r.BuildWithManager(ctx, mgr)
+	builder, err := r.GenericProviderReconciler.BuildWithManager(ctx, mgr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	builder = builder.Named("ProviderReconciler")
 
 	if err := indexFields(ctx, &turtlesv1.CAPIProvider{}, mgr); err != nil {
-		return err
+		return nil, err
 	}
 
 	builder.Watches(
@@ -140,9 +155,13 @@ func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 		controller.WithProviderTypeMapper(toClusterctlType),
 	)
 
+	s := &SpecStore{GenericProviderReconciler: &r.GenericProviderReconciler}
+
 	r.ReconcilePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
-		r.setDefaultProviderSpec,
+		s.storeSpec,
+		r.setProviderSpec,
+		r.syncSecrets,
 		rec.ApplyFromCache,
 		rec.PreflightChecks,
 		rec.InitializePhaseReconciler,
@@ -159,12 +178,23 @@ func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 
 	r.DeletePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
-		r.setDefaultProviderSpec,
+		r.setProviderSpec,
 		rec.Delete,
 	}
 
 	for i, phase := range r.ReconcilePhases {
 		r.ReconcilePhases[i] = finalizePhase(phase, r.setConditions)
+		r.ReconcilePhases[i] = finalizePhase(phase, s.restoreSpec)
+	}
+
+	return builder, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options ctr.Options) error {
+	builder, err := r.BuildWithManager(ctx, mgr)
+	if err != nil {
+		return err
 	}
 
 	return builder.WithOptions(options).Complete(reconcile.AsReconciler(r.Client, r))
@@ -288,7 +318,7 @@ func setProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.
 	return nil
 }
 
-func (r *CAPIProviderReconciler) setDefaultProviderSpec(ctx context.Context) (*controller.Result, error) {
+func (r *CAPIProviderReconciler) setProviderSpec(ctx context.Context) (*controller.Result, error) {
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
 		return &controller.Result{}, setProviderSpec(ctx, r.Client, capiProvider)
 	}
@@ -545,6 +575,24 @@ func setConditions(provider *turtlesv1.CAPIProvider) {
 	}
 }
 
+func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (res *controller.Result, err error) {
+	res = &controller.Result{}
+
+	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
+		s := sync.NewList(
+			sync.NewSecretSync(r.Client, capiProvider),
+			sync.NewSecretMapperSync(ctx, r.Client, capiProvider),
+		)
+
+		if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
+			return res, err
+		}
+		defer s.Apply(ctx, &err)
+	}
+
+	return
+}
+
 func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
 	log := log.FromContext(ctx)
 
@@ -627,7 +675,7 @@ func (r *CAPIProviderReconciler) waitForClusterctlConfigUpdate(ctx context.Conte
 
 	if !synced {
 		logger.Info("ClusterctlConfig is not synced yet, waiting for mounted ConfigMap to be updated.")
-		return &controller.Result{RequeueAfter: defaultRequeueDuration}, nil
+		return &controller.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	return &controller.Result{}, nil
