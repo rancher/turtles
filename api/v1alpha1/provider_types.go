@@ -49,6 +49,28 @@ func (t Type) ToKind() string {
 	return cases.Title(language.English).String(string(t)) + "Provider"
 }
 
+// ToName converts ProviderType to CAPI Operator provider object name prefix.
+func (t Type) ToName() string {
+	switch t {
+	case Infrastructure:
+		return "infrastructure-"
+	case Core:
+		return "core-"
+	case ControlPlane:
+		return "control-plane-"
+	case Bootstrap:
+		return "bootstrap-"
+	case Addon:
+		return "addon-"
+	case IPAM:
+		return "ipam-"
+	case RuntimeExtension:
+		return "runtime-extension-"
+	default:
+		return ""
+	}
+}
+
 // Phase defines the current state of the CAPI Provider resource.
 type Phase string
 

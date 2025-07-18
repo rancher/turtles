@@ -51,7 +51,6 @@ rules:
   - update
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
-  - operator.cluster.x-k8s.io
   resources:
   - '*'
   verbs:

@@ -54,8 +54,6 @@ import (
 	"github.com/rancher/turtles/internal/controllers"
 )
 
-const maxDuration time.Duration = 1<<63 - 1
-
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -246,7 +244,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		InsecureSkipVerify: insecureSkipVerify,
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
-		CacheSyncTimeout:        maxDuration,
 	}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)
@@ -256,7 +253,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		RancherClient: rancherClient,
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
-		CacheSyncTimeout:        maxDuration,
 	}); err != nil {
 		setupLog.Error(err, "unable to create rancher management v3 cleanup controller")
 		os.Exit(1)
@@ -268,7 +264,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		Client: mgr.GetClient(),
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
-		CacheSyncTimeout:        maxDuration,
 	}); err != nil {
 		setupLog.Error(err, "unable to create ClusterctlConfig controller")
 		os.Exit(1)
@@ -290,12 +285,11 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.CAPIProviderReconciler{
+	if err := (&controllers.SyncReconciler{
 		Client: mgr.GetClient(),
 		Scheme: scheme,
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
-		CacheSyncTimeout:        maxDuration,
 	}); err != nil {
 		setupLog.Error(err, "unable to create CAPI Provider sync controller")
 		os.Exit(1)
@@ -310,7 +304,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			UncachedClient: uncachedClient,
 		}).SetupWithManager(ctx, mgr, controller.Options{
 			MaxConcurrentReconciles: concurrencyNumber,
-			CacheSyncTimeout:        maxDuration,
 		}); err != nil {
 			setupLog.Error(err, "unable to create UI Plugin controller")
 			os.Exit(1)

@@ -21,8 +21,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
 
-	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-operator/controller"
+
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 )
 
 // ProviderHealthCheckReconciler is a health check wrapper for operator provider resources.
@@ -33,31 +34,7 @@ func (r *ProviderHealthCheckReconciler) SetupWithManager(mgr ctrl.Manager, optio
 	return kerrors.NewAggregate([]error{
 		(&controller.GenericProviderHealthCheckReconciler{
 			Client:   mgr.GetClient(),
-			Provider: &operatorv1.CoreProvider{},
-		}).SetupWithManager(mgr, options),
-		(&controller.GenericProviderHealthCheckReconciler{
-			Client:   mgr.GetClient(),
-			Provider: &operatorv1.InfrastructureProvider{},
-		}).SetupWithManager(mgr, options),
-		(&controller.GenericProviderHealthCheckReconciler{
-			Client:   mgr.GetClient(),
-			Provider: &operatorv1.BootstrapProvider{},
-		}).SetupWithManager(mgr, options),
-		(&controller.GenericProviderHealthCheckReconciler{
-			Client:   mgr.GetClient(),
-			Provider: &operatorv1.ControlPlaneProvider{},
-		}).SetupWithManager(mgr, options),
-		(&controller.GenericProviderHealthCheckReconciler{
-			Client:   mgr.GetClient(),
-			Provider: &operatorv1.AddonProvider{},
-		}).SetupWithManager(mgr, options),
-		(&controller.GenericProviderHealthCheckReconciler{
-			Client:   mgr.GetClient(),
-			Provider: &operatorv1.RuntimeExtensionProvider{},
-		}).SetupWithManager(mgr, options),
-		(&controller.GenericProviderHealthCheckReconciler{
-			Client:   mgr.GetClient(),
-			Provider: &operatorv1.IPAMProvider{},
+			Provider: &turtlesv1.CAPIProvider{},
 		}).SetupWithManager(mgr, options),
 	})
 }
