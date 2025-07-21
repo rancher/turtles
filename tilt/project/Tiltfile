@@ -170,6 +170,26 @@ def update_manager(yaml, containerName, debug, env, name, project):
                         newEnv.append({"name": dvName, "value": debugEnv[dvName]})
                     c["env"] = newEnv
 
+                # Add volume mount for clusterctl-config for turtles project
+                if name == "turtles":
+                    if "volumeMounts" not in c:
+                        c["volumeMounts"] = []
+                    c["volumeMounts"].append({
+                        "mountPath": "/config",
+                        "name": "clusterctl-config"
+                    })
+
+            # Add volumes for turtles project
+            if name == "turtles":
+                if "volumes" not in o["spec"]["template"]["spec"]:
+                    o["spec"]["template"]["spec"]["volumes"] = []
+                o["spec"]["template"]["spec"]["volumes"].append({
+                    "name": "clusterctl-config",
+                    "configMap": {
+                        "name": "clusterctl-config"
+                    }
+                })
+
     yaml = encode_yaml_stream(objs)
     return yaml
 
