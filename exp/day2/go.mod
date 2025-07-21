@@ -7,7 +7,7 @@ replace github.com/rancher/turtles => ../..
 require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
-	github.com/rancher/cluster-api-provider-rke2 v0.17.1
+	github.com/rancher/cluster-api-provider-rke2 v0.18.0
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
 	github.com/spf13/pflag v1.0.6
 	k8s.io/api v0.32.5
@@ -26,7 +26,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clarketm/json v1.17.1 // indirect
-	github.com/coreos/butane v0.23.0 // indirect
+	github.com/coreos/butane v0.24.0 // indirect
 	github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
