@@ -77,7 +77,6 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 	}).SetupWithManager(ctx, mgr, options); err != nil {
 		log := log.FromContext(ctx)
 		log.Error(err, "unable to create controller", "controller", "CAPIProvider")
-
 		return err
 	}
 
@@ -87,7 +86,6 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 	}).SetupWithManager(mgr, options); err != nil {
 		log := log.FromContext(ctx)
 		log.Error(err, "unable to create controller", "controller", "GenericProviderHealthCheck")
-
 		return err
 	}
 
@@ -161,6 +159,7 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		rec.DownloadManifests,
 		rec.Load,
 		rec.Fetch,
+		r.patchProviderManifest,
 		rec.Store,
 		rec.Upgrade,
 		rec.Install,
@@ -322,6 +321,74 @@ func (r *CAPIProviderReconciler) setConditions(_ context.Context) (*controller.R
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
 		setConditions(capiProvider)
 	}
+
+	return &controller.Result{}, nil
+}
+
+func (r *CAPIProviderReconciler) setDefaultProviderSpec(_ context.Context) (*controller.Result, error) {
+	setDefaultProviderSpec(r.Provider)
+
+	return &controller.Result{}, nil
+}
+
+func (r *CAPIProviderReconciler) patchProviderManifest(ctx context.Context) (*controller.Result, error) {
+	// TODO: patch provider manifest to annotate webhook service
+	log := log.FromContext(ctx)
+
+	providerSpec := r.Provider.GetSpec()
+
+	// TODO: need to fetch the name of the secret for each provider: e.g. "capi-webhook-service" | "capd-webhook-service"
+	// could only find this name in the provider manifest ConfigMap
+	// Manifest ConfigMap is looked up based on labels:
+	//      - "managed-by.operator.cluster.x-k8s.io":"true",
+	//      - "provider.cluster.x-k8s.io/name":"cluster-api",
+	//      - "provider.cluster.x-k8s.io/type":"core",
+	//      - "provider.cluster.x-k8s.io/version":"v1.9.5"
+	labels := map[string]string{
+		operatorv1.ConfigMapNameLabel:        r.Provider.GetName(),
+		operatorv1.ConfigMapTypeLabel:        r.Provider.GetType(),
+		operatorv1.ConfigMapVersionLabelName: providerSpec.Version,
+	}
+
+	var configMapList corev1.ConfigMapList
+	selectors := []client.ListOption{
+		client.MatchingLabels(labels),
+	}
+
+	if err := r.Client.List(ctx, &configMapList, selectors...); err != nil {
+		return nil, fmt.Errorf("listing ConfigMaps with labels %v: %w", labels, err)
+	}
+
+	// log.Info("Patching provider manifest", "ProviderType", r.Provider.GetType(), "ProviderName", r.Provider.GetName(), "ProviderVersion", providerSpec.Version)
+	if len(configMapList.Items) != 1 {
+		return nil, fmt.Errorf("expected exactly one ConfigMap with labels %v, got %d", labels, len(configMapList.Items))
+	}
+	manifestConfigMap := configMapList.Items[0]
+	log.Info("Patching provider manifest", "ConfigMap.Name", manifestConfigMap.Name)
+	var result map[string]interface{}
+	if err := yaml.Unmarshal([]byte(manifestConfigMap.Data["components"]), &result); err != nil {
+	}
+	log.Info("Patching provider manifest", "ConfigMap.Data.metadata", result)
+
+	// TODO: apply patch on manifest to add annotation
+	/*
+			newManifestPatches := []string{
+				`---
+		apiVersion: v1
+		kind: Service
+		metadata:
+		  annotations:
+		    need-a-cert.cattle.io/secret-name: test-value`,
+			}
+			//newManifestPatches := []string{
+			//	"apiVersion: v1",
+			//	"kind: Service",
+			//	"metadata:",
+			//	"  labels:",
+			//	"      test-label: test-value",
+			//}
+			providerSpec.ManifestPatches = append(providerSpec.ManifestPatches, newManifestPatches...)
+	*/
 
 	return &controller.Result{}, nil
 }
