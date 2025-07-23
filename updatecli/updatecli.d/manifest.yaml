@@ -123,7 +123,7 @@ targets:
     name: bump core capi in tests package
     kind: file
     spec:
-      file: ./internal/sync/provider_sync_test.go
+      file: ./internal/sync/operator_reconciler_test.go
       matchpattern: 'CAPIVersion = .*'
       replacepattern: CAPIVersion = "{{ source "capirelease" }}"
     scmid: turtles

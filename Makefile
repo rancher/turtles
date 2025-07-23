@@ -237,7 +237,6 @@ manifests: generate
 generate-manifests-external: vendor controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) crd paths="./api/rancher/..." output:crd:artifacts:config=hack/crd/bases
 	$(CONTROLLER_GEN) crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
-	$(CONTROLLER_GEN) crd paths="./vendor/sigs.k8s.io/cluster-api-operator/..." output:crd:artifacts:config=./config/operator/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
 

@@ -24,7 +24,6 @@ import (
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,11 +32,10 @@ import (
 
 var _ = Describe("Provider sync", func() {
 	var (
-		err            error
-		ns             *corev1.Namespace
-		capiProvider   *turtlesv1.CAPIProvider
-		infrastructure *operatorv1.InfrastructureProvider
-		secret         *corev1.Secret
+		err          error
+		ns           *corev1.Namespace
+		capiProvider *turtlesv1.CAPIProvider
+		secret       *corev1.Secret
 	)
 
 	BeforeEach(func() {
@@ -71,12 +69,16 @@ var _ = Describe("Provider sync", func() {
 			Namespace: capiProvider.Namespace,
 		}}
 
-		infrastructure = &operatorv1.InfrastructureProvider{ObjectMeta: metav1.ObjectMeta{
-			Name:      string(capiProvider.Spec.Name),
-			Namespace: ns.Name,
-		}}
-
 		Expect(testEnv.Client.Create(ctx, capiProvider)).To(Succeed())
+		capiProvider.Status = turtlesv1.CAPIProviderStatus{
+			Variables: map[string]string{
+				"variable":                 "one",
+				"EXP_MACHINE_POOL":         "true",
+				"CLUSTER_TOPOLOGY":         "true",
+				"EXP_CLUSTER_RESOURCE_SET": "true",
+			},
+		}
+		Expect(testEnv.Client.Status().Update(ctx, capiProvider)).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -110,7 +112,7 @@ var _ = Describe("Provider sync", func() {
 
 		s := sync.NewList(
 			sync.NewSecretSync(testEnv, capiProvider),
-			sync.NewProviderSync(testEnv, capiProvider),
+			sync.NewSecretMapperSync(ctx, testEnv, capiProvider),
 		)
 
 		Eventually(func(g Gomega) {
@@ -119,9 +121,6 @@ var _ = Describe("Provider sync", func() {
 			err = nil
 			s.Apply(ctx, &err)
 			g.Expect(err).To(Succeed())
-
-			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(infrastructure), infrastructure)).ToNot(HaveOccurred())
-			g.Expect(infrastructure.Spec.ConfigSecret).ToNot(BeNil())
 		}, 5*time.Second).Should(Succeed())
 	})
 })
