@@ -23,9 +23,11 @@ import (
 	"fmt"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-operator/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -50,7 +52,6 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 			WatchConfigSecretChanges: true,
 		},
 	}).SetupWithManager(ctx, mgr, options); err != nil {
-		log.Error(err, "unable to create controller", "controller", "CoreProvider")
 		return err
 	}
 
@@ -168,6 +169,7 @@ func (r *CAPIProviderReconcilerWrapper) BuildWithManager(ctx context.Context, mg
 		reconciler.DownloadManifests,
 		reconciler.Load,
 		reconciler.Fetch,
+		r.patchProviderManifest,
 		reconciler.Store,
 		reconciler.Upgrade,
 		reconciler.Install,
@@ -191,6 +193,68 @@ func (r *CAPIProviderReconcilerWrapper) SetupWithManager(ctx context.Context, mg
 // Reconcile wraps the upstream Reconcile method.
 func (r *CAPIProviderReconcilerWrapper) Reconcile(ctx context.Context, req reconcile.Request) (_ reconcile.Result, reterr error) {
 	return r.GenericProviderReconciler.Reconcile(ctx, req)
+}
+
+func (r *CAPIProviderReconcilerWrapper) patchProviderManifest(ctx context.Context) (*controller.Result, error) {
+	// TODO: patch provider manifest to annotate webhook service
+	log := log.FromContext(ctx)
+
+	providerSpec := r.Provider.GetSpec()
+
+	// TODO: need to fetch the name of the secret for each provider: e.g. "capi-webhook-service" | "capd-webhook-service"
+	// could only find this name in the provider manifest ConfigMap
+	// Manifest ConfigMap is looked up based on labels:
+	//      - "managed-by.operator.cluster.x-k8s.io":"true",
+	//      - "provider.cluster.x-k8s.io/name":"cluster-api",
+	//      - "provider.cluster.x-k8s.io/type":"core",
+	//      - "provider.cluster.x-k8s.io/version":"v1.9.5"
+	labels := map[string]string{
+		operatorv1.ConfigMapNameLabel:        r.Provider.GetName(),
+		operatorv1.ConfigMapTypeLabel:        r.Provider.GetType(),
+		operatorv1.ConfigMapVersionLabelName: providerSpec.Version,
+	}
+
+	var configMapList corev1.ConfigMapList
+	selectors := []client.ListOption{
+		client.MatchingLabels(labels),
+	}
+
+	if err := r.Client.List(ctx, &configMapList, selectors...); err != nil {
+		return nil, fmt.Errorf("listing ConfigMaps with labels %v: %w", labels, err)
+	}
+
+	// log.Info("Patching provider manifest", "ProviderType", r.Provider.GetType(), "ProviderName", r.Provider.GetName(), "ProviderVersion", providerSpec.Version)
+	if len(configMapList.Items) != 1 {
+		return nil, fmt.Errorf("expected exactly one ConfigMap with labels %v, got %d", labels, len(configMapList.Items))
+	}
+	manifestConfigMap := configMapList.Items[0]
+	log.Info("Patching provider manifest", "ConfigMap.Name", manifestConfigMap.Name)
+	var result map[string]interface{}
+	if err := yaml.Unmarshal([]byte(manifestConfigMap.Data["components"]), &result); err != nil {
+	}
+	log.Info("Patching provider manifest", "ConfigMap.Data.metadata", result)
+
+	// TODO: apply patch on manifest to add annotation
+	/*
+			newManifestPatches := []string{
+				`---
+		apiVersion: v1
+		kind: Service
+		metadata:
+		  annotations:
+		    need-a-cert.cattle.io/secret-name: test-value`,
+			}
+			//newManifestPatches := []string{
+			//	"apiVersion: v1",
+			//	"kind: Service",
+			//	"metadata:",
+			//	"  labels:",
+			//	"      test-label: test-value",
+			//}
+			providerSpec.ManifestPatches = append(providerSpec.ManifestPatches, newManifestPatches...)
+	*/
+
+	return &controller.Result{}, nil
 }
 
 func (r *CAPIProviderReconcilerWrapper) setDefaultProviderSpec(_ context.Context) (*controller.Result, error) {
