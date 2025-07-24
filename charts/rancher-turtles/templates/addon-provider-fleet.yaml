@@ -60,3 +60,16 @@ data:
           matchExpressions:
             - key: cluster-api.cattle.io/disable-fleet-auto-import
               operator: DoesNotExist
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: cappf-controller-psa
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: fleet-controller-psa
+    subjects:
+    - kind: ServiceAccount
+      name: caapf-controller-manager
+      namespace: {{ .Values.rancherTurtles.namespace }}
