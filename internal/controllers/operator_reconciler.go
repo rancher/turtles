@@ -56,6 +56,9 @@ const (
 	configSecretNamespaceField = "spec.configSecret.namespace" //nolint:gosec
 	providerTypeField          = "spec.type"                   //nolint:gosec
 	providerNameField          = "spec.name"                   //nolint:gosec
+
+	azureProvider = "azure"
+	gcpProvider   = "gcp"
 )
 
 // OperatorReconciler is a mapping wrapper for CAPIProvider -> operator provider resources.
@@ -68,7 +71,7 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 		GenericProviderReconciler: controller.GenericProviderReconciler{
 			Provider:     &turtlesv1.CAPIProvider{},
 			ProviderList: &turtlesv1.CAPIProviderList{},
-			Client:       mgr.GetClient(),
+			Client:       &ClientWrapper{Client: mgr.GetClient()},
 			Config:       mgr.GetConfig(),
 		},
 	}).SetupWithManager(ctx, mgr, options); err != nil {
@@ -91,32 +94,25 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 	return nil
 }
 
-type SpecStore struct {
-	turtlesv1.CAPIProviderSpec
-	*controller.GenericProviderReconciler
+// ClientWrapper wraps the upstream client, preventing CAPIProvider spec patch. Status patch is performed as usual.
+type ClientWrapper struct {
+	client.Client
 }
 
-// storeSpec stores the CAPIProviderSpec for the CAPIProviderReconciler to exclude it from patching.
-func (s *SpecStore) storeSpec(ctx context.Context) (*controller.Result, error) {
-	if capiProvider, ok := s.Provider.(*turtlesv1.CAPIProvider); ok {
-		s.CAPIProviderSpec = *capiProvider.Spec.DeepCopy()
+// Patch shadows the upstream patch method, ignoring CAPIProvider spec patch.
+func (c *ClientWrapper) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+	// Ignore CAPIProvider spec patch
+	if _, ok := obj.(*turtlesv1.CAPIProvider); ok && obj.GetDeletionTimestamp().IsZero() {
+		return nil
 	}
 
-	return &controller.Result{}, nil
-}
-
-// restoreSpec restores stored CAPIProviderSpec before patching.
-func (s *SpecStore) restoreSpec(ctx context.Context) (*controller.Result, error) {
-	if capiProvider, ok := s.Provider.(*turtlesv1.CAPIProvider); ok {
-		capiProvider.Spec = s.CAPIProviderSpec
-	}
-
-	return &controller.Result{}, nil
+	return c.Client.Patch(ctx, obj, patch, opts...)
 }
 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // CAPIProviderReconciler wraps the upstream CAPIProviderReconciler.
 type CAPIProviderReconciler struct {
@@ -155,11 +151,8 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		controller.WithProviderTypeMapper(toClusterctlType),
 	)
 
-	s := &SpecStore{GenericProviderReconciler: &r.GenericProviderReconciler}
-
 	r.ReconcilePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
-		s.storeSpec,
 		r.setProviderSpec,
 		r.syncSecrets,
 		rec.ApplyFromCache,
@@ -184,7 +177,6 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 
 	for i, phase := range r.ReconcilePhases {
 		r.ReconcilePhases[i] = finalizePhase(phase, r.setConditions)
-		r.ReconcilePhases[i] = finalizePhase(phase, s.restoreSpec)
 	}
 
 	return builder, nil
@@ -301,13 +293,13 @@ func setProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.
 	}
 
 	switch provider.ProviderName() {
-	case "azure":
+	case azureProvider:
 		if provider.Status.Variables == nil {
 			provider.Status.Variables = map[string]string{}
 		}
 
 		provider.Status.Variables["EXP_AKS_RESOURCE_HEALTH"] = "true"
-	case "gcp":
+	case gcpProvider:
 		if provider.Status.Variables == nil {
 			provider.Status.Variables = map[string]string{}
 		}
@@ -372,7 +364,7 @@ func finalizePhase(phase controller.PhaseFn, finalizePhase controller.PhaseFn) c
 		}
 
 		// Perform finalization step after early completion
-		if res.Completed {
+		if res != nil && res.Completed {
 			return finalizePhase(ctx)
 		}
 
@@ -575,8 +567,8 @@ func setConditions(provider *turtlesv1.CAPIProvider) {
 	}
 }
 
-func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (res *controller.Result, err error) {
-	res = &controller.Result{}
+func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.Result, error) {
+	var err error
 
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
 		s := sync.NewList(
@@ -585,12 +577,13 @@ func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (res *controll
 		)
 
 		if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
-			return res, err
+			return &controller.Result{}, err
 		}
-		defer s.Apply(ctx, &err)
+
+		s.Apply(ctx, &err)
 	}
 
-	return
+	return &controller.Result{}, err
 }
 
 func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {

@@ -24,16 +24,13 @@ import (
 	. "github.com/onsi/gomega"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
-
 	corev1 "k8s.io/api/core/v1"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 )
 
 var _ = Describe("SecretMapperSync get", func() {
@@ -254,19 +251,19 @@ var _ = Describe("SecretMapperSync get", func() {
 	})
 
 	It("should point to the right initial secret", func() {
-		Expect(sync.SecretMapperSync{}.GetSecret(capiProvider).ObjectMeta).To(Equal(metav1.ObjectMeta{
+		secret = sync.SecretMapperSync{}.GetSecret(capiProvider)
+		Expect(secret.ObjectMeta).To(Equal(metav1.ObjectMeta{
 			Name:      capiProvider.Spec.Credentials.RancherCloudCredential,
 			Namespace: sync.RancherCredentialsNamespace}))
-		_, isSecret := sync.SecretMapperSync{}.Template(capiProvider).(*corev1.Secret)
-		Expect(isSecret).To(BeTrue())
+		Expect(secret.Data).To(BeEmpty())
 	})
 
 	It("should point to the right fully qualified secret reference", func() {
-		Expect(sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef).ObjectMeta).To(Equal(metav1.ObjectMeta{
+		secret = sync.SecretMapperSync{}.GetSecret(capiProviderWithRancherRef)
+		Expect(secret.ObjectMeta).To(Equal(metav1.ObjectMeta{
 			Name:      "secret-name",
 			Namespace: ns.Name}))
-		_, isSecret := sync.SecretMapperSync{}.Template(capiProviderWithRancherRef).(*corev1.Secret)
-		Expect(isSecret).To(BeTrue())
+		Expect(secret.Data).To(BeEmpty())
 	})
 
 	It("provider requirements not found", func() {
@@ -277,7 +274,7 @@ var _ = Describe("SecretMapperSync get", func() {
 
 		Eventually(func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).To(BeNil())
-			g.Expect(syncer.SecretSync.Secret.StringData).To(HaveLen(0))
+			g.Expect(syncer.Destination.StringData).To(HaveLen(0))
 		}).Should(Succeed())
 	})
 
@@ -294,7 +291,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
 				ContainSubstring("key not found: azurecredentialConfig-subscriptionId, key not found: azurecredentialConfig-clientId, key not found: azurecredentialConfig-clientSecret, key not found: azurecredentialConfig-tenantId"))
 
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"AZURE_CLIENT_ID_B64":       "",
 				"AZURE_CLIENT_SECRET_B64":   "",
 				"AZURE_TENANT_ID_B64":       "",
@@ -320,7 +317,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
 				ContainSubstring("key not found: amazonec2credentialConfig-accessKey, key not found: amazonec2credentialConfig-secretKey, key not found: amazonec2credentialConfig-defaultRegion"))
 
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"AWS_REGION":                 "",
 				"AWS_B64ENCODED_CREDENTIALS": "",
 				"AWS_ACCESS_KEY_ID":          "",
@@ -342,7 +339,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
 				ContainSubstring("googlecredentialConfig-authEncodedJson"))
 
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"GCP_B64ENCODED_CREDENTIALS": "",
 			}))
 		}).Should(Succeed())
@@ -363,7 +360,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
 			g.Expect(conditions.IsTrue(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"GCP_B64ENCODED_CREDENTIALS": "dGVzdA==",
 			}))
 		}).Should(Succeed())
@@ -382,7 +379,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
 				ContainSubstring("key not found: digitaloceancredentialConfig-accessToken"))
 
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"DO_B64ENCODED_CREDENTIALS": "",
 				"DIGITALOCEAN_ACCESS_TOKEN": "",
 			}))
@@ -400,7 +397,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
 			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
 				ContainSubstring("key not found: vmwarevspherecredentialConfig-password, key not found: vmwarevspherecredentialConfig-username"))
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"VSPHERE_PASSWORD": "",
 				"VSPHERE_USERNAME": "",
 			}))
@@ -423,7 +420,7 @@ var _ = Describe("SecretMapperSync get", func() {
 			g.Expect(syncer.Get(context.Background())).ToNot(HaveOccurred())
 			g.Expect(syncer.RancherSecret.Data["amazonec2credentialConfig-defaultRegion"]).ToNot(BeEmpty())
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(syncer.Secret.StringData).To(Equal(map[string]string{
+			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"AWS_REGION":                 "us-west-1",
 				"AWS_B64ENCODED_CREDENTIALS": "W2RlZmF1bHRdCmF3c19hY2Nlc3Nfa2V5X2lkID0gdGVzdAphd3Nfc2VjcmV0X2FjY2Vzc19rZXkgPSB0ZXN0CnJlZ2lvbiA9IHVzLXdlc3QtMQ==",
 				"AWS_ACCESS_KEY_ID":          "test",

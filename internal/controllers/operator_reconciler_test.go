@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 - 2024 SUSE LLC
+Copyright © 2023 - 2025 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,15 +41,15 @@ const (
 
 var _ = Describe("Provider sync", func() {
 	var (
-		err                   error
-		ns                    *corev1.Namespace
-		otherNs               *corev1.Namespace
-		capiProvider          *turtlesv1.CAPIProvider
-		customCAPIProvider    *turtlesv1.CAPIProvider
-		unknownCAPIProvider   *turtlesv1.CAPIProvider
-		capiProviderAzure     *turtlesv1.CAPIProvider
-		capiProviderGCP       *turtlesv1.CAPIProvider
-		clusterctlconfig *turtlesv1.ClusterctlConfig
+		err                 error
+		ns                  *corev1.Namespace
+		otherNs             *corev1.Namespace
+		capiProvider        *turtlesv1.CAPIProvider
+		customCAPIProvider  *turtlesv1.CAPIProvider
+		unknownCAPIProvider *turtlesv1.CAPIProvider
+		capiProviderAzure   *turtlesv1.CAPIProvider
+		capiProviderGCP     *turtlesv1.CAPIProvider
+		clusterctlconfig    *turtlesv1.ClusterctlConfig
 	)
 
 	BeforeEach(func() {
@@ -74,12 +74,12 @@ var _ = Describe("Provider sync", func() {
 		}}
 
 		capiProviderAzure = capiProvider.DeepCopy()
-		capiProviderAzure.Spec.Name = "azure"
-		capiProviderAzure.Name = "azure"
+		capiProviderAzure.Spec.Name = azureProvider
+		capiProviderAzure.Name = azureProvider
 
 		capiProviderGCP = capiProvider.DeepCopy()
-		capiProviderGCP.Spec.Name = "gcp"
-		capiProviderGCP.Name = "gcp"
+		capiProviderGCP.Spec.Name = gcpProvider
+		capiProviderGCP.Name = gcpProvider
 
 		customCAPIProvider = capiProvider.DeepCopy()
 		customCAPIProvider.Name = "custom-provider"
