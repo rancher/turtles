@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: post-upgrade-job
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: post-upgrade-job-delete-capi-operator-resources
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+rules:
+- apiGroups:
+  - operator.cluster.x-k8s.io
+  resources:
+  - addonproviders
+  - bootstrapproviders
+  - controlplaneproviders
+  - coreproviders
+  - infrastructureproviders
+  - ipamproviders
+  - runtimeextensionproviders
+  verbs:
+  - get
+  - watch
+  - list
+  - delete
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: post-upgrade-job-capi-operator-resources-cleanup
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+subjects:
+  - kind: ServiceAccount
+    name: post-upgrade-job
+    namespace: '{{ .Values.rancherTurtles.namespace }}'
+roleRef:
+  kind: ClusterRole
+  name: post-upgrade-job-delete-capi-operator-resources
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-api-operator-resources-cleanup-script
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+data:
+  cleanup.sh: |
+    #!/usr/bin/env bash
+
+    set -euo pipefail
+
+    kubectl get addonproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch addonproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete addonproviders.operator.cluster.x-k8s.io --all --all-namespaces 
+    kubectl get bootstrapproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch bootstrapproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete bootstrapproviders.operator.cluster.x-k8s.io --all --all-namespaces
+    kubectl get controlplaneproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch controlplaneproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete controlplaneproviders.operator.cluster.x-k8s.io --all --all-namespaces
+    kubectl get coreproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch coreproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete coreproviders.operator.cluster.x-k8s.io --all --all-namespaces
+    kubectl get infrastructureproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch infrastructureproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete infrastructureproviders.operator.cluster.x-k8s.io --all --all-namespaces
+    kubectl get ipamproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch ipamproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete ipamproviders.operator.cluster.x-k8s.io --all --all-namespaces
+    kubectl get runtimeextensionproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch runtimeextensionproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+    kubectl delete runtimeextensionproviders.operator.cluster.x-k8s.io --all --all-namespaces
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-resources-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-resources-cleanup
+          image: {{ index .Values "rancherTurtles" "shellImage" }}
+          command: ["/bin/bash"]
+          args:
+          - "-c"
+          - "/scripts/cleanup.sh"
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+      volumes:
+        - name: script
+          configMap:
+            name: cluster-api-operator-resources-cleanup-script
+            defaultMode: 0777
+      restartPolicy: Never
+---
