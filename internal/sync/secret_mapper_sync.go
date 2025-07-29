@@ -226,11 +226,6 @@ func (SecretMapperSync) GetSecret(capiProvider *turtlesv1.CAPIProvider) *corev1.
 	return &corev1.Secret{ObjectMeta: meta}
 }
 
-// Template returning the mirrored secret resource template.
-func (SecretMapperSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object {
-	return SecretSync{}.GetSecret(capiProvider)
-}
-
 // Get retrieves the source Rancher secret and destenation secret.
 func (s *SecretMapperSync) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
@@ -289,9 +284,9 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 // Sync updates the credentials secret with required values from rancher manager secret.
 func (s *SecretMapperSync) Sync(ctx context.Context) error {
 	log := log.FromContext(ctx)
-	s.Secret.StringData = map[string]string{}
+	s.Destination.StringData = map[string]string{}
 
-	if err := Into(s.Source.ProviderName(), s.RancherSecret.Data, s.Secret.StringData); err != nil {
+	if err := Into(s.Source.ProviderName(), s.RancherSecret.Data, s.Destination.StringData); err != nil {
 		log.Error(err, "failed to map credential keys")
 
 		conditions.Set(s.Source, conditions.FalseCondition(
@@ -307,7 +302,7 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 	log.Info(fmt.Sprintf("Credential keys from %s (%s) are successfully mapped to secret %s",
 		client.ObjectKeyFromObject(s.RancherSecret).String(),
 		cmp.Or(s.Source.Spec.Credentials.RancherCloudCredential, s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName),
-		client.ObjectKeyFromObject(s.SecretSync.Secret).String()))
+		client.ObjectKeyFromObject(s.SecretSync.Destination).String()))
 
 	conditions.Set(s.Source, conditions.TrueCondition(
 		turtlesv1.RancherCredentialsSecretCondition,

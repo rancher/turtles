@@ -21,15 +21,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api-operator/controller"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func objectFromKey(key client.ObjectKey, obj client.Object) client.Object {
@@ -44,12 +44,26 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		r := &SyncReconciler{
-			Client: testEnv.GetClient(),
-			Scheme: testEnv.GetScheme(),
+		mgr := testEnv.Manager
+		r := &CAPIProviderReconciler{
+			Client: mgr.GetClient(),
+			GenericProviderReconciler: controller.GenericProviderReconciler{
+				Provider:     &turtlesv1.CAPIProvider{},
+				ProviderList: &turtlesv1.CAPIProviderList{},
+				Client:       mgr.GetClient(),
+				Config:       mgr.GetConfig(),
+			},
 		}
 
-		Expect(r.SetupWithManager(ctx, testEnv.Manager, controller.Options{})).ToNot(HaveOccurred())
+		builder, err := r.BuildWithManager(ctx, mgr)
+		Expect(err).ToNot(HaveOccurred())
+
+		r.GenericProviderReconciler.ReconcilePhases = []controller.PhaseFn{
+			r.setProviderSpec,
+			r.syncSecrets,
+		}
+
+		Expect(builder.Complete(reconcile.AsReconciler(r.Client, r))).ToNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
@@ -122,10 +136,12 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		}
 		Expect(cl.Create(ctx, secret)).To(Succeed())
 
+		copy := provider.DeepCopy()
 		Eventually(Update(provider, func() {
-			provider.Spec.Credentials = &turtlesv1.Credentials{
+			copy.Spec.Credentials = &turtlesv1.Credentials{
 				RancherCloudCredential: "test-rancher-secret",
 			}
+			provider.Spec = copy.Spec
 		})).Should(Succeed())
 
 		Eventually(Object(doSecret)).WithTimeout(5 * time.Second).Should(HaveField("Data", Equal(map[string][]byte{
@@ -162,11 +178,13 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		doSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
 		Eventually(testEnv.GetAs(provider, doSecret)).ShouldNot(BeNil())
 
+		copy := provider.DeepCopy()
 		Eventually(Update(provider, func() {
-			provider.Spec.Features = &turtlesv1.Features{MachinePool: true}
-			provider.Spec.Credentials = &turtlesv1.Credentials{
+			copy.Spec.Features = &turtlesv1.Features{MachinePool: true}
+			copy.Spec.Credentials = &turtlesv1.Credentials{
 				RancherCloudCredential: "some-missing",
 			}
+			provider.Spec = copy.Spec
 		})).Should(Succeed())
 
 		Eventually(func(g Gomega) {

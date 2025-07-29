@@ -278,23 +278,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.ProviderHealthCheckReconciler{}).SetupWithManager(mgr, controller.Options{
-		MaxConcurrentReconciles: concurrencyNumber,
-	}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Healthcheck")
-		os.Exit(1)
-	}
-
-	if err := (&controllers.SyncReconciler{
-		Client: mgr.GetClient(),
-		Scheme: scheme,
-	}).SetupWithManager(ctx, mgr, controller.Options{
-		MaxConcurrentReconciles: concurrencyNumber,
-	}); err != nil {
-		setupLog.Error(err, "unable to create CAPI Provider sync controller")
-		os.Exit(1)
-	}
-
 	setupLog.Info("enabling UI installation controller")
 
 	if feature.Gates.Enabled(feature.UIPlugin) {

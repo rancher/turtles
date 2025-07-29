@@ -28,9 +28,7 @@ import (
 
 // SecretSync is a structure mirroring variable secret state of the CAPI Operator Provider object.
 type SecretSync struct { //nolint: recvcheck
-	*DefaultSynchronizer
-
-	Secret *corev1.Secret
+	*DefaultSynchronizer[*corev1.Secret]
 }
 
 // NewSecretSync creates a new secret object sync.
@@ -39,7 +37,6 @@ func NewSecretSync(cl client.Client, capiProvider *turtlesv1.CAPIProvider) Sync 
 
 	return &SecretSync{
 		DefaultSynchronizer: NewDefaultSynchronizer(cl, capiProvider, secret),
-		Secret:              secret,
 	}
 }
 
@@ -57,11 +54,6 @@ func (SecretSync) GetSecret(capiProvider *turtlesv1.CAPIProvider) *corev1.Secret
 	return &corev1.Secret{ObjectMeta: meta}
 }
 
-// Template returning the mirrored secret resource template.
-func (SecretSync) Template(capiProvider *turtlesv1.CAPIProvider) client.Object {
-	return SecretSync{}.GetSecret(capiProvider)
-}
-
 // Sync updates the mirror object state from the upstream source object
 // Direction of updates:
 // Spec -> down
@@ -76,5 +68,5 @@ func (s *SecretSync) Sync(_ context.Context) error {
 // Direction of updates:
 // Spec.Features + Spec.Variables -> Status.Variables -> Secret.
 func (s *SecretSync) SyncObjects() {
-	s.Secret.StringData = s.Source.Status.Variables
+	s.Destination.StringData = s.Source.Status.Variables
 }

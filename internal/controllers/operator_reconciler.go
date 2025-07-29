@@ -25,6 +25,7 @@ import (
 	"maps"
 	"os"
 	"strconv"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -47,6 +48,7 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
+	"github.com/rancher/turtles/internal/sync"
 )
 
 const (
@@ -54,6 +56,9 @@ const (
 	configSecretNamespaceField = "spec.configSecret.namespace" //nolint:gosec
 	providerTypeField          = "spec.type"                   //nolint:gosec
 	providerNameField          = "spec.name"                   //nolint:gosec
+
+	azureProvider = "azure"
+	gcpProvider   = "gcp"
 )
 
 // OperatorReconciler is a mapping wrapper for CAPIProvider -> operator provider resources.
@@ -76,6 +81,16 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 		return err
 	}
 
+	if err := (&controller.GenericProviderHealthCheckReconciler{
+		Client:   mgr.GetClient(),
+		Provider: &turtlesv1.CAPIProvider{},
+	}).SetupWithManager(mgr, options); err != nil {
+		log := log.FromContext(ctx)
+		log.Error(err, "unable to create controller", "controller", "GenericProviderHealthCheck")
+
+		return err
+	}
+
 	return nil
 }
 
@@ -87,7 +102,7 @@ type ClientWrapper struct {
 // Patch shadows the upstream patch method, ignoring CAPIProvider spec patch.
 func (c *ClientWrapper) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	// Ignore CAPIProvider spec patch
-	if _, ok := obj.(*turtlesv1.CAPIProvider); ok && obj.GetDeletionTimestamp().IsZero() && len(obj.GetFinalizers()) > 0 {
+	if _, ok := obj.(*turtlesv1.CAPIProvider); ok && obj.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
 
@@ -97,6 +112,7 @@ func (c *ClientWrapper) Patch(ctx context.Context, obj client.Object, patch clie
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // CAPIProviderReconciler wraps the upstream CAPIProviderReconciler.
 type CAPIProviderReconciler struct {
@@ -106,20 +122,15 @@ type CAPIProviderReconciler struct {
 
 // BuildWithManager builds the CAPIProviderReconciler.
 func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.Manager) (*ctrl.Builder, error) {
-	return r.GenericProviderReconciler.BuildWithManager(ctx, mgr)
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options ctr.Options) error {
-	builder, err := r.BuildWithManager(ctx, mgr)
+	builder, err := r.GenericProviderReconciler.BuildWithManager(ctx, mgr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	builder = builder.Named("ProviderReconciler")
 
 	if err := indexFields(ctx, &turtlesv1.CAPIProvider{}, mgr); err != nil {
-		return err
+		return nil, err
 	}
 
 	builder.Watches(
@@ -142,7 +153,8 @@ func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 
 	r.ReconcilePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
-		r.setDefaultProviderSpec,
+		r.setProviderSpec,
+		r.syncSecrets,
 		rec.ApplyFromCache,
 		rec.PreflightChecks,
 		rec.InitializePhaseReconciler,
@@ -159,12 +171,22 @@ func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 
 	r.DeletePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
-		r.setDefaultProviderSpec,
+		r.setProviderSpec,
 		rec.Delete,
 	}
 
 	for i, phase := range r.ReconcilePhases {
 		r.ReconcilePhases[i] = finalizePhase(phase, r.setConditions)
+	}
+
+	return builder, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options ctr.Options) error {
+	builder, err := r.BuildWithManager(ctx, mgr)
+	if err != nil {
+		return err
 	}
 
 	return builder.WithOptions(options).Complete(reconcile.AsReconciler(r.Client, r))
@@ -271,13 +293,13 @@ func setProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.
 	}
 
 	switch provider.ProviderName() {
-	case "azure":
+	case azureProvider:
 		if provider.Status.Variables == nil {
 			provider.Status.Variables = map[string]string{}
 		}
 
 		provider.Status.Variables["EXP_AKS_RESOURCE_HEALTH"] = "true"
-	case "gcp":
+	case gcpProvider:
 		if provider.Status.Variables == nil {
 			provider.Status.Variables = map[string]string{}
 		}
@@ -288,7 +310,7 @@ func setProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.
 	return nil
 }
 
-func (r *CAPIProviderReconciler) setDefaultProviderSpec(ctx context.Context) (*controller.Result, error) {
+func (r *CAPIProviderReconciler) setProviderSpec(ctx context.Context) (*controller.Result, error) {
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
 		return &controller.Result{}, setProviderSpec(ctx, r.Client, capiProvider)
 	}
@@ -342,7 +364,7 @@ func finalizePhase(phase controller.PhaseFn, finalizePhase controller.PhaseFn) c
 		}
 
 		// Perform finalization step after early completion
-		if res.Completed {
+		if res != nil && res.Completed {
 			return finalizePhase(ctx)
 		}
 
@@ -545,6 +567,25 @@ func setConditions(provider *turtlesv1.CAPIProvider) {
 	}
 }
 
+func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.Result, error) {
+	var err error
+
+	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
+		s := sync.NewList(
+			sync.NewSecretSync(r.Client, capiProvider),
+			sync.NewSecretMapperSync(ctx, r.Client, capiProvider),
+		)
+
+		if err := s.Sync(ctx); client.IgnoreNotFound(err) != nil {
+			return &controller.Result{}, err
+		}
+
+		s.Apply(ctx, &err)
+	}
+
+	return &controller.Result{}, err
+}
+
 func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
 	log := log.FromContext(ctx)
 
@@ -627,7 +668,7 @@ func (r *CAPIProviderReconciler) waitForClusterctlConfigUpdate(ctx context.Conte
 
 	if !synced {
 		logger.Info("ClusterctlConfig is not synced yet, waiting for mounted ConfigMap to be updated.")
-		return &controller.Result{RequeueAfter: defaultRequeueDuration}, nil
+		return &controller.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	return &controller.Result{}, nil

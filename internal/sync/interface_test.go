@@ -22,8 +22,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -44,10 +42,6 @@ func (m *MockSynchronizer) Sync(ctx context.Context) error {
 
 func (m *MockSynchronizer) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
 	*reterr = m.applyErr
-}
-
-func (m *MockSynchronizer) Template(_ *turtlesv1.CAPIProvider) client.Object {
-	return nil
 }
 
 var _ = Describe("resource Sync interface", func() {

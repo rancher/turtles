@@ -30,23 +30,23 @@ import (
 )
 
 // DefaultSynchronizer is a structure mirroring state of the CAPI Operator Provider object.
-type DefaultSynchronizer struct {
+type DefaultSynchronizer[T client.Object] struct {
 	client      client.Client
 	Source      *turtlesv1.CAPIProvider
-	Destination client.Object
+	Destination T
 }
 
 // NewDefaultSynchronizer returns a new instance of DefaultSynchronizer.
-func NewDefaultSynchronizer(cl client.Client, capiProvider *turtlesv1.CAPIProvider, destination client.Object) *DefaultSynchronizer {
-	return &DefaultSynchronizer{
+func NewDefaultSynchronizer[T client.Object](cl client.Client, source *turtlesv1.CAPIProvider, destination T) *DefaultSynchronizer[T] {
+	return &DefaultSynchronizer[T]{
 		client:      cl,
-		Source:      capiProvider,
+		Source:      source,
 		Destination: destination,
 	}
 }
 
 // Get updates the destination object from the cluster.
-func (s *DefaultSynchronizer) Get(ctx context.Context) error {
+func (s *DefaultSynchronizer[T]) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	objKey := client.ObjectKeyFromObject(s.Destination)
@@ -58,7 +58,7 @@ func (s *DefaultSynchronizer) Get(ctx context.Context) error {
 }
 
 // Apply applies the destination object to the cluster.
-func (s *DefaultSynchronizer) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
+func (s *DefaultSynchronizer[T]) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
 	log := log.FromContext(ctx)
 	uid := s.Destination.GetUID()
 
