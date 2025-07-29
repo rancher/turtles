@@ -1,0 +1,215 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: post-upgrade-job
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: post-upgrade-job-delete-capi-operator-resources
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+rules:
+- apiGroups:
+  - operator.cluster.x-k8s.io
+  resources:
+  - addonproviders
+  - bootstrapproviders
+  - controlplaneproviders
+  - coreproviders
+  - infrastructureproviders
+  - ipamproviders
+  - runtimeextensionproviders
+  verbs:
+  - list
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: post-upgrade-job-capi-operator-resources-cleanup
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+subjects:
+  - kind: ServiceAccount
+    name: post-upgrade-job
+    namespace: '{{ .Values.rancherTurtles.namespace }}'
+roleRef:
+  kind: ClusterRole
+  name: post-upgrade-job-delete-capi-operator-resources
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-addonproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-addonproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - addonproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-bootstrapproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-bootstrapproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - bootstrapproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-controlplaneproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-controlplaneproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - controlplaneproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-coreproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-coreproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - coreproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-ipamproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-ipamproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - ipamproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-infrastructureproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-infrastructureproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - infrastructureproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-runtimeextensionproviders-cleanup
+  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-upgrade-job
+      containers:
+        - name: cluster-api-operator-runtimeextensionproviders-cleanup
+          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          command: ["kubectl"]
+          args:
+          - delete
+          - runtimeextensionproviders.operator.cluster.x-k8s.io
+          - --all
+          - --all-namespaces
+      restartPolicy: Never
+---
