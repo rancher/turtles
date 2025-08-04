@@ -115,7 +115,7 @@ The config is located in `test/e2e/config/operator.yaml`.
 Most notable ones:
 ```yaml
 variables:
-  RANCHER_VERSION: "v2.11.0" # Default rancher version to install
+  RANCHER_VERSION: "v2.12.1-alpha1" # Default rancher version to install
   RANCHER_HOSTNAME: "localhost" # Your ngrok domain
   NGROK_API_KEY: "" # Key and token values for establishing ingress
   NGROK_AUTHTOKEN: ""
