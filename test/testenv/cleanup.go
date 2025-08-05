@@ -122,8 +122,8 @@ func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
 
 	log.Info("Running kubectl:", "command", strings.Join(aargs, " "))
 	err := cmd.Run()
-	log.Info("stderr:", "stderr", string(stderr.Bytes()))
-	log.Info("stdout:", "stdout", string(stdout.Bytes()))
+	log.Info("stderr:", "stderr", stderr.Bytes())
+	log.Info("stdout:", "stdout", stdout.Bytes())
 	return err
 }
 
