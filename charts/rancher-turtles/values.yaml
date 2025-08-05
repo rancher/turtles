@@ -22,7 +22,7 @@ rancherTurtles:
   # rancherInstalled: True if Rancher already installed is in the cluster, this is the preferred installation way.
   rancherInstalled: true
   # kubectlImage: Image for kubectl tasks.
-  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.30.0
+  kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.31.4
   # shellImage: Image for shell tasks.
   shellImage: rancher/kuberlr-kubectl:v5.0.0
   # features: Optional and experimental features.

@@ -416,7 +416,7 @@ EOF
     export NAMESPACE=capi-clusters
     export CONTROL_PLANE_MACHINE_COUNT=1
     export WORKER_MACHINE_COUNT=1
-    export KUBERNETES_VERSION=v1.30.4
+    export KUBERNETES_VERSION=v1.31.4
 
     curl -s https://raw.githubusercontent.com/rancher/turtles/refs/heads/main/test/e2e/data/cluster-templates/docker-kubeadm.yaml | envsubst > ${CONFIG_DIR}/${CAPI_CLUSTER_NAME}.yaml
 
