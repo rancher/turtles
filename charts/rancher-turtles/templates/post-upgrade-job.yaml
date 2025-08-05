@@ -62,20 +62,25 @@ data:
 
     set -euo pipefail
 
-    kubectl get addonproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch addonproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete addonproviders.operator.cluster.x-k8s.io --all --all-namespaces 
-    kubectl get bootstrapproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch bootstrapproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete bootstrapproviders.operator.cluster.x-k8s.io --all --all-namespaces
-    kubectl get controlplaneproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch controlplaneproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete controlplaneproviders.operator.cluster.x-k8s.io --all --all-namespaces
-    kubectl get coreproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch coreproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete coreproviders.operator.cluster.x-k8s.io --all --all-namespaces
-    kubectl get infrastructureproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch infrastructureproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete infrastructureproviders.operator.cluster.x-k8s.io --all --all-namespaces
-    kubectl get ipamproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch ipamproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete ipamproviders.operator.cluster.x-k8s.io --all --all-namespaces
-    kubectl get runtimeextensionproviders.operator.cluster.x-k8s.io --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch runtimeextensionproviders.operator.cluster.x-k8s.io "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
-    kubectl delete runtimeextensionproviders.operator.cluster.x-k8s.io --all --all-namespaces
+    remove_finalizers_and_delete() {
+      local resource_type="$1"
+      kubectl get $resource_type --all-namespaces --no-headers --ignore-not-found | awk '{print $1 " " $2}' | xargs -r -n2 bash -c 'kubectl patch '"${resource_type}"' "$1" -n "$0" --type merge -p "{\"metadata\":{\"finalizers\":null}}"'
+      kubectl delete $resource_type --all --all-namespaces
+    }
+
+    resource_types=(
+      "addonproviders.operator.cluster.x-k8s.io"
+      "bootstrapproviders.operator.cluster.x-k8s.io"
+      "controlplaneproviders.operator.cluster.x-k8s.io"
+      "coreproviders.operator.cluster.x-k8s.io"
+      "infrastructureproviders.operator.cluster.x-k8s.io"
+      "ipamproviders.operator.cluster.x-k8s.io"
+      "runtimeextensionproviders.operator.cluster.x-k8s.io"
+    )
+
+    for resource_type in "${resource_types[@]}"; do
+      remove_finalizers_and_delete "$resource_type"
+    done
 ---
 apiVersion: batch/v1
 kind: Job
