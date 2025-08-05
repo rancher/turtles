@@ -113,8 +113,8 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
 	// Ensure at least one provider source is available
-	if (input.CAPIProvidersYAML == nil || len(input.CAPIProvidersYAML) == 0) &&
-		(input.CAPIProvidersOCIYAML == nil || len(input.CAPIProvidersOCIYAML) == 0) {
+	if (len(input.CAPIProvidersYAML) == 0) &&
+		(len(input.CAPIProvidersOCIYAML) == 0) {
 		Expect(false).To(BeTrue(), "Either CAPIProvidersYAML or CAPIProvidersOCIYAML must be provided")
 	}
 
