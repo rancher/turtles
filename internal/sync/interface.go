@@ -21,14 +21,13 @@ import (
 	"slices"
 
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Sync is an inteface for mirroring state of the CAPI Operator Provider object on child objects.
 type Sync interface {
 	Get(ctx context.Context) error
 	Sync(ctx context.Context) error
-	Apply(ctx context.Context, reterr *error, options ...client.PatchOption)
+	Apply(ctx context.Context, reterr *error)
 }
 
 // List contains a list of syncers to apply the syncing logic.

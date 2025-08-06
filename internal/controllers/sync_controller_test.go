@@ -73,6 +73,10 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		Expect(testEnv.Delete(ctx, ns)).Should(Succeed())
+	})
+
 	It("Should create CAPIProvider secret", func() {
 		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
 			Name:      "docker",

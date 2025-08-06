@@ -23,7 +23,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/internal/sync"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type MockSynchronizer struct {
@@ -40,7 +39,7 @@ func (m *MockSynchronizer) Sync(ctx context.Context) error {
 	return m.syncronizerr
 }
 
-func (m *MockSynchronizer) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
+func (m *MockSynchronizer) Apply(ctx context.Context, reterr *error) {
 	*reterr = m.applyErr
 }
 

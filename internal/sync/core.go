@@ -58,14 +58,14 @@ func (s *DefaultSynchronizer[T]) Get(ctx context.Context) error {
 }
 
 // Apply applies the destination object to the cluster.
-func (s *DefaultSynchronizer[T]) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
+func (s *DefaultSynchronizer[T]) Apply(ctx context.Context, reterr *error) {
 	log := log.FromContext(ctx)
 	uid := s.Destination.GetUID()
 
 	setFinalizers(s.Destination)
 	setOwnerReference(s.Source, s.Destination)
 
-	if err := Patch(ctx, s.client, s.Destination, options...); err != nil {
+	if err := Patch(ctx, s.client, s.Destination); err != nil {
 		*reterr = kerrors.NewAggregate([]error{*reterr, err})
 		log.Error(*reterr, fmt.Sprintf("Unable to patch object: %s", *reterr))
 	}

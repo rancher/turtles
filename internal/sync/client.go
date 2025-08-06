@@ -20,11 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-const fieldOwner = "capi-provider-operator"
 
 func setKind(cl client.Client, obj client.Object) error {
 	kinds, _, err := cl.Scheme().ObjectKinds(obj)
@@ -38,7 +37,7 @@ func setKind(cl client.Client, obj client.Object) error {
 }
 
 // Patch will only patch mirror object in the cluster.
-func Patch(ctx context.Context, cl client.Client, obj client.Object, options ...client.PatchOption) error {
+func Patch(ctx context.Context, cl client.Client, obj client.Object) error {
 	log := log.FromContext(ctx)
 
 	obj.SetManagedFields(nil)
@@ -49,29 +48,14 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object, options ...
 
 	log.Info(fmt.Sprintf("Updating %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, client.ObjectKeyFromObject(obj)))
 
-	patchOptions := []client.PatchOption{
-		client.FieldOwner(fieldOwner),
-		client.ForceOwnership,
-	}
-	patchOptions = append(patchOptions, options...)
-
-	return cl.Patch(ctx, obj, client.Apply, patchOptions...)
-}
-
-// PatchStatus will only patch the status subresource of the provided object.
-func PatchStatus(ctx context.Context, cl client.Client, obj client.Object) error {
-	log := log.FromContext(ctx)
-
-	obj.SetManagedFields(nil)
-
-	if err := setKind(cl, obj); err != nil {
-		return err
+	// Avoiding client.Apply (SSA) Patch due to resourceVersion always being bumped on empty patches.
+	// See: https://github.com/kubernetes/kubernetes/issues/131175
+	//
+	// Also avoiding client.Merge in order to correctly propagate keys that have been removed.
+	err := cl.Update(ctx, obj)
+	if apierrors.IsNotFound(err) {
+		return cl.Create(ctx, obj)
 	}
 
-	log.Info(fmt.Sprintf("Patching status %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, client.ObjectKeyFromObject(obj)))
-
-	return cl.Status().Patch(ctx, obj, client.Apply, []client.SubResourcePatchOption{
-		client.FieldOwner(fieldOwner),
-		client.ForceOwnership,
-	}...)
+	return err
 }
