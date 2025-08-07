@@ -71,7 +71,7 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 		GenericProviderReconciler: controller.GenericProviderReconciler{
 			Provider:     &turtlesv1.CAPIProvider{},
 			ProviderList: &turtlesv1.CAPIProviderList{},
-			Client:       &ClientWrapper{Client: mgr.GetClient()},
+			Client:       mgr.GetClient(),
 			Config:       mgr.GetConfig(),
 		},
 	}).SetupWithManager(ctx, mgr, options); err != nil {
@@ -92,21 +92,6 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 	}
 
 	return nil
-}
-
-// ClientWrapper wraps the upstream client, preventing CAPIProvider spec patch. Status patch is performed as usual.
-type ClientWrapper struct {
-	client.Client
-}
-
-// Patch shadows the upstream patch method, ignoring CAPIProvider spec patch.
-func (c *ClientWrapper) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
-	// Ignore CAPIProvider spec patch
-	if _, ok := obj.(*turtlesv1.CAPIProvider); ok && obj.GetDeletionTimestamp().IsZero() {
-		return nil
-	}
-
-	return c.Client.Patch(ctx, obj, patch, opts...)
 }
 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
