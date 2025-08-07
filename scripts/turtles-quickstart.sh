@@ -17,10 +17,10 @@
 # Exit if a command fails
 set -e
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.11.0}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.11.3}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 RANCHER_CLUSTER_NAME=${RANCHER_CLUSTER_NAME:-rancher-cluster}
-RANCHER_TURTLES_VERSION=${RANCHER_TURTLES_VERSION:-v0.18.0}
+RANCHER_TURTLES_VERSION=${RANCHER_TURTLES_VERSION:-v0.22.0}
 CAPI_CLUSTER_NAME=${CAPI_CLUSTER_NAME:-capi-cluster1}
 KIND_IMAGE_VERSION=${KIND_IMAGE_VERSION:-v1.31.6}
 
@@ -216,7 +216,7 @@ EOF
           --timeout 5m \
           --set credentials.apiKey=$NGROK_API_KEY \
           --set credentials.authtoken=$NGROK_AUTHTOKEN \
-          --version v0.16.4
+          --version v0.18.1
         INGRESS_CLASS="ngrok"
     else 
         show_step "Install Ingress NGINX controller on ${RANCHER_CLUSTER_NAME}"
@@ -279,6 +279,19 @@ value: "2023-08-16T20:39:11.062Z"
 EOF
 
     if [ "$WITH_NGROK" -eq 1 ]; then
+
+    show_step "Update Rancher service for NGROK"
+
+    cat << EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    k8s.ngrok.com/app-protocols: '{"https-internal":"HTTPS","http":"HTTP"}'
+  name: rancher
+  namespace: cattle-system
+EOF
+
     show_step "Using Rancher agent-tls-mode SystemStore setting"
 
     cat << EOF | kubectl apply -f -
