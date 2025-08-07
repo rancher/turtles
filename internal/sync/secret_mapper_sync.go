@@ -313,8 +313,8 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 
 // Apply performs SSA patch of the secret mapper resources, using different FieldOwner from default
 // to avoid collisions with patches performed by variable syncer on the same secret resource.
-func (s *SecretMapperSync) Apply(ctx context.Context, reterr *error, options ...client.PatchOption) {
-	s.DefaultSynchronizer.Apply(ctx, reterr, append(options, client.FieldOwner("secret-mapper-sync"))...)
+func (s *SecretMapperSync) Apply(ctx context.Context, reterr *error) {
+	s.DefaultSynchronizer.Apply(ctx, reterr)
 }
 
 // Into maps the secret keys from source secret data according to credentials map.

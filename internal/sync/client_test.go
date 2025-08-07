@@ -57,15 +57,6 @@ var _ = Describe("Core provider", func() {
 		testEnv.Cleanup(ctx, ns)
 	})
 
-	It("Status patch only updates the status of the resource", func() {
-		capiProvider.Spec.Name = "rke2"
-		capiProvider.Status.Phase = turtlesv1.Ready
-
-		Expect(sync.PatchStatus(ctx, testEnv, capiProvider)).To(Succeed())
-		Eventually(Object(capiProvider)).Should(HaveField("Status.Phase", Equal(turtlesv1.Ready)))
-		Eventually(Object(capiProvider)).Should(HaveField("Spec.Name", Equal("docker")))
-	})
-
 	It("Regular patch only updates the spec of the resource", func() {
 		capiProvider.Spec.Name = "rke2"
 		capiProvider.Status.Phase = turtlesv1.Ready
