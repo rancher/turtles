@@ -28,7 +28,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Cleanup
-        uses: rancher/aws-janitor@v0.1.0
+        uses: rancher/aws-janitor@v0.2.0
         with:
           regions: eu-west-2
           commit: true
