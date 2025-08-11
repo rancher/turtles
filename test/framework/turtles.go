@@ -21,11 +21,13 @@ import (
 	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -93,4 +95,18 @@ func WaitForDeploymentsRemoved(ctx context.Context, input WaitForDeploymentsRemo
 
 		return false
 	}, intervals...).Should(BeTrue(), func() string { return capiframework.DescribeFailedDeployment(input, deployment) })
+}
+
+type VerifyCustomResourceHasBeenRemovedInput struct {
+	capiframework.Lister
+	GroupVersionKind schema.GroupVersionKind
+}
+
+func VerifyCustomResourceHasBeenRemoved(ctx context.Context, input VerifyCustomResourceHasBeenRemovedInput) {
+	Byf("Verifying that custom resource %q has been removed", input.GroupVersionKind.String())
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(input.GroupVersionKind)
+	err := input.Lister.List(ctx, list, &client.ListOptions{})
+	Expect(err).NotTo(HaveOccurred(), "Failed to list custom resource %q: %v", input.GroupVersionKind.String(), err)
+	Expect(list.Items).To(BeEmpty(), "Custom resource %q should have been removed, but found %d items", input.GroupVersionKind.String(), len(list.Items))
 }

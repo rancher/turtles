@@ -31,6 +31,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 )
@@ -146,6 +147,71 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 				Name:      "docker",
 				Namespace: "capd-system",
 			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+		})
+
+		upgradeInput.PostUpgradeSteps = append(upgradeInput.PostUpgradeSteps, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "AddonProvider",
+				},
+			})
+		}, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "BootstrapProvider",
+				},
+			})
+		}, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "ControlPlaneProvider",
+				},
+			})
+		}, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "CoreProvider",
+				},
+			})
+		}, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "InfrastructureProvider",
+				},
+			})
+		}, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "IPAMProvider",
+				},
+			})
+		}, func() {
+			framework.VerifyCustomResourceHasBeenRemoved(ctx, framework.VerifyCustomResourceHasBeenRemovedInput{
+				Lister: bootstrapClusterProxy.GetClient(),
+				GroupVersionKind: schema.GroupVersionKind{
+					Group:   "operator.cluster.x-k8s.io",
+					Version: "v1alpha2",
+					Kind:    "RuntimeExtensionProvider",
+				},
+			})
 		})
 
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
