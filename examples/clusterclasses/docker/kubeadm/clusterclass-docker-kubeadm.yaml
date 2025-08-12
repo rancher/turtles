@@ -167,6 +167,12 @@ spec:
       enabledIf: '{{ .podSecurityStandard.enabled }}'
       name: podSecurityStandard
   variables:
+    - name: imagePullSecret
+      required: false
+      schema:
+        openAPIV3Schema:
+          description: The name of a dockerconfigjson secret on the Cluster that can be used to pull images.
+          type: string
     - name: imageRepository
       required: true
       schema:
