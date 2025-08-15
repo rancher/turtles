@@ -71,7 +71,7 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 		GenericProviderReconciler: controller.GenericProviderReconciler{
 			Provider:     &turtlesv1.CAPIProvider{},
 			ProviderList: &turtlesv1.CAPIProviderList{},
-			Client:       &ClientWrapper{Client: mgr.GetClient()},
+			Client:       mgr.GetClient(),
 			Config:       mgr.GetConfig(),
 		},
 	}).SetupWithManager(ctx, mgr, options); err != nil {
@@ -92,21 +92,6 @@ func (r *OperatorReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 	}
 
 	return nil
-}
-
-// ClientWrapper wraps the upstream client, preventing CAPIProvider spec patch. Status patch is performed as usual.
-type ClientWrapper struct {
-	client.Client
-}
-
-// Patch shadows the upstream patch method, ignoring CAPIProvider spec patch.
-func (c *ClientWrapper) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
-	// Ignore CAPIProvider spec patch
-	if _, ok := obj.(*turtlesv1.CAPIProvider); ok && obj.GetDeletionTimestamp().IsZero() {
-		return nil
-	}
-
-	return c.Client.Patch(ctx, obj, patch, opts...)
 }
 
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=capiproviders,verbs=get;list;watch;create;update;patch;delete
@@ -171,7 +156,6 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 
 	r.DeletePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
-		r.setProviderSpec,
 		rec.Delete,
 	}
 
@@ -604,9 +588,10 @@ func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1
 	switch {
 	case !knownProvider:
 		conditions.MarkUnknown(provider, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknownReason, "Provider is unknown")
-	case provider.Spec.Version != "" && latest:
+	case latest:
 		conditions.MarkTrue(provider, turtlesv1.CheckLatestVersionTime)
-	case provider.Spec.Version != "" && !latest:
+		provider.Spec.Version = providerVersion
+	case !latest && !provider.Spec.EnableAutomaticUpdate:
 		conditions.MarkFalse(
 			provider,
 			turtlesv1.CheckLatestVersionTime,
@@ -614,7 +599,7 @@ func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1
 			clusterv1.ConditionSeverityInfo,
 			"Provider version update available. Current latest is %s", providerVersion,
 		)
-	case !latest:
+	case !latest && provider.Spec.EnableAutomaticUpdate:
 		lastCheck := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
 		updatedMessage := fmt.Sprintf("Updated to latest %s version", providerVersion)
 

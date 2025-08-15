@@ -1,0 +1,13 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: ClusterctlConfig
+metadata:
+  name: clusterctl-config
+  namespace: rancher-turtles-system
+spec:
+  providers:
+  - name: vsphere
+    url: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/v1.12.0/infrastructure-components.yaml
+    type: InfrastructureProvider
+  images:
+  - name: infrastructure-vsphere
+    repository: registry.k8s.io/cluster-api-vsphere

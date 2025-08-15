@@ -84,6 +84,10 @@ cluster-api-operator:
     core:
       # namespace: Core component namespace.
       namespace: capi-system
+      # version: Core ClusterAPI version.
+      version: ""
+      # enableAutomaticUpdate: Allow the provider to update automatically when a new Turtles version is installed.
+      enableAutomaticUpdate: true
       # imageUrl: Custom image URL.
       imageUrl: ""
       # fetchConfig: Config fetching settings.
@@ -98,6 +102,8 @@ cluster-api-operator:
       enabled: true
       # version: RKE2 version.
       version: ""
+      # enableAutomaticUpdate: Allow the provider to update automatically when a new Turtles version is installed.
+      enableAutomaticUpdate: true
       # bootstrap: RKE2 bootstrap provider.
       bootstrap:
         # namespace: Bootstrap namespace.

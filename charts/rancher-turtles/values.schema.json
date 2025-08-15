@@ -257,6 +257,16 @@
                     "url": { "type": "string", "default": "" },
                     "selector": { "type": "string", "default": "" }
                   }
+                },
+                "enableAutomaticUpdates": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Allow the provider to update automatically when a new Turtles version is installed."
+                },
+                "version": {
+                  "type": "string",
+                  "default": "",
+                  "description": "CAPI core provider version."
                 }
               }
             },
@@ -272,6 +282,11 @@
                   "type": "string",
                   "default": "",
                   "description": "RKE2 version."
+                },
+                "enableAutomaticUpdates": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Allow the provider to update automatically when a new Turtles version is installed."
                 },
                 "bootstrap": {
                   "type": "object",

@@ -2782,6 +2782,10 @@ spec:
                       type: object
                     type: array
                 type: object
+              enableAutomaticUpdate:
+                description: EnableAutomaticUpdate can be used to automatically update
+                  the CAPIProvider to a newest version.
+                type: boolean
               features:
                 description: Features is a collection of features to enable.
                 example:
