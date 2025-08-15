@@ -59,6 +59,10 @@ type CAPIProviderSpec struct {
 	// +kubebuilder:example={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
 
+	// EnableAutomaticUpdate can be used to automatically update the CAPIProvider to a newest version.
+	// +optional
+	EnableAutomaticUpdate bool `json:"enableAutomaticUpdate,omitempty"`
+
 	// ProviderSpec is the spec of the underlying CAPI Provider resource.
 	operatorv1.ProviderSpec `json:",inline"`
 }

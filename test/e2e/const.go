@@ -134,6 +134,23 @@ var (
 
 	//go:embed data/capi-operator/clusterctlconfig.yaml
 	ClusterctlConfig []byte
+
+	//CAPIProvider test data
+
+	//go:embed data/test-providers/namespace.yaml
+	CAPVProviderNamespace []byte
+
+	//go:embed data/test-providers/capv-provider-no-ver.yaml
+	CAPVProviderNoVersion []byte
+
+	//go:embed data/test-providers/unknown-provider.yaml
+	UnknownProvider []byte
+
+	//go:embed data/test-providers/clusterctlconfig.yaml
+	ClusterctlConfigInitial []byte
+
+	//go:embed data/test-providers/clusterctlconfig-updated.yaml
+	ClusterctlConfigUpdated []byte
 )
 
 const (

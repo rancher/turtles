@@ -22,7 +22,10 @@ metadata:
 spec:
   name: cluster-api
   type: core
-  version: {{ index .Values "cluster-api-operator" "cluster-api" "version" }}
+  enableAutomaticUpdate: {{ index .Values "cluster-api-operator" "cluster-api" "core" "enableAutomaticUpdate" }}
+{{- if index .Values "cluster-api-operator" "cluster-api" "core" "version" }}
+  version: {{ index .Values "cluster-api-operator" "cluster-api" "core" "version" }}
+{{- end }}
   additionalManifests:
     name: capi-additional-rbac-roles
     namespace: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
