@@ -61,13 +61,13 @@ type DeployRancherInput struct {
 	CertManagerRepoName string `env:"CERT_MANAGER_REPO_NAME"`
 
 	// RancherChartRepoName is the repository name for Rancher chart.
-	RancherChartRepoName string `env:"RANCHER_REPO_NAME"`
+	RancherChartRepoName string `env:"RANCHER_ALPHA_REPO_NAME"`
 
 	// RancherChartURL is the URL for Rancher chart.
-	RancherChartURL string `env:"RANCHER_URL"`
+	RancherChartURL string `env:"RANCHER_ALPHA_URL"`
 
 	// RancherChartPath is the path to the Rancher chart.
-	RancherChartPath string `env:"RANCHER_PATH"`
+	RancherChartPath string `env:"RANCHER_ALPHA_PATH"`
 
 	// RancherVersion is the version of Rancher.
 	RancherVersion string `env:"RANCHER_VERSION"`
