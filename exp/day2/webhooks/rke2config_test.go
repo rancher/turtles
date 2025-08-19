@@ -145,7 +145,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Owner:       defaultFileOwner,
 			Permissions: "0600",
 			ContentFrom: &bootstrapv1.FileSource{
-				Secret: bootstrapv1.SecretFileSource{
+				Secret: &bootstrapv1.FileSourceRef{
 					Name: "test-system-agent-connect-info-config",
 					Key:  "connect-info-config.json",
 				},
@@ -185,7 +185,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Owner:       defaultFileOwner,
 			Permissions: "0600",
 			ContentFrom: &bootstrapv1.FileSource{
-				Secret: bootstrapv1.SecretFileSource{
+				Secret: &bootstrapv1.FileSourceRef{
 					Name: fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
 					Key:  "install.sh",
 				},
@@ -221,7 +221,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Owner:       defaultFileOwner,
 			Permissions: "0600",
 			ContentFrom: &bootstrapv1.FileSource{
-				Secret: bootstrapv1.SecretFileSource{
+				Secret: &bootstrapv1.FileSourceRef{
 					Name: fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
 					Key:  "install.sh",
 				},
@@ -256,7 +256,7 @@ var _ = Describe("RKE2ConfigWebhook tests", func() {
 			Owner:       defaultFileOwner,
 			Permissions: "0600",
 			ContentFrom: &bootstrapv1.FileSource{
-				Secret: bootstrapv1.SecretFileSource{
+				Secret: &bootstrapv1.FileSourceRef{
 					Name: fmt.Sprintf("%s-system-agent-install-script", rke2Config.Name),
 					Key:  "install.sh",
 				},

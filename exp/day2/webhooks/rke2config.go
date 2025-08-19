@@ -340,7 +340,7 @@ func (r *RKE2ConfigWebhook) createConnectInfoJson(ctx context.Context, rke2Confi
 		Owner:       defaultFileOwner,
 		Permissions: "0600",
 		ContentFrom: &bootstrapv1.FileSource{
-			Secret: bootstrapv1.SecretFileSource{
+			Secret: &bootstrapv1.FileSourceRef{
 				Name: secret.Name,
 				Key:  connectInfoConfigKey,
 			},
@@ -402,7 +402,7 @@ func (r *RKE2ConfigWebhook) createSystemAgentInstallScript(ctx context.Context, 
 		Owner:       defaultFileOwner,
 		Permissions: "0600",
 		ContentFrom: &bootstrapv1.FileSource{
-			Secret: bootstrapv1.SecretFileSource{
+			Secret: &bootstrapv1.FileSourceRef{
 				Name: installScriptSecretName,
 				Key:  installScriptKey,
 			},
