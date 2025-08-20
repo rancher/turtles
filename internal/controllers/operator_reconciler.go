@@ -51,6 +51,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
 	"github.com/rancher/turtles/internal/sync"
 )
@@ -61,7 +62,8 @@ const (
 	providerTypeField          = "spec.type"                   //nolint:gosec
 	providerNameField          = "spec.name"                   //nolint:gosec
 
-	certificateAnnotationKey = "need-a-cert.cattle.io/secret-name"
+	certificateAnnotationKey       = "need-a-cert.cattle.io/secret-name"
+	certManagerInjectAnnotationKey = "cert-manager.io/inject-ca-from"
 
 	azureProvider = "azure"
 	gcpProvider   = "gcp"
@@ -134,8 +136,10 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		handler.EnqueueRequestsFromMapFunc(newCoreProviderToProviderFuncMapForProviderList(mgr.GetClient())),
 	)
 
-	customAlterFuncs := []repository.ComponentsAlterFn{
-		patchProviderManifestFn,
+	customAlterFuncs := []repository.ComponentsAlterFn{}
+
+	if feature.Gates.Enabled(feature.NoCertManager) {
+		customAlterFuncs = append(customAlterFuncs, patchProviderManifestFn, removeCertManagerFn)
 	}
 
 	rec := controller.NewPhaseReconciler(
@@ -366,6 +370,31 @@ func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.U
 	}
 
 	return objs, nil
+}
+
+// removeCertManagerFn is a function that satisfies the type repository.ComponentsAlterFn
+// to remove cert-manager dependencies from the provider manifest.
+func removeCertManagerFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	updatedObjs := []unstructured.Unstructured{}
+
+	for _, o := range objs {
+		annotations := o.GetAnnotations()
+
+		_, ok := annotations[certManagerInjectAnnotationKey]
+		if ok {
+			delete(annotations, certManagerInjectAnnotationKey)
+			o.SetAnnotations(annotations)
+		}
+
+		switch o.GetKind() {
+		case "Certificate", "Issuer":
+			continue
+		}
+
+		updatedObjs = append(updatedObjs, o)
+	}
+
+	return updatedObjs, nil
 }
 
 // setDefaultProviderSpec sets the default values for the provider spec.
