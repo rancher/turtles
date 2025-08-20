@@ -112,6 +112,7 @@ var _ = Describe("Provider sync", func() {
 
 	It("Should sync spec down and leave version to latest", func() {
 		origin := capiProvider.DeepCopy()
+		origin.Spec.EnableAutomaticUpdate = true
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
@@ -188,6 +189,7 @@ var _ = Describe("Provider sync", func() {
 
 	It("Should set custom provider version to latest according to clusterctlconfig override", func() {
 		origin := customCAPIProvider.DeepCopy()
+		origin.Spec.EnableAutomaticUpdate = true
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, clusterctlconfig).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
@@ -277,6 +279,7 @@ var _ = Describe("Provider sync", func() {
 
 	It("Should sync status up and set provisioning state", func() {
 		origin := capiProvider.DeepCopy()
+		origin.Spec.EnableAutomaticUpdate = true
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,

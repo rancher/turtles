@@ -22,6 +22,7 @@ metadata:
 spec:
   name: rke2
   type: controlPlane
+  enableAutomaticUpdate: {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "enableAutomaticUpdate" }}
 {{- if index .Values  "cluster-api-operator" "cluster-api" "rke2" "version" }}
   version: {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "version" }}
 {{- end }}

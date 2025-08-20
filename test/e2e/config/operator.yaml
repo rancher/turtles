@@ -28,6 +28,7 @@ intervals:
   default/wait-gitea-service: ["5m", "30s"]
   default/wait-gitea-uninstall: ["10m", "30s"]
   default/wait-turtles-uninstall: ["10m", "30s"]
+  default/wait-capiprovider-update: ["5m", "10s"]
 
 variables:
   # General Configuration
