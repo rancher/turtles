@@ -28,6 +28,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"sigs.k8s.io/yaml"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
@@ -43,6 +45,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	configclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
+
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -56,6 +60,8 @@ const (
 	configSecretNamespaceField = "spec.configSecret.namespace" //nolint:gosec
 	providerTypeField          = "spec.type"                   //nolint:gosec
 	providerNameField          = "spec.name"                   //nolint:gosec
+
+	certificateAnnotationKey = "need-a-cert.cattle.io/secret-name"
 
 	azureProvider = "azure"
 	gcpProvider   = "gcp"
@@ -128,12 +134,17 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		handler.EnqueueRequestsFromMapFunc(newCoreProviderToProviderFuncMapForProviderList(mgr.GetClient())),
 	)
 
+	customAlterFuncs := []repository.ComponentsAlterFn{
+		patchProviderManifestFn,
+	}
+
 	rec := controller.NewPhaseReconciler(
 		r.GenericProviderReconciler, r.Provider, r.ProviderList,
 		controller.WithProviderConverter(getProvider),
 		controller.WithProviderLister(r.listProviders),
 		controller.WithProviderMapper(r.getGenericProvider),
 		controller.WithProviderTypeMapper(toClusterctlType),
+		controller.WithCustomAlterComponentsFuncs(customAlterFuncs),
 	)
 
 	r.ReconcilePhases = []controller.PhaseFn{
@@ -308,6 +319,53 @@ func (r *CAPIProviderReconciler) setConditions(_ context.Context) (*controller.R
 	}
 
 	return &controller.Result{}, nil
+}
+
+// patchProviderManifestFn is a function to patch the provider manifest that satisfies the type repository.ComponentsAlterFn.
+func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	var (
+		secretName string
+		serviceObj *unstructured.Unstructured
+	)
+
+	for i := range objs {
+		o := &objs[i]
+
+		var (
+			found bool
+			err   error
+		)
+
+		switch o.GetKind() {
+		case "Certificate":
+			secretName, found, err = unstructured.NestedString(o.Object, "spec", "secretName")
+			if err != nil {
+				return nil, err
+			}
+
+			if !found {
+				return nil, fmt.Errorf("secretName not found in Certificate spec for %s", o.GetName())
+			}
+		case "Service":
+			serviceObj = o
+		}
+
+		if secretName != "" && serviceObj != nil {
+			break
+		}
+	}
+
+	if secretName != "" && serviceObj != nil {
+		annotations := serviceObj.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+
+		annotations[certificateAnnotationKey] = secretName
+		serviceObj.SetAnnotations(annotations)
+	}
+
+	return objs, nil
 }
 
 // setDefaultProviderSpec sets the default values for the provider spec.
