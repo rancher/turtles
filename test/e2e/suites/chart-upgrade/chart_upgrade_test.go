@@ -21,6 +21,7 @@ package chart_upgrade
 
 import (
 	_ "embed"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
@@ -30,17 +31,29 @@ import (
 	"github.com/rancher/turtles/test/testenv"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestLabel), func() {
+	var (
+		namespace   *corev1.Namespace
+		clusterName string
+	)
+
 	BeforeEach(func() {
+		namespace = capiframework.CreateNamespace(ctx, capiframework.CreateNamespaceInput{
+			Creator: bootstrapClusterProxy.GetClient(),
+			Name:    fmt.Sprintf("chartupgrade-%s", util.RandomString(6)),
+		})
+		clusterName = fmt.Sprintf("docker-rke2-%s", util.RandomString(6))
+
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
-
 	})
 
 	It("Should perform upgrade from latest N-1 version to latest", func() {
@@ -48,11 +61,42 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			TurtlesChartPath:      "https://rancher.github.io/turtles",
 			CAPIProvidersYAML:     e2e.CapiProvidersLegacy,
-			Version:               "v0.16.0",
+			Version:               "v0.17.0",
 			AdditionalValues:      map[string]string{},
 			WaitForDeployments:    testenv.DefaultDeployments,
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
+
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersYAML: [][]byte{
+				e2e.CapiProviders,
+			},
+			WaitForDeployments: testenv.DefaultDeployments,
+		})
+
+		ccInput := testenv.CreateClusterInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			Namespace:             namespace.Name,
+			ClusterTemplate:       e2e.CAPIDockerRKE2Topology,
+			ClusterName:           clusterName,
+			AdditionalTemplateVariables: map[string]string{
+				"RKE2_CNI":     "calico",
+				"RKE2_VERSION": e2eConfig.GetVariableOrEmpty(e2e.RKE2VersionVar),
+			},
+			AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
+				{
+					Name:  "docker-cluster-classes-regular",
+					Paths: []string{"examples/clusterclasses/docker/rke2"},
+				},
+				{
+					Name:  "docker-cni",
+					Paths: []string{"examples/applications/cni/calico"},
+				},
+			},
+			WaitForCreatedCluster: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
+		}
+		testenv.CreateCluster(ctx, ccInput)
 
 		chartMuseumDeployInput := testenv.DeployChartMuseumInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
@@ -211,6 +255,12 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 					Version: "v1alpha2",
 					Kind:    "RuntimeExtensionProvider",
 				},
+			})
+		}, func() {
+			framework.VerifyCluster(ctx, framework.VerifyClusterInput{
+				GetLister: bootstrapClusterProxy.GetClient(),
+				Name:      clusterName,
+				Namespace: namespace.Name,
 			})
 		})
 
