@@ -193,7 +193,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
 
 		deleteClusterWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.DeleteClusterWaitName)
-		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
+		Expect(deleteClusterWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.DeleteClusterWaitName)
 
 		capiCluster = &types.NamespacedName{
 			Namespace: namespace.Name,
