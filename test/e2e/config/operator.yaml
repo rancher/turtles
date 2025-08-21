@@ -76,8 +76,8 @@ variables:
   HELM_EXTRA_VALUES_FOLDER: "/tmp"
 
   # Rancher Configuration
-  RANCHER_VERSION: "v2.11.0"
-  RANCHER_ALPHA_VERSION: "v2.11.0-alpha8"
+  RANCHER_VERSION: "v2.12.1-alpha1"
+  RANCHER_ALPHA_VERSION: "v2.12.1-alpha1"
   RANCHER_REPO_NAME: "rancher-latest"
   RANCHER_ALPHA_REPO_NAME: "rancher-alpha"
   RANCHER_PATH: "rancher-latest/rancher"

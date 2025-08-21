@@ -62,7 +62,7 @@
         },
         "kubectlImage": {
           "type": "string",
-          "default": "registry.k8s.io/kubernetes/kubectl:v1.30.0",
+          "default": "registry.k8s.io/kubernetes/kubectl:v1.31.4",
           "description": "Image for kubectl tasks."
         },
         "features": {
