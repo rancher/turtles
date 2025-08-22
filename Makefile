@@ -184,9 +184,11 @@ RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'test/*' 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 CHART_DIR := charts/rancher-turtles
+PROVIDERS_CHART_DIR := charts/rancher-turtles-providers
 RELEASE_DIR ?= out
 CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
 CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
+PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= IfNotPresent
@@ -545,6 +547,9 @@ $(RELEASE_DIR):
 $(CHART_RELEASE_DIR):
 	mkdir -p $(CHART_RELEASE_DIR)/templates
 
+$(PROVIDERS_CHART_RELEASE_DIR):
+	mkdir -p $(PROVIDERS_CHART_RELEASE_DIR)/templates
+
 $(CHART_PACKAGE_DIR):
 	mkdir -p $(CHART_PACKAGE_DIR)
 
@@ -576,6 +581,12 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
+
+.PHONY: build-providers-chart
+build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR)
+	cp -rf $(PROVIDERS_CHART_DIR)/* $(PROVIDERS_CHART_RELEASE_DIR)
+	cd $(PROVIDERS_CHART_RELEASE_DIR) && $(HELM) dependency update
+	$(HELM) package $(PROVIDERS_CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: release-chart
 release-chart: $(HELM) $(NOTES) build-chart verify-gen

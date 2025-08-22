@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "controlplaneKubeadm" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "controlplaneKubeadm" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: kubeadm-control-plane
+  namespace: {{ index .Values "providers" "controlplaneKubeadm" "namespace" }}
+spec:
+  name: kubeadm
+  type: controlPlane
+{{- if index .Values  "providers" "controlplaneKubeadm" "version" }}
+  version: {{ index .Values "providers" "controlplaneKubeadm" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "controlplaneKubeadm" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "controlplaneKubeadm" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "controlplaneKubeadm" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "controlplaneKubeadm" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "controlplaneKubeadm" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "controlplaneKubeadm" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "controlplaneKubeadm" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.controlplaneKubeadm.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "controlplaneKubeadm" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "controlplaneKubeadm" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "controlplaneKubeadm" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "controlplaneKubeadm" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "controlplaneKubeadm" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "controlplaneKubeadm" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "controlplaneKubeadm" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "infrastructureDocker" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "infrastructureDocker" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: docker
+  namespace: {{ index .Values "providers" "infrastructureDocker" "namespace" }}
+spec:
+  name: docker
+  type: infrastructure
+{{- if index .Values  "providers" "infrastructureDocker" "version" }}
+  version: {{ index .Values "providers" "infrastructureDocker" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureDocker" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "infrastructureDocker" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureDocker" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "infrastructureDocker" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "infrastructureDocker" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "infrastructureDocker" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureDocker" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.infrastructureDocker.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureDocker" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "infrastructureDocker" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureDocker" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureDocker" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "infrastructureDocker" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureDocker" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "infrastructureDocker" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "infrastructureDocker" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "infrastructureDocker" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "infrastructureDocker" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "infrastructureDocker" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}

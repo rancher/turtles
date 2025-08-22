@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "infrastructureAWS" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "infrastructureAWS" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: aws
+  namespace: {{ index .Values "providers" "infrastructureAWS" "namespace" }}
+spec:
+  name: aws
+  type: infrastructure
+{{- if index .Values  "providers" "infrastructureAWS" "version" }}
+  version: {{ index .Values "providers" "infrastructureAWS" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureAWS" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "infrastructureAWS" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureAWS" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "infrastructureAWS" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "infrastructureAWS" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "infrastructureAWS" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureAWS" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.infrastructureAWS.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureAWS" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "infrastructureAWS" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureAWS" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureAWS" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "infrastructureAWS" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureAWS" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "infrastructureAWS" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "infrastructureAWS" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "infrastructureAWS" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "infrastructureAWS" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "infrastructureAWS" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}

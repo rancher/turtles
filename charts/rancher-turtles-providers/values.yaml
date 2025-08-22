@@ -1,0 +1,100 @@
+# Default values for rancher-turtles-providers.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# providers: Providers configuration.
+providers:
+  # addonFleet: Cluster API Add-on Provider for Fleet (CAAPF).
+  addonFleet:
+    # enabled: Enables the installation of this provider.
+    enabled: true
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: fleet-addon-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # bootstrapKubeadm: Kubeadm Bootstrap Provider.
+  bootstrapKubeadm:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capi-kubeadm-bootstrap-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # bootstrapRKE2: RKE2 Bootstrap Provider.
+  bootstrapRKE2:
+    # enabled: Enables the installation of this provider.
+    enabled: true
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: rke2-bootstrap-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # controlplaneKubeadm: Kubeadm Control Plane Provider.
+  controlplaneKubeadm:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capi-kubeadm-control-plane-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # controlplaneRKE2: RKE2 Control Plane Provider.
+  controlplaneRKE2:
+    # enabled: Enables the installation of this provider.
+    enabled: true
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: rke2-control-plane-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # infrastructureAWS: AWS Infrastructure Provider (CAPA).
+  infrastructureAWS:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capa-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+    # variables: Configures the provider variables that are applied to the manifest.
+    variables:
+      AWS_B64ENCODED_CREDENTIALS: ""
+  # infrastructureAzure: Azure Infrastructure Provider (CAPZ).
+  infrastructureAzure:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capz-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+    # variables: Configures the provider variables that are applied to the manifest.
+    variables:
+      EXP_AKS_RESOURCE_HEALTH: "true"
+  # infrastructureDocker: Docker Infrastructure Provider (CAPD).
+  infrastructureDocker:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capd-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # infrastructureGCP: GCP Infrastructure Provider (CAPG).
+  infrastructureGCP:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capg-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+    # variables: Configures the provider variables that are applied to the manifest.
+    variables:
+      EXP_CAPG_GKE: "true"
+      GCP_B64ENCODED_CREDENTIALS: ""
+  # infrastructureVSphere: vSphere Infrastructure Provider (CAPV).
+  infrastructureVSphere:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capv-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+    # variables: Configures the provider variables that are applied to the manifest.
+    variables:
+      VSPHERE_USERNAME: ""
+      VSPHERE_PASSWORD: ""

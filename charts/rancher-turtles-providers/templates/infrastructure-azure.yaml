@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "infrastructureAzure" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "infrastructureAzure" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: azure
+  namespace: {{ index .Values "providers" "infrastructureAzure" "namespace" }}
+spec:
+  name: azure
+  type: infrastructure
+{{- if index .Values  "providers" "infrastructureAzure" "version" }}
+  version: {{ index .Values "providers" "infrastructureAzure" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureAzure" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "infrastructureAzure" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureAzure" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "infrastructureAzure" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "infrastructureAzure" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "infrastructureAzure" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureAzure" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.infrastructureAzure.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureAzure" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "infrastructureAzure" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureAzure" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureAzure" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "infrastructureAzure" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureAzure" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "infrastructureAzure" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "infrastructureAzure" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "infrastructureAzure" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "infrastructureAzure" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "infrastructureAzure" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}
