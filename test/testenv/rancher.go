@@ -18,7 +18,6 @@ package testenv
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -106,6 +105,9 @@ type DeployRancherInput struct {
 
 	// Development is the flag indicating whether it is a development environment.
 	Development bool
+
+	// RancherInstallationTimeout is the timeout for Rancher installation.
+	RancherInstallationTimeout string `env:"RANCHER_INSTALLATION_TIMEOUT" envDefault:"5m"`
 }
 
 type deployRancherValuesFile struct {
@@ -223,7 +225,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		Hostname:          input.RancherHost,
 	})
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
+	err = os.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Installing Rancher")
@@ -237,6 +239,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	}
 	if input.Development {
 		installFlags = append(installFlags, "--devel")
+	}
+	if input.RancherInstallationTimeout != "" {
+		installFlags = append(installFlags, "--timeout", input.RancherInstallationTimeout)
 	}
 
 	chart := &opframework.HelmChart{
@@ -501,7 +506,7 @@ func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
+	err = os.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
 	Expect(err).ToNot(HaveOccurred())
 
 	installFlags := opframework.Flags(
