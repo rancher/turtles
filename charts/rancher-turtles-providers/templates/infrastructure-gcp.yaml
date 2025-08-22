@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "infrastructureGCP" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "infrastructureGCP" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: infrastructure-gcp
+  namespace: {{ index .Values "providers" "infrastructureGCP" "namespace" }}
+spec:
+  name: gcp
+  type: infrastructure
+{{- if index .Values  "providers" "infrastructureGCP" "version" }}
+  version: {{ index .Values "providers" "infrastructureGCP" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureGCP" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "infrastructureGCP" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureGCP" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "infrastructureGCP" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "infrastructureGCP" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "infrastructureGCP" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureGCP" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.infrastructureGCP.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureGCP" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "infrastructureGCP" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureGCP" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "infrastructureGCP" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "infrastructureGCP" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "infrastructureGCP" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "infrastructureGCP" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}

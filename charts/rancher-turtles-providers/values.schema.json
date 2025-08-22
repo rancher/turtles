@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Helm Chart Values Schema",
+  "$defs": {
+    "providerSchema": {
+      "type": "object",
+      "description": "Provider configuration.",
+      "required": [
+        "enabled",
+        "namespace"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enables the installation of this provider."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "The namespace where the provider manifests will be applied."
+        },
+        "enableAutomaticUpdate": {
+          "type": "boolean",
+          "description": "Allows the provider to be updated automatically whenever this chart is updated."
+        },
+        "credentials": {
+          "type": "object",
+          "description": "Rancher Cloud credentials configuration.",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the Rancher Cloud credential."
+            },
+            "namespace": {
+              "type": "string",
+              "description": "The namespace of the Rancher Cloud credential."
+            }
+          }
+        },
+        "configSecret": {
+          "type": "object",
+          "description": "Provider Secret configuration.",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the Secret containing the provider configuration variables."
+            },
+            "namespace": {
+              "type": "string",
+              "description": "The namespace of the Secret containing the provider configuration variables."
+            }
+          }
+        },
+        "features": {
+          "type": "object",
+          "description": "Provider CAPI supported features configuration.",
+          "properties": {
+            "machinePool": {
+              "type": "boolean",
+              "description": "Enables CAPI MachinePool support."
+            },
+            "clusterResourceSet": {
+              "type": "boolean",
+              "description": "Enables CAPI ClusterResourceSet support."
+            },
+            "clusterTopology": {
+              "type": "boolean",
+              "description": "Enables CAPI ClusterClass support."
+            }
+          }
+        },
+        "variables": {
+          "type": "object",
+          "description": "Configures the provider variables that are applied to the manifest.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "fetchConfig": {
+          "type": "object",
+          "description": "Configuration to fetch the provider manifests.",
+          "oneOf": [ 
+            {
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "The URL to be used for fetching the provider components and metadata."
+                }
+              }
+            },
+            {
+              "properties": {            
+                "oci": {
+                  "type": "string",
+                  "description": "OCI to be used for fetching the provider components and metadata."
+                }
+              }
+            } 
+          ]
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "providers": {
+      "type": "object",
+      "properties": {
+        "addonFleet": { "$ref": "#/$defs/providerSchema"},
+        "bootstrapKubeadm": { "$ref": "#/$defs/providerSchema"},
+        "bootstrapRKE2": { "$ref": "#/$defs/providerSchema"},
+        "controlplaneKubeadm": { "$ref": "#/$defs/providerSchema"},
+        "controlplaneRKE2": { "$ref": "#/$defs/providerSchema"},
+        "infrastructureAWS": { "$ref": "#/$defs/providerSchema"},
+        "infrastructureAzure": { "$ref": "#/$defs/providerSchema"},
+        "infrastructureDocker": { "$ref": "#/$defs/providerSchema"},
+        "infrastructureGCP": { "$ref": "#/$defs/providerSchema"},
+        "infrastructureVSphere": { "$ref": "#/$defs/providerSchema"}
+      }
+    }
+  }
+}

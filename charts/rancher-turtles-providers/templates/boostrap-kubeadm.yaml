@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "bootstrapKubeadm" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "bootstrapKubeadm" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: kubeadm-bootstrap
+  namespace: {{ index .Values "providers" "bootstrapKubeadm" "namespace" }}
+spec:
+  name: kubeadm
+  type: bootstrap
+{{- if index .Values  "providers" "bootstrapKubeadm" "version" }}
+  version: {{ index .Values "providers" "bootstrapKubeadm" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapKubeadm" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "bootstrapKubeadm" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapKubeadm" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "bootstrapKubeadm" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "bootstrapKubeadm" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "bootstrapKubeadm" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapKubeadm" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.bootstrapKubeadm.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "bootstrapKubeadm" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "bootstrapKubeadm" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "bootstrapKubeadm" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "bootstrapKubeadm" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "bootstrapKubeadm" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "bootstrapKubeadm" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}

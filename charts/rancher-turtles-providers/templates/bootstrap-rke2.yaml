@@ -1,0 +1,53 @@
+{{- if index .Values "providers" "bootstrapRKE2" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "bootstrapRKE2" "namespace" }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: rke2-bootstrap
+  namespace: {{ index .Values "providers" "bootstrapRKE2" "namespace" }}
+spec:
+  name: rke2
+  type: bootstrap
+{{- if index .Values  "providers" "bootstrapRKE2" "version" }}
+  version: {{ index .Values "providers" "bootstrapRKE2" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapRKE2" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "bootstrapRKE2" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapRKE2" "features" }}
+  features:
+      machinePool: {{ index .Values "providers" "bootstrapRKE2" "features" "machinePool" }}
+      clusterResourceSet: {{ index .Values "providers" "bootstrapRKE2" "features" "clusterResourceSet" }}
+      clusterTopology: {{ index .Values "providers" "bootstrapRKE2" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapRKE2" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.bootstrapRKE2.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if or (index .Values "providers" "bootstrapRKE2" "credentials") }}
+  credentials:
+    name: {{ index .Values "providers" "bootstrapRKE2" "credentials" "name" }}
+    namespace: {{ index .Values "providers" "bootstrapRKE2" "credentials" "namespace" }}
+{{- end }}
+{{- if or (index .Values "providers" "bootstrapRKE2" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "bootstrapRKE2" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "bootstrapRKE2" "configSecret" "namespace" }}
+{{- end }}
+{{- if index .Values "providers" "bootstrapRKE2" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "bootstrapRKE2" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "bootstrapRKE2" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "bootstrapRKE2" "fetchConfig" "url" }}
+    oci: {{ index .Values "providers" "bootstrapRKE2" "fetchConfig" "url" }}
+    {{- end }}
+{{- end }}
+{{- end }}
