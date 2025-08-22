@@ -215,8 +215,7 @@ EOF
           --wait \
           --timeout 5m \
           --set credentials.apiKey=$NGROK_API_KEY \
-          --set credentials.authtoken=$NGROK_AUTHTOKEN \
-          --version v0.18.1
+          --set credentials.authtoken=$NGROK_AUTHTOKEN
         INGRESS_CLASS="ngrok"
     else 
         show_step "Install Ingress NGINX controller on ${RANCHER_CLUSTER_NAME}"

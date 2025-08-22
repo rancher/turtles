@@ -56,8 +56,7 @@ helm upgrade ngrok ngrok/ngrok-operator \
     --wait \
     --timeout 5m \
     --set credentials.apiKey=$NGROK_API_KEY \
-    --set credentials.authtoken=$NGROK_AUTHTOKEN \
-    --version v0.18.1
+    --set credentials.authtoken=$NGROK_AUTHTOKEN
 
 helm install rancher rancher-latest/rancher \
     --namespace cattle-system \
