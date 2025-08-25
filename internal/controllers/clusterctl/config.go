@@ -24,8 +24,6 @@ import (
 	"slices"
 	"strings"
 
-	_ "embed"
-
 	"github.com/blang/semver/v4"
 	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -37,9 +35,6 @@ import (
 )
 
 var (
-	//go:embed config.yaml
-	configDefault []byte
-
 	config *corev1.ConfigMap
 )
 
