@@ -28,6 +28,9 @@ const (
 
 	// UIPlugin if enabled Turtles will install and manage UIPlugin resource for CAPI UI.
 	UIPlugin featuregate.Feature = "ui-plugin"
+
+	// UninstallCertManager if enabled Turtles will remove cert-manager, including Certificate and Issuer.
+	UninstallCertManager featuregate.Feature = "uninstall-cert-manager"
 )
 
 func init() {
@@ -35,6 +38,7 @@ func init() {
 }
 
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AgentTLSMode: {Default: true, PreRelease: featuregate.Beta},
-	UIPlugin:     {Default: false, PreRelease: featuregate.Alpha},
+	AgentTLSMode:         {Default: true, PreRelease: featuregate.Beta},
+	UIPlugin:             {Default: false, PreRelease: featuregate.Alpha},
+	UninstallCertManager: {Default: false, PreRelease: featuregate.Alpha},
 }
