@@ -18,6 +18,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,8 +28,11 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/gomega"
@@ -109,4 +113,70 @@ func VerifyCustomResourceHasBeenRemoved(ctx context.Context, input VerifyCustomR
 	err := input.Lister.List(ctx, list, &client.ListOptions{})
 	Expect(err).NotTo(HaveOccurred(), "Failed to list custom resource %q: %v", input.GroupVersionKind.String(), err)
 	Expect(list.Items).To(BeEmpty(), "Custom resource %q should have been removed, but found %d items", input.GroupVersionKind.String(), len(list.Items))
+}
+
+type VerifyClusterInput struct {
+	capiframework.GetLister
+	Name, Namespace string
+}
+
+func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
+	Consistently(func() error {
+		cluster := &clusterv1.Cluster{}
+		key := types.NamespacedName{
+			Name:      input.Name,
+			Namespace: input.Namespace,
+		}
+
+		Byf("Verifying cluster %s is ready", key.String())
+		if err := input.GetLister.Get(ctx, key, cluster); err != nil {
+			return fmt.Errorf("failed to get cluster %s: %w", key.String(), err)
+		}
+		if cluster.Status.ControlPlaneReady == false {
+			return fmt.Errorf("cluster %s does not have a ControlPlaneReady status", key.String())
+		}
+		if cluster.Status.InfrastructureReady == false {
+			return fmt.Errorf("cluster %s does not have an InfrastructureReady status", key.String())
+		}
+
+		readyCondition := conditions.Get(cluster, clusterv1.ReadyCondition)
+		if readyCondition == nil {
+			return fmt.Errorf("cluster %s does not have a Ready condition", key.String())
+		}
+		if readyCondition.Status != corev1.ConditionTrue {
+			return fmt.Errorf("cluster %s Ready condition is not true: %s", key.String(), readyCondition.Message)
+		}
+
+		machineList := &clusterv1.MachineList{}
+		if err := input.GetLister.List(ctx, machineList, client.InNamespace(input.Namespace),
+			client.MatchingLabels{
+				clusterv1.ClusterNameLabel: input.Name,
+			}); err != nil {
+			return fmt.Errorf("failed to list machines for cluster %s: %w", key.String(), err)
+		}
+		if len(machineList.Items) == 0 {
+			return fmt.Errorf("no machines found for cluster %s", key.String())
+		}
+
+		for _, machine := range machineList.Items {
+			readyConditionFound := false
+			for _, condition := range machine.Status.Conditions {
+				if condition.Type == clusterv1.ReadyCondition {
+					readyConditionFound = true
+					if condition.Status != corev1.ConditionTrue {
+						return fmt.Errorf("machine %s Ready condition is not true: %s", machine.Name, condition.Message)
+					}
+					if condition.Message != "" {
+						return fmt.Errorf("machine %s Ready condition has a non-empty message: %s", machine.Name, condition.Message)
+					}
+					break
+				}
+			}
+			if !readyConditionFound {
+				return fmt.Errorf("machine %s does not have a Ready condition", machine.Name)
+			}
+		}
+
+		return nil
+	}, "5m", "10s").Should(Succeed(), "Failed to verify cluster")
 }
