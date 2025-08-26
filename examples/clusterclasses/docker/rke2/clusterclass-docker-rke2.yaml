@@ -43,6 +43,12 @@ spec:
       schema:
         openAPIV3Schema:
           type: string
+    - name: dockerAuthSecret
+      required: false
+      schema:
+        openAPIV3Schema:
+          description: The name of the secret containing docker.io credentials.
+          type: string
   patches:
     - name: rke2CNI
       definitions:
@@ -71,6 +77,43 @@ spec:
               path: /spec/template/spec/customImage
               valueFrom: 
                 variable: dockerImage
+    - name: dockerAuthSecret
+      definitions:
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/privateRegistriesConfig/configs
+              valueFrom:
+                template: |-
+                   {{- if .dockerAuthSecret }}
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
+                    {{- end }}
+        - selector:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/privateRegistriesConfig/configs
+              valueFrom:
+                template: |-
+                  {{- if .dockerAuthSecret }}
+                  "registry-1.docker.io":
+                    authSecret:
+                      name: {{ .dockerAuthSecret }}
+                      namespace: {{ .builtin.cluster.namespace }}
+                  {{- end }}
+
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerClusterTemplate
