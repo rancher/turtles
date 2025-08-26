@@ -54,7 +54,7 @@ make test-e2e
 This will consequently:
 1. Build a docker image with the current repository code using `docker-build` Makefile target.
 2. Generate a test release chart containing docker image tag built in the previous step
-3. Install all prerequisite dependencies, like `helm`, `kubectl>=v1.30.0`, download `cluster-api-operator` helm release file from pre-specified URL.
+3. Install all prerequisite dependencies, like `helm`, `kubectl>=v1.31.0`, download `cluster-api-operator` helm release file from pre-specified URL.
 4. Create the test cluster, run the test suite, cleanup all test resourses.
 5. Collect the [artifacts](#artifacts)
 
@@ -115,7 +115,7 @@ The config is located in `test/e2e/config/operator.yaml`.
 Most notable ones:
 ```yaml
 variables:
-  RANCHER_VERSION: "v2.11.0" # Default rancher version to install
+  RANCHER_VERSION: "v2.12.1-alpha1" # Default rancher version to install
   RANCHER_HOSTNAME: "localhost" # Your ngrok domain
   NGROK_API_KEY: "" # Key and token values for establishing ingress
   NGROK_AUTHTOKEN: ""

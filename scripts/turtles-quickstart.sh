@@ -17,7 +17,7 @@
 # Exit if a command fails
 set -e
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.11.3}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.12.1-alpha1}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 RANCHER_CLUSTER_NAME=${RANCHER_CLUSTER_NAME:-rancher-cluster}
 RANCHER_TURTLES_VERSION=${RANCHER_TURTLES_VERSION:-v0.22.0}
@@ -415,7 +415,7 @@ EOF
     export NAMESPACE=capi-clusters
     export CONTROL_PLANE_MACHINE_COUNT=1
     export WORKER_MACHINE_COUNT=1
-    export KUBERNETES_VERSION=v1.30.4
+    export KUBERNETES_VERSION=v1.31.4
 
     curl -s https://raw.githubusercontent.com/rancher/turtles/refs/heads/main/test/e2e/data/cluster-templates/docker-kubeadm.yaml | envsubst > ${CONFIG_DIR}/${CAPI_CLUSTER_NAME}.yaml
 
