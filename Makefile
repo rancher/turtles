@@ -32,9 +32,11 @@ else
 UPDATECLI_OS = Darwin
 endif
 
-GO_VERSION ?= 1.24.4
+GO_VERSION ?= $(shell grep "go " go.mod | head -1 |awk '{print $$NF}')
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
+
+CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -179,9 +181,9 @@ IID_FILE ?= $(shell mktemp)
 
 # Release
 # Exclude tags with the prefix 'test/'
-RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'test/*' 2>/dev/null)
+RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'examples/*' --exclude 'test/*' 2>/dev/null)
 # Exclude the current RELEASE_TAG and any tags with the prefix 'test/'
-PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'test/*' 2>/dev/null)
+PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'examples/*' --exclude 'test/*' 2>/dev/null)
 HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
 CHART_DIR := charts/rancher-turtles
 PROVIDERS_CHART_DIR := charts/rancher-turtles-providers
@@ -512,7 +514,7 @@ $(GOLANGCI_LINT): # Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOLANGCI_LINT_PKG) $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
 $(NOTES): # Download and install note generator from cluster-api commit
-	hack/make-release-notes.sh $(TOOLS_BIN_DIR)
+	hack/make-release-notes.sh $(TOOLS_BIN_DIR) $(CAPI_VERSION)
 
 $(GH): # Download GitHub cli into the tools bin folder
 	hack/ensure-gh.sh \
@@ -590,7 +592,7 @@ build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(C
 
 .PHONY: release-chart
 release-chart: $(HELM) $(NOTES) build-chart verify-gen
-	$(NOTES) --repository $(REPO) -workers=1 -add-kubernetes-version-support=false --from=$(PREVIOUS_TAG) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
+	$(NOTES) --repository $(REPO) -add-kubernetes-version-support=false -from=tags/$(PREVIOUS_TAG) -release=$(RELEASE_TAG) -branch=main > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 
