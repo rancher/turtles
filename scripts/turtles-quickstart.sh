@@ -17,6 +17,7 @@
 # Exit if a command fails
 set -e
 
+RANCHER_CHANNEL=${RANCHER_CHANNEL:-alpha}
 RANCHER_VERSION=${RANCHER_VERSION:-v2.12.1-alpha1}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 RANCHER_CLUSTER_NAME=${RANCHER_CLUSTER_NAME:-rancher-cluster}
@@ -243,9 +244,9 @@ EOF
     docker pull $RANCHER_IMAGE
     kind load docker-image $RANCHER_IMAGE --name $RANCHER_CLUSTER_NAME
 
-    helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+    helm repo add rancher-$RANCHER_CHANNEL https://releases.rancher.com/server-charts/$RANCHER_CHANNEL
     helm repo update
-    helm install rancher rancher-latest/rancher \
+    helm install rancher rancher-$RANCHER_CHANNEL/rancher \
         --namespace cattle-system \
         --create-namespace \
         --set bootstrapPassword="$RANCHER_PASSWORD" \
