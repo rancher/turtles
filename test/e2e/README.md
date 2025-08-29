@@ -47,16 +47,29 @@ For example in VSCode `settings.json`:
 ### Running the tests
 
 From the project root directory:
+
 ```bash
 make test-e2e
 ```
 
 This will consequently:
+
+1. Install all prerequisite dependencies, like `helm`, `kustomize`, `controller-gen`.
 1. Build a docker image with the current repository code using `docker-build` Makefile target.
-2. Generate a test release chart containing docker image tag built in the previous step
-3. Install all prerequisite dependencies, like `helm`, `kubectl>=v1.31.0`, download `cluster-api-operator` helm release file from pre-specified URL.
-4. Create the test cluster, run the test suite, cleanup all test resourses.
-5. Collect the [artifacts](#artifacts)
+1. Generate a test release chart containing docker image tag built in the previous step
+1. Create the test cluster, run the test suite, cleanup all test resourses.
+1. Collect the [artifacts](#artifacts)
+
+### Running the short e2e tests
+
+Tests tagged with the `short` label are verified for any submitted Pull Requests as a minimum requirement.
+These tests can be ran locally:
+
+```bash
+MANAGEMENT_CLUSTER_ENVIRONMENT=isolated-kind TAG=v0.0.1 GINKGO_LABEL_FILTER=short SOURCE_REPO=https://github.com/your-organization/turtles GITHUB_HEAD_REF=your_feature_branch make test-e2e
+```
+
+Note that `SOURCE_REPO` needs to point to your forked repository, and `GITHUB_HEAD_REF` to your feature branch where commits have been pushed already.  
 
 ### Running vSphere e2e tests locally
 
@@ -68,27 +81,27 @@ This will consequently:
   You can obtain these values from a team common credentials shared location. Also, they can be fetched by accessing the vcenter
   URL and following the steps described on the table below:
 
-| Name                       | Details                                                                                       | How to get                                                                     
-| -------------------------- | ----------------------------------------------------------------------------------------------| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| VSPHERE_TLS_THUMBPRINT     | sha1 thumbprint of the vcenter certificate: openssl x509 -sha1 -fingerprint -in ca.crt -noout | browse to vcenter URL and check sha-1 fingerprint in the SSL certificate |
-| VSPHERE_SERVER             | The vCenter server IP or FQDN | once logged in vSphere Client, click on second icon from left to right on top left and select vcenter name (top level name in the folders tree) |
-| VSPHERE_DATACENTER         | The vSphere datacenter to deploy the management cluster on | `vcenter` name => select `Datacenters` |
-| VSPHERE_DATASTORE          | The vSphere datastore to deploy the management cluster on  | `vcenter` name => `Datacenter` name => select `Datastores` |
-| VSPHERE_FOLDER             | The VM folder for your VMs. Set to "" to use the root vSphere folder | Inventory => Folder =>`vcenter` name => `Datacenter` name =>  select folder |
-| VSPHERE_TEMPLATE           | The VM template to use for your management cluster | `vcenter` name => `Datacenter` name => `VMs` => select `VM Templates` |
-| VSPHERE_NETWORK            | The VM network to deploy the management cluster on | Inventory => Network => `vcenter` name => `Datacenter` name => `Switch` name => select distributed port group |
-| VSPHERE_RESOURCE_POOL      | The resource pool to assign to any VMs created | Inventory => Resource pool => `vcenter` name => `Datacenter` name => `Cluster` name => select resource pool |
-| VSPHERE_PASSWORD           | The password used to access the remote vSphere endpoint | reach out to team lead |
-| VSPHERE_USERNAME           | The username used to access the remote vSphere endpoint | reach out to team lead |
-| VSPHERE_SSH_AUTHORIZED_KEY | The public ssh authorized key on all machines in this cluster | can be left empty |
-| VSPHERE_KUBE_VIP_IP_KUBEADM  | The IP that kube-vip is going to use as a control plane endpoint | `vcenter` name => `Datacenter` name => `Hosts & Clusters` => `Hosts` => select `host IP` and right click => `Settings` => `Networking` => `Virtual Switches` => click on three dots of `host IP` => `View Settings` => `IPv4 settings` => `Subnet mask`. i.e host IP is 10.10.10.20 and subnet mask is 255.255.255.0, the last IP address of the subnet which is 10.10.10.255 can be used |
-| VSPHERE_KUBE_VIP_IP_RKE2  | The IP that kube-vip is going to use as a control plane endpoint | `vcenter` name => `Datacenter` name => `Hosts & Clusters` => `Hosts` => select `host IP` and right click => `Settings` => `Networking` => `Virtual Switches` => click on three dots of `host IP` => `View Settings` => `IPv4 settings` => `Subnet mask`. i.e host IP is 10.10.10.20 and subnet mask is 255.255.255.0, the last IP address of the subnet which is 10.10.10.255 can be used |
-| CPI_IMAGE_K8S_VERSION      | The version of the vSphere CPI image to be used by the CPI workloads. | Keep this close to the minimum Kubernetes version of the cluster being created. |
-| EXP_CLUSTER_RESOURCE_SET   | This enables the ClusterResourceSet feature that we are using to deploy CSI | default: true |
-| GOVC_URL                   | The URL of ESXi or vCenter instance to connect to | in the form of `https://<VSPHERE_SERVER>` |
-| GOVC_USERNAME              | The username to use if not specified in `GOVC_URL` |  equivalent of `VSPHERE_USERNAME` |
-| GOVC_PASSWORD              | The password to use if not specified in `GOVC_URL` |  equivalent of `VSPHERE_PASSWORD` |
-| GOVC_INSECURE              | Disable certificate verification | default: true |
+| Name                       | Details                                                                                       | How to get
+| -------------------------- | ----------------------------------------------------------------------------------------------| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| VSPHERE_TLS_THUMBPRINT     | sha1 thumbprint of the vcenter certificate: openssl x509 -sha1 -fingerprint -in ca.crt -noout | browse to vcenter URL and check sha-1 fingerprint in the SSL certificate
+| VSPHERE_SERVER             | The vCenter server IP or FQDN | once logged in vSphere Client, click on second icon from left to right on top left and select vcenter name (top level name in the folders tree)
+| VSPHERE_DATACENTER         | The vSphere datacenter to deploy the management cluster on | `vcenter` name => select `Datacenters`
+| VSPHERE_DATASTORE          | The vSphere datastore to deploy the management cluster on  | `vcenter` name => `Datacenter` name => select `Datastores`
+| VSPHERE_FOLDER             | The VM folder for your VMs. Set to "" to use the root vSphere folder | Inventory => Folder =>`vcenter` name => `Datacenter` name =>  select folder
+| VSPHERE_TEMPLATE           | The VM template to use for your management cluster | `vcenter` name => `Datacenter` name => `VMs` => select `VM Templates`
+| VSPHERE_NETWORK            | The VM network to deploy the management cluster on | Inventory => Network => `vcenter` name => `Datacenter` name => `Switch` name => select distributed port group
+| VSPHERE_RESOURCE_POOL      | The resource pool to assign to any VMs created | Inventory => Resource pool => `vcenter` name => `Datacenter` name => `Cluster` name => select resource pool
+| VSPHERE_PASSWORD           | The password used to access the remote vSphere endpoint | reach out to team lead
+| VSPHERE_USERNAME           | The username used to access the remote vSphere endpoint | reach out to team lead
+| VSPHERE_SSH_AUTHORIZED_KEY | The public ssh authorized key on all machines in this cluster | can be left empty
+| VSPHERE_KUBE_VIP_IP_KUBEADM  | The IP that kube-vip is going to use as a control plane endpoint | `vcenter` name => `Datacenter` name => `Hosts & Clusters` => `Hosts` => select `host IP` and right click => `Settings` => `Networking` => `Virtual Switches` => click on three dots of `host IP` => `View Settings` => `IPv4 settings` => `Subnet mask`. i.e host IP is 10.10.10.20 and subnet mask is 255.255.255.0, the last IP address of the subnet which is 10.10.10.255 can be used
+| VSPHERE_KUBE_VIP_IP_RKE2  | The IP that kube-vip is going to use as a control plane endpoint | `vcenter` name => `Datacenter` name => `Hosts & Clusters` => `Hosts` => select `host IP` and right click => `Settings` => `Networking` => `Virtual Switches` => click on three dots of `host IP` => `View Settings` => `IPv4 settings` => `Subnet mask`. i.e host IP is 10.10.10.20 and subnet mask is 255.255.255.0, the last IP address of the subnet which is 10.10.10.255 can be used
+| CPI_IMAGE_K8S_VERSION      | The version of the vSphere CPI image to be used by the CPI workloads. | Keep this close to the minimum Kubernetes version of the cluster being created.
+| EXP_CLUSTER_RESOURCE_SET   | This enables the ClusterResourceSet feature that we are using to deploy CSI | default: true
+| GOVC_URL                   | The URL of ESXi or vCenter instance to connect to | in the form of `https://<VSPHERE_SERVER>`
+| GOVC_USERNAME              | The username to use if not specified in `GOVC_URL` |  equivalent of `VSPHERE_USERNAME`
+| GOVC_PASSWORD              | The password to use if not specified in `GOVC_URL` |  equivalent of `VSPHERE_PASSWORD`
+| GOVC_INSECURE              | Disable certificate verification | default: true
 
 #### Running the tests
 
@@ -113,6 +126,7 @@ The config is located in `test/e2e/config/operator.yaml`.
 `variables` section provides the default values for all missing environment variables used by test suite with the same name.
 
 Most notable ones:
+
 ```yaml
 variables:
   RANCHER_VERSION: "v2.12.1-alpha1" # Default rancher version to install
@@ -161,7 +175,7 @@ While all the tests are based on the combination of [ginkgo](https://github.com/
 
 ### Kind
 
-[Kind](https://kind.sigs.k8s.io/) is used to set up a cluster for e2e tests. All required components like rancher, rancher-turtles and [cluster-api-operator](https://github.com/kubernetes-sigs/cluster-api-operator) (which provisions cluster-api with required providers) are installed using [helm](https://kind.sigs.k8s.io/) charts. This option can be enabled by setting `MANAGEMENT_CLUSTER_ENVIRONMENT` to `kind`. It's also required to set `NGROK_API_KEY`, `NGROK_AUTHTOKEN` and `RANCHER_HOSTNAME` environment variables.
+[Kind](https://kind.sigs.k8s.io/) is used to set up a cluster for e2e tests. All required components like rancher and rancher-turtles are installed using [helm](https://helm.sh/docs) charts. This option can be enabled by setting `MANAGEMENT_CLUSTER_ENVIRONMENT` to `kind`. It's also required to set `NGROK_API_KEY`, `NGROK_AUTHTOKEN` and `RANCHER_HOSTNAME` environment variables.
 
 ### Isolated Kind
 
@@ -182,15 +196,17 @@ Import of the resources could be found in `test/e2e/helpers.go`.
 Artifacts are located under `./_artifacts` directory and is the default location for the stored logs from both workload and child cluster pods collected after each run.
 
 ## Cluster and resource cleanup
+
 There are 2 environment variables used to handle cluster cleanup:
+
 1. SKIP_RESOURCE_CLEANUP - Used to decide if management cluster, and supporting charts such as rancher turtles and gitea should be deleted or retained
 2. SKIP_DELETION_TEST - Used to decide if the cluster created during test should be deleted or retained
 
 The following table can help decide how the variables should be used:
 
 | input.SkipDeletionTest | input.SkipCleanup | RancherTurtles & Gitea Charts | Git repo & cluster | Management Cluster |
-|--------|--------|-------------------------------|--------|--------|
-| true | true | no delete                     | no delete | no delete |
-| true | false | delete                        | delete | delete |
-| false | true | no delete                     | delete | no delete |
-| false | false | delete                        | delete | delete |
+|--------|--------|-------------------------------|--------|--------
+| true | true | no delete                     | no delete | no delete
+| true | false | delete                        | delete | delete
+| false | true | no delete                     | delete | no delete
+| false | false | delete                        | delete | delete
