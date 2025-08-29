@@ -192,7 +192,7 @@ spec:
             value: 726f86e0-b3bc-41f1-9757-8a0ee24560f4
           - name: CATTLE_INGRESS_IP_DOMAIN
             value: sslip.io
-          image: rancher/rancher-agent:v2.12.1-alpha1
+          image: rancher/rancher-agent:v2.12.1
           volumeMounts:
           - name: cattle-credentials
             mountPath: /cattle-credentials
