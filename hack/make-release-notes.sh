@@ -19,13 +19,13 @@ set -o errexit
 set -o pipefail
 
 TOOLS_FOLDER=${1:-hack/tools/bin}
+CAPI_VERSION=${2}
 
 mkdir $TOOLS_FOLDER/cluster-api
 cd $TOOLS_FOLDER/cluster-api
 git init
 git remote add origin https://github.com/kubernetes-sigs/cluster-api.git 
-git fetch --depth 1 origin ce045ad2cddf21738799fcc310e847709b8ee41e
-git checkout FETCH_HEAD -- hack/tools/release/notes.go
-go build hack/tools/release/notes.go 
-mv notes $TOOLS_FOLDER
+git fetch --depth 1 origin tag $CAPI_VERSION
+git checkout FETCH_HEAD -- hack/tools
+go build -C hack/tools -o $TOOLS_FOLDER/notes -tags tools sigs.k8s.io/cluster-api/hack/tools/release/notes
 cd - && rm -rf $TOOLS_FOLDER/cluster-api
