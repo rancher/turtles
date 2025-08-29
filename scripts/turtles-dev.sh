@@ -22,7 +22,9 @@ if [ -z "$RANCHER_HOSTNAME" ]; then
     exit 1
 fi
 
-RANCHER_VERSION=${RANCHER_VERSION:-v2.12.1-alpha1}
+RANCHER_CHANNEL=${RANCHER_CHANNEL:-latest}
+RANCHER_PASSWORD=${RANCHER_PASSWORD:-rancheradmin}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.12.1}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 DAY2_CONTROLLER_IMAGE=${DAY2_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
@@ -39,7 +41,7 @@ kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME
 
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
-helm repo add rancher-latest https://releases.rancher.com/server-charts/latest --force-update
+helm repo add rancher-$RANCHER_CHANNEL https://releases.rancher.com/server-charts/$RANCHER_CHANNEL --force-update
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo add ngrok https://charts.ngrok.com --force-update
 helm repo update
@@ -58,10 +60,10 @@ helm upgrade ngrok ngrok/ngrok-operator \
     --set credentials.apiKey=$NGROK_API_KEY \
     --set credentials.authtoken=$NGROK_AUTHTOKEN
 
-helm install rancher rancher-latest/rancher \
+helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --namespace cattle-system \
     --create-namespace \
-    --set bootstrapPassword=rancheradmin \
+    --set bootstrapPassword=$RANCHER_PASSWORD \
     --set replicas=1 \
     --set hostname="$RANCHER_HOSTNAME" \
     --version="$RANCHER_VERSION" \
