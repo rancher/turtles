@@ -53,7 +53,7 @@ var _ = Describe("ClusterConfig Tests", func() {
 		Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
 
 		// Override the configDefault variable to provide custom data for the test
-		configDefault = []byte(`
+		configDefault := []byte(`
 data:
   clusterctl.yaml: |
     providers:

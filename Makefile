@@ -170,6 +170,7 @@ NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 # Registry / images
 TAG ?= dev
 ARCH ?= linux/$(shell go env GOARCH)
+TARGET_BUILD ?= default
 TARGET_PLATFORMS := linux/amd64,linux/arm64
 MACHINE := rancher-turtles
 REGISTRY ?= ghcr.io
@@ -309,7 +310,7 @@ fmt: ## Run go fmt against code.
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	go vet -tags $(TARGET_BUILD) ./...
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ## Lint the codebase
@@ -348,7 +349,7 @@ test-exp-clusterclass: $(SETUP_ENVTEST) ## Run tests for experimental clustercla
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -tags $(TARGET_BUILD) -o bin/manager main.go
 
 .PHONY: run
 run: generate fmt vet ## Run a controller from your host.
