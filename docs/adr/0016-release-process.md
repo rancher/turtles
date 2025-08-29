@@ -30,8 +30,8 @@ Currently, the release process is fairly simple:
 
 For the intermediate phase:
 - the existing release process will continue to be used on a monthly basis as is
-- a new release process will be introduced which should allow differentiation of community vs Prime builds (via Go build tags)
-- the new release process should build be able to build both types of images on demand but not push them to any Prime registry yet
+- a new release process will be introduced which should allow differentiation of community vs Prime builds
+- the release process for this phase should be able to build both types of images on demand but not push them to any Prime registry yet
 
 For the final phase:
 - Turtles is released with Rancher
