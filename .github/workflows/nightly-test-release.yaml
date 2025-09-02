@@ -6,81 +6,37 @@ on:
   workflow_dispatch: # Allow running manually on demand
 
 env:
-  RELEASE_TAG: t9.9.9-fake
+  RELEASE_TAG: v9.9.9-fake
   GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
 jobs:
   nightly-test-release:
-    name: Tag current version for testing
+    name: Test release
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ main, release-0.23]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: main
+          ref: ${{ matrix.branch }}
           fetch-depth: 0
-      - name: Set and push fake tag for release
+      - name: Set env
+        run:  echo "RELEASE_TAG=v9.9.9-fake" >> $GITHUB_ENV
+      - name: Set fake tag for release
         run: |
           git tag ${{ env.RELEASE_TAG }}
-      - name: Push changes
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git push --tags
-
-  build-push-services:
-    name: Build, sign and provenance
-    needs: [nightly-test-release]
-    permissions:
-      actions: read
-      contents: write
-      packages: write
-      id-token: write
-    strategy:
-      matrix:
-        destination: [ghcr]
-        include:
-        - destination: ghcr
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: GITHUB_TOKEN
-          image: GHCR_IMAGE
-          secret_registry: false
-    uses: ./.github/workflows/release.yml
-    with:
-      password: ${{ matrix.password }}
-      username: ${{ matrix.username }}
-      registry: ${{ matrix.registry }}
-      tag: t9.9.9-fake
-      image: ${{ matrix.image }}
-      secret_registry: ${{ matrix.secret_registry }}
-    secrets: inherit
-
-  release:
-    name: Create helm release
-    needs: [build-push-services]
-    runs-on: ubuntu-latest
-    env:
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
-      PROD_ORG: rancher
-      RELEASE_DIR: .cr-release-packages
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ env.RELEASE_TAG }}
-          fetch-depth: 0
       - name: setupGo
         uses: actions/setup-go@v5.5.0
         with:
           go-version-file: go.mod
-      - name: Package operator chart
-        run: RELEASE_TAG=${{ env.RELEASE_TAG }} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
-
+      - name: Test release
+        run: |
+          make release
   notify-failure:
     name: Notify failure in Slack
-    needs: [release]
+    needs: [nightly-test-release]
     if: ${{ failure() || cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -110,21 +66,3 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-
-  clean-up:
-    name: Release testing clean up
-    needs: [release]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - name: Delete nigtly tag and push
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git tag -d ${{ env.RELEASE_TAG }}
-          git push origin --delete ${{ env.RELEASE_TAG }}

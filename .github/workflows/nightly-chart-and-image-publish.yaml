@@ -7,6 +7,8 @@ on:
 
 env:
   TAG: v0.0.0-${{ github.sha }}
+  RELEASE_TAG: v0.0.0-${{ github.sha }}
+  CONTROLLER_IMAGE_VERSION: v0.0.0-${{ github.sha }}
   GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   REGISTRY: ghcr.io
   PROD_ORG: rancher
@@ -44,13 +46,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.ref }}
+          fetch-depth: 0
       - name: Install Helm
         uses: Azure/setup-helm@v4
         with:
           version: 3.8.0
       - name: Build Helm chart
-        run: make release-chart RELEASE_TAG=${{ env.TAG }} CONTROLLER_IMAGE_VERSION=${{ env.TAG }} 
+        run: make release-chart
       - name: Login to ghcr.io using Helm
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io --username ${{ github.repository_owner }} --password-stdin
