@@ -1,9 +1,11 @@
 {{- if index .Values "providers" "addonFleet" "enabled" }}
+{{- if ne (index .Values "providers" "addonFleet" "namespace") .Release.Namespace }}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ index .Values "providers" "addonFleet" "namespace" }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -78,15 +80,19 @@ spec:
 {{- end }}
 {{- if index .Values  "providers" "addonFleet" "features" }}
   features:
-      machinePool: {{ index .Values "providers" "addonFleet" "features" "machinePool" }}
-      clusterResourceSet: {{ index .Values "providers" "addonFleet" "features" "clusterResourceSet" }}
-      clusterTopology: {{ index .Values "providers" "addonFleet" "features" "clusterTopology" }}
+    machinePool: {{ index .Values "providers" "addonFleet" "features" "machinePool" }}
+    clusterResourceSet: {{ index .Values "providers" "addonFleet" "features" "clusterResourceSet" }}
+    clusterTopology: {{ index .Values "providers" "addonFleet" "features" "clusterTopology" }}
 {{- end }}
 {{- if index .Values  "providers" "addonFleet" "variables" }}
   variables:
   {{- range $key, $val := .Values.providers.addonFleet.variables }}
     {{ $key }}: "{{ $val }}"
   {{- end }}
+{{- end }}
+{{- if index .Values  "providers" "addonFleet" "manager" }}
+  manager:
+{{ toYaml (index .Values "providers" "addonFleet" "manager") | nindent 4 }}
 {{- end }}
 {{- if or (index .Values "providers" "addonFleet" "credentials") }}
   credentials:
@@ -103,8 +109,8 @@ spec:
     {{- if index .Values "providers" "addonFleet" "fetchConfig" "url" }}
     url: {{ index .Values "providers" "addonFleet" "fetchConfig" "url" }}
     {{- end }}
-    {{- if index .Values "providers" "addonFleet" "fetchConfig" "url" }}
-    oci: {{ index .Values "providers" "addonFleet" "fetchConfig" "url" }}
+    {{- if index .Values "providers" "addonFleet" "fetchConfig" "oci" }}
+    oci: {{ index .Values "providers" "addonFleet" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
   additionalManifests:

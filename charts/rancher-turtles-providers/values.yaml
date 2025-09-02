@@ -12,6 +12,31 @@ providers:
     namespace: fleet-addon-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   KEY: "value"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # bootstrapKubeadm: Kubeadm Bootstrap Provider.
   bootstrapKubeadm:
     # enabled: Enables the installation of this provider.
@@ -20,6 +45,31 @@ providers:
     namespace: capi-kubeadm-bootstrap-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   KEY: "value"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # bootstrapRKE2: RKE2 Bootstrap Provider.
   bootstrapRKE2:
     # enabled: Enables the installation of this provider.
@@ -28,6 +78,31 @@ providers:
     namespace: rke2-bootstrap-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   KEY: "value"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # controlplaneKubeadm: Kubeadm Control Plane Provider.
   controlplaneKubeadm:
     # enabled: Enables the installation of this provider.
@@ -36,6 +111,31 @@ providers:
     namespace: capi-kubeadm-control-plane-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   KEY: "value"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # controlplaneRKE2: RKE2 Control Plane Provider.
   controlplaneRKE2:
     # enabled: Enables the installation of this provider.
@@ -44,6 +144,31 @@ providers:
     namespace: rke2-control-plane-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   KEY: "value"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # infrastructureAWS: AWS Infrastructure Provider (CAPA).
   infrastructureAWS:
     # enabled: Enables the installation of this provider.
@@ -52,9 +177,31 @@ providers:
     namespace: capa-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
     # variables: Configures the provider variables that are applied to the manifest.
     variables:
       AWS_B64ENCODED_CREDENTIALS: ""
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # infrastructureAzure: Azure Infrastructure Provider (CAPZ).
   infrastructureAzure:
     # enabled: Enables the installation of this provider.
@@ -63,9 +210,31 @@ providers:
     namespace: capz-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
     # variables: Configures the provider variables that are applied to the manifest.
     variables:
       EXP_AKS_RESOURCE_HEALTH: "true"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # infrastructureDocker: Docker Infrastructure Provider (CAPD).
   infrastructureDocker:
     # enabled: Enables the installation of this provider.
@@ -74,6 +243,31 @@ providers:
     namespace: capd-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   KEY: "value"
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # infrastructureGCP: GCP Infrastructure Provider (CAPG).
   infrastructureGCP:
     # enabled: Enables the installation of this provider.
@@ -82,10 +276,32 @@ providers:
     namespace: capg-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
     # variables: Configures the provider variables that are applied to the manifest.
     variables:
       EXP_CAPG_GKE: "true"
       GCP_B64ENCODED_CREDENTIALS: ""
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
   # infrastructureVSphere: vSphere Infrastructure Provider (CAPV).
   infrastructureVSphere:
     # enabled: Enables the installation of this provider.
@@ -94,7 +310,30 @@ providers:
     namespace: capv-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
+  # version: Optional provider version; if omitted, operator defaults will be used.
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
     # variables: Configures the provider variables that are applied to the manifest.
     variables:
       VSPHERE_USERNAME: ""
       VSPHERE_PASSWORD: ""
+  # credentials: Optional Secret reference containing credentials (name/namespace must exist).
+  # credentials:
+  #   name: ""
+  #   namespace: ""
+  # configSecret: Optional Secret reference with additional configuration (immutable by design).
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
+

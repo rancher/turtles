@@ -21,15 +21,19 @@ spec:
 {{- end }}
 {{- if index .Values  "providers" "bootstrapKubeadm" "features" }}
   features:
-      machinePool: {{ index .Values "providers" "bootstrapKubeadm" "features" "machinePool" }}
-      clusterResourceSet: {{ index .Values "providers" "bootstrapKubeadm" "features" "clusterResourceSet" }}
-      clusterTopology: {{ index .Values "providers" "bootstrapKubeadm" "features" "clusterTopology" }}
+    machinePool: {{ index .Values "providers" "bootstrapKubeadm" "features" "machinePool" }}
+    clusterResourceSet: {{ index .Values "providers" "bootstrapKubeadm" "features" "clusterResourceSet" }}
+    clusterTopology: {{ index .Values "providers" "bootstrapKubeadm" "features" "clusterTopology" }}
 {{- end }}
 {{- if index .Values  "providers" "bootstrapKubeadm" "variables" }}
   variables:
   {{- range $key, $val := .Values.providers.bootstrapKubeadm.variables }}
     {{ $key }}: "{{ $val }}"
   {{- end }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapKubeadm" "manager" }}
+  manager:
+{{ toYaml (index .Values "providers" "bootstrapKubeadm" "manager") | nindent 4 }}
 {{- end }}
 {{- if or (index .Values "providers" "bootstrapKubeadm" "credentials") }}
   credentials:
@@ -46,8 +50,8 @@ spec:
     {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
     url: {{ index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
     {{- end }}
-    {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
-    oci: {{ index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
+    {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" "oci" }}
+    oci: {{ index .Values "providers" "bootstrapKubeadm" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
 {{- end }}

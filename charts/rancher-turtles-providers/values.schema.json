@@ -22,11 +22,16 @@
           "type": "boolean",
           "description": "Allows the provider to be updated automatically whenever this chart is updated."
         },
+        "version": {
+          "type": "string",
+          "description": "Optional provider version; if omitted, operator defaults will be used."
+        },
         "credentials": {
           "type": "object",
           "description": "Rancher Cloud credentials configuration.",
           "required": [
-            "name"
+            "name",
+            "namespace"
           ],
           "properties": {
             "name": {
@@ -43,7 +48,8 @@
           "type": "object",
           "description": "Provider Secret configuration.",
           "required": [
-            "name"
+            "name",
+            "namespace"
           ],
           "properties": {
             "name": {
@@ -81,6 +87,16 @@
             "type": "string"
           }
         },
+        "manager": {
+          "type": "object",
+          "description": "Controller manager configuration for the provider.",
+          "properties": {
+            "syncPeriod": {
+              "type": "string",
+              "description": "Controller sync period duration, e.g. '5m'"
+            }
+          }
+        },
         "fetchConfig": {
           "type": "object",
           "description": "Configuration to fetch the provider manifests.",
@@ -91,7 +107,9 @@
                   "type": "string",
                   "description": "The URL to be used for fetching the provider components and metadata."
                 }
-              }
+              },
+              "additionalProperties": false,
+              "required": ["url"]
             },
             {
               "properties": {            
@@ -99,7 +117,9 @@
                   "type": "string",
                   "description": "OCI to be used for fetching the provider components and metadata."
                 }
-              }
+              },
+              "additionalProperties": false,
+              "required": ["oci"]
             } 
           ]
         }
@@ -122,6 +142,6 @@
         "infrastructureGCP": { "$ref": "#/$defs/providerSchema"},
         "infrastructureVSphere": { "$ref": "#/$defs/providerSchema"}
       }
-    }
+  }
   }
 }

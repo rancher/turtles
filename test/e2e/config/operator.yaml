@@ -95,6 +95,12 @@ variables:
   TURTLES_REPO_NAME: "turtles"
   TURTLES_URL: "https://rancher.github.io/turtles"
 
+  # Providers Chart
+  TURTLES_PROVIDERS: "ALL"
+  TURTLES_PROVIDERS_REPO_NAME: "turtles"
+  TURTLES_PROVIDERS_URL: "https://rancher.github.io/turtles"
+  TURTLES_PROVIDERS_PATH: "turtles/rancher-turtles-providers"
+
   # External Charts and Dependencies
   CERT_MANAGER_REPO_NAME: "jetstack"
   CERT_MANAGER_URL: "https://charts.jetstack.io"

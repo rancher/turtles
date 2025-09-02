@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"github.com/rancher/turtles/test/e2e"
@@ -34,6 +35,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
@@ -265,5 +269,36 @@ var _ = Describe("Chart upgrade functionality should work", Label(e2e.ShortTestL
 		})
 
 		testenv.UpgradeRancherTurtles(ctx, upgradeInput)
+
+		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			AdditionalValues: map[string]string{
+				// CAAPF and CAPRKE2 are enabled by default in the providers chart
+				"providers.bootstrapKubeadm.enabled":     "true",
+				"providers.controlplaneKubeadm.enabled":  "true",
+				"providers.infrastructureDocker.enabled": "true",
+				"providers.addonFleet.namespace":         e2e.RancherTurtlesNamespace,
+			},
+			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
+		})
+
+		By("Verifying providers chart adopted pre-existing CAPIProvider resources with Helm ownership")
+		verifyAdopted := func(name, namespace string) {
+			provider := &turtlesv1.CAPIProvider{}
+			key := types.NamespacedName{Name: name, Namespace: namespace}
+			Eventually(func(g Gomega) {
+				g.Expect(bootstrapClusterProxy.GetClient().Get(ctx, key, provider)).To(Succeed())
+				g.Expect(provider.GetLabels()).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "Helm"))
+				g.Expect(provider.GetAnnotations()).To(HaveKeyWithValue("meta.helm.sh/release-name", e2e.ProvidersChartName))
+				g.Expect(provider.GetAnnotations()).To(HaveKeyWithValue("meta.helm.sh/release-namespace", e2e.RancherTurtlesNamespace))
+			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).Should(Succeed(),
+				"CAPIProvider %s/%s should be adopted by Helm release %s in %s",
+				namespace, name, e2e.ProvidersChartName, e2e.RancherTurtlesNamespace,
+			)
+		}
+
+		verifyAdopted("fleet", e2e.RancherTurtlesNamespace)
+		verifyAdopted("rke2-bootstrap", "rke2-bootstrap-system")
+		verifyAdopted("rke2-control-plane", "rke2-control-plane-system")
 	})
 })
