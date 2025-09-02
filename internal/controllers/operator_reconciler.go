@@ -27,7 +27,10 @@ import (
 	"strconv"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"sigs.k8s.io/yaml"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
@@ -43,10 +47,13 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	configclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
+
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
 	"github.com/rancher/turtles/internal/sync"
 )
@@ -56,6 +63,11 @@ const (
 	configSecretNamespaceField = "spec.configSecret.namespace" //nolint:gosec
 	providerTypeField          = "spec.type"                   //nolint:gosec
 	providerNameField          = "spec.name"                   //nolint:gosec
+
+	certificateAnnotationKey       = "need-a-cert.cattle.io/secret-name"
+	certManagerInjectAnnotationKey = "cert-manager.io/inject-ca-from"
+
+	capiProviderLabel = "cluster.x-k8s.io/provider"
 
 	azureProvider = "azure"
 	gcpProvider   = "gcp"
@@ -128,12 +140,19 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		handler.EnqueueRequestsFromMapFunc(newCoreProviderToProviderFuncMapForProviderList(mgr.GetClient())),
 	)
 
+	customAlterFuncs := []repository.ComponentsAlterFn{}
+
+	if feature.Gates.Enabled(feature.NoCertManager) {
+		customAlterFuncs = append(customAlterFuncs, patchProviderManifestFn, removeCertManagerFn)
+	}
+
 	rec := controller.NewPhaseReconciler(
 		r.GenericProviderReconciler, r.Provider, r.ProviderList,
 		controller.WithProviderConverter(getProvider),
 		controller.WithProviderLister(r.listProviders),
 		controller.WithProviderMapper(r.getGenericProvider),
 		controller.WithProviderTypeMapper(toClusterctlType),
+		controller.WithCustomAlterComponentsFuncs(customAlterFuncs),
 	)
 
 	r.ReconcilePhases = []controller.PhaseFn{
@@ -152,6 +171,10 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		rec.ReportStatus,
 		r.setConditions,
 		rec.Finalize,
+	}
+
+	if feature.Gates.Enabled(feature.NoCertManager) {
+		r.ReconcilePhases = append(r.ReconcilePhases, r.purgeCertificateResources)
 	}
 
 	r.DeletePhases = []controller.PhaseFn{
@@ -308,6 +331,86 @@ func (r *CAPIProviderReconciler) setConditions(_ context.Context) (*controller.R
 	}
 
 	return &controller.Result{}, nil
+}
+
+func (r *CAPIProviderReconciler) purgeCertificateResources(ctx context.Context) (*controller.Result, error) {
+	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
+		return &controller.Result{}, purgeCertificateResources(ctx, r.Client, capiProvider)
+	}
+
+	return &controller.Result{}, nil
+}
+
+// patchProviderManifestFn is a function to patch the provider manifest that satisfies the type repository.ComponentsAlterFn.
+func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	var (
+		secretName string
+		serviceObj *unstructured.Unstructured
+	)
+
+	for i := range objs {
+		o := &objs[i]
+
+		var (
+			found bool
+			err   error
+		)
+
+		switch o.GetKind() {
+		case "Certificate":
+			secretName, found, err = unstructured.NestedString(o.Object, "spec", "secretName")
+			if err != nil {
+				return nil, err
+			}
+
+			if !found {
+				return nil, fmt.Errorf("secretName not found in Certificate spec for %s", o.GetName())
+			}
+		case "Service":
+			serviceObj = o
+		}
+
+		if secretName != "" && serviceObj != nil {
+			break
+		}
+	}
+
+	if secretName != "" && serviceObj != nil {
+		annotations := serviceObj.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+
+		annotations[certificateAnnotationKey] = secretName
+		serviceObj.SetAnnotations(annotations)
+	}
+
+	return objs, nil
+}
+
+// removeCertManagerFn is a function that satisfies the type repository.ComponentsAlterFn
+// to remove cert-manager dependencies from the provider manifest.
+func removeCertManagerFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	updatedObjs := []unstructured.Unstructured{}
+
+	for _, o := range objs {
+		annotations := o.GetAnnotations()
+
+		_, ok := annotations[certManagerInjectAnnotationKey]
+		if ok {
+			delete(annotations, certManagerInjectAnnotationKey)
+			o.SetAnnotations(annotations)
+		}
+
+		switch o.GetKind() {
+		case "Certificate", "Issuer":
+			continue
+		}
+
+		updatedObjs = append(updatedObjs, o)
+	}
+
+	return updatedObjs, nil
 }
 
 // setDefaultProviderSpec sets the default values for the provider spec.
@@ -549,6 +652,92 @@ func setConditions(provider *turtlesv1.CAPIProvider) {
 	default:
 		provider.SetPhase(turtlesv1.Provisioning)
 	}
+}
+
+// purgeCertificateResources will delete all Certificate and Issuer resources associated with a CAPI provider.
+func purgeCertificateResources(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
+	if conditions.IsTrue(provider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition) {
+		return nil
+	}
+
+	// select certificates/issuers found on provider namespace that include capi provider label.
+	listOpts := []client.ListOption{
+		client.InNamespace(provider.GetNamespace()),
+		client.HasLabels{capiProviderLabel},
+	}
+
+	certs := schema.GroupVersionKind{
+		Group:   "cert-manager.io",
+		Version: "v1",
+		Kind:    "Certificate",
+	}
+
+	certList := &unstructured.UnstructuredList{}
+	certList.SetGroupVersionKind(certs)
+
+	if err := cl.List(ctx, certList, listOpts...); err != nil {
+		return err
+	}
+
+	for _, cert := range certList.Items {
+		if err := cl.Delete(ctx, &cert); err != nil {
+			return err
+		}
+	}
+
+	issuers := schema.GroupVersionKind{
+		Group:   "cert-manager.io",
+		Version: "v1",
+		Kind:    "Issuer",
+	}
+
+	issuerList := &unstructured.UnstructuredList{}
+	issuerList.SetGroupVersionKind(issuers)
+
+	if err := cl.List(ctx, issuerList, listOpts...); err != nil {
+		return err
+	}
+
+	for _, issuer := range issuerList.Items {
+		if err := cl.Delete(ctx, &issuer); err != nil {
+			return err
+		}
+	}
+
+	return providerDeploymentRestart(ctx, cl, provider)
+}
+
+// providerDeploymentRestart will force a provider re-rollout by adding an annotation
+// to the provider deployment spec template. This will trigger the creation of a new provider controller pod.
+// It is used to restart a provider after removing cert-manager dependencies and resources from the manifest.
+func providerDeploymentRestart(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
+	deploymentList := &appsv1.DeploymentList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(provider.GetNamespace()),
+		client.HasLabels{capiProviderLabel},
+	}
+
+	if err := cl.List(ctx, deploymentList, listOpts...); err != nil {
+		return err
+	}
+
+	for _, deployment := range deploymentList.Items {
+		if deployment.Spec.Template.Annotations == nil {
+			deployment.Spec.Template.Annotations = map[string]string{}
+		}
+
+		deployment.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+
+		if err := cl.Update(ctx, &deployment); err != nil {
+			return err
+		}
+	}
+
+	conditions.Set(provider, conditions.TrueCondition(
+		turtlesv1.CAPIProviderWranglerManagedCertificatesCondition,
+	))
+
+	return nil
 }
 
 func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.Result, error) {

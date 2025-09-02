@@ -33,6 +33,9 @@ const (
 
 	// CheckLatestVersionTime is set as a timestamp info of the last timestamp of the latest version being up-to-date for the CAPIProvider.
 	CheckLatestVersionTime = "CheckLatestVersionTime"
+
+	// CAPIProviderWranglerManagedCertificatesCondition is the condittion used when provider certificates managed by wrangler.
+	CAPIProviderWranglerManagedCertificatesCondition clusterv1.ConditionType = "WranglerManagedCertificates"
 )
 
 const (
