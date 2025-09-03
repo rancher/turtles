@@ -77,7 +77,9 @@ var _ = SynchronizedBeforeSuite(
 
 		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			AdditionalValues:      map[string]string{},
+			AdditionalValues: map[string]string{
+				"rancherTurtles.features.no-cert-manager.enabled": "true", // enable no-cert-manager feature
+			},
 		})
 
 		data, err := json.Marshal(e2e.Setup{
