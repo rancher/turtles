@@ -16,13 +16,13 @@ jobs:
   publish_e2e_image:
     uses: ./.github/workflows/e2e-image-publish.yaml
     secrets: inherit
-  e2e_import_gitops_v3:
+  e2e_import_gitops:
     needs: publish_e2e_image
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
-      test_suite: test/e2e/suites/import-gitops-v3
-      test_name: Import via GitOps [v3]
-      artifact_name: import_gitops_v3
+      test_suite: test/e2e/suites/import-gitops
+      test_name: Import via GitOps
+      artifact_name: import_gitops
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_v2prov:

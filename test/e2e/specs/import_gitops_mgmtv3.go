@@ -52,7 +52,7 @@ import (
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 )
 
-type CreateMgmtV3UsingGitOpsSpecInput struct {
+type CreateUsingGitOpsSpecInput struct {
 	E2EConfig             *clusterctl.E2EConfig
 	BootstrapClusterProxy framework.ClusterProxy
 	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
@@ -96,12 +96,12 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 	AdditionalFleetGitRepos []turtlesframework.FleetCreateGitRepoInput
 }
 
-// CreateMgmtV3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
+// CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
 // automatically imports into Rancher Manager.
-func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateMgmtV3UsingGitOpsSpecInput) {
+func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGitOpsSpecInput) {
 	var (
 		specName              = "creategitops"
-		input                 CreateMgmtV3UsingGitOpsSpecInput
+		input                 CreateUsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		cancelWatches         context.CancelFunc
 		capiCluster           *types.NamespacedName
@@ -326,7 +326,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 
 			switch readyCondition.Status {
 			case corev1.ConditionTrue:
-				//Cluster is ready
+				// Cluster is ready
 				return nil
 			case corev1.ConditionFalse:
 				return fmt.Errorf("Cluster is not Ready")
