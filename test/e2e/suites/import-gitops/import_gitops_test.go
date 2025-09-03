@@ -17,24 +17,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package import_gitops_v3
+package import_gitops
 
 import (
 	"context"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
@@ -48,7 +41,7 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 		topologyNamespace = "creategitops-docker-kubeadm"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersOCIYAML: []testenv.OCIProvider{
@@ -60,11 +53,11 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 			WaitForDeployments: testenv.DefaultDeployments,
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIDockerKubeadmTopology,
-			ClusterName:                    "clusterv3-auto-import-kubeadm",
+			ClusterName:                    "cluster-docker-kubeadm",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
 			LabelNamespace:                 true,
@@ -104,7 +97,7 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 		topologyNamespace = "creategitops-docker-rke2"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersYAML: [][]byte{
@@ -113,11 +106,11 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 			WaitForDeployments: testenv.DefaultDeployments,
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
-			ClusterName:                    "clusterv3-auto-import-rke2",
+			ClusterName:                    "cluster-docker-rke2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
 			LabelNamespace:                 true,
@@ -157,7 +150,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 		topologyNamespace = "creategitops-azure-aks"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -173,11 +166,11 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 				},
 			},
 			CustomWaiter: []func(ctx context.Context){
-				azureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
+				e2e.AzureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
@@ -204,7 +197,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 	})
 })
 
-var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = Describe("[Azure] [Kubeadm] - Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -214,7 +207,7 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 		topologyNamespace = "creategitops-azure-kubeadm"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -231,11 +224,11 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 				},
 			}, testenv.DefaultDeployments...),
 			CustomWaiter: []func(ctx context.Context){
-				azureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
+				e2e.AzureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureKubeadmTopology,
@@ -278,7 +271,7 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 	})
 })
 
-var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
+var _ = Describe("[Azure] [RKE2] - Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -288,7 +281,7 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 		topologyNamespace = "creategitops-azure-rke2"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -304,11 +297,11 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 				},
 			},
 			CustomWaiter: []func(ctx context.Context){
-				azureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
+				e2e.AzureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAzureRKE2Topology,
@@ -354,7 +347,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 		komega.SetContext(ctx)
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -371,7 +364,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEKSMMP,
@@ -399,7 +392,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 		topologyNamespace = "creategitops-aws-kubeadm"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -417,7 +410,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			}, testenv.DefaultDeployments...),
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsKubeadmTopology,
@@ -476,7 +469,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 		topologyNamespace = "creategitops-aws-rke2"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -493,11 +486,11 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEC2RKE2Topology,
-			ClusterName:                    "cluster-ec2-rke2",
+			ClusterName:                    "cluster-aws-rke2",
 			ControlPlaneMachineCount:       ptr.To(1),
 			WorkerMachineCount:             ptr.To(1),
 			LabelNamespace:                 true,
@@ -548,7 +541,7 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 		topologyNamespace = "creategitops-gcp-kubeadm"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -566,7 +559,7 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 			}, testenv.DefaultDeployments...),
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIGCPKubeadmTopology,
@@ -611,7 +604,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 		komega.SetContext(ctx)
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersSecretsYAML: [][]byte{
@@ -628,7 +621,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIGCPGKE,
@@ -656,7 +649,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 		topologyNamespace = "creategitops-vsphere-kubeadm"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
@@ -676,7 +669,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			}, testenv.DefaultDeployments...),
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
@@ -731,7 +724,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 		topologyNamespace = "creategitops-vsphere-rke2"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
@@ -750,7 +743,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			},
 		})
 
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIvSphereRKE2Topology,
@@ -794,77 +787,3 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 		}
 	})
 })
-
-func azureServiceOperatorWaiter(bootstrapClusterProxy framework.ClusterProxy) func(ctx context.Context) {
-	return func(ctx context.Context) {
-		overallTimeout := 10 * time.Minute
-		pollInterval := 5 * time.Second
-		overallDeadline := time.Now().Add(overallTimeout)
-		podLabels := map[string]string{
-			"app.kubernetes.io/name": "azure-service-operator",
-			"control-plane":          "controller-manager",
-		}
-		lastPod := &corev1.Pod{}
-
-		for time.Now().Before(overallDeadline) {
-			var podList corev1.PodList
-			err := bootstrapClusterProxy.GetClient().List(ctx, &podList, &crclient.ListOptions{
-				Namespace:     "capz-system",
-				LabelSelector: labels.SelectorFromSet(podLabels),
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list azure-service-operator pods")
-
-			if len(podList.Items) == 0 {
-				By("Waiting for azure-service-operator pod to be created")
-				time.Sleep(pollInterval)
-				continue
-			}
-
-			pod := &podList.Items[0]
-			lastPod = pod
-
-			crashloop := false
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.State.Waiting != nil && cs.State.Waiting.Reason == "CrashLoopBackOff" {
-					crashloop = true
-					break
-				}
-			}
-			if crashloop {
-				By("Restarting azure-service-operator pod due to CrashLoopBackOff")
-				err := bootstrapClusterProxy.GetClient().Delete(ctx, pod)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete azure-service-operator pod for restart")
-				time.Sleep(pollInterval)
-				continue
-			}
-
-			ready := false
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.Ready {
-					ready = true
-					break
-				}
-			}
-			if ready && pod.Status.Phase == corev1.PodRunning {
-				By("azure-service-operator pod is running and ready, continuing to monitor...")
-			}
-
-			time.Sleep(pollInterval)
-		}
-
-		Expect(lastPod).ToNot(BeNil(), "azure-service-operator pod should exist after 10 minutes of monitoring")
-
-		By("Performing final azure-service-operator pod status check")
-		Expect(lastPod.Status.Phase).To(Equal(corev1.PodRunning), "azure-service-operator pod should be in Running phase after 10 minutes")
-
-		finalReady := false
-		for _, cs := range lastPod.Status.ContainerStatuses {
-			if cs.Ready {
-				finalReady = true
-				break
-			}
-		}
-		Expect(lastPod.Status.Phase == corev1.PodRunning && finalReady).To(BeTrue(), "azure-service-operator pod should be both running and ready after 10 minutes")
-		By("azure-service-operator pod monitoring completed successfully - pod is running and ready")
-	}
-}
