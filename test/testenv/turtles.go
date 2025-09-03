@@ -125,7 +125,7 @@ type UninstallRancherTurtlesInput struct {
 
 // DeployRancherTurtles deploys Rancher Turtles to the specified Kubernetes cluster.
 // It expects the required input parameters to be non-nil.
-// If the version is specified but the TurtlesChartUrl is empty, it adds an external rancher turtles chart repo for chartmuseum use-case. If the TurtlesChartUrl is specified, it adds the Rancher chart repo.
+// If the TurtlesChartUrl is specified, it adds the Rancher chart repo.
 // After adding the necessary chart repos, the function installs the rancher-turtles chart. It sets the additional values for the chart based on the input parameters.
 // If the image and tag are specified, it sets the corresponding values in the chart. If only the version is specified, it adds the version flag to the chart's additional flags.
 // The function then adds the CAPI infrastructure providers and waits for the CAPI deployments to be available. It waits for the capi-controller-manager, capi-kubeadm-bootstrap-controller-manager,
@@ -148,23 +148,8 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	}
 
 	chartPath := input.TurtlesChartPath
-	if input.Version != "" && input.TurtlesChartUrl == "" {
-		chartPath = "rancher-turtles-external/rancher-turtles"
-
-		By("Adding external rancher turtles chart repo")
-		addChart := &opframework.HelmChart{
-			BinaryPath:      input.HelmBinaryPath,
-			Name:            "rancher-turtles-external",
-			Path:            input.TurtlesChartPath,
-			Commands:        opframework.Commands(opframework.Repo, opframework.Add),
-			AdditionalFlags: opframework.Flags("--force-update"),
-			Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
-		}
-		_, err := addChart.Run(nil)
-		Expect(err).ToNot(HaveOccurred())
-	}
-
 	if input.TurtlesChartUrl != "" {
+		chartPath = fmt.Sprintf("%s/%s", input.TurtlesChartRepoName, "rancher-turtles")
 		By("Adding Rancher turtles chart repo")
 		addChart := &opframework.HelmChart{
 			BinaryPath:      input.HelmBinaryPath,
@@ -289,92 +274,6 @@ type UpgradeRancherTurtlesInput struct {
 
 	// SkipCleanup indicates whether to skip the cleanup after the upgrade.
 	SkipCleanup bool
-}
-
-// UpgradeRancherTurtles upgrades the rancher-turtles chart.
-// It expects the required input parameters to be non-nil.
-// The function performs the following steps:
-// 1. Validates the input parameters to ensure they are not empty or nil.
-// 2. Upgrades the rancher-turtles chart by executing the necessary helm commands.
-// 3. Executes any post-upgrade steps provided in the input.
-func UpgradeRancherTurtles(ctx context.Context, input UpgradeRancherTurtlesInput) {
-	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
-
-	Expect(ctx).NotTo(BeNil(), "ctx is required for UpgradeRancherTurtles")
-	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UpgradeRancherTurtles")
-	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UpgradeRancherTurtles")
-	Expect(input.Image).ToNot(BeEmpty(), "Image is required for UpgradeRancherTurtles")
-	Expect(input.Tag).ToNot(BeEmpty(), "Tag is required for UpgradeRancherTurtles")
-	Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required for UpgradeRancherTurtles")
-
-	By("Upgrading rancher-turtles chart")
-
-	PreRancherTurtlesUpgradelHook(&input)
-
-	additionalValues := []string{}
-	for name, val := range input.AdditionalValues {
-		additionalValues = append(additionalValues, "--set", fmt.Sprintf("%s=%s", name, val))
-	}
-
-	if !input.SkipCleanup {
-		defer func() {
-			values := []string{"repo", "remove", "rancher-turtles-local"}
-			cmd := exec.Command(
-				input.HelmBinaryPath,
-				values...,
-			)
-			cmd.WaitDelay = time.Minute
-
-			fullCommand := append([]string{input.HelmBinaryPath}, values...)
-			log.FromContext(ctx).Info("Executing:", "cleanup", strings.Join(fullCommand, " "))
-			out, err := cmd.CombinedOutput()
-			if err != nil {
-				Expect(fmt.Errorf("Unable to perform chart removal: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
-			}
-		}()
-	}
-
-	By("Updating the chart index")
-	values := []string{"repo", "update"}
-	cmd := exec.Command(
-		input.HelmBinaryPath,
-		values...,
-	)
-	cmd.WaitDelay = time.Minute
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		Expect(fmt.Errorf("Unable to perform chart index update: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
-	}
-
-	values = []string{
-		"upgrade", "rancher-turtles", "rancher-turtles-local/rancher-turtles",
-		"-n", input.Namespace,
-		"--install",
-		"--wait",
-		"--timeout", "10m",
-		"--kubeconfig", input.BootstrapClusterProxy.GetKubeconfigPath(),
-		"--set", fmt.Sprintf("rancherTurtles.image=%s", input.Image),
-		"--set", fmt.Sprintf("rancherTurtles.imageVersion=%s", input.Tag),
-		"--set", fmt.Sprintf("rancherTurtles.tag=%s", input.Tag),
-	}
-
-	fullCommand := append([]string{input.HelmBinaryPath}, values...)
-	log.FromContext(ctx).Info("Executing:", "upgrade", strings.Join(fullCommand, " "))
-
-	cmd = exec.Command(
-		input.HelmBinaryPath,
-		append(values, additionalValues...)...,
-	)
-	cmd.WaitDelay = 10 * time.Minute
-	out, err = cmd.CombinedOutput()
-
-	if err != nil {
-		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(append(values, additionalValues...), " "))).ToNot(HaveOccurred())
-	}
-
-	for _, step := range input.PostUpgradeSteps {
-		step()
-	}
 }
 
 // UninstallRancherTurtles uninstalls the Rancher Turtles chart.

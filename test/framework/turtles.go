@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"strings"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,8 +37,6 @@ import (
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	. "github.com/onsi/gomega"
 )
 
 type WaitForCAPIProviderRolloutInput struct {
@@ -116,20 +117,35 @@ func VerifyCustomResourceHasBeenRemoved(ctx context.Context, input VerifyCustomR
 }
 
 type VerifyClusterInput struct {
-	capiframework.GetLister
-	Name, Namespace string
+	BootstrapClusterProxy   capiframework.ClusterProxy
+	Name                    string
+	DeleteAfterVerification bool
 }
 
 func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
+	var cluster *clusterv1.Cluster
+
 	Consistently(func() error {
-		cluster := &clusterv1.Cluster{}
+		clusterList := &clusterv1.ClusterList{}
+		Expect(input.BootstrapClusterProxy.GetClient().List(ctx, clusterList)).Should(Succeed())
+		Expect(clusterList.Items).ShouldNot(BeEmpty(), "At least 1 Cluster must be found")
+
+		for i, c := range clusterList.Items {
+			if strings.HasPrefix(c.Name, input.Name) {
+				cluster = &clusterList.Items[i]
+				break
+			}
+		}
+
+		Expect(cluster).ShouldNot(BeNil(), fmt.Sprintf("Cluster %s must be found", input.Name))
+
 		key := types.NamespacedName{
-			Name:      input.Name,
-			Namespace: input.Namespace,
+			Name:      cluster.Name,
+			Namespace: cluster.Namespace,
 		}
 
 		Byf("Verifying cluster %s is ready", key.String())
-		if err := input.GetLister.Get(ctx, key, cluster); err != nil {
+		if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, cluster); err != nil {
 			return fmt.Errorf("failed to get cluster %s: %w", key.String(), err)
 		}
 		if cluster.Status.ControlPlaneReady == false {
@@ -148,9 +164,9 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 		}
 
 		machineList := &clusterv1.MachineList{}
-		if err := input.GetLister.List(ctx, machineList, client.InNamespace(input.Namespace),
+		if err := input.BootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(cluster.Namespace),
 			client.MatchingLabels{
-				clusterv1.ClusterNameLabel: input.Name,
+				clusterv1.ClusterNameLabel: cluster.Name,
 			}); err != nil {
 			return fmt.Errorf("failed to list machines for cluster %s: %w", key.String(), err)
 		}
@@ -179,4 +195,9 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 
 		return nil
 	}, "5m", "10s").Should(Succeed(), "Failed to verify cluster")
+
+	if input.DeleteAfterVerification {
+		By("Deleting Cluster")
+		Expect(input.BootstrapClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
+	}
 }

@@ -27,9 +27,6 @@ var (
 	//go:embed data/capi-operator/capi-providers.yaml
 	CapiProviders []byte
 
-	//go:embed data/capi-operator/capi-providers-legacy.yaml
-	CapiProvidersLegacy []byte
-
 	//go:embed data/capi-operator/capi-providers-oci.yaml
 	CapiProvidersOci []byte
 
@@ -78,12 +75,6 @@ var (
 	//go:embed data/rancher/ingress-nginx-lb.yaml
 	NginxIngressLoadBalancer []byte
 
-	//go:embed data/chartmuseum/deployment.yaml
-	ChartMuseum []byte
-
-	//go:embed data/chartmuseum/ingress.yaml
-	ChartMuseumIngress []byte
-
 	//go:embed data/rancher/azure-rke-config.yaml
 	V2ProvAzureRkeConfig []byte
 
@@ -125,12 +116,6 @@ var (
 
 	//go:embed data/cluster-templates/vsphere-rke2-topology.yaml
 	CAPIvSphereRKE2Topology []byte
-
-	//go:embed data/gitea/ingress.yaml
-	GiteaIngress []byte
-
-	//go:embed data/gitea/values.yaml
-	GiteaValues []byte
 
 	//go:embed data/capi-operator/clusterctlconfig.yaml
 	ClusterctlConfig []byte
@@ -202,13 +187,6 @@ const (
 	NgrokPathVar      = "NGROK_PATH"
 	NgrokApiKeyVar    = "NGROK_API_KEY"
 	NgrokAuthTokenVar = "NGROK_AUTHTOKEN"
-
-	GiteaRepoNameVar     = "GITEA_REPO_NAME"
-	GiteaRepoURLVar      = "GITEA_REPO_URL"
-	GiteaChartNameVar    = "GITEA_CHART_NAME"
-	GiteaChartVersionVar = "GITEA_CHART_VERSION"
-	GiteaUserNameVar     = "GITEA_USER_NAME"
-	GiteaUserPasswordVar = "GITEA_USER_PWD"
 
 	ArtifactsFolderVar       = "ARTIFACTS_FOLDER"
 	UseExistingClusterVar    = "USE_EXISTING_CLUSTER"
