@@ -317,16 +317,21 @@ spec:
             # Register SL Micro 6.1 and add the SL Micro Extras repository
             - transactional-update register -r {{ .productKey }}
             - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+            {{- else }}
+            []
             {{- end }}
       - op: add
-        path: /spec/template/spec/privateRegistriesConfig/configs
+        path: /spec/template/spec/privateRegistriesConfig
         valueFrom:
           template: |-
             {{- if .dockerAuthSecret }}
-            "registry-1.docker.io":
-              authSecret:
-                name: {{ .dockerAuthSecret }}
-                namespace: {{ .builtin.cluster.namespace }}
+            configs:
+              "registry-1.docker.io":
+                authSecret:
+                  name: {{ .dockerAuthSecret }}
+                  namespace: {{ .builtin.cluster.namespace }}
+            {{- else }}
+            {}
             {{- end }}
       selector:
         apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -354,16 +359,21 @@ spec:
             # Register SL Micro 6.1 and add the SL Micro Extras repository
             - transactional-update register -r {{ .productKey }}
             - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+            {{- else }}
+            []
             {{- end }}
       - op: add
-        path: /spec/template/spec/privateRegistriesConfig/configs
+        path: /spec/template/spec/privateRegistriesConfig
         valueFrom:
           template: |-
             {{- if .dockerAuthSecret }}
-            "registry-1.docker.io":
-              authSecret:
-                name: {{ .dockerAuthSecret }}
-                namespace: {{ .builtin.cluster.namespace }}
+            configs:
+              "registry-1.docker.io":
+                authSecret:
+                  name: {{ .dockerAuthSecret }}
+                  namespace: {{ .builtin.cluster.namespace }}
+            {{- else }}
+            {}
             {{- end }}
       selector:
         apiVersion: bootstrap.cluster.x-k8s.io/v1beta1

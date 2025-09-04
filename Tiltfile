@@ -52,22 +52,6 @@ projects = {
         "label": "turtles",
         "binary_name" : "manager"
     },
-    "turtles-day2": {
-        "context": "exp/day2",
-        "image": "ghcr.io/rancher/turtles-day2-operations:dev",
-        "live_reload_deps": [
-            "main.go",
-            "go.mod",
-            "go.sum",
-            "controllers",
-            "webhooks",
-        ],
-        "kustomize_dir": "config/default",
-        "label": "turtles-day2",
-        "command": ["/manager"],
-        "args": ["--feature-gates=etcd-backup-restore=true"],
-        "binary_name" : "turtles-day2-operations"
-    },
     "turtles-capiproviders": {
         "context": ".",
         "live_reload_deps": [
@@ -77,20 +61,6 @@ projects = {
         "label": "turtles-capiproviders",
         "op": "apply"
     },
-    "turtles-clusterclass-operations": {
-        "context": "exp/clusterclass",
-        "image": "ghcr.io/rancher/turtles-clusterclass-operations:dev",
-        "live_reload_deps": [
-            "main.go",
-            "go.mod",
-            "go.sum",
-            "internal/",
-        ],
-        "kustomize_dir": "config/default",
-        "label": "turtles-clusterclass-operations",
-        "command": ["/manager"],
-        "binary_name" : "turtles-clusterclass-operations"
-    }
 }
 
 # Users may define their own Tilt customizations in tilt.d. This directory is excluded from git and these files will

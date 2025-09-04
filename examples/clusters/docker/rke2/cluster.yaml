@@ -5,8 +5,6 @@ metadata:
   labels:
     cluster-api.cattle.io/rancher-auto-import: "true"
     cni: calico
-  annotations:
-    cluster-api.cattle.io/upstream-system-agent: "true"
 spec:
   clusterNetwork:
     pods:
