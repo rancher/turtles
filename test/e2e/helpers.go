@@ -40,7 +40,6 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	etcdrestorev1 "github.com/rancher/turtles/exp/day2/api/v1alpha1"
 
 	networkingv1 "k8s.io/api/networking/v1"
 
@@ -75,8 +74,8 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		// that cluster variable is not set even if the cluster exists, so we are calling DeleteAllClustersAndWait
 		// instead of DeleteClusterAndWait
 		framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-			ClusterProxy:    clusterProxy,
-			Namespace: namespace.Name,
+			ClusterProxy: clusterProxy,
+			Namespace:    namespace.Name,
 		}, intervalsGetter(specName, "wait-delete-cluster")...)
 
 		turtlesframework.Byf("Deleting namespace used for hosting the %q test spec", specName)
@@ -97,7 +96,6 @@ func InitScheme() *runtime.Scheme {
 	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
 	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 	Expect(networkingv1.AddToScheme(scheme)).To(Succeed())
-	Expect(etcdrestorev1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
