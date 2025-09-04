@@ -21,15 +21,19 @@ spec:
 {{- end }}
 {{- if index .Values  "providers" "infrastructureGCP" "features" }}
   features:
-      machinePool: {{ index .Values "providers" "infrastructureGCP" "features" "machinePool" }}
-      clusterResourceSet: {{ index .Values "providers" "infrastructureGCP" "features" "clusterResourceSet" }}
-      clusterTopology: {{ index .Values "providers" "infrastructureGCP" "features" "clusterTopology" }}
+    machinePool: {{ index .Values "providers" "infrastructureGCP" "features" "machinePool" }}
+    clusterResourceSet: {{ index .Values "providers" "infrastructureGCP" "features" "clusterResourceSet" }}
+    clusterTopology: {{ index .Values "providers" "infrastructureGCP" "features" "clusterTopology" }}
 {{- end }}
 {{- if index .Values  "providers" "infrastructureGCP" "variables" }}
   variables:
   {{- range $key, $val := .Values.providers.infrastructureGCP.variables }}
     {{ $key }}: "{{ $val }}"
   {{- end }}
+{{- end }}
+{{- if index .Values  "providers" "infrastructureGCP" "manager" }}
+  manager:
+{{ toYaml (index .Values "providers" "infrastructureGCP" "manager") | nindent 4 }}
 {{- end }}
 {{- if or (index .Values "providers" "infrastructureGCP" "credentials") }}
   credentials:
@@ -46,8 +50,8 @@ spec:
     {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
     url: {{ index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
     {{- end }}
-    {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
-    oci: {{ index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}
+    {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" "oci" }}
+    oci: {{ index .Values "providers" "infrastructureGCP" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
 {{- end }}

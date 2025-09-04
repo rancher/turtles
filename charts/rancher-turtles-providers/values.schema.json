@@ -22,11 +22,16 @@
           "type": "boolean",
           "description": "Allows the provider to be updated automatically whenever this chart is updated."
         },
+        "version": {
+          "type": "string",
+      "description": "Optional provider version."
+        },
         "credentials": {
           "type": "object",
-          "description": "Rancher Cloud credentials configuration.",
+      "description": "Optional Secret reference containing Rancher credentials",
           "required": [
-            "name"
+            "name",
+            "namespace"
           ],
           "properties": {
             "name": {
@@ -41,9 +46,10 @@
         },
         "configSecret": {
           "type": "object",
-          "description": "Provider Secret configuration.",
+      "description": "ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.",
           "required": [
-            "name"
+            "name",
+            "namespace"
           ],
           "properties": {
             "name": {
@@ -58,7 +64,7 @@
         },
         "features": {
           "type": "object",
-          "description": "Provider CAPI supported features configuration.",
+      "description": "Optional feature flags for this provider.",
           "properties": {
             "machinePool": {
               "type": "boolean",
@@ -76,14 +82,24 @@
         },
         "variables": {
           "type": "object",
-          "description": "Configures the provider variables that are applied to the manifest.",
+      "description": "Optional environment variables exposed to the controller manager.",
           "additionalProperties": {
             "type": "string"
           }
         },
+        "manager": {
+          "type": "object",
+      "description": "Optional controller manager settings.",
+          "properties": {
+            "syncPeriod": {
+              "type": "string",
+              "description": "Controller sync period duration, e.g. '5m'"
+            }
+          }
+        },
         "fetchConfig": {
           "type": "object",
-          "description": "Configuration to fetch the provider manifests.",
+      "description": "Override default artifact source via URL or OCI (specify one).",
           "oneOf": [ 
             {
               "properties": {
@@ -91,7 +107,9 @@
                   "type": "string",
                   "description": "The URL to be used for fetching the provider components and metadata."
                 }
-              }
+              },
+              "additionalProperties": false,
+              "required": ["url"]
             },
             {
               "properties": {            
@@ -99,7 +117,9 @@
                   "type": "string",
                   "description": "OCI to be used for fetching the provider components and metadata."
                 }
-              }
+              },
+              "additionalProperties": false,
+              "required": ["oci"]
             } 
           ]
         }
@@ -110,6 +130,7 @@
   "properties": {
     "providers": {
       "type": "object",
+    "description": "Providers configuration.",
       "properties": {
         "addonFleet": { "$ref": "#/$defs/providerSchema"},
         "bootstrapKubeadm": { "$ref": "#/$defs/providerSchema"},
@@ -122,6 +143,6 @@
         "infrastructureGCP": { "$ref": "#/$defs/providerSchema"},
         "infrastructureVSphere": { "$ref": "#/$defs/providerSchema"}
       }
-    }
+  }
   }
 }

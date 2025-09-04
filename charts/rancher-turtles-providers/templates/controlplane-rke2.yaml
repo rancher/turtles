@@ -21,15 +21,19 @@ spec:
 {{- end }}
 {{- if index .Values  "providers" "controlplaneRKE2" "features" }}
   features:
-      machinePool: {{ index .Values "providers" "controlplaneRKE2" "features" "machinePool" }}
-      clusterResourceSet: {{ index .Values "providers" "controlplaneRKE2" "features" "clusterResourceSet" }}
-      clusterTopology: {{ index .Values "providers" "controlplaneRKE2" "features" "clusterTopology" }}
+    machinePool: {{ index .Values "providers" "controlplaneRKE2" "features" "machinePool" }}
+    clusterResourceSet: {{ index .Values "providers" "controlplaneRKE2" "features" "clusterResourceSet" }}
+    clusterTopology: {{ index .Values "providers" "controlplaneRKE2" "features" "clusterTopology" }}
 {{- end }}
 {{- if index .Values  "providers" "controlplaneRKE2" "variables" }}
   variables:
   {{- range $key, $val := .Values.providers.controlplaneRKE2.variables }}
     {{ $key }}: "{{ $val }}"
   {{- end }}
+{{- end }}
+{{- if index .Values  "providers" "controlplaneRKE2" "manager" }}
+  manager:
+{{ toYaml (index .Values "providers" "controlplaneRKE2" "manager") | nindent 4 }}
 {{- end }}
 {{- if or (index .Values "providers" "controlplaneRKE2" "credentials") }}
   credentials:
@@ -46,8 +50,8 @@ spec:
     {{- if index .Values "providers" "controlplaneRKE2" "fetchConfig" "url" }}
     url: {{ index .Values "providers" "controlplaneRKE2" "fetchConfig" "url" }}
     {{- end }}
-    {{- if index .Values "providers" "controlplaneRKE2" "fetchConfig" "url" }}
-    oci: {{ index .Values "providers" "controlplaneRKE2" "fetchConfig" "url" }}
+    {{- if index .Values "providers" "controlplaneRKE2" "fetchConfig" "oci" }}
+    oci: {{ index .Values "providers" "controlplaneRKE2" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
 {{- end }}

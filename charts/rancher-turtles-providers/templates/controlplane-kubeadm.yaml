@@ -21,15 +21,19 @@ spec:
 {{- end }}
 {{- if index .Values  "providers" "controlplaneKubeadm" "features" }}
   features:
-      machinePool: {{ index .Values "providers" "controlplaneKubeadm" "features" "machinePool" }}
-      clusterResourceSet: {{ index .Values "providers" "controlplaneKubeadm" "features" "clusterResourceSet" }}
-      clusterTopology: {{ index .Values "providers" "controlplaneKubeadm" "features" "clusterTopology" }}
+    machinePool: {{ index .Values "providers" "controlplaneKubeadm" "features" "machinePool" }}
+    clusterResourceSet: {{ index .Values "providers" "controlplaneKubeadm" "features" "clusterResourceSet" }}
+    clusterTopology: {{ index .Values "providers" "controlplaneKubeadm" "features" "clusterTopology" }}
 {{- end }}
 {{- if index .Values  "providers" "controlplaneKubeadm" "variables" }}
   variables:
   {{- range $key, $val := .Values.providers.controlplaneKubeadm.variables }}
     {{ $key }}: "{{ $val }}"
   {{- end }}
+{{- end }}
+{{- if index .Values  "providers" "controlplaneKubeadm" "manager" }}
+  manager:
+{{ toYaml (index .Values "providers" "controlplaneKubeadm" "manager") | nindent 4 }}
 {{- end }}
 {{- if or (index .Values "providers" "controlplaneKubeadm" "credentials") }}
   credentials:
@@ -46,8 +50,8 @@ spec:
     {{- if index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
     url: {{ index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
     {{- end }}
-    {{- if index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
-    oci: {{ index .Values "providers" "controlplaneKubeadm" "fetchConfig" "url" }}
+    {{- if index .Values "providers" "controlplaneKubeadm" "fetchConfig" "oci" }}
+    oci: {{ index .Values "providers" "controlplaneKubeadm" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
 {{- end }}
