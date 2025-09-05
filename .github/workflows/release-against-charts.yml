@@ -1,0 +1,128 @@
+name: Release Turtles against rancher/charts
+on:
+  workflow_dispatch:
+    inputs:
+      charts_ref:
+        description: "Submit PR against the following rancher/charts branch (e.g. dev-v2.12)"
+        required: true
+        default: "dev-v2.12"
+      prev_turtles:
+        description: "Previous Turtles version (e.g. v0.23.0-rc.0)"
+        required: true
+        default: ""
+      new_turtles:
+        description: "New Turtles version (e.g. v0.23.0)"
+        required: true
+        default: ""
+      prev_chart:
+        description: "Previous Rancher Chart version (e.g. 101.1.0)"
+        required: true
+        default: ""
+      new_chart:
+        description: "New Rancher Chart version"
+        required: true
+        default: ""
+      should_replace:
+        description: "Should the old Turtles version be replaced/removed? (e.g. true in case of release candidate bumps)"
+        required: false
+        default: "true"
+
+env:
+  TURTLES_REF: "${{ github.ref_name }}"
+  CHARTS_REF: ${{ github.event.inputs.charts_ref }}
+  PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
+  NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
+
+jobs:
+  create-rancher-charts-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for vault
+      id-token: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: "${{ env.TURTLES_REF }}"
+          path: turtles
+
+      - uses: rancher-eio/read-vault-secrets@main
+        with:
+          secrets: |
+            github/token/rancher--charts--pull_requests--write token | GH_TOKEN
+
+      # - uses: rancher-eio/read-vault-secrets@main
+      #   with:
+      #     secrets: |
+      #       secret/data/github/repo/${{ github.repository }}/github/app-credentials appId | APP_ID ;
+      #       secret/data/github/repo/${{ github.repository }}/github/app-credentials privateKey | PRIVATE_KEY
+
+      # Fetch github token just for the charts repository
+      # - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2
+      #   id: app-token
+      #   with:
+      #     app-id: ${{ env.APP_ID }}
+      #     private-key: ${{ env.PRIVATE_KEY }}
+      #     repositories: |
+      #       charts
+
+      - name: Checkout rancher/charts repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          repository: ${{ github.repository_owner }}/charts
+          ref: "${{ env.CHARTS_REF }}"
+          token: "${{ env.GH_TOKEN }}"
+          path: charts
+          # Allow making git push request later on
+          persist-credentials: true
+
+      - name: Configure the committer
+        run: |
+          cd charts
+          user_id=$(gh api "/users/$APP_USER" --jq .id)
+          git config --global user.name "$APP_USER"
+          git config --global user.email "${user_id}+${APP_USER}@users.noreply.github.com"
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+          APP_USER: "${{ github.actor }}"
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version: '1.25.*'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install -y --allow-change-held-packages snapd
+          sudo snap install yq --channel=v4/stable
+
+      - name: Prepare short versions
+        run: |
+          echo "PREV_TURTLES_SHORT=${PREV_TURTLES#v}" >> $GITHUB_ENV
+          echo "NEW_TURTLES_SHORT=${NEW_TURTLES#v}" >> $GITHUB_ENV
+
+      - name: Run release script
+        run: |
+          cd charts
+          BRANCH="bump-turtlles-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+          git checkout -b "$BRANCH" "$CHARTS_REF"
+          export CHARTS_DIR="${GITHUB_WORKSPACE}/charts"
+          # Remove the prefix v because the chart version doesn't contain it
+          ./turtles/.github/scripts/release-against-charts.sh  "$PREV_TURTLES_SHORT" "$NEW_TURTLES_SHORT" ${{github.event.inputs.prev_chart}} ${{github.event.inputs.new_chart}} ${{github.event.inputs.should_replace}}
+
+      - name: Push and create pull request
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          cd charts
+          git push origin "$BRANCH"
+
+          body=$(../turtles/.github/scripts/release-message.sh "$PREV_TURTLES" "$NEW_TURTLES")
+
+          gh pr create \
+            --title "[$CHARTS_REF] Bump rancher-turtles to $NEW_TURTLES" \
+            --body "$body" \
+            --repo ${{ github.repository_owner }}/charts \
+            --head "${{ github.repository_owner }}:$BRANCH" \
+            --base "$CHARTS_REF"

@@ -1,0 +1,122 @@
+name: Release Turtles against rancher/rancher
+on:
+  workflow_dispatch:
+    inputs:
+      rancher_ref:
+        description: "Submit PR against the following rancher/rancher branch (e.g. release/v2.12)"
+        required: true
+        default: "release/v2.12"
+      prev_turtles:
+        description: "Previous Turtles version (eg: v0.23.0-rc.0)"
+        required: true
+        default: ""
+      new_turtles:
+        description: "New Turtles version (e.g. v0.23.0-rc.0)"
+        required: true
+        default: ""
+      new_chart:
+        description: "New Rancher Chart version (e.g. 107.0.0)"
+        required: true
+        default: ""
+      go_version:
+        description: "Go version used for bumping the api. This should be the same version as in the go.mod file of the project."
+        required: true
+        default: '1.24.*'
+
+env:
+  GOARCH: amd64
+  CGO_ENABLED: 0
+  SETUP_GO_VERSION: ${{github.event.inputs.go_version}}
+  RANCHER_REF: ${{ github.event.inputs.rancher_ref }}
+  TURTLES_REF: "${{ github.ref_name }}"
+  PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
+  NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
+
+jobs:
+  create-rancher-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for vault
+      id-token: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: "${{ env.TURTLES_REF }}"
+          path: turtles
+
+      - uses: rancher-eio/read-vault-secrets@main
+        with:
+          secrets: |
+            github/token/rancher--rancher--pull_requests--write token | GH_TOKEN
+
+      # - uses: rancher-eio/read-vault-secrets@main
+      #   with:
+      #     secrets: |
+      #       secret/data/github/repo/${{ github.repository }}/github/app-credentials appId | APP_ID ;
+      #       secret/data/github/repo/${{ github.repository }}/github/app-credentials privateKey | PRIVATE_KEY
+
+      # # Fetch github token just for the rancher repository
+      # - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2
+      #   id: app-token
+      #   with:
+      #     app-id: ${{ env.APP_ID }}
+      #     private-key: ${{ env.PRIVATE_KEY }}
+      #     repositories: |
+      #       rancher
+
+      - name: Checkout rancher/rancher
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          repository: ${{ github.repository_owner }}/rancher
+          ref: "${{ env.RANCHER_REF }}"
+          token: "${{ env.GH_TOKEN }}"
+          path: rancher
+          # Allow making git push request later on
+          persist-credentials: true
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version: ${{ env.SETUP_GO_VERSION }}
+
+      - name: Install controller-gen
+        run: go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2
+
+      - name: Configure the committer
+        run: |
+          cd rancher
+          user_id=$(gh api "/users/$APP_USER" --jq .id)
+          git config --global user.name "$APP_USER"
+          git config --global user.email "${user_id}+${APP_USER}@users.noreply.github.com"
+        env:
+          GH_TOKEN: "${{ env.GH_TOKEN }}"
+          APP_USER: "${{ github.actor }}"
+
+      - name: Prepare short version
+        run: |
+          echo "NEW_TURTLES_SHORT=${NEW_TURTLES#v}" >> $GITHUB_ENV
+
+      - name: Run release script
+        run: |
+          cd rancher
+          BRANCH="bump-turtles-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+          git checkout -b "$BRANCH" "$RANCHER_REF"
+          export CHARTS_DIR="${GITHUB_WORKSPACE}/rancher"
+          ./turtles/.github/scripts/release-against-rancher.sh "$NEW_TURTLES_SHORT" ${{github.event.inputs.new_chart}}
+
+      - name: Push and create pull request
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          cd rancher
+          git push origin $BRANCH
+
+          body=$(../turtles/.github/scripts/release-message.sh "$PREV_TURTLES" "$NEW_TURTLES")
+
+          gh pr create \
+            --title "[$RANCHER_REF] Bump rancher-turtles to $NEW_TURTLES" \
+            --body "$body" \
+            --repo ${{ github.repository_owner }}/rancher \
+            --head "${{ github.repository_owner }}:$BRANCH" \
+            --base "$RANCHER_REF"
