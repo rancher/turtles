@@ -94,6 +94,10 @@ type CreateMgmtV3UsingGitOpsSpecInput struct {
 	// AdditionalFleetGitRepos specifies additional FleetGitRepos to be created before the main GitRepo.
 	// This is useful for setting up resources like cluster classes/cni/cpi that some tests require.
 	AdditionalFleetGitRepos []turtlesframework.FleetCreateGitRepoInput
+
+	// TurtlesFeatureGatesMap specifies a map of feature gates to override on the existing Rancher Turtles installation.
+	// If not empty, the test will upgrade Rancher Turtles and ensure this are passed as additional values.
+	TurtlesFeatureGatesMap map[string]string
 }
 
 // CreateMgmtV3UsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -209,6 +213,13 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 	})
 
 	It("Should import a cluster using gitops", func() {
+		if input.TurtlesFeatureGatesMap != nil {
+			testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
+				BootstrapClusterProxy: input.BootstrapClusterProxy,
+				AdditionalValues:      input.TurtlesFeatureGatesMap,
+			})
+		}
+
 		controlPlaneMachineCount := 1
 		if input.ControlPlaneMachineCount != nil {
 			controlPlaneMachineCount = *input.ControlPlaneMachineCount
@@ -326,7 +337,7 @@ func CreateMgmtV3UsingGitOpsSpec(ctx context.Context, inputGetter func() CreateM
 
 			switch readyCondition.Status {
 			case corev1.ConditionTrue:
-				//Cluster is ready
+				// Cluster is ready
 				return nil
 			case corev1.ConditionFalse:
 				return fmt.Errorf("Cluster is not Ready")
