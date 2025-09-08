@@ -592,3 +592,51 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 		}
 	})
 })
+
+var _ = Describe("[Docker] [RKE2] CAPI cluster namespace auto-import should work with no-cert-manager feature enabled", Label(e2e.ShortTestLabel, e2e.Rke2TestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-docker-rke2-nocertmanager"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
+			ClusterName:                    "clusterv3-auto-import-rke2",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			LabelNamespace:                 true,
+			TestClusterReimport:            false,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-rancher",
+			DeleteClusterWaitName:          "wait-controllers",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/docker/rke2"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "docker-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+			TurtlesFeatureGatesMap: map[string]string{
+				"rancherTurtles.features.no-cert-manager.enabled": "true",
+			},
+		}
+	})
+})
