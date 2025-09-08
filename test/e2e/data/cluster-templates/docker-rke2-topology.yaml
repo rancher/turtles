@@ -26,12 +26,24 @@ spec:
       value: ${RKE2_CNI}
     - name: dockerImage
       value: kindest/node:${KUBERNETES_VERSION}
+    - name: dockerAuthSecret
+      value: '${CLUSTER_NAME}-docker-token'
     version: ${RKE2_VERSION}
     workers:
       machineDeployments:
       - class: default-worker
         name: md-0
         replicas: ${WORKER_MACHINE_COUNT}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: '${CLUSTER_NAME}-docker-token'
+  namespace: '${NAMESPACE}'
+type: Opaque
+stringData:
+  username: "${DOCKER_REGISTRY_USERNAME}"
+  password: "${DOCKER_REGISTRY_TOKEN}"
 ---
 apiVersion: v1
 data:
