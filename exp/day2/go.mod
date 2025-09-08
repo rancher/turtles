@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/rancher/cluster-api-provider-rke2 v0.20.1
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/pflag v1.0.10
 	k8s.io/api v0.32.7
 	k8s.io/apimachinery v0.32.7
 	k8s.io/client-go v0.32.7
