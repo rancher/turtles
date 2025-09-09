@@ -35,7 +35,7 @@ For the intermediate phase:
 For the final phase:
 - Turtles is released with Rancher.
 - upon creating a tag, the release process will produce 2 different container images, one for community users and another one for Prime users.
-- the community image will be pushed to DockerHub whereas the Prime image will be pushed to the staging Prime registry.
+- the community image will be pushed to DockerHub whereas the Prime images will be pushed to the staging Prime registry.
 
 The following graph shows what happens when a new tag gets created, which triggers a new release:
 ```mermaid
