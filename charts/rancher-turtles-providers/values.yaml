@@ -286,7 +286,7 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
     variables:
       EXP_CAPG_GKE: "true"
-      GCP_B64ENCODED_CREDENTIALS: ""
+  # GCP_B64ENCODED_CREDENTIALS: GCP service account credentials
   # credentials: Optional Secret reference containing Rancher credentials
   # credentials:
   #   name: ""

@@ -20,21 +20,11 @@ limitations under the License.
 package import_gitops_v3
 
 import (
-	"context"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
 	turtlesframework "github.com/rancher/turtles/test/framework"
-	"github.com/rancher/turtles/test/testenv"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
@@ -49,17 +39,6 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersOCIYAML: []testenv.OCIProvider{
-				{
-					Name: "docker",
-					File: string(e2e.CapiProvidersOci),
-				},
-			},
-			WaitForDeployments: testenv.DefaultDeployments,
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -105,14 +84,6 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersYAML: [][]byte{
-				e2e.CapiProviders,
-			},
-			WaitForDeployments: testenv.DefaultDeployments,
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -158,25 +129,6 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AzureIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AzureProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capz-controller-manager",
-					Namespace: "capz-system",
-				},
-			},
-			CustomWaiter: []func(ctx context.Context){
-				azureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -215,26 +167,6 @@ var _ = Describe("[Azure] [Kubeadm] - [management.cattle.io/v3] Create and delet
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AzureIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AzureProvider,
-				e2e.CapiProviders,
-			},
-			WaitForDeployments: append([]testenv.NamespaceName{
-				{
-					Name:      "capz-controller-manager",
-					Namespace: "capz-system",
-				},
-			}, testenv.DefaultDeployments...),
-			CustomWaiter: []func(ctx context.Context){
-				azureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -289,25 +221,6 @@ var _ = Describe("[Azure] [RKE2] - [management.cattle.io/v3] Create and delete C
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AzureIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AzureProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capz-controller-manager",
-					Namespace: "capz-system",
-				},
-			},
-			CustomWaiter: []func(ctx context.Context){
-				azureServiceOperatorWaiter(bootstrapClusterProxy), // workaround for https://github.com/rancher/turtles/issues/1584, remove when fixed
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -355,22 +268,6 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AWSProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capa-controller-manager",
-					Namespace: "capa-system",
-				},
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -400,23 +297,6 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AWSProvider,
-				e2e.CapiProviders,
-			},
-			WaitForDeployments: append([]testenv.NamespaceName{
-				{
-					Name:      "capa-controller-manager",
-					Namespace: "capa-system",
-				},
-			}, testenv.DefaultDeployments...),
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -477,22 +357,6 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AWSProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capa-controller-manager",
-					Namespace: "capa-system",
-				},
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -549,23 +413,6 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.GCPProviderSecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.GCPProvider,
-				e2e.CapiProviders,
-			},
-			WaitForDeployments: append([]testenv.NamespaceName{
-				{
-					Name:      "capg-controller-manager",
-					Namespace: "capg-system",
-				},
-			}, testenv.DefaultDeployments...),
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -612,22 +459,6 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.GCPProviderSecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.GCPProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capg-controller-manager",
-					Namespace: "capg-system",
-				},
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -658,23 +489,6 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
-
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.VSphereProviderSecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.CapvProvider,
-				e2e.CapiProviders,
-			},
-			WaitForDeployments: append([]testenv.NamespaceName{
-				{
-					Name:      "capv-controller-manager",
-					Namespace: "capv-system",
-				},
-			}, testenv.DefaultDeployments...),
-		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
@@ -734,22 +548,6 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.VSphereProviderSecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.CapvProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capv-controller-manager",
-					Namespace: "capv-system",
-				},
-			},
-		})
-
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
@@ -794,77 +592,3 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 		}
 	})
 })
-
-func azureServiceOperatorWaiter(bootstrapClusterProxy framework.ClusterProxy) func(ctx context.Context) {
-	return func(ctx context.Context) {
-		overallTimeout := 10 * time.Minute
-		pollInterval := 5 * time.Second
-		overallDeadline := time.Now().Add(overallTimeout)
-		podLabels := map[string]string{
-			"app.kubernetes.io/name": "azure-service-operator",
-			"control-plane":          "controller-manager",
-		}
-		lastPod := &corev1.Pod{}
-
-		for time.Now().Before(overallDeadline) {
-			var podList corev1.PodList
-			err := bootstrapClusterProxy.GetClient().List(ctx, &podList, &crclient.ListOptions{
-				Namespace:     "capz-system",
-				LabelSelector: labels.SelectorFromSet(podLabels),
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list azure-service-operator pods")
-
-			if len(podList.Items) == 0 {
-				By("Waiting for azure-service-operator pod to be created")
-				time.Sleep(pollInterval)
-				continue
-			}
-
-			pod := &podList.Items[0]
-			lastPod = pod
-
-			crashloop := false
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.State.Waiting != nil && cs.State.Waiting.Reason == "CrashLoopBackOff" {
-					crashloop = true
-					break
-				}
-			}
-			if crashloop {
-				By("Restarting azure-service-operator pod due to CrashLoopBackOff")
-				err := bootstrapClusterProxy.GetClient().Delete(ctx, pod)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete azure-service-operator pod for restart")
-				time.Sleep(pollInterval)
-				continue
-			}
-
-			ready := false
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.Ready {
-					ready = true
-					break
-				}
-			}
-			if ready && pod.Status.Phase == corev1.PodRunning {
-				By("azure-service-operator pod is running and ready, continuing to monitor...")
-			}
-
-			time.Sleep(pollInterval)
-		}
-
-		Expect(lastPod).ToNot(BeNil(), "azure-service-operator pod should exist after 10 minutes of monitoring")
-
-		By("Performing final azure-service-operator pod status check")
-		Expect(lastPod.Status.Phase).To(Equal(corev1.PodRunning), "azure-service-operator pod should be in Running phase after 10 minutes")
-
-		finalReady := false
-		for _, cs := range lastPod.Status.ContainerStatuses {
-			if cs.Ready {
-				finalReady = true
-				break
-			}
-		}
-		Expect(lastPod.Status.Phase == corev1.PodRunning && finalReady).To(BeTrue(), "azure-service-operator pod should be both running and ready after 10 minutes")
-		By("azure-service-operator pod monitoring completed successfully - pod is running and ready")
-	}
-}

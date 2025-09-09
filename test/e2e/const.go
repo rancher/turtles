@@ -188,17 +188,20 @@ const (
 	NgrokApiKeyVar    = "NGROK_API_KEY"
 	NgrokAuthTokenVar = "NGROK_AUTHTOKEN"
 
-	ArtifactsFolderVar       = "ARTIFACTS_FOLDER"
-	UseExistingClusterVar    = "USE_EXISTING_CLUSTER"
-	HelmBinaryPathVar        = "HELM_BINARY_PATH"
-	HelmExtraValuesFolderVar = "HELM_EXTRA_VALUES_FOLDER"
-	TurtlesVersionVar        = "TURTLES_VERSION"
-	TurtlesPathVar           = "TURTLES_PATH"
-	TurtlesUrlVar            = "TURTLES_URL"
-	TurtlesRepoNameVar       = "TURTLES_REPO_NAME"
-	SkipResourceCleanupVar   = "SKIP_RESOURCE_CLEANUP"
-	SkipDeletionTestVar      = "SKIP_DELETION_TEST"
-	ClusterctlBinaryPathVar  = "CLUSTERCTL_BINARY_PATH"
+	ArtifactsFolderVar          = "ARTIFACTS_FOLDER"
+	UseExistingClusterVar       = "USE_EXISTING_CLUSTER"
+	HelmBinaryPathVar           = "HELM_BINARY_PATH"
+	HelmExtraValuesFolderVar    = "HELM_EXTRA_VALUES_FOLDER"
+	TurtlesVersionVar           = "TURTLES_VERSION"
+	TurtlesPathVar              = "TURTLES_PATH"
+	TurtlesUrlVar               = "TURTLES_URL"
+	TurtlesRepoNameVar          = "TURTLES_REPO_NAME"
+	TurtlesProvidersRepoNameVar = "TURTLES_PROVIDERS_REPO_NAME"
+	TurtlesProvidersUrlVar      = "TURTLES_PROVIDERS_URL"
+	TurtlesProvidersPathVar     = "TURTLES_PROVIDERS_PATH"
+	SkipResourceCleanupVar      = "SKIP_RESOURCE_CLEANUP"
+	SkipDeletionTestVar         = "SKIP_DELETION_TEST"
+	ClusterctlBinaryPathVar     = "CLUSTERCTL_BINARY_PATH"
 
 	RKE2VersionVar = "RKE2_VERSION"
 
@@ -222,4 +225,8 @@ const (
 
 const (
 	CAPIVersion = "v1.10.5"
+)
+
+const (
+	ProvidersChartName = "rancher-turtles-providers"
 )

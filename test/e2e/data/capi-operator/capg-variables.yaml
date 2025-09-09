@@ -11,4 +11,4 @@ metadata:
   namespace: capg-system
 type: Opaque
 stringData:
-  GCP_B64ENCODED_CREDENTIALS: "{{ .GCPEncodedCredentials }}"
+  GCP_B64ENCODED_CREDENTIALS: "${CAPG_ENCODED_CREDS}"
