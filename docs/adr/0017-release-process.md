@@ -18,7 +18,7 @@
 ## Context
 
 As part of making Turtles available as a system chart in Rancher, the release process needs to evolve accordingly. This evolution will be done in 2 phases:
-- the intermediate phase, where work in underway to integrate Turtles with Rancher, but Turtles is still being released separately from Rancher.
+- the intermediate phase, where work is underway to integrate Turtles with Rancher, but Turtles is still being released separately from Rancher.
 - the final phase, where Turtles has been integrated and released together with Rancher.
 
 Currently, the release process is fairly simple:
