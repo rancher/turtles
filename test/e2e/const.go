@@ -120,7 +120,7 @@ var (
 	//go:embed data/capi-operator/clusterctlconfig.yaml
 	ClusterctlConfig []byte
 
-	//CAPIProvider test data
+	// CAPIProvider test data
 
 	//go:embed data/test-providers/namespace.yaml
 	CAPVProviderNamespace []byte
@@ -155,58 +155,27 @@ const (
 )
 
 const (
-	ManagementClusterEnvironmentVar = "MANAGEMENT_CLUSTER_ENVIRONMENT"
-
 	KubernetesManagementVersionVar = "KUBERNETES_MANAGEMENT_VERSION"
 
 	BootstrapClusterNameVar = "BOOTSTRAP_CLUSTER_NAME"
 
-	ClusterctlRepositoryFolderVar = "CLUSTERCTL_REPOSITORY_FOLDER"
-
 	KubernetesVersionVar      = "KUBERNETES_VERSION"
 	AWSKubernetesVersionVar   = "AWS_KUBERNETES_VERSION"
 	AzureKubernetesVersionVar = "AZURE_KUBERNETES_VERSION"
-	RancherFeaturesVar        = "RANCHER_FEATURES"
 	RancherHostnameVar        = "RANCHER_HOSTNAME"
-	RancherVersionVar         = "RANCHER_VERSION"
-	RancherAlphaVersionVar    = "RANCHER_ALPHA_VERSION"
-	RancherPathVar            = "RANCHER_PATH"
-	RancherAlphaPathVar       = "RANCHER_ALPHA_PATH"
-	RancherUrlVar             = "RANCHER_URL"
-	RancherAlphaUrlVar        = "RANCHER_ALPHA_URL"
-	RancherRepoNameVar        = "RANCHER_REPO_NAME"
-	RancherAlphaRepoNameVar   = "RANCHER_ALPHA_REPO_NAME"
-	RancherPasswordVar        = "RANCHER_PASSWORD"
-	CertManagerUrlVar         = "CERT_MANAGER_URL"
-	CertManagerRepoNameVar    = "CERT_MANAGER_REPO_NAME"
-	CertManagerPathVar        = "CERT_MANAGER_PATH"
-	CapiInfrastructureVar     = "CAPI_INFRASTRUCTURE"
 
-	NgrokRepoNameVar  = "NGROK_REPO_NAME"
-	NgrokUrlVar       = "NGROK_URL"
-	NgrokPathVar      = "NGROK_PATH"
-	NgrokApiKeyVar    = "NGROK_API_KEY"
-	NgrokAuthTokenVar = "NGROK_AUTHTOKEN"
-
-	ArtifactsFolderVar       = "ARTIFACTS_FOLDER"
-	UseExistingClusterVar    = "USE_EXISTING_CLUSTER"
-	HelmBinaryPathVar        = "HELM_BINARY_PATH"
-	HelmExtraValuesFolderVar = "HELM_EXTRA_VALUES_FOLDER"
-	TurtlesVersionVar        = "TURTLES_VERSION"
-	TurtlesPathVar           = "TURTLES_PATH"
-	TurtlesUrlVar            = "TURTLES_URL"
-	TurtlesRepoNameVar       = "TURTLES_REPO_NAME"
-	SkipResourceCleanupVar   = "SKIP_RESOURCE_CLEANUP"
-	SkipDeletionTestVar      = "SKIP_DELETION_TEST"
-	ClusterctlBinaryPathVar  = "CLUSTERCTL_BINARY_PATH"
+	ArtifactsFolderVar     = "ARTIFACTS_FOLDER"
+	UseExistingClusterVar  = "USE_EXISTING_CLUSTER"
+	HelmBinaryPathVar      = "HELM_BINARY_PATH"
+	TurtlesPathVar         = "TURTLES_PATH"
+	SkipResourceCleanupVar = "SKIP_RESOURCE_CLEANUP"
+	SkipDeletionTestVar    = "SKIP_DELETION_TEST"
 
 	RKE2VersionVar = "RKE2_VERSION"
 
 	AzureSubIDVar        = "AZURE_SUBSCRIPTION_ID"
 	AzureClientIDVar     = "AZURE_CLIENT_ID"
 	AzureClientSecretVar = "AZURE_CLIENT_SECRET"
-
-	AuthSecretName = "basic-auth-secret"
 
 	ShortTestLabel   = "short"
 	FullTestLabel    = "full"
