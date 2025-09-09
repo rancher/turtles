@@ -71,6 +71,40 @@ MANAGEMENT_CLUSTER_ENVIRONMENT=isolated-kind TAG=v0.0.1 GINKGO_LABEL_FILTER=shor
 
 Note that `SOURCE_REPO` needs to point to your forked repository, and `GITHUB_HEAD_REF` to your feature branch where commits have been pushed already.  
 
+## Providers chart usage in E2E
+
+The E2E suite installs the `rancher-turtles-providers` Helm chart via `test/testenv/providers.go`.
+
+Inputs:
+- HELM_BINARY_PATH: Path to the Helm binary used by the installer.
+- TURTLES_PROVIDERS_URL: Helm repo URL for the providers chart.
+- TURTLES_PROVIDERS_PATH: Local path to the `rancher-turtles-providers` chart.
+- TURTLES_PROVIDERS_REPO_NAME: Helm repo name to register.
+- TURTLES_PROVIDERS: Comma separated providers to enable on first install (note: this is only specific to e2e and not a helm chart option). Default "all".
+- TURTLES_MIGRATION_SCRIPT_PATH: Path to the providers ownership migration script.
+
+Enable providers:
+
+```bash
+# Enable everything
+export TURTLES_PROVIDERS=all
+# OR
+# Enable only Azure and AWS
+export TURTLES_PROVIDERS=azure,aws
+# OR
+# Enable CAPD and vSphere
+export TURTLES_PROVIDERS=capd,capv
+```
+
+If you are testing providers such as azure, aws, or gcp you will need to export the necessary environment variables.
+For vsphere, refer to [Running vSphere e2e tests locally](#running-vsphere-e2e-tests-locally) section.
+
+| Provider | Environment Variables                    |
+| -------- | ---------------------------------------- |
+| GCP      | CAPG_ENCODED_CREDS                       |
+| Azure    | AZURE_CLIENT_SECRET                      |
+| AWS      | AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY |
+
 ### Running vSphere e2e tests locally
 
 #### Prerequisites

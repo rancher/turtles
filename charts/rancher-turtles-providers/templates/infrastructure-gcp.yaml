@@ -8,7 +8,7 @@ metadata:
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
 metadata:
-  name: infrastructure-gcp
+  name: gcp
   namespace: {{ index .Values "providers" "infrastructureGCP" "namespace" }}
 spec:
   name: gcp

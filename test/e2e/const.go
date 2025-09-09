@@ -171,6 +171,10 @@ const (
 	SkipResourceCleanupVar = "SKIP_RESOURCE_CLEANUP"
 	SkipDeletionTestVar    = "SKIP_DELETION_TEST"
 
+	TurtlesProvidersRepoNameVar = "TURTLES_PROVIDERS_REPO_NAME"
+	TurtlesProvidersUrlVar      = "TURTLES_PROVIDERS_URL"
+	TurtlesProvidersPathVar     = "TURTLES_PROVIDERS_PATH"
+
 	RKE2VersionVar = "RKE2_VERSION"
 
 	AzureSubIDVar        = "AZURE_SUBSCRIPTION_ID"
@@ -191,4 +195,8 @@ const (
 
 const (
 	CAPIVersion = "v1.10.5"
+)
+
+const (
+	ProvidersChartName = "rancher-turtles-providers"
 )

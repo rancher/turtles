@@ -54,9 +54,6 @@ type CAPIOperatorDeployProviderInput struct {
 	// CAPIProvidersOCIYAML is the YAML representation of the CAPI providers with OCI.
 	CAPIProvidersOCIYAML []OCIProvider
 
-	// TemplateData is the data used for templating.
-	TemplateData TemplateData
-
 	// WaitDeploymentsReadyInterval is the interval for waiting for deployments to be ready.
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
@@ -65,12 +62,6 @@ type CAPIOperatorDeployProviderInput struct {
 
 	// CustomWaiter is a slice of functions for custom waiting logic.
 	CustomWaiter []func(ctx context.Context)
-}
-
-// TemplateData contains secret variables used for templating
-type TemplateData struct {
-	// GCPEncodedCredentials is the GCP credentials
-	GCPEncodedCredentials string `env:"CAPG_ENCODED_CREDS"`
 }
 
 // ProviderTemplateData contains variables used for templating
@@ -119,12 +110,11 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 	}
 
 	for _, secret := range input.CAPIProvidersSecretsYAML {
-		secret := secret
 		By("Adding CAPI Operator variables secret")
 
 		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 			Proxy:    input.BootstrapClusterProxy,
-			Template: getFullProviderVariables(string(secret), input.TemplateData),
+			Template: secret,
 		})).To(Succeed(), "Failed to apply secret for capi providers")
 	}
 
@@ -191,20 +181,6 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 			}
 		}
 	}
-}
-
-func getFullProviderVariables(operatorTemplate string, data TemplateData) []byte {
-	Expect(turtlesframework.Parse(&data)).To(Succeed(), "Failed to parse environment variables")
-
-	t := template.New("capi-operator")
-	t, err := t.Parse(operatorTemplate)
-	Expect(err).ShouldNot(HaveOccurred(), "Failed to parse template")
-
-	var renderedTemplate bytes.Buffer
-	err = t.Execute(&renderedTemplate, data)
-	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
-
-	return renderedTemplate.Bytes()
 }
 
 func renderProviderTemplate(operatorTemplateFile string, data ProviderTemplateData) []byte {
