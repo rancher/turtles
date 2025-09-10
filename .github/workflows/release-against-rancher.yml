@@ -11,9 +11,17 @@ on:
         required: true
         default: ""
       new_turtles:
-        description: "New Turtles version (e.g. v0.23.0-rc.0)"
+        description: "New Turtles version (e.g. v0.23.0)"
         required: true
         default: ""
+      bump_major:
+        description: "Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.23.0 → v0.24.0-rc.0). Default: false"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 env:
   RANCHER_REF: ${{ github.event.inputs.rancher_ref }}
@@ -98,7 +106,7 @@ jobs:
           BRANCH="bump-turtles-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
           git checkout -b "$BRANCH" "$RANCHER_REF"
-          ../turtles/.github/scripts/release-against-rancher.sh . "$NEW_TURTLES"
+          ../turtles/.github/scripts/release-against-rancher.sh . "$NEW_TURTLES" ${{ github.event.inputs.bump_major }}
 
       - name: Push and create pull request
         env:
