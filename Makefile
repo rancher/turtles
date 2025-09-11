@@ -570,9 +570,11 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	./scripts/process-manifests.sh clusterclass-operations $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 
-	sed -i'' -e 's@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e 's@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	# TODO: update to use new structure with system default registry
+	sed -i -e 's/tag:.*/tag: '${RELEASE_TAG}'/' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i -e 's/imagePullPolicy:.*/imagePullPolicy: '$(PULL_POLICY)'/' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i -e 's|repository:.*|repository: '${CONTROLLER_IMG}'|' $(CHART_RELEASE_DIR)/values.yaml
+
 
 	sed -i'' -e '/day2operations:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i'' -e '/day2operations:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
