@@ -35,11 +35,11 @@ For the intermediate phase:
 For the final phase:
 - Turtles is released with Rancher.
 - upon creating a tag, the release process will produce 2 different container images, one for community users and another one for Prime users.
-- the community image will be pushed to DockerHub whereas the Prime images will be pushed to the staging Prime registry.
+- the community image will be pushed to Docker Hub whereas the Prime images will be pushed to the staging Prime registry.
 
 The following graph shows what happens when a new tag gets created, which triggers a new release:
 ```mermaid
-graph BT
+graph TD
     A[rancher/turtles repository]
     A -->|builds Community image/ pushes entity only| D[Docker Hub]
     A -->|builds Prime image/ pushes entity, .sig, .att and .sbom| E[Staging Prime Registry]
@@ -47,4 +47,5 @@ graph BT
 
 ## Consequences
 
-- Since the community images will be different from the Prime images, we don't need to worry about which versions will become part of the Prime suite. As long as the staging Prime registry has the correct image built for Prime and any associated SLSA artifacts, any of these versions can become part of a Rancher release [using the existing chart release process](https://github.com/rancher/charts/wiki/1%E2%80%90Developing#making-changes-to-packages).
+- Since the community images will be different from the Prime images, we don't need to worry about which versions will become part of the Prime suite. As long as the staging Prime registry has the correct image built for Prime and any associated SLSA artifacts, any of these versions can become part of a Rancher release during the chart release process.
+- The Turtles chart needs to be updated to respect the `system-default-registry` setting as this will allow for the correct image to be pulled. 
