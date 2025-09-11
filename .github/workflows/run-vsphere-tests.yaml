@@ -40,6 +40,10 @@ jobs:
         uses: actions/setup-go@v6.0.0
         with:
           go-version-file: go.mod
+      - name: Display kind version
+        run: kind version
+      - name: Display docker version
+        run: docker version
       - name: Run e2e tests
         run: make test-e2e
       - name: Collect run artifacts
