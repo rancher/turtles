@@ -1,0 +1,95 @@
+name: Release Turtles against rancher/charts
+on:
+  workflow_dispatch:
+    inputs:
+      charts_ref:
+        description: "Submit PR against the following rancher/charts branch (e.g. dev-v2.12)"
+        required: true
+        default: "dev-v2.12"
+      prev_turtles:
+        description: "Previous Turtles version (e.g. v0.23.0-rc.0)"
+        required: true
+        default: ""
+      new_turtles:
+        description: "New Turtles version (e.g. v0.23.0)"
+        required: true
+        default: ""
+      bump_major:
+        description: "Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.20.0 → v0.21.0-rc.0). Default: false"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+env:
+  TURTLES_REF: "${{ github.ref_name }}"
+  CHARTS_REF: ${{ github.event.inputs.charts_ref }}
+  PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
+  NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
+
+jobs:
+  create-rancher-charts-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for vault
+      id-token: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: "${{ env.TURTLES_REF }}"
+          path: turtles
+
+      - uses: rancher-eio/read-vault-secrets@main
+        with:
+          secrets: |
+            github/token/rancher--charts--pull_requests--write token | GH_TOKEN
+
+      - name: Checkout rancher/charts repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          repository: ${{ github.repository_owner }}/charts
+          ref: "${{ env.CHARTS_REF }}"
+          token: ${{ env.GH_TOKEN }}
+          path: charts
+          # Allow making git push request later on
+          persist-credentials: true
+
+      - name: Configure the committer
+        run: |
+          cd charts
+          user_id=$(gh api "/users/$APP_USER" --jq .id)
+          git config --global user.name "$APP_USER"
+          git config --global user.email "${user_id}+${APP_USER}@users.noreply.github.com"
+        env:
+          GH_TOKEN: "${{ env.GH_TOKEN }}"
+          APP_USER: "${{ github.actor }}"
+
+      - name: Install dependencies
+        run: |
+          sudo snap install yq --channel=v4/stable
+
+      - name: Run release script
+        run: |
+          cd charts
+          BRANCH="bump-turtles-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+          git checkout -b "$BRANCH" "$CHARTS_REF"
+          ../turtles/.github/scripts/release-against-charts.sh . "$PREV_TURTLES" "$NEW_TURTLES" ${{ github.event.inputs.bump_major }}
+
+      - name: Push and create pull request
+        env:
+          GH_TOKEN: "${{ env.GH_TOKEN }}"
+        run: |
+          cd charts
+          git push origin "$BRANCH"
+          body=$(../turtles/.github/scripts/release-message.sh "$PREV_TURTLES" "$NEW_TURTLES")
+
+          gh pr create \
+            --title "[$CHARTS_REF] Bump rancher-turtles to $NEW_TURTLES" \
+            --body "$body" \
+            --repo ${{ github.repository_owner }}/charts \
+            --head "${{ github.repository_owner }}:$BRANCH" \
+            --base "$CHARTS_REF"

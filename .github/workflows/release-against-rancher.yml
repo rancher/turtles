@@ -1,0 +1,125 @@
+name: Release Turtles against rancher/rancher
+on:
+  workflow_dispatch:
+    inputs:
+      rancher_ref:
+        description: "Submit PR against the following rancher/rancher branch (e.g. release/v2.12)"
+        required: true
+        default: "release/v2.12"
+      prev_turtles:
+        description: "Previous Turtles version (eg: v0.23.0-rc.0)"
+        required: true
+        default: ""
+      new_turtles:
+        description: "New Turtles version (e.g. v0.23.0)"
+        required: true
+        default: ""
+      bump_major:
+        description: "Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.23.0 → v0.24.0-rc.0). Default: false"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+env:
+  RANCHER_REF: ${{ github.event.inputs.rancher_ref }}
+  TURTLES_REF: "${{ github.ref_name }}"
+  PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
+  NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
+
+jobs:
+  create-rancher-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for vault
+      id-token: write
+    steps:
+      - name: Install dependencies
+        run: sudo snap install yq --channel=v4/stable
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: "${{ env.TURTLES_REF }}"
+          path: turtles
+
+      - uses: rancher-eio/read-vault-secrets@main
+        with:
+          secrets: |
+            github/token/rancher--rancher--pull_requests--write token | GH_TOKEN
+
+      - name: Checkout rancher/rancher
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          repository: ${{ github.repository_owner }}/rancher
+          ref: "${{ env.RANCHER_REF }}"
+          token: "${{ env.GH_TOKEN }}"
+          path: rancher
+          # Allow making git push request later on
+          persist-credentials: true
+
+      - name: Find charts branch
+        id: find_charts_branch
+        run: |
+          cd rancher
+          # Extract dev-v2.12 out of the following line:
+          #     ChartDefaultBranch                  = NewSetting("chart-default-branch", "dev-v2.12")
+          charts_branch=$(grep '"chart-default-branch"' pkg/settings/setting.go | cut -d'"' -f4)
+          echo "charts_branch=$charts_branch" >> $GITHUB_OUTPUT
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          repository: ${{ github.repository_owner }}/charts
+          ref: "${{ steps.find_charts_branch.outputs.charts_branch }}"
+          path: charts
+
+      # Prevents the Rancher CI to continuously fail while the turtles RC is not
+      # yet added to charts' index.yaml file due to caching.
+      - name: Verify RC exists
+        env:
+          CHARTS_BRANCH: "${{ steps.find_charts_branch.outputs.charts_branch }}"
+        run: |
+          cd charts
+          new_turtles_short=$(echo "$NEW_TURTLES" | sed 's|^v||')  # e.g. 0.5.2-rc.3
+          # Empty output if the version is not found, otherwise the version will be outputed.
+          found=$(yq ".entries.rancher-turtles[].version | select(. == \"*$new_turtles_short\")" index.yaml)
+          if [ -z "$found" ]; then
+            echo "rancher-turtles RC version $NEW_TURTLES not found in charts (branch=$CHARTS_BRANCH). Aborting."
+            exit 1
+          fi
+
+      - name: Configure the committer
+        run: |
+          cd rancher
+          user_id=$(gh api "/users/$APP_USER" --jq .id)
+          git config --global user.name "$APP_USER"
+          git config --global user.email "${user_id}+${APP_USER}@users.noreply.github.com"
+        env:
+          GH_TOKEN: "${{ env.GH_TOKEN }}"
+          APP_USER: "${{ github.actor }}"
+
+      - name: Run release script
+        run: |
+          cd rancher
+          BRANCH="bump-turtles-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+          git checkout -b "$BRANCH" "$RANCHER_REF"
+          ../turtles/.github/scripts/release-against-rancher.sh . "$NEW_TURTLES" ${{ github.event.inputs.bump_major }}
+
+      - name: Push and create pull request
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          cd rancher
+          git push origin $BRANCH
+
+          body=$(../turtles/.github/scripts/release-message.sh "$PREV_TURTLES" "$NEW_TURTLES")
+
+          gh pr create \
+            --title "[$RANCHER_REF] Bump rancher-turtles to $NEW_TURTLES" \
+            --body "$body" \
+            --repo ${{ github.repository_owner }}/rancher \
+            --head "${{ github.repository_owner }}:$BRANCH" \
+            --base "$RANCHER_REF"
