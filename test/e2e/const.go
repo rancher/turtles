@@ -87,8 +87,8 @@ var (
 	//go:embed data/cluster-templates/docker-rke2-topology.yaml
 	CAPIDockerRKE2Topology []byte
 
-	//go:embed data/cluster-templates/aws-eks-mmp.yaml
-	CAPIAwsEKSMMP []byte
+	//go:embed data/cluster-templates/aws-eks-topology.yaml
+	CAPIAwsEKSTopology []byte
 
 	//go:embed data/cluster-templates/aws-ec2-rke2-topology.yaml
 	CAPIAwsEC2RKE2Topology []byte
