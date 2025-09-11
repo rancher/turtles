@@ -63,6 +63,12 @@ jobs:
           cluster_name: kind
           node_image: kindest/node:v1.31.4
 
+      - name: Display kind version
+        run: kind version
+
+      - name: Display docker version
+        run: docker version
+
       - name: Add local docker image
         run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
 

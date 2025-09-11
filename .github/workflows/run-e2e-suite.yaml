@@ -97,6 +97,10 @@ jobs:
         uses: actions/setup-go@v6.0.0
         with:
           go-version-file: go.mod
+      - name: Display kind version
+        run: kind version
+      - name: Display docker version
+        run: docker version
       - name: Docker login
         uses: docker/login-action@v3
         with:
