@@ -92,6 +92,15 @@ type DeployRancherTurtlesInput struct {
 	// Image is the image for Rancher Turtles.
 	Image string `env:"TURTLES_IMAGE"`
 
+	// ImageRepository is the image repository for Rancher Turtles.
+	ImageRepository string `env:"TURTLES_IMAGE_REPOSITORY"`
+
+	// Organization is the organization for Rancher Turtles image.
+	Organization string `env:"TURTLES_ORG"`
+
+	// ImageName is the image name for Rancher Turtles.
+	ImageName string `env:"TURTLES_IMAGE_NAME"`
+
 	// Tag is the tag for Rancher Turtles.
 	Tag string `env:"TURTLES_VERSION"`
 
@@ -169,9 +178,8 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	}
 
 	if input.Version == "" {
-		values["rancherTurtles.image"] = input.Image
-		values["rancherTurtles.imageVersion"] = input.Tag
-		values["rancherTurtles.tag"] = input.Tag
+		values["rancherTurtles.image.repository"] = input.ImageRepository
+		values["rancherTurtles.image.tag"] = input.Tag
 	}
 
 	for name, val := range input.AdditionalValues {

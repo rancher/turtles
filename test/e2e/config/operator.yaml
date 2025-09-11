@@ -87,6 +87,11 @@ variables:
 
   # Turtles Configuration
   TURTLES_VERSION: "v0.0.1"
+
+  TURTLES_IMAGE_REPOSITORY: "ghcr.io"
+  TURTLES_ORG: "rancher"
+  TURTLES_IMAGE_NAME: "turtles"
+
   TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e"
   TURTLES_PATH: "turtles/rancher-turtles"
   TURTLES_REPO_NAME: "turtles"
