@@ -1,4 +1,4 @@
-name: Lint and Test Charts
+name: Lint and Test Prime and Community Charts
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ env:
   RANCHER_VERSION: v2.12.1
 
 jobs:
-  lint-test:
+  prime-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,8 +48,8 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build docker image
-        run: make docker-build
+      - name: Build docker image (prime)
+        run: make docker-build-prime
 
       - name: Package operator chart
         run: make release-chart
@@ -89,6 +89,13 @@ jobs:
 
       - name: Wait for core provider rollout
         run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m
+      - name: Check capi-controller-manager image
+        run: |
+          IMAGE=$(kubectl get deployment capi-controller-manager -n capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          if [[ "$IMAGE" != registry.suse.com/rancher/cluster-api-controller* ]]; then
+            echo "capi-controller-manager does not use registry.suse.com/rancher/cluster-api-controller based image"
+            exit 1
+          fi
 
       - name: Wait for RKE2 bootstrap provider rollout
         run: sleep 30 && kubectl rollout status deployment rke2-bootstrap-controller-manager -n rke2-bootstrap-system --timeout=10m
@@ -101,3 +108,62 @@ jobs:
 
       - name: Run chart re-install
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
+
+  community-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.3
+
+      - name: setupGo
+        uses: actions/setup-go@v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build community docker image
+        run: make docker-build-community TAG=${{ env.TAG }}
+
+      - name: Package operator chart
+        run: make release-chart
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: kind
+          node_image: kindest/node:v1.31.4
+
+      - name: Display kind version
+        run: kind version
+
+      - name: Display docker version
+        run: docker version
+
+      - name: Add local docker image
+        run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
+
+      - name: Install cert-manager
+        run: helm repo add jetstack https://charts.jetstack.io && helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set crds.enabled=true --set crds.keep=true --wait
+
+      - name: Install Rancher
+        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest && helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --version ${{ env.RANCHER_VERSION }} --wait
+
+      - name: Install rancher-turtles chart
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
+
+      - name: Wait for core provider rollout
+        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m
+
+      - name: Check capi-controller-manager image is from kubernetes-sigs (community)
+        run: |
+          IMAGE=$(kubectl get deployment capi-controller-manager -n capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          if [[ "$IMAGE" != registry.k8s.io/cluster-api/cluster-api-controller* ]]; then
+            echo "capi-controller-manager does not use registry.k8s.io/cluster-api/cluster-api-controller based image"
+            exit 1
+          fi

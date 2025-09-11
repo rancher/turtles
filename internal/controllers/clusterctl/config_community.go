@@ -24,5 +24,5 @@ import (
 	_ "embed"
 )
 
-//go:embed config-default.yaml
+//go:embed config-community.yaml
 var configDefault []byte
