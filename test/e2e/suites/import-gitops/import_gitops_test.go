@@ -286,6 +286,64 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality shoul
 	})
 })
 
+var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-aws-eks"
+	})
+
+	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersSecretsYAML: [][]byte{
+				e2e.AWSIdentitySecret,
+			},
+			CAPIProvidersYAML: [][]byte{
+				e2e.AWSProvider,
+			},
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capa-controller-manager",
+					Namespace: "capa-system",
+				},
+			},
+		})
+
+		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAwsEKSTopology,
+			ClusterName:                    "cluster-eks",
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
+			DeleteClusterWaitName:          "wait-eks-delete",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.AWSKubernetesVersionVar), // override the default k8s version
+			},
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "aws-cluster-classes-eks",
+					Paths:           []string{"examples/clusterclasses/aws/eks"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+					Branch:          "aws-eks-example",
+				},
+			},
+		}
+	})
+})
+
 var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
