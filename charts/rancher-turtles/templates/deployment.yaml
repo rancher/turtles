@@ -45,12 +45,12 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
-        {{- if (contains "sha256:" .Values.rancherTurtles.imageVersion) }}
-        image: '{{ .Values.rancherTurtles.image }}@{{ .Values.rancherTurtles.imageVersion }}'
+        {{- if (contains "sha256:" .Values.rancherTurtles.image.tag) }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.rancherTurtles.image.repository }}@{{ .Values.rancherTurtles.image.tag }}'
         {{- else }}
-        image: '{{ .Values.rancherTurtles.image }}:{{ .Values.rancherTurtles.imageVersion }}'
+        image: '{{ template "system_default_registry" . }}{{ .Values.rancherTurtles.image.repository }}:{{ .Values.rancherTurtles.image.tag }}'
         {{- end}}
-        imagePullPolicy: '{{ .Values.rancherTurtles.imagePullPolicy }}'
+        imagePullPolicy: '{{ .Values.rancherTurtles.image.imagePullPolicy }}'
         livenessProbe:
           httpGet:
             path: /healthz

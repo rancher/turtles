@@ -89,8 +89,11 @@ type DeployRancherTurtlesInput struct {
 	// Namespace is the namespace for deploying Rancher Turtles.
 	Namespace string `envDefault:"rancher-turtles-system"`
 
-	// Image is the image for Rancher Turtles.
-	Image string `env:"TURTLES_IMAGE"`
+	// ImageRegistry is the image registry for Rancher Turtles.
+	ImageRegistry string `env:"TURTLES_IMAGE_REGISTRY"`
+
+	// ImageRepository is the image repository for Rancher Turtles.
+	ImageRepository string `env:"TURTLES_IMAGE_REPOSITORY"`
 
 	// Tag is the tag for Rancher Turtles.
 	Tag string `env:"TURTLES_VERSION"`
@@ -169,9 +172,8 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	}
 
 	if input.Version == "" {
-		values["rancherTurtles.image"] = input.Image
-		values["rancherTurtles.imageVersion"] = input.Tag
-		values["rancherTurtles.tag"] = input.Tag
+		values["rancherTurtles.image.repository"] = fmt.Sprintf("%s/%s", input.ImageRegistry, input.ImageRepository)
+		values["rancherTurtles.image.tag"] = input.Tag
 	}
 
 	for name, val := range input.AdditionalValues {
