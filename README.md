@@ -23,6 +23,8 @@ Rancher Turtles is deployed using a Helm Chart. For instructions, see the [getti
 
 Configuration steps, the quickstart guide and the architecture for this project can be found in our [documentation](https://turtles.docs.rancher.com).
 
+See [release workflows](docs/release-automation-workflows.md) for details on how Rancher Turtles can be released against `rancher/rancher` and `rancher/charts`.
+
 ## How to contribute?
 
 See our [contributor guide](CONTRIBUTING.md) for more details on how to get involved.
