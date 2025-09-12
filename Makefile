@@ -417,6 +417,14 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg go_build_tags=$(TARGET_BUILD) \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
+.PHONY: docker-build-and-push-prime
+docker-build-and-push-prime:
+	$(MAKE) docker-build-and-push TARGET_BUILD=prime
+
+.PHONY: docker-build-and-push-community
+docker-build-and-push-community:
+	$(MAKE) docker-build-and-push TARGET_BUILD=community
+
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
 

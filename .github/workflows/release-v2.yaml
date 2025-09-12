@@ -1,0 +1,150 @@
+name: Turtles release
+
+on:
+  push:
+    tags:
+      - 'v**'
+  workflow_dispatch:
+
+permissions:
+  contents: read # to checkout code
+  id-token: write # to read vault secrets
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+        - platform: linux/amd64
+          tag-suffix: "linux-amd64"
+        - platform: linux/arm64
+          tag-suffix: "linux-arm64"
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      with:
+        fetch-depth: 0
+
+    - name: Setup QEMU
+      uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      with:
+        image: tonistiigi/binfmt:qemu-v8.1.5
+        cache-image: false
+
+    - name: Read Vault secrets
+      uses: rancher-eio/read-vault-secrets@main
+      with:
+        secrets: |
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials username | PUBLIC_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials password | PUBLIC_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGING_REGISTRY ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGING_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGING_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
+
+    - name: Log into Docker Hub registry
+      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      with:
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
+
+    - name: Log into Staging registry
+      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      with:
+        username: ${{ env.STAGING_REGISTRY_USERNAME }}
+        password: ${{ env.STAGING_REGISTRY_PASSWORD }}
+        registry: ${{ env.STAGING_REGISTRY }}
+
+    - name: Build and push community image
+      shell: bash
+      env:
+        REGISTRY: docker.io
+        ORG: rancher
+      run: |
+        IID_FILE=$(mktemp)
+        make docker-build-and-push-community TAG=${{ env.TAG }}-${{ matrix.tag-suffix }} REGISTRY=${{ env.REGISTRY }} ORG=${{ env.ORG }} IID_FILE=${IID_FILE} TARGET_PLATFORMS=${{ matrix.platform }}
+
+    - name: Build and push prime image
+      shell: bash
+      env:
+        REGISTRY: ${{ env.STAGING_REGISTRY }}
+        ORG: rancher
+      run: |
+        IID_FILE=$(mktemp)
+        make docker-build-and-push-prime TAG=${{ env.TAG }}-${{ matrix.tag-suffix }} REGISTRY=${{ env.REGISTRY }} ORG=${{ env.ORG }} IID_FILE=${IID_FILE} TARGET_PLATFORMS=${{ matrix.platform }}
+
+  merge:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+        - image-type: community
+        - image-type: prime
+    env:
+      TAG: ${{ github.ref_name }}
+    needs:
+    - release
+    steps:
+    - name: Read Vault secrets
+      uses: rancher-eio/read-vault-secrets@main
+      with:
+        secrets: |
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials username | PUBLIC_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials password | PUBLIC_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGING_REGISTRY ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGING_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGING_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
+    
+    - name: Log into Docker Hub registry
+      if: ${{ matrix.image-type == 'community' }}
+      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      with:
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
+
+    - name: Log into Staging registry
+      if: ${{ matrix.image-type == 'prime' }}
+      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      with:
+        username: ${{ env.STAGING_REGISTRY_USERNAME }}
+        password: ${{ env.STAGING_REGISTRY_PASSWORD }}
+        registry: ${{ env.STAGING_REGISTRY }}
+
+    - name: Install Cosign
+      if: ${{ matrix.image-type == 'prime' }}
+      uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+
+    - name: Create multi-arch image and push
+      shell: bash
+      run: |
+        IMAGE="turtles"
+        if [ "${{ matrix.image-type }}" = "community" ]; then
+          URL="docker.io/rancher/${IMAGE}:${{ env.TAG }}"
+          docker buildx imagetools create -t "${URL}" \
+            "${URL}-linux-amd64" \
+            "${URL}-linux-arm64"
+        else
+          URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
+          docker buildx imagetools create -t "${URL}" \
+            "${URL}-linux-amd64" \
+            "${URL}-linux-arm64"
+        fi
+
+    - name: Sign multi-arch image
+      shell: bash
+      if: ${{ matrix.image-type == 'prime' }}
+      run: |
+        IMAGE="turtles"
+        URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
+        cosign sign \
+          --oidc-provider=github-actions \
+          --yes \
+          --sign-container-identity="${{ env.PRIME_REGISTRY }}/rancher/${IMAGE}" \
+          "${URL}"
+
+        # Pull the manifest locally to make it available for inspection
+        docker pull "${URL}"
