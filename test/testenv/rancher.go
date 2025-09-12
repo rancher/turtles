@@ -116,11 +116,11 @@ type deployRancherValuesFile struct {
 }
 
 type ngrokCredentials struct {
-	NgrokAPIKey    string `json:"apiKey"`
-	NgrokAuthToken string `json:"authtoken"`
+	NgrokAPIKey    string `json:"apiKey" yaml:"apiKey"`
+	NgrokAuthToken string `json:"authtoken" yaml:"authtoken"`
 }
 type deployRancherIngressValuesFile struct {
-	Credentials ngrokCredentials `json:"credentials"`
+	Credentials ngrokCredentials `json:"credentials" yaml:"credentials"`
 }
 
 // DeployRancher deploys Rancher using the provided input parameters.

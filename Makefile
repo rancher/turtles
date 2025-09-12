@@ -92,7 +92,9 @@ SKIP_RESOURCE_CLEANUP ?= false
 USE_EXISTING_CLUSTER ?= false
 GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
+TURTLES_PROVIDERS ?= ALL
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
+TURTLES_MIGRATION_SCRIPT_PATH ?= $(ROOT_DIR)/scripts/migrate-providers-ownership.sh
 
 MANAGEMENT_CLUSTER_ENVIRONMENT ?= eks
 
@@ -633,7 +635,10 @@ HELM_BINARY_PATH=$(HELM) \
 CLUSTERCTL_BINARY_PATH=$(CLUSTERCTL) \
 SKIP_RESOURCE_CLEANUP=$(SKIP_RESOURCE_CLEANUP) \
 USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) \
-TURTLES_PATH=$(ROOT_DIR)/$(CHART_PACKAGE_DIR)/rancher-turtles-$(shell echo $(TAG) | cut -c 2-).tgz
+TURTLES_PROVIDERS=$(TURTLES_PROVIDERS) \
+TURTLES_MIGRATION_SCRIPT_PATH=$(TURTLES_MIGRATION_SCRIPT_PATH) \
+TURTLES_PATH=$(ROOT_DIR)/$(CHART_PACKAGE_DIR)/rancher-turtles-$(shell echo $(TAG) | cut -c 2-).tgz \
+TURTLES_PROVIDERS_PATH=$(ROOT_DIR)/$(CHART_PACKAGE_DIR)/rancher-turtles-providers-$(shell echo $(TAG) | cut -c 2-).tgz
 
 E2E_RUN_COMMAND=$(E2ECONFIG_VARS) $(GINKGO) -v --trace -p -procs=10 -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --label-filter="$(GINKGO_LABEL_FILTER)" \
@@ -653,7 +658,7 @@ e2e-image: ## Build and push the image for e2e tests
 	CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-build
 	RELEASE_TAG=$(TAG) CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e \
 	CONTROLLER_IMAGE_VERSION=$(TAG) \
-	$(MAKE) build-chart
+	$(MAKE) build-chart build-providers-chart
 
 .PHONY: e2e-image-build-and-push
 e2e-image-build-and-push: e2e-image
