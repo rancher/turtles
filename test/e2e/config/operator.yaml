@@ -74,14 +74,9 @@ variables:
 
   # Rancher Configuration
   RANCHER_VERSION: "v2.12.1"
-  RANCHER_ALPHA_VERSION: "v2.12.1-alpha1"
   RANCHER_REPO_NAME: "rancher-latest"
-  RANCHER_ALPHA_REPO_NAME: "rancher-alpha"
   RANCHER_PATH: "rancher-latest/rancher"
-  RANCHER_ALPHA_PATH: "rancher-alpha/rancher"
   RANCHER_URL: "https://releases.rancher.com/server-charts/latest"
-  RANCHER_ALPHA_URL: "https://releases.rancher.com/server-charts/alpha"
-  RANCHER_FEATURES: ""
   RANCHER_HOSTNAME: "localhost"
   RANCHER_PASSWORD: "rancheradmin"
 

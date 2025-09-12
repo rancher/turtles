@@ -91,8 +91,8 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 	Context("Provisioning a workload Cluster", func() {
 		// Provision a workload Cluster.
 		// This ensures that upgrading the chart will not unexpectedly lead to unready Cluster or Machines.
-		specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-			return specs.CreateMgmtV3UsingGitOpsSpecInput{
+		specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+			return specs.CreateUsingGitOpsSpecInput{
 				E2EConfig:                      e2e.LoadE2EConfig(),
 				BootstrapClusterProxy:          bootstrapClusterProxy,
 				ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
