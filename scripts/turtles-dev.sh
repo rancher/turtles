@@ -84,7 +84,7 @@ install_local_rancher_turtles_chart() {
     # Build the chart locally
     make build-chart
     # Build the day2 controller image
-    make docker-build
+    make docker-build-prime
     # Load the day2 controller image into the kind cluster
     kind load docker-image $DAY2_CONTROLLER_IMAGE:$DAY2_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
     # Load the clusterclass controller image into the kind cluster

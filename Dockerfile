@@ -30,12 +30,13 @@ COPY ./ ./
 # Build
 ARG package=.
 ARG ldflags
+ARG go_build_tags=""
 ARG TARGETOS TARGETARCH
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
+    go build -trimpath -tags "${go_build_tags}" -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
 
@@ -52,13 +53,14 @@ COPY ./ ./
 
 # Build
 ARG ldflags
+ARG go_build_tags=""
 ARG TARGETOS TARGETARCH
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    sh -c "cd exp/day2 && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
+    sh -c "cd exp/day2 && ls && go build -trimpath -tags \"${go_build_tags}\" -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
 
 FROM --platform=$BUILDPLATFORM ${builder_image} as clusterclass-operations-builder
 WORKDIR /workspace
@@ -73,13 +75,14 @@ COPY ./ ./
 
 # Build
 ARG ldflags
+ARG go_build_tags=""
 ARG TARGETOS TARGETARCH
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    sh -c "cd exp/clusterclass && ls && go build -trimpath -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
+    sh -c "cd exp/clusterclass && ls && go build -trimpath -tags \"${go_build_tags}\" -ldflags \"${ldflags} -extldflags '-static'\" -o manager ${package}"
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

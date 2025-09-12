@@ -55,7 +55,7 @@ make test-e2e
 This will consequently:
 
 1. Install all prerequisite dependencies, like `helm`, `kustomize`, `controller-gen`.
-1. Build a docker image with the current repository code using `docker-build` Makefile target.
+1. Build a docker image with the current repository code using `docker-build-prime` Makefile target.
 1. Generate a test release chart containing docker image tag built in the previous step
 1. Create the test cluster, run the test suite, cleanup all test resourses.
 1. Collect the [artifacts](#artifacts)

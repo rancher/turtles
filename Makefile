@@ -170,7 +170,7 @@ NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 # Registry / images
 TAG ?= dev
 ARCH ?= linux/$(shell go env GOARCH)
-TARGET_BUILD ?= default
+TARGET_BUILD ?= prime
 TARGET_PLATFORMS := linux/amd64,linux/arm64
 MACHINE := rancher-turtles
 REGISTRY ?= ghcr.io
@@ -335,21 +335,29 @@ KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILD
 .PHONY: test
 test: $(SETUP_ENVTEST) manifests test-exp-day2 test-exp-clusterclass ## Run all generators and exp tests.
 	go clean -testcache
-	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -tags $(TARGET_BUILD) ./... $(TEST_ARGS)
 
 .PHONY: test-exp-day2
 test-exp-day2: $(SETUP_ENVTEST) ## Run tests for experimental day2 API.
-	cd $(EXP_DAY2_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+	cd $(EXP_DAY2_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -tags $(TARGET_BUILD) ./... $(TEST_ARGS)
 
 .PHONY: test-exp-clusterclass
 test-exp-clusterclass: $(SETUP_ENVTEST) ## Run tests for experimental clusterclass API.
-	cd $(EXP_CLUSTERCLASS_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+	cd $(EXP_CLUSTERCLASS_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -tags $(TARGET_BUILD) ./... $(TEST_ARGS)
 
 ##@ Build
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
 	go build -tags $(TARGET_BUILD) -o bin/manager main.go
+
+.PHONY: build-prime
+build-prime: ## Build with prime tag
+	$(MAKE) build TARGET_BUILD=prime
+
+.PHONY: build-community
+build-community: ## Build with community tag
+	$(MAKE) build TARGET_BUILD=community
 
 .PHONY: run
 run: generate fmt vet ## Run a controller from your host.
@@ -382,7 +390,16 @@ docker-build: buildx-machine docker-pull-prerequisites ## Build docker image for
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
+			--build-arg go_build_tags=$(TARGET_BUILD) \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
+
+.PHONY: docker-build-prime
+docker-build-prime: ## Build docker image with prime tag
+	$(MAKE) docker-build TARGET_BUILD=prime
+
+.PHONY: docker-build-community
+docker-build-community: ## Build docker image with community tag
+	$(MAKE) docker-build TARGET_BUILD=community
 
 .PHONY: docker-build-and-push
 docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push targets for all architectures
@@ -395,6 +412,7 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 			--build-arg goproxy=$(GOPROXY) \
 			--build-arg package=. \
+			--build-arg go_build_tags=$(TARGET_BUILD) \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
 docker-list-all:
@@ -647,6 +665,7 @@ e2e-image-build: ## Build the image for e2e tests
 		--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 		--build-arg goproxy=$(GOPROXY) \
 		--build-arg package=. \
+		--build-arg go_build_tags=$(TARGET_BUILD) \
 		--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
 .PHONY: e2e-image-push
