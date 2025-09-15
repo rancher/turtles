@@ -30,7 +30,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/test/e2e"
@@ -171,24 +170,18 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 	AfterEach(func() {
 		By(fmt.Sprintf("Collecting artifacts for %s/%s", clusterName, specName))
 
-		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			Path:                    clusterName + "-bootstrap-" + specName,
 			BootstrapKubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
 		})
-		if err != nil {
-			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
-		}
 
-		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			KubeconfigPath: rancherKubeconfig.TempFilePath,
 			Path:           clusterName + "-workload-" + specName,
 		})
-		if err != nil {
-			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
-		}
 
 		By("Deleting cluster from Rancher")
-		err = bootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
+		err := bootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
 		Expect(err).NotTo(HaveOccurred(), "Failed to delete rancher cluster")
 
 		By("Waiting for the rancher cluster record to be removed")

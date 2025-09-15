@@ -122,9 +122,23 @@ func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
 
 	log.Info("Running kubectl:", "command", strings.Join(aargs, " "))
 	err := cmd.Run()
-	log.Info("stderr:", "stderr", stderr.Bytes())
-	log.Info("stdout:", "stdout", stdout.Bytes())
-	return err
+
+	stderrStr := stderr.String()
+	stdoutStr := stdout.String()
+	if strings.TrimSpace(stderrStr) != "" {
+		log.Info("stderr:", "stderr", stderrStr)
+	}
+	if strings.TrimSpace(stdoutStr) != "" {
+		log.Info("stdout:", "stdout", stdoutStr)
+	}
+
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("artifact collection failed, exit code: %d, error %w", exitErr.ExitCode(), err)
+		}
+		return fmt.Errorf("artifact collection failed, error: %w", err)
+	}
+	return nil
 }
 
 func DumpBootstrapCluster(ctx context.Context) {
@@ -132,5 +146,13 @@ func DumpBootstrapCluster(ctx context.Context) {
 	if err != nil {
 		fmt.Printf("Failed to artifacts for the bootstrap cluster: %v\n", err)
 		return
+	}
+}
+
+// TryCollectArtifacts calls CollectArtifacts and logs any error instead of returning it.
+// This is useful in AfterEach/Defer flows where artifact collection failures should not fail the suite.
+func TryCollectArtifacts(ctx context.Context, input CollectArtifactsInput) {
+	if err := CollectArtifacts(ctx, input); err != nil {
+		log.FromContext(ctx).Error(err, "artifact collection failed", "path", input.Path)
 	}
 }
