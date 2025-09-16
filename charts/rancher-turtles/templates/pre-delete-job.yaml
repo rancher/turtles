@@ -59,9 +59,11 @@ spec:
           image: {{ index .Values "rancherTurtles" "kubectlImage" }}
           args:
           - delete
-          - capiproviders
-          - -A
-          - --all
+          - capiprovider
+          - cluster-api
+          - -n
+          - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+          - --ignore-not-found=true
           - --cascade=foreground
       restartPolicy: Never
 {{- end }}
