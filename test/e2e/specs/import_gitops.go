@@ -375,21 +375,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 	AfterEach(func() {
 		By(fmt.Sprintf("Collecting artifacts for %s/%s", input.ClusterName, specName))
 
-		err := testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			Path:                    input.ClusterName + "-bootstrap-" + specName,
 			BootstrapKubeconfigPath: input.BootstrapClusterProxy.GetKubeconfigPath(),
 		})
-		if err != nil {
-			log.FromContext(ctx).Error(err, "failed to collect artifacts for the bootstrap cluster")
-		}
 
-		err = testenv.CollectArtifacts(ctx, testenv.CollectArtifactsInput{
+		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			KubeconfigPath: originalKubeconfig.TempFilePath,
 			Path:           input.ClusterName + "-workload-" + specName,
 		})
-		if err != nil {
-			log.FromContext(ctx).Error(err, "failed to collect artifacts for the child cluster")
-		}
 
 		// If SKIP_RESOURCE_CLEANUP=true & if the SkipDeletionTest is true, all the resources should stay as they are,
 		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
