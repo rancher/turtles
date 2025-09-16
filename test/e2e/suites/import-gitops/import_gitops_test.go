@@ -337,7 +337,7 @@ var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class
 					Paths:           []string{"examples/clusterclasses/aws/eks"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
-					Branch:          "aws-eks-example",
+					Branch:          "aws-eks-example", // TODO: Remove this before merging the PR
 				},
 			},
 		}
