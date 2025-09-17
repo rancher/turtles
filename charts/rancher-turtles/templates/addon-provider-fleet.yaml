@@ -6,6 +6,7 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
+    "helm.sh/resource-policy": keep
 spec:
   enableAutomaticUpdate: true
   type: addon
@@ -21,6 +22,7 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
+    "helm.sh/resource-policy": keep
 data:
   manifests: |-
     apiVersion: addons.cluster.x-k8s.io/v1alpha1

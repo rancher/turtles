@@ -8,6 +8,7 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "1"
+    "helm.sh/resource-policy": keep
   name: {{ index .Values "cluster-api-operator" "cluster-api" "rke2" "controlPlane" "namespace" }}
 {{- end }}
 ---
@@ -19,6 +20,7 @@ metadata:
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
+    "helm.sh/resource-policy": keep
 spec:
   name: rke2
   type: controlPlane
