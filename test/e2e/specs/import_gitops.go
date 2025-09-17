@@ -278,7 +278,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Eventually(
 			komega.Get(capiCluster),
 			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
-			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
+			Should(Succeed(), fmt.Sprintf("Failed to apply CAPI cluster definition to cluster %s/%s via Fleet", namespace.Name, input.ClusterName))
 
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {

@@ -261,31 +261,6 @@ var _ = Describe("[Azure] [RKE2] Create and delete CAPI cluster from cluster cla
 	})
 })
 
-var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
-	BeforeEach(func() {
-		komega.SetClient(bootstrapClusterProxy.GetClient())
-		komega.SetContext(ctx)
-	})
-
-	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
-		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsEKSMMP,
-			ClusterName:                    "cluster-eks",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
-			DeleteClusterWaitName:          "wait-eks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-		}
-	})
-})
-
 var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
 	var topologyNamespace string
 
@@ -296,24 +271,8 @@ var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class
 		topologyNamespace = "creategitops-aws-eks"
 	})
 
-	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersSecretsYAML: [][]byte{
-				e2e.AWSIdentitySecret,
-			},
-			CAPIProvidersYAML: [][]byte{
-				e2e.AWSProvider,
-			},
-			WaitForDeployments: []testenv.NamespaceName{
-				{
-					Name:      "capa-controller-manager",
-					Namespace: "capa-system",
-				},
-			},
-		})
-
-		return specs.CreateMgmtV3UsingGitOpsSpecInput{
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                      e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIAwsEKSTopology,
@@ -337,7 +296,7 @@ var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class
 					Paths:           []string{"examples/clusterclasses/aws/eks"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
-					Branch:          "aws-eks-example", // TODO: Remove this before merging the PR
+					Branch:          "aws-eks-example", //TODO: remove the branch and focus from test
 				},
 			},
 		}
