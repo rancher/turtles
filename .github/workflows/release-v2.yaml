@@ -98,7 +98,7 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGING_REGISTRY_USERNAME ;
           secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGING_REGISTRY_PASSWORD ;
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
-    
+
     - name: Log into Docker Hub registry
       if: ${{ matrix.image-type == 'community' }}
       uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
@@ -118,7 +118,7 @@ jobs:
       if: ${{ matrix.image-type == 'prime' }}
       uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
 
-    - name: Create multi-arch image and push
+    - name: Create multi-platform image and push
       shell: bash
       run: |
         IMAGE="turtles"
@@ -127,19 +127,27 @@ jobs:
           docker buildx imagetools create -t "${URL}" \
             "${URL}-linux-amd64" \
             "${URL}-linux-arm64"
-        else
+          echo "Pushed multi-platform image: ${URL}"
+        elif [ "${{ matrix.image-type }}" = "prime" ]; then
           URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
           docker buildx imagetools create -t "${URL}" \
             "${URL}-linux-amd64" \
             "${URL}-linux-arm64"
+          echo "Pushed multi-platform image: ${URL}"
+          
+          # Extract the multi-platform image digest for signing
+          docker pull ${URL}
+          IMAGE_DIGEST=$( docker inspect --format='{{index .RepoDigests 0}}' ${URL} | sed 's/.*@//' )
+          echo "IMAGE_DIGEST=${IMAGE_DIGEST}" >> "$GITHUB_ENV"
         fi
 
-    - name: Sign multi-arch image
+    - name: Sign multi-platform image
       shell: bash
       if: ${{ matrix.image-type == 'prime' }}
       run: |
-        IMAGE="turtles"
-        URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
+        IMAGE="turtles"        
+        URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
+
         cosign sign \
           --oidc-provider=github-actions \
           --yes \
