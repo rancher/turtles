@@ -10,7 +10,7 @@ rancherTurtles:
   # image: Controller container image.
   image: controller
   # imageVersion: Image tag.
-  imageVersion: v0.0.0
+  imageVersion: v0.24.1
   # imagePullPolicy: Specify image pull policy.
   imagePullPolicy: IfNotPresent
   # namespace: Select namespace for Turtles to run.
@@ -34,7 +34,7 @@ rancherTurtles:
       # image: Image for day-2 ops.
       image: controller
       # imageVersion: Image tag.
-      imageVersion: v0.0.0
+      imageVersion: v0.24.1
       # imagePullPolicy: Specify image pull policy.
       imagePullPolicy: IfNotPresent
       # etcdBackupRestore: Alpha feature. Manages etcd backup/restore.
@@ -56,7 +56,7 @@ rancherTurtles:
       # image: Image for cluster class ops.
       image: controller
       # imageVersion: Image tag.
-      imageVersion: v0.0.0
+      imageVersion: v0.24.1
       # imagePullPolicy: Pull policy.
       imagePullPolicy: IfNotPresent
   # volumes: Volumes for controller pods.

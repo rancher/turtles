@@ -30,7 +30,7 @@
         },
         "imageVersion": {
           "type": "string",
-          "default": "v0.0.0",
+          "default": "v0.24.1",
           "description": "Image tag."
         },
         "imagePullPolicy": {
@@ -85,7 +85,7 @@
                 },
                 "imageVersion": {
                   "type": "string",
-                  "default": "v0.0.0",
+                  "default": "v0.24.1",
                   "description": "Image tag."
                 },
                 "imagePullPolicy": {
@@ -144,7 +144,7 @@
                 },
                 "imageVersion": {
                   "type": "string",
-                  "default": "v0.0.0",
+                  "default": "v0.24.1",
                   "description": "Image tag."
                 },
                 "imagePullPolicy": {
