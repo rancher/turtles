@@ -261,7 +261,7 @@ var _ = Describe("[Azure] [RKE2] Create and delete CAPI cluster from cluster cla
 	})
 })
 
-var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
+var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -296,7 +296,6 @@ var _ = FDescribe("[AWS] [EKS] Create and delete CAPI cluster from cluster class
 					Paths:           []string{"examples/clusterclasses/aws/eks"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
-					Branch:          "aws-eks-example", //TODO: remove the branch and focus from test
 				},
 			},
 		}
