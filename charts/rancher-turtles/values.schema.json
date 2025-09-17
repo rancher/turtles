@@ -24,19 +24,25 @@
       "description": "Sets up the cluster management controller.",
       "properties": {
         "image": {
-          "type": "string",
-          "default": "controller",
-          "description": "Controller container image."
-        },
-        "imageVersion": {
-          "type": "string",
-          "default": "v0.0.0",
-          "description": "Image tag."
-        },
-        "imagePullPolicy": {
-          "type": "string",
-          "default": "IfNotPresent",
-          "description": "Specify image pull policy."
+            "type": "object",
+            "description": "Controller image settings.",
+            "properties": {
+                "repository": {
+                    "type": "string",
+                    "default": "controller",
+                    "description": "Controller image repository"
+                },
+                "tag": {
+                    "type": "string",
+                    "default": "v0.0.0",
+                    "description": "Image tag."
+                },
+                "imagePullPolicy": {
+                    "type": "string",
+                    "default": "IfNotPresent",
+                    "description": "Specify image pull policy."
+                }
+            }
         },
         "namespace": {
           "type": "string",

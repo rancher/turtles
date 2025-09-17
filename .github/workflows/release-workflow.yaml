@@ -72,7 +72,7 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Package operator chart
-        run: RELEASE_TAG=${GITHUB_REF##*/} CONTROLLER_IMAGE_VERSION=${{ env.multiarch_digest }} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
+        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.7.0

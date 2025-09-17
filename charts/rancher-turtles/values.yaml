@@ -5,14 +5,22 @@ turtlesUI:
   # version: UI version to use.
   version: 0.8.2
 
+# Rancher global parameters
+global:
+  cattle:
+    # systemDefaultRegistry is used to specify the registry images are pulled from.
+    systemDefaultRegistry: ""
+
 # rancherTurtles: Sets up the cluster management controller.
 rancherTurtles:
-  # image: Controller container image.
-  image: controller
-  # imageVersion: Image tag.
-  imageVersion: v0.0.0
-  # imagePullPolicy: Specify image pull policy.
-  imagePullPolicy: IfNotPresent
+  image:
+    # repository is the path to the Turtles GitHub repository.
+    repository: rancher/turtles
+    # tag is the image tag.
+    tag: v0.0.0
+    # imagePullPolicy specifies image pull policy.
+    imagePullPolicy: IfNotPresent
+
   # namespace: Select namespace for Turtles to run.
   namespace: rancher-turtles-system
   # managerArguments: Extra args for the controller.
