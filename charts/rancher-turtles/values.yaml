@@ -17,7 +17,7 @@ rancherTurtles:
     # repository is the path to the Turtles GitHub repository.
     repository: rancher/turtles
     # tag is the image tag.
-    tag: v0.0.0
+    tag: v0.25.0-rc.0
     # imagePullPolicy specifies image pull policy.
     imagePullPolicy: IfNotPresent
 
@@ -42,7 +42,7 @@ rancherTurtles:
       # image: Image for day-2 ops.
       image: controller
       # imageVersion: Image tag.
-      imageVersion: v0.0.0
+      imageVersion: v0.25.0-rc.0
       # imagePullPolicy: Specify image pull policy.
       imagePullPolicy: IfNotPresent
       # etcdBackupRestore: Alpha feature. Manages etcd backup/restore.
@@ -64,7 +64,7 @@ rancherTurtles:
       # image: Image for cluster class ops.
       image: controller
       # imageVersion: Image tag.
-      imageVersion: v0.0.0
+      imageVersion: v0.25.0-rc.0
       # imagePullPolicy: Pull policy.
       imagePullPolicy: IfNotPresent
   # volumes: Volumes for controller pods.
