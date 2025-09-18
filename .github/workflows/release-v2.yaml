@@ -3,7 +3,7 @@ name: Turtles release
 on:
   push:
     tags:
-      - 'v**'
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -38,12 +38,11 @@ jobs:
       uses: rancher-eio/read-vault-secrets@main
       with:
         secrets: |
-          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials username | PUBLIC_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials password | PUBLIC_REGISTRY_PASSWORD ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGING_REGISTRY ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGING_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGING_REGISTRY_PASSWORD ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials password | DOCKER_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGE_REGISTRY ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGE_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGE_REGISTRY_PASSWORD ;
 
     - name: Log into Docker Hub registry
       uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
@@ -54,9 +53,9 @@ jobs:
     - name: Log into Staging registry
       uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
       with:
-        username: ${{ env.STAGING_REGISTRY_USERNAME }}
-        password: ${{ env.STAGING_REGISTRY_PASSWORD }}
-        registry: ${{ env.STAGING_REGISTRY }}
+        username: ${{ env.STAGE_REGISTRY_USERNAME }}
+        password: ${{ env.STAGE_REGISTRY_PASSWORD }}
+        registry: ${{ env.STAGE_REGISTRY }}
 
     - name: Build and push community image
       shell: bash
@@ -70,7 +69,7 @@ jobs:
     - name: Build and push prime image
       shell: bash
       env:
-        REGISTRY: ${{ env.STAGING_REGISTRY }}
+        REGISTRY: ${{ env.STAGE_REGISTRY }}
         ORG: rancher
       run: |
         IID_FILE=$(mktemp)
@@ -92,11 +91,11 @@ jobs:
       uses: rancher-eio/read-vault-secrets@main
       with:
         secrets: |
-          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials username | PUBLIC_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials password | PUBLIC_REGISTRY_PASSWORD ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGING_REGISTRY ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGING_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGING_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials password | DOCKER_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGE_REGISTRY ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGE_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGE_REGISTRY_PASSWORD ;
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
     - name: Log into Docker Hub registry
@@ -110,9 +109,9 @@ jobs:
       if: ${{ matrix.image-type == 'prime' }}
       uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
       with:
-        username: ${{ env.STAGING_REGISTRY_USERNAME }}
-        password: ${{ env.STAGING_REGISTRY_PASSWORD }}
-        registry: ${{ env.STAGING_REGISTRY }}
+        username: ${{ env.STAGE_REGISTRY_USERNAME }}
+        password: ${{ env.STAGE_REGISTRY_PASSWORD }}
+        registry: ${{ env.STAGE_REGISTRY }}
 
     - name: Install Cosign
       if: ${{ matrix.image-type == 'prime' }}
@@ -129,7 +128,7 @@ jobs:
             "${URL}-linux-arm64"
           echo "Pushed multi-platform image: ${URL}"
         elif [ "${{ matrix.image-type }}" = "prime" ]; then
-          URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
+          URL="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
           docker buildx imagetools create -t "${URL}" \
             "${URL}-linux-amd64" \
             "${URL}-linux-arm64"
@@ -146,7 +145,7 @@ jobs:
       if: ${{ matrix.image-type == 'prime' }}
       run: |
         IMAGE="turtles"        
-        URL="${{ env.STAGING_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
+        URL="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
 
         cosign sign \
           --oidc-provider=github-actions \
