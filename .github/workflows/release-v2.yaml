@@ -117,6 +117,10 @@ jobs:
       if: ${{ matrix.image-type == 'prime' }}
       uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
 
+    - name: Install slsactl
+      if: ${{ matrix.image-type == 'prime' }}
+      uses: rancherlabs/slsactl/actions/install-slsactl@b01dab9e871b6d039a1befb15a63175eccd90cbc # v0.0.15
+
     - name: Create multi-platform image and push
       shell: bash
       run: |
@@ -137,21 +141,40 @@ jobs:
           # Extract the multi-platform image digest for signing
           docker pull ${URL}
           IMAGE_DIGEST=$( docker inspect --format='{{index .RepoDigests 0}}' ${URL} | sed 's/.*@//' )
-          echo "IMAGE_DIGEST=${IMAGE_DIGEST}" >> "$GITHUB_ENV"
+          # Set as environment variable for next steps
+          MULTI_PLATFORM_IMAGE="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
+          echo "MULTI_PLATFORM_IMAGE"=${MULTI_PLATFORM_IMAGE} >> "$GITHUB_ENV" 
         fi
 
     - name: Sign multi-platform image
       shell: bash
       if: ${{ matrix.image-type == 'prime' }}
       run: |
-        IMAGE="turtles"        
-        URL="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
-
         cosign sign \
           --oidc-provider=github-actions \
           --yes \
           --sign-container-identity="${{ env.PRIME_REGISTRY }}/rancher/${IMAGE}" \
-          "${URL}"
+          "${MULTI_PLATFORM_IMAGE}"
 
-        # Pull the manifest locally to make it available for inspection
-        docker pull "${URL}"
+    - name: Attest provenance
+      shell: bash
+      if: ${{ matrix.image-type == 'prime' }}
+      run: |
+        max_retries=3
+        retry_delay=5
+        i=0
+
+        while [ "${i}" -lt "${max_retries}" ]; do
+            if slsactl download provenance --format=slsav1 "${MULTI_PLATFORM_IMAGE}" > provenance-slsav1.json; then
+                break
+            fi
+            if [ "${i}" -eq "$(( max_retries - 1 ))" ]; then
+                echo "ERROR: Failed to generate slsav1 provenance. Check whether the image is present in the Prime registry."
+                exit 1
+            fi
+            i=$(( i + 1 ))
+            sleep "${retry_delay}"
+        done
+
+        cat provenance-slsav1.json
+        cosign attest --yes --predicate provenance-slsav1.json --type slsaprovenance1 "${MULTI_PLATFORM_IMAGE}"
