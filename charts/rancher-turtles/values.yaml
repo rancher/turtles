@@ -140,3 +140,8 @@ cluster-api-operator:
           url: ""
           # selector: Config selector.
           selector: ""
+    fleet:
+      addon:
+        fetchConfig:
+          url: ""
+          selector: ""
