@@ -57,7 +57,7 @@ const (
 	externalFleetAnnotation   = "provisioning.cattle.io/externally-managed"
 
 	defaultRequeueDuration = 1 * time.Minute
-	trueAnnotationValue    = "true"
+	trueValue              = "true"
 )
 
 func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string, cl client.Client,
