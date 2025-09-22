@@ -58,7 +58,7 @@ type FleetCreateGitRepoInput struct {
 	Repo string
 
 	// SourceBranch is the default source branch of the Git repository to use in a CI setting.
-	SourceBranch string `env:"GITHUB_HEAD_REF"`
+	SourceBranch string `env:"SOURCE_BRANCH"`
 
 	// Branch is the branch of the Git repository to use.
 	Branch string `envDefault:"main"`

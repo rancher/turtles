@@ -66,10 +66,10 @@ Tests tagged with the `short` label are verified for any submitted Pull Requests
 These tests can be ran locally:
 
 ```bash
-MANAGEMENT_CLUSTER_ENVIRONMENT=isolated-kind TAG=v0.0.1 GINKGO_LABEL_FILTER=short SOURCE_REPO=https://github.com/your-organization/turtles GITHUB_HEAD_REF=your_feature_branch make test-e2e
+MANAGEMENT_CLUSTER_ENVIRONMENT=isolated-kind TAG=v0.0.1 GINKGO_LABEL_FILTER=short SOURCE_REPO=https://github.com/your-organization/turtles SOURCE_BRANCH=your_feature_branch make test-e2e
 ```
 
-Note that `SOURCE_REPO` needs to point to your forked repository, and `GITHUB_HEAD_REF` to your feature branch where commits have been pushed already.  
+Note that `SOURCE_REPO` needs to point to your forked repository, and `SOURCE_BRANCH` to your feature branch where commits have been pushed already.  
 
 ## Providers chart usage in E2E
 

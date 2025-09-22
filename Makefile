@@ -168,6 +168,7 @@ GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 NOTES_BIN := notes
 NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
+SOURCE_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 # Registry / images
 TAG ?= dev
@@ -622,7 +623,7 @@ build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(C
 
 .PHONY: release-chart
 release-chart: $(HELM) $(NOTES) build-chart verify-gen
-	$(NOTES) --repository $(REPO) -add-kubernetes-version-support=false -from=tags/$(PREVIOUS_TAG) -release=$(RELEASE_TAG) -branch=main > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
+	$(NOTES) --repository $(REPO) -add-kubernetes-version-support=false -from=tags/$(PREVIOUS_TAG) -release=$(RELEASE_TAG) -branch=$(SOURCE_BRANCH) > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 
