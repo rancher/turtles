@@ -13,6 +13,15 @@ spec:
   additionalManifests:
     name: fleet-addon-config
     namespace: '{{ .Values.rancherTurtles.namespace }}'
+{{- if or (index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "selector") }}
+  fetchConfig:
+    {{- if index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "url" }}
+    url: {{ index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "selector" }}
+    selector: {{ index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "selector" }}
+    {{- end }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
