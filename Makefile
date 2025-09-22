@@ -601,14 +601,15 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	sed -i -e 's/imagePullPolicy:.*/imagePullPolicy: '$(PULL_POLICY)'/' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i -e 's|repository:.*|repository: '${CONTROLLER_IMG}'|' $(CHART_RELEASE_DIR)/values.yaml
 
+	# day2operations
+	sed -i -e '/day2operations:/,/^[^[:space:]]/ s@^\([[:space:]]*image:\).*@\1 '"${CONTROLLER_IMG}"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i -e '/day2operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imageVersion:\).*@\1 '"${RELEASE_TAG}"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i -e '/day2operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imagePullPolicy:\).*@\1 '"${PULL_POLICY}"'@' $(CHART_RELEASE_DIR)/values.yaml
 
-	sed -i'' -e '/day2operations:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e '/day2operations:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e '/day2operations:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
-
-	sed -i'' -e '/clusterclass:/,/image:/ s@image: .*@image: '"$(CONTROLLER_IMG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e '/clusterclass:/,/imageVersion:/ s@imageVersion: .*@imageVersion: '"$(RELEASE_TAG)"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i'' -e '/clusterclass:/,/imagePullPolicy:/ s@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' $(CHART_RELEASE_DIR)/values.yaml
+	# clusterclass-operations
+	sed -i -e '/clusterclass-operations:/,/^[^[:space:]]/ s@^\([[:space:]]*image:\).*@\1 '"${CONTROLLER_IMG}"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i -e '/clusterclass-operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imageVersion:\).*@\1 '"${RELEASE_TAG}"'@' $(CHART_RELEASE_DIR)/values.yaml
+	sed -i -e '/clusterclass-operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imagePullPolicy:\).*@\1 '"${PULL_POLICY}"'@' $(CHART_RELEASE_DIR)/values.yaml
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
