@@ -82,7 +82,7 @@ install_local_rancher_turtles_chart() {
     # Remove the previous chart directory
     rm -rf out
     # Build the chart locally
-    make build-chart
+    RELEASE_TAG=dev make build-chart
     # Build the day2 controller image
     make docker-build-prime
     # Load the day2 controller image into the kind cluster

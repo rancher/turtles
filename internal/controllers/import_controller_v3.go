@@ -501,7 +501,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, 
 		annotations = map[string]string{}
 	}
 
-	annotations[turtlesannotations.ClusterImportedAnnotation] = trueAnnotationValue
+	annotations[turtlesannotations.ClusterImportedAnnotation] = trueValue
 	capiCluster.SetAnnotations(annotations)
 	controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
 
@@ -576,7 +576,7 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Cont
 			rancherCluster.Name,
 			turtlesannotations.ClusterImportedAnnotation))
 
-		annotations[turtlesannotations.NoCreatorRBACAnnotation] = trueAnnotationValue
+		annotations[turtlesannotations.NoCreatorRBACAnnotation] = trueValue
 		rancherCluster.SetAnnotations(annotations)
 	}
 }
@@ -592,7 +592,7 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfFleetManagement(ctx context.C
 	}
 
 	if _, found := annotations[externalFleetAnnotation]; !found {
-		annotations[externalFleetAnnotation] = trueAnnotationValue
+		annotations[externalFleetAnnotation] = trueValue
 		rancherCluster.SetAnnotations(annotations)
 
 		log.Info("Added fleet annotation to Rancher cluster")
