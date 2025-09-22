@@ -12,4 +12,5 @@ resources:
 - aggregated_role.yaml
 
 patches:
-- path: manager_role_aggregation_patch.yaml
+- path: manager_role_patch.yaml
+- path: manager_rolebinding_patch.yaml
