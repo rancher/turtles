@@ -18,7 +18,8 @@ resources:
 patches:
 - path: manager_webhook_patch.yaml
 - path: webhookcainjection_patch.yaml
-- path: manager_role_aggregation_patch.yaml
+- path: manager_role_patch.yaml
+- path: manager_rolebinding_patch.yaml
 - path: manager_image_patch.yaml
 - path: manager_pull_policy.yaml
 
