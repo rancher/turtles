@@ -34,7 +34,6 @@ on:
         type: string
         description: Organization part of the image name
         required: false
-        default: "rancher"
 
 jobs:
   build:
@@ -56,9 +55,10 @@ jobs:
         id: image
         uses: ./.github/workflows/release_build
         with:
-          tag: ${{ inputs.tag }}
-          org: ${{ inputs.org }}
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
+          org: ${{ vars[inputs.org] }}
+          image: ${{ vars[inputs.image] }}
+          tag: ${{ inputs.tag }}
           username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}
           password: ${{ secrets[inputs.password] }}
 
@@ -78,9 +78,9 @@ jobs:
       - name: Sign image with cosign
         uses: ./.github/workflows/release_sign
         with:
-          image: ${{ vars[inputs.image] }}
+          image: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}/${{ vars[inputs.org] }}/${{ vars[inputs.image] }}
           digest: ${{ needs.build.outputs.digest }}
-          identity: https://github.com/${{ inputs.org }}/turtles/.github/workflows/release.yml@${{ github.ref }}
+          identity: https://github.com/${{ vars[inputs.org] }}/turtles/.github/workflows/release.yml@${{ github.ref }}
           oids-issuer: https://token.actions.githubusercontent.com
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
           username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}

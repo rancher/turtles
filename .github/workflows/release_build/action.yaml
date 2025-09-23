@@ -1,19 +1,24 @@
 name: "Build release"
 description: "Builds release image and pushes to the registry"
 inputs:
-  tag:
-    description: "Image tag"
+  registry:
+    description: "The registry to login"
+    required: true
     type: string
-    default: "github-actions"
   org:
     description: "Organization part of the image path"
     required: false
     default: "rancher"
     type: string
-  registry:
-    description: "The registry to login"
-    required: true
+  image:
+    description: "Name of the image that is built"
+    required: false
+    default: "turtles"
     type: string
+  tag:
+    description: "Image tag"
+    type: string
+    default: "github-actions"
   username:
     description: "The username to registry"
     required: true
@@ -51,6 +56,6 @@ runs:
         make docker-build-and-push TAG=${{ inputs.tag }} REGISTRY=${{ inputs.registry }} ORG=${{ inputs.org }} IID_FILE=${IID_FILE}
 
         digest=$(head -n 1 ${IID_FILE})
-        image=${{ inputs.registry }}/${{ inputs.org }}/turtles
+        image=${{ inputs.registry }}/${{ inputs.org }}/${{ inputs.image }}
         echo "digest=${digest}" >> $GITHUB_OUTPUT
         echo "image=${image}" >> $GITHUB_OUTPUT
