@@ -20,15 +20,17 @@ jobs:
         include:
         - destination: ghcr
           registry: ghcr.io
+          org: RANCHER_ORG
+          image: IMAGE_NAME
           username: ${{ github.actor }}
           password: GITHUB_TOKEN
-          image: GHCR_IMAGE
           secret_registry: false
         - destination: prod
-          registry: REGISTRY_ENDPOINT
+          registry: PRIME_REGISTRY_ENDPOINT
+          org: RANCHER_ORG
+          image: IMAGE_NAME
           username: REGISTRY_USERNAME
           password: REGISTRY_PASSWORD
-          image: REGISTRY_IMAGE
           secret_registry: true
     name: Release
     uses: ./.github/workflows/release.yml
@@ -36,8 +38,9 @@ jobs:
       password: ${{ matrix.password }}
       username: ${{ matrix.username }}
       registry: ${{ matrix.registry }}
-      tag: ${{ github.ref_name }}
+      org: $${{ matrix.org }}
       image: ${{ matrix.image }}
+      tag: ${{ github.ref_name }}
       secret_registry: ${{ matrix.secret_registry }}
     secrets: inherit
 
@@ -47,11 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.ref_name }}
-      CONTROLLER_IMG: ${{ vars.REGISTRY_IMAGE }}
-      PROD_REGISTRY: ${{ secrets.REGISTRY_ENDPOINT }}
-      PROD_ORG: rancher
+      ORG: ${{ vars.RANCHER_ORG }}
+      CONTROLLER_IMG: ${{ vars.IMAGE_NAME }}
       RELEASE_DIR: .cr-release-packages
-      CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     steps:
       - name: Checkout
@@ -62,17 +63,12 @@ jobs:
         uses: actions/setup-go@v6.0.0
         with:
           go-version-file: go.mod
-      - name: Get prod multiarch image digest
-        run: | 
-          docker pull ${{ env.CONTROLLER_IMG }}:${{ env.TAG }}
-          multiarch_digest=$( docker inspect --format='{{index .RepoDigests 0}}' ${{ env.CONTROLLER_IMG }}:${{ env.TAG }} | sed 's/.*@//' )
-          echo "multiarch_digest=${multiarch_digest}" >> $GITHUB_ENV
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Package operator chart
-        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} REGISTRY=${{ env.PROD_REGISTRY }} ORG=${{ env.PROD_ORG }} make release
+        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} CONTROLLER_IMG="${{ env.ORG }}/${{ env.CONTROLLER_IMG }}" ORG=${{ env.ORG }} make release
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
