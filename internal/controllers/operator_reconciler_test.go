@@ -19,6 +19,8 @@ package controllers
 import (
 	"os"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -302,5 +304,111 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(origin.Status.Conditions).To(HaveLen(1))
 			g.Expect(origin).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 		}).Should(Succeed())
+	})
+})
+
+var _ = Describe("Alter component functions", func() {
+	It("Should add cluster indexed label to CRDs", func() {
+		crd1 := unstructured.Unstructured{}
+		crd1.SetKind("CustomResourceDefinition")
+		crd1.SetName("test")
+
+		crd2 := unstructured.Unstructured{}
+		crd2.SetKind("CustomResourceDefinition")
+		crd2.SetName("test")
+
+		svc := unstructured.Unstructured{}
+		svc.SetKind("Service")
+		svc.SetName("ignored")
+
+		alteredComponents, err := addClusterIndexedLabelFn([]unstructured.Unstructured{crd1, crd2, svc})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(HaveLen(3))
+		Expect(alteredComponents[0].GetLabels()[clusterIndexedLabelKey]).To(Equal("true"))
+		Expect(alteredComponents[1].GetLabels()[clusterIndexedLabelKey]).To(Equal("true"))
+		Expect(alteredComponents[2].GetLabels()).NotTo(HaveKey(clusterIndexedLabelKey))
+	})
+
+	It("Should patch provider manifest with certificate secret annotation on service", func() {
+		cert := unstructured.Unstructured{}
+		cert.SetKind("Certificate")
+		cert.SetName("test")
+		Expect(unstructured.SetNestedField(cert.Object, "my-cert-secret", "spec", "secretName")).ToNot(HaveOccurred())
+
+		svc := unstructured.Unstructured{}
+		svc.SetKind("Service")
+		svc.SetName("test")
+
+		alteredComponents, err := patchProviderManifestFn([]unstructured.Unstructured{svc, cert})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(HaveLen(2))
+		Expect(alteredComponents[0].GetKind()).To(Equal("Service"))
+		Expect(alteredComponents[0].GetAnnotations()[certificateAnnotationKey]).To(Equal("my-cert-secret"))
+	})
+
+	It("Should fail when Certificate secretName is missing", func() {
+		cert := unstructured.Unstructured{}
+		cert.SetKind("Certificate")
+		cert.SetName("test")
+		svc := unstructured.Unstructured{}
+		svc.SetKind("Service")
+		svc.SetName("test")
+
+		_, err := patchProviderManifestFn([]unstructured.Unstructured{cert, svc})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("secretName not found"))
+	})
+
+	It("Should remove cert-manager resources and annotations", func() {
+		cert := unstructured.Unstructured{}
+		cert.SetKind("Certificate")
+		cert.SetName("test")
+		issuer := unstructured.Unstructured{}
+		issuer.SetKind("Issuer")
+		issuer.SetName("test")
+		deploy := unstructured.Unstructured{}
+		deploy.SetKind("Deployment")
+		deploy.SetName("test")
+		deploy.SetAnnotations(map[string]string{certManagerInjectAnnotationKey: "test"})
+		svc := unstructured.Unstructured{}
+		svc.SetKind("Service")
+		svc.SetName("test")
+		svc.SetAnnotations(map[string]string{certManagerInjectAnnotationKey: "test"})
+
+		alteredComponents, err := removeCertManagerFn([]unstructured.Unstructured{cert, issuer, deploy, svc})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(HaveLen(2))
+		Expect(alteredComponents[0].GetKind()).ToNot(Or(Equal("Certificate"), Equal("Issuer")))
+		Expect(alteredComponents[1].GetKind()).ToNot(Or(Equal("Certificate"), Equal("Issuer")))
+		if alteredComponents[0].GetAnnotations() != nil {
+			Expect(alteredComponents[0].GetAnnotations()).NotTo(HaveKey(certManagerInjectAnnotationKey))
+		}
+		if alteredComponents[1].GetAnnotations() != nil {
+			Expect(alteredComponents[1].GetAnnotations()).NotTo(HaveKey(certManagerInjectAnnotationKey))
+		}
+	})
+
+	It("Should handle empty input slices", func() {
+		alteredComponents, err := addClusterIndexedLabelFn(nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(BeNil())
+
+		alteredComponents, err = patchProviderManifestFn(nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(BeNil())
+
+		alteredComponents, err = removeCertManagerFn(nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(BeNil())
+	})
+
+	It("Should ignore manifests without Service or Certificate", func() {
+		pod := unstructured.Unstructured{}
+		pod.SetKind("Pod")
+		pod.SetName("test")
+
+		alteredComponents, err := patchProviderManifestFn([]unstructured.Unstructured{pod})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alteredComponents).To(HaveLen(1))
 	})
 })

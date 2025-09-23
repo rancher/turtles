@@ -71,6 +71,8 @@ const (
 
 	azureProvider = "azure"
 	gcpProvider   = "gcp"
+
+	clusterIndexedLabelKey = "auth.cattle.io/cluster-indexed"
 )
 
 // OperatorReconciler is a mapping wrapper for CAPIProvider -> operator provider resources.
@@ -141,6 +143,8 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 	)
 
 	customAlterFuncs := []repository.ComponentsAlterFn{}
+
+	customAlterFuncs = append(customAlterFuncs, addClusterIndexedLabelFn)
 
 	if feature.Gates.Enabled(feature.NoCertManager) {
 		customAlterFuncs = append(customAlterFuncs, patchProviderManifestFn, removeCertManagerFn)
@@ -305,13 +309,13 @@ func setProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.
 			provider.Status.Variables = map[string]string{}
 		}
 
-		provider.Status.Variables["EXP_AKS_RESOURCE_HEALTH"] = "true"
+		provider.Status.Variables["EXP_AKS_RESOURCE_HEALTH"] = trueValue
 	case gcpProvider:
 		if provider.Status.Variables == nil {
 			provider.Status.Variables = map[string]string{}
 		}
 
-		provider.Status.Variables["EXP_CAPG_GKE"] = "true"
+		provider.Status.Variables["EXP_CAPG_GKE"] = trueValue
 	}
 
 	return nil
@@ -343,6 +347,10 @@ func (r *CAPIProviderReconciler) purgeCertificateResources(ctx context.Context) 
 
 // patchProviderManifestFn is a function to patch the provider manifest that satisfies the type repository.ComponentsAlterFn.
 func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	if len(objs) == 0 {
+		return nil, nil
+	}
+
 	var (
 		secretName string
 		serviceObj *unstructured.Unstructured
@@ -388,9 +396,38 @@ func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.U
 	return objs, nil
 }
 
+// addClusterIndexedLabelFn adds the auth.cattle.io/cluster-indexed="true" label to every CRD.
+func addClusterIndexedLabelFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	if len(objs) == 0 {
+		return nil, nil
+	}
+
+	for i := range objs {
+		o := &objs[i]
+		if o.GetKind() != "CustomResourceDefinition" {
+			continue
+		}
+
+		labels := o.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+
+		labels[clusterIndexedLabelKey] = trueValue
+
+		o.SetLabels(labels)
+	}
+
+	return objs, nil
+}
+
 // removeCertManagerFn is a function that satisfies the type repository.ComponentsAlterFn
 // to remove cert-manager dependencies from the provider manifest.
 func removeCertManagerFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	if len(objs) == 0 {
+		return nil, nil
+	}
+
 	updatedObjs := []unstructured.Unstructured{}
 
 	for _, o := range objs {
