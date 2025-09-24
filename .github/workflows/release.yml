@@ -33,7 +33,7 @@ on:
       org:
         type: string
         description: Organization part of the image name
-        required: false
+        required: true
 
 jobs:
   build:

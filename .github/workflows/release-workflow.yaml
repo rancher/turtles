@@ -38,7 +38,7 @@ jobs:
       password: ${{ matrix.password }}
       username: ${{ matrix.username }}
       registry: ${{ matrix.registry }}
-      org: $${{ matrix.org }}
+      org: ${{ matrix.org }}
       image: ${{ matrix.image }}
       tag: ${{ github.ref_name }}
       secret_registry: ${{ matrix.secret_registry }}
@@ -53,6 +53,7 @@ jobs:
       ORG: ${{ vars.RANCHER_ORG }}
       CONTROLLER_IMG: ${{ vars.IMAGE_NAME }}
       RELEASE_DIR: .cr-release-packages
+      CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     steps:
       - name: Checkout
