@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Bumps Turtles version in a locally checked out rancher/rancher repository
 #
