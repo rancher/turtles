@@ -74,3 +74,43 @@ flowchart LR
     B --> C[✅ Merge PR in `rancher/charts`]
     C --> D[⚙️ Run `rancher/rancher` workflow]
     D --> E[✅ Merge PR in `rancher/rancher`]
+```
+
+### BackBackport PR Automation
+
+This repository provides a [GitHub Actions workflow](https://github.com/rancher/turtles/actions/workflows/backport-pr.yaml) to automate backporting pull requests to other branches.
+
+> **Purpose:** Create a backport PR for a specific branch (for example, maintenance or release branches) without manually applying patches.
+
+**How to use:**
+
+1. Comment on the original pull request with the following format:
+
+```
+/backport <milestone> <target-branch> [<issue-number>]
+```
+
+- `<milestone>` – Optional milestone or version tag (e.g., `v2.13.0`).  
+- `<target-branch>` – Branch you want the PR backported to (e.g., `release/v0.25`).  
+- `<issue-number>` – Optional issue number that this PR should close.
+
+**Example:**
+
+```
+/backport v2.13.0 release/v0.25
+```
+
+This will create a backport PR with the title:
+
+```
+[backport-release/v0.25] Original PR title
+```
+
+The workflow automatically:
+
+- Applies the patch from the original PR.  
+- Creates a new branch.  
+- Pushes the branch and opens a new PR.  
+- Assigns any original PR assignees who are members of the organization.
+
+> **Note:** Ensure the branch exists and that you have access to the repository before running the backport command.
