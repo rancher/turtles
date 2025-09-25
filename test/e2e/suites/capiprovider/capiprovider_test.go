@@ -90,23 +90,22 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 	It("Should notify of available update when bumping ClusterctlConfig", func() {
 		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.ClusterctlConfigUpdated)).Should(Succeed())
 		provider := &turtlesv1.CAPIProvider{}
-		checkLastVersionCondition := &clusterv1.Condition{}
-		Eventually(func() bool {
+		wantLastVersionCondition := &clusterv1.Condition{
+			Type:     turtlesv1.CheckLatestVersionTime,
+			Reason:   turtlesv1.CheckLatestUpdateAvailableReason,
+			Severity: clusterv1.ConditionSeverityInfo,
+			Status:   corev1.ConditionFalse,
+			Message:  "Provider version update available. Current latest is v1.13.0",
+		}
+		Eventually(func() *clusterv1.Condition {
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
-			if checkLastVersionCondition == nil {
-				return false
-			}
-			if checkLastVersionCondition.Reason != turtlesv1.CheckLatestUpdateAvailableReason {
-				return false
-			}
-			return true
-		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition with UpdateAvailable reason")
-		Expect(checkLastVersionCondition.Severity).Should(Equal(clusterv1.ConditionSeverityInfo), "UpdateAvailable severity must be Info")
-		Expect(checkLastVersionCondition.Status).Should(Equal(corev1.ConditionFalse), "UpdateAvailable status must be False")
-		Expect(checkLastVersionCondition.Message).Should(Equal("Provider version update available. Current latest is v1.13.0"))
+			checkLastVersionCondition := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			wantLastVersionCondition.LastTransitionTime = checkLastVersionCondition.LastTransitionTime //non-relevant for this test
+
+			return checkLastVersionCondition
+		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).Should(Equal(wantLastVersionCondition), "CAPIProvider must have CheckLatestVersionTime condition with UpdateAvailable reason")
 	})
 
 	It("Should not automatically update provider version", func() {
@@ -141,7 +140,12 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).
 			Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition True")
 
-		Expect(provider.Spec.Version).Should(Equal("v1.13.0"))
+		Eventually(func() string {
+			Expect(bootstrapClusterProxy.GetClient().
+				Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
+				Should(Succeed())
+			return provider.Spec.Version
+		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).Should(Equal("v1.13.0"))
 		verifyManagerImage(ctx, deploymentKey, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.13.0")
 	})
 
