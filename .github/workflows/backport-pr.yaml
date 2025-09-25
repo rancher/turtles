@@ -176,7 +176,7 @@ jobs:
                   fi
               fi
 
-              NEW_PR=$(gh pr create --title="[${TYPE} ${MILESTONE}] ${ORIGINAL_TITLE}" --body-file="${BODY}" --head "${BRANCH}" --base "${TARGET_BRANCH}" --milestone "${MILESTONE}" "${additional_cmd[@]}")
+              NEW_PR=$(gh pr create --title="[${TYPE}-${TARGET_BRANCH}] ${ORIGINAL_TITLE}" --body-file="${BODY}" --head "${BRANCH}" --base "${TARGET_BRANCH}" --milestone "${MILESTONE}" "${additional_cmd[@]}")
               echo "Backport PR created: ${NEW_PR}"
               echo "Backport PR created: ${NEW_PR}" >> $GITHUB_STEP_SUMMARY
           fi
