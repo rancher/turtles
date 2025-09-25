@@ -1,10 +1,10 @@
-{{- if index .Values "rancherTurtles" "rancherInstalled" }}
+{{- if .Values.rancherInstalled }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: pre-delete-job
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-weight": "-2"
@@ -35,7 +35,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: pre-delete-job
-    namespace: '{{ .Values.rancherTurtles.namespace }}'
+    namespace: '{{ .Values.namespace }}'
 roleRef:
   kind: ClusterRole
   name: pre-delete-job-delete-capiproviders
@@ -45,7 +45,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: rancher-capiprovider-cleanup
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-weight": "-1"
@@ -56,7 +56,7 @@ spec:
       serviceAccountName: pre-delete-job
       containers:
         - name: rancher-capiprovider-cleanup
-          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          image: {{ .Values.kubectlImage }}
           args:
           - delete
           - capiprovider

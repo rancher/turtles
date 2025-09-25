@@ -1,4 +1,4 @@
-{{- if index .Values "rancherTurtles" "features" "clusterclass-operations" "enabled" }}
+{{- if index .Values "features" "clusterclass-operations" "enabled" }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -566,7 +566,7 @@ metadata:
     app.kubernetes.io/part-of: turtles-rollout-poc
     turtles-capi.cattle.io: clusterclass
   name: rancher-turtles-clusterclass-manager
-  namespace: {{ index .Values "rancherTurtles" "namespace" }}
+  namespace: {{ index .Values "namespace" }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -580,7 +580,7 @@ metadata:
     app.kubernetes.io/part-of: turtles-rollout-poc
     turtles-capi.cattle.io: clusterclass
   name: rancher-turtles-clusterclass-leader-election-role
-  namespace: {{ index .Values "rancherTurtles" "namespace" }}
+  namespace: {{ index .Values "namespace" }}
 rules:
 - apiGroups:
   - ""
@@ -685,7 +685,7 @@ metadata:
     app.kubernetes.io/part-of: turtles-rollout-poc
     turtles-capi.cattle.io: clusterclass
   name: rancher-turtles-clusterclass-leader-election-rolebinding
-  namespace: {{ index .Values "rancherTurtles" "namespace" }}
+  namespace: {{ index .Values "namespace" }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -693,7 +693,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rancher-turtles-clusterclass-manager
-  namespace: {{ index .Values "rancherTurtles" "namespace" }}
+  namespace: {{ index .Values "namespace" }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -714,7 +714,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rancher-turtles-clusterclass-manager
-  namespace: {{ index .Values "rancherTurtles" "namespace" }}
+  namespace: {{ index .Values "namespace" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -723,7 +723,7 @@ metadata:
     control-plane: controller-manager
     turtles-capi.cattle.io: clusterclass
   name: rancher-turtles-clusterclass-controller-manager
-  namespace: {{ index .Values "rancherTurtles" "namespace" }}
+  namespace: {{ index .Values "namespace" }}
 spec:
   replicas: 1
   selector:
@@ -756,13 +756,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
-        {{- $imageVersion := index .Values "rancherTurtles" "features" "clusterclass-operations" "imageVersion" -}}
+    {{- $imageVersion := index .Values "features" "clusterclass-operations" "imageVersion" -}}
         {{- if contains "sha256:" $imageVersion }}
-        image: {{ index .Values "rancherTurtles" "features" "clusterclass-operations" "image" }}@{{ index .Values "rancherTurtles" "features" "clusterclass-operations" "imageVersion" }}
+    image: {{ index .Values "features" "clusterclass-operations" "image" }}@{{ index .Values "features" "clusterclass-operations" "imageVersion" }}
         {{- else }}
-        image: {{ index .Values "rancherTurtles" "features" "clusterclass-operations" "image" }}:{{ index .Values "rancherTurtles" "features" "clusterclass-operations" "imageVersion" }}
+    image: {{ index .Values "features" "clusterclass-operations" "image" }}:{{ index .Values "features" "clusterclass-operations" "imageVersion" }}
         {{- end }}
-        imagePullPolicy: '{{ index .Values "rancherTurtles" "features" "clusterclass-operations" "imagePullPolicy" }}'
+        imagePullPolicy: '{{ index .Values "features" "clusterclass-operations" "imagePullPolicy" }}'
         livenessProbe:
           httpGet:
             path: /healthz

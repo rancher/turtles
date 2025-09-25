@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: post-upgrade-job
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": post-upgrade
     "helm.sh/hook-weight": "1"
@@ -48,7 +48,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: post-upgrade-job
-    namespace: '{{ .Values.rancherTurtles.namespace }}'
+    namespace: '{{ .Values.namespace }}'
 roleRef:
   kind: ClusterRole
   name: post-upgrade-job-delete-capi-operator-resources
@@ -58,7 +58,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cluster-api-operator-resources-cleanup-script
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": post-upgrade
     "helm.sh/hook-weight": "1"
@@ -96,7 +96,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: cluster-api-operator-resources-cleanup
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": post-upgrade
     "helm.sh/hook-weight": "2"
@@ -107,7 +107,7 @@ spec:
       serviceAccountName: post-upgrade-job
       containers:
         - name: cluster-api-operator-resources-cleanup
-          image: {{ index .Values "rancherTurtles" "shellImage" }}
+          image: {{ index .Values "shellImage" }}
           command: ["/bin/bash"]
           args:
           - "-c"
