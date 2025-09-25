@@ -1,4 +1,4 @@
-{{- if index .Values "rancherTurtles" "features" "day2operations" "enabled" }}
+{{- if index .Values "features" "day2operations" "enabled" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +6,7 @@ metadata:
     control-plane: controller-manager
     turtles-capi.cattle.io: day2-operations
   name: rancher-turtles-day2-operations-controller-manager
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 spec:
   replicas: 1
   selector:
@@ -24,7 +24,7 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=etcd-backup-restore={{ .Values.rancherTurtles.features.day2operations.etcdBackupRestore.enabled }}
+        - --feature-gates=etcd-backup-restore={{ .Values.features.day2operations.etcdBackupRestore.enabled }}
         command:
         - ./turtles-day2-operations
         env:
@@ -40,12 +40,12 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
-        {{- if (contains "sha256:" .Values.rancherTurtles.features.day2operations.imageVersion) }}
-        image: '{{ .Values.rancherTurtles.features.day2operations.image }}@{{ .Values.rancherTurtles.features.day2operations.imageVersion }}'
+        {{- if (contains "sha256:" .Values.features.day2operations.imageVersion) }}
+        image: '{{ .Values.features.day2operations.image }}@{{ .Values.features.day2operations.imageVersion }}'
         {{- else }}
-        image: '{{ .Values.rancherTurtles.features.day2operations.image }}:{{ .Values.rancherTurtles.features.day2operations.imageVersion }}'
+        image: '{{ .Values.features.day2operations.image }}:{{ .Values.features.day2operations.imageVersion }}'
         {{- end }}
-        imagePullPolicy: '{{ .Values.rancherTurtles.features.day2operations.imagePullPolicy }}'
+        imagePullPolicy: '{{ .Values.features.day2operations.imagePullPolicy }}'
         livenessProbe:
           httpGet:
             path: /healthz
@@ -71,7 +71,7 @@ spec:
             cpu: 10m
             memory: 64Mi
         volumeMounts:
-        {{- if .Values.rancherTurtles.features.day2operations.etcdBackupRestore.enabled }}
+        {{- if .Values.features.day2operations.etcdBackupRestore.enabled }}
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
           readOnly: true
@@ -84,11 +84,11 @@ spec:
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane
       volumes:
-      {{- if .Values.rancherTurtles.features.day2operations.etcdBackupRestore.enabled }}
+      {{- if .Values.features.day2operations.etcdBackupRestore.enabled }}
       - name: cert
         secret:
           secretName: rancher-turtles-day2-operations-webhook-service-cert
-      {{- end }}
+  {{- end }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -102,5 +102,5 @@ metadata:
     app.kubernetes.io/part-of: rancher-turtles
     turtles-capi.cattle.io: day2-operations
   name: rancher-turtles-day2-operations-manager
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 {{- end }}

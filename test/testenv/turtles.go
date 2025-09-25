@@ -172,8 +172,8 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	}
 
 	if input.Version == "" {
-		values["rancherTurtles.image.repository"] = fmt.Sprintf("%s/%s", input.ImageRegistry, input.ImageRepository)
-		values["rancherTurtles.image.tag"] = input.Tag
+		values["image.repository"] = fmt.Sprintf("%s/%s", input.ImageRegistry, input.ImageRepository)
+		values["image.tag"] = input.Tag
 	}
 
 	for name, val := range input.AdditionalValues {
@@ -313,7 +313,7 @@ func PreRancherTurtlesInstallHook(rtInput *DeployRancherTurtlesInput) {
 	}
 	switch rtInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
-		rtInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		rtInput.AdditionalValues["imagePullSecrets"] = "{regcred}"
 	}
 }
 
@@ -326,6 +326,6 @@ func PreRancherTurtlesUpgradelHook(rtUpgradeInput *UpgradeRancherTurtlesInput) {
 	}
 	switch rtUpgradeInput.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
-		rtUpgradeInput.AdditionalValues["rancherTurtles.imagePullSecrets"] = "{regcred}"
+		rtUpgradeInput.AdditionalValues["imagePullSecrets"] = "{regcred}"
 	}
 }
