@@ -1,8 +1,0 @@
-apiVersion: turtles-capi.cattle.io/v1alpha1
-kind: ETCDSnapshotRestore
-metadata:
-  name: example-restore
-  namespace: ${CLUSTER_NAMESPACE}
-spec:
-  clusterName: ${CLUSTER_NAME}
-  etcdMachineSnapshotName: ${ETCD_MACHINE_SNAPSHOT_NAME}
