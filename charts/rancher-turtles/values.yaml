@@ -33,20 +33,6 @@ kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.31.4
 shellImage: rancher/kuberlr-kubectl:v5.0.0
 # features: Optional and experimental features.
 features:
-  # day2operations: Alpha feature.
-  day2operations:
-    # enabled: Turn on or off.
-    enabled: false
-    # image: Image for day-2 ops.
-    image: controller
-    # imageVersion: Image tag.
-    imageVersion: v0.0.0
-    # imagePullPolicy: Specify image pull policy.
-    imagePullPolicy: IfNotPresent
-    # etcdBackupRestore: Alpha feature. Manages etcd backup/restore.
-    etcdBackupRestore:
-      # enabled: Turn on (true) or off (false).
-      enabled: false
   # agent-tls-mode: Beta feature for agent TLS.
   agent-tls-mode:
     # enabled: Turn on or off.

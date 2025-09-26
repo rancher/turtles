@@ -51,31 +51,6 @@
     "features": {
       "type": "object",
       "properties": {
-        "day2operations": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "image": {
-              "type": "string"
-            },
-            "imageVersion": {
-              "type": "string"
-            },
-            "imagePullPolicy": {
-              "type": "string"
-            },
-            "etcdBackupRestore": {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean"
-                }
-              }
-            }
-          }
-        },
         "agent-tls-mode": {
           "type": "object",
           "properties": {
@@ -89,23 +64,6 @@
           "properties": {
             "enabled": {
               "type": "boolean"
-            }
-          }
-        },
-        "clusterclass-operations": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "image": {
-              "type": "string"
-            },
-            "imageVersion": {
-              "type": "string"
-            },
-            "imagePullPolicy": {
-              "type": "string"
             }
           }
         }
