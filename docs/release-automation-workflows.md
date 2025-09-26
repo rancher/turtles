@@ -76,7 +76,7 @@ flowchart LR
     D --> E[✅ Merge PR in `rancher/rancher`]
 ```
 
-### BackBackport PR Automation
+### Backport PR Automation
 
 This repository provides a [GitHub Actions workflow](https://github.com/rancher/turtles/actions/workflows/backport-pr.yaml) to automate backporting pull requests to other branches.
 
