@@ -5,206 +5,142 @@
   "properties": {
     "turtlesUI": {
       "type": "object",
-      "description": "Manages the UI component.",
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Turn UI on or off."
+          "type": "boolean"
         },
         "version": {
-          "type": "string",
-          "default": "0.8.2",
-          "description": "UI version to use."
+          "type": "string"
         }
       }
     },
-    "rancherTurtles": {
+    "image": {
       "type": "object",
-      "description": "Sets up the cluster management controller.",
       "properties": {
-        "image": {
-            "type": "object",
-            "description": "Controller image settings.",
-            "properties": {
-                "repository": {
-                    "type": "string",
-                    "default": "controller",
-                    "description": "Controller image repository"
-                },
-                "tag": {
-                    "type": "string",
-                    "default": "v0.0.0",
-                    "description": "Image tag."
-                },
-                "imagePullPolicy": {
-                    "type": "string",
-                    "default": "IfNotPresent",
-                    "description": "Specify image pull policy."
-                }
-            }
+        "repository": {
+          "type": "string"
         },
-        "namespace": {
-          "type": "string",
-          "default": "rancher-turtles-system",
-          "description": "Namespace for Turtles to run."
+        "tag": {
+          "type": "string"
         },
-        "managerArguments": {
-          "type": "array",
-          "default": [],
-          "description": "Extra args for the controller.",
-          "items": { "type": "string" }
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "default": [],
-          "description": "Secrets for private registries.",
-          "items": { "type": "string" }
-        },
-        "rancherInstalled": {
-          "type": "boolean",
-          "default": true,
-          "description": "True if Rancher is already installed in the cluster."
-        },
-        "kubectlImage": {
-          "type": "string",
-          "default": "registry.k8s.io/kubernetes/kubectl:v1.31.4",
-          "description": "Image for kubectl tasks."
-        },
-        "features": {
+        "imagePullPolicy": {
+          "type": "string"
+        }
+      }
+    },
+    "namespace": {
+      "type": "string"
+    },
+    "managerArguments": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rancherInstalled": {
+      "type": "boolean"
+    },
+    "kubectlImage": {
+      "type": "string"
+    },
+    "shellImage": {
+      "type": "string"
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "day2operations": {
           "type": "object",
-          "description": "Optional and experimental features.",
           "properties": {
-            "day2operations": {
-              "type": "object",
-              "description": "Alpha feature.",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": false,
-                  "description": "Turn on or off."
-                },
-                "image": {
-                  "type": "string",
-                  "default": "controller",
-                  "description": "Image for day-2 ops."
-                },
-                "imageVersion": {
-                  "type": "string",
-                  "default": "v0.0.0",
-                  "description": "Image tag."
-                },
-                "imagePullPolicy": {
-                  "type": "string",
-                  "default": "IfNotPresent",
-                  "description": "Specify image pull policy."
-                },
-                "etcdBackupRestore": {
-                  "type": "object",
-                  "description": "Manages etcd backup/restore.",
-                  "properties": {
-                    "enabled": {
-                      "type": "boolean",
-                      "default": false,
-                      "description": "Turn on (true) or off (false)."
-                    }
-                  }
-                }
-              }
+            "enabled": {
+              "type": "boolean"
             },
-            "addon-provider-fleet": {
-              "type": "object",
-              "description": "Beta feature for fleet addons.",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Turn on or off."
-                }
-              }
+            "image": {
+              "type": "string"
             },
-            "agent-tls-mode": {
-              "type": "object",
-              "description": "Alpha feature for agent TLS.",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": false,
-                  "description": "Turn on or off."
-                }
-              }
+            "imageVersion": {
+              "type": "string"
             },
-            "clusterclass-operations": {
+            "imagePullPolicy": {
+              "type": "string"
+            },
+            "etcdBackupRestore": {
               "type": "object",
-              "description": "Alpha feature. Not ready for testing yet.",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
-                  "default": false,
-                  "description": "Turn on or off."
-                },
-                "image": {
-                  "type": "string",
-                  "default": "controller",
-                  "description": "Image for cluster class ops."
-                },
-                "imageVersion": {
-                  "type": "string",
-                  "default": "v0.0.0",
-                  "description": "Image tag."
-                },
-                "imagePullPolicy": {
-                  "type": "string",
-                  "default": "IfNotPresent",
-                  "description": "Pull policy."
+                  "type": "boolean"
                 }
               }
             }
           }
         },
-        "volumes": {
-          "type": "array",
-          "description": "Volumes for controller pods.",
-          "items": {
+        "agent-tls-mode": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "no-cert-manager": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "clusterclass-operations": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "image": {
+              "type": "string"
+            },
+            "imageVersion": {
+              "type": "string"
+            },
+            "imagePullPolicy": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "configMap"],
+        "properties": {
+          "name": { "type": "string" },
+          "configMap": {
             "type": "object",
-            "required": [
-              "name",
-              "configMap"
-            ],
             "properties": {
               "name": {
                 "type": "string"
-              },
-              "configMap": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "default": "clusterctl-config",
-                    "description": "ConfigMap for clusterctl."
-                  }
-                }
               }
             }
           }
-        },
-        "volumeMounts": {
-          "type": "object",
-          "properties": {
-            "manager": {
-              "type": "array",
-              "description": "Mount volumes to pods.",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "mountPath": { "type": "string" },
-                  "name": { "type": "string" },
-                  "readOnly": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Mount as read-only."
-                  }
-                }
+        }
+      }
+    },
+    "volumeMounts": {
+      "type": "object",
+      "properties": {
+        "manager": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "mountPath": { "type": "string" },
+              "name": { "type": "string" },
+              "readOnly": {
+                "type": "boolean"
               }
             }
           }
@@ -213,34 +149,24 @@
     },
     "cluster-api-operator": {
       "type": "object",
-      "description": "Manages Cluster API components.",
       "properties": {
         "cleanup": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable cleanup tasks."
+          "type": "boolean"
         },
         "cluster-api": {
           "type": "object",
-          "description": "Cluster API component settings.",
           "properties": {
             "enabled": {
-              "type": "boolean",
-              "default": true,
-              "description": "Turn on or off."
+              "type": "boolean"
             },
             "configSecret": {
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string",
-                  "default": "",
-                  "description": "Custom secret name (if overriding)."
+                  "type": "string"
                 },
                 "defaultName": {
-                  "type": "string",
-                  "default": "capi-env-variables",
-                  "description": "Default secret name."
+                  "type": "string"
                 }
               }
             },
@@ -248,31 +174,23 @@
               "type": "object",
               "properties": {
                 "namespace": {
-                  "type": "string",
-                  "default": "capi-system",
-                  "description": "Core component namespace."
+                  "type": "string"
                 },
                 "imageUrl": {
-                  "type": "string",
-                  "default": "",
-                  "description": "Custom image URL."
+                  "type": "string"
                 },
                 "fetchConfig": {
                   "type": "object",
                   "properties": {
-                    "url": { "type": "string", "default": "" },
-                    "selector": { "type": "string", "default": "" }
+                    "url": { "type": "string" },
+                    "selector": { "type": "string" }
                   }
                 },
                 "enableAutomaticUpdates": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Allow the provider to update automatically when a new Turtles version is installed."
+                  "type": "boolean"
                 },
                 "version": {
-                  "type": "string",
-                  "default": "",
-                  "description": "CAPI core provider version."
+                  "type": "string"
                 }
               }
             },
@@ -280,33 +198,24 @@
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Turn on or off."
+                  "type": "boolean"
                 },
                 "version": {
-                  "type": "string",
-                  "default": "",
-                  "description": "RKE2 version."
+                  "type": "string"
                 },
                 "enableAutomaticUpdates": {
-                  "type": "boolean",
-                  "default": true,
-                  "description": "Allow the provider to update automatically when a new Turtles version is installed."
+                  "type": "boolean"
                 },
                 "bootstrap": {
                   "type": "object",
                   "properties": {
-                    "namespace": {
-                      "type": "string",
-                      "default": "rke2-bootstrap-system"
-                    },
-                    "imageUrl": { "type": "string", "default": "" },
+                    "namespace": { "type": "string" },
+                    "imageUrl": { "type": "string" },
                     "fetchConfig": {
                       "type": "object",
                       "properties": {
-                        "url": { "type": "string", "default": "" },
-                        "selector": { "type": "string", "default": "" }
+                        "url": { "type": "string" },
+                        "selector": { "type": "string" }
                       }
                     }
                   }
@@ -314,16 +223,13 @@
                 "controlPlane": {
                   "type": "object",
                   "properties": {
-                    "namespace": {
-                      "type": "string",
-                      "default": "rke2-control-plane-system"
-                    },
-                    "imageUrl": { "type": "string", "default": "" },
+                    "namespace": { "type": "string" },
+                    "imageUrl": { "type": "string" },
                     "fetchConfig": {
                       "type": "object",
                       "properties": {
-                        "url": { "type": "string", "default": "" },
-                        "selector": { "type": "string", "default": "" }
+                        "url": { "type": "string" },
+                        "selector": { "type": "string" }
                       }
                     }
                   }

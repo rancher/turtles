@@ -2,7 +2,7 @@ apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
 metadata:
   name: fleet
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
@@ -12,7 +12,7 @@ spec:
   type: addon
   additionalManifests:
     name: fleet-addon-config
-    namespace: '{{ .Values.rancherTurtles.namespace }}'
+    namespace: '{{ .Values.namespace }}'
 {{- if or (index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "selector") }}
   fetchConfig:
     {{- if index .Values "cluster-api-operator" "cluster-api" "fleet" "addon" "fetchConfig" "url" }}
@@ -27,7 +27,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fleet-addon-config
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "2"
@@ -41,7 +41,7 @@ data:
     spec:
       config:
         featureGates:
-        {{- if index .Values "rancherTurtles" "rancherInstalled" }}
+        {{- if index .Values "rancherInstalled" }}
           configMap:
             ref:
               kind: ConfigMap
@@ -84,4 +84,4 @@ data:
     subjects:
     - kind: ServiceAccount
       name: caapf-controller-manager
-      namespace: {{ .Values.rancherTurtles.namespace }}
+      namespace: {{ .Values.namespace }}

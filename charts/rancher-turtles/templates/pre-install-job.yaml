@@ -1,5 +1,4 @@
-{{- if index .Values "rancherTurtles" "rancherInstalled"}}
----
+{{- if .Values.rancherInstalled }}
 apiVersion: management.cattle.io/v3
 kind: Feature
 metadata:
@@ -9,14 +8,12 @@ metadata:
     "helm.sh/hook-weight": "1"
 spec:
   value: false
-{{- end }}
-{{- if index .Values "rancherTurtles" "rancherInstalled" }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: pre-install-job
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "1"
@@ -47,7 +44,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: pre-install-job
-    namespace: '{{ .Values.rancherTurtles.namespace }}'
+    namespace: '{{ .Values.namespace }}'
 roleRef:
   kind: ClusterRole
   name: pre-install-job-delete-webhooks
@@ -57,7 +54,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: rancher-mutatingwebhook-cleanup
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "2"
@@ -68,7 +65,7 @@ spec:
       serviceAccountName: pre-install-job
       containers:
         - name: rancher-mutatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          image: {{ index .Values "kubectlImage" }}
           args:
           - delete
           - mutatingwebhookconfigurations.admissionregistration.k8s.io
@@ -80,7 +77,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: rancher-validatingwebhook-cleanup
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "2"
@@ -91,7 +88,7 @@ spec:
       serviceAccountName: pre-install-job
       containers:
         - name: rancher-validatingwebhook-cleanup
-          image: {{ index .Values "rancherTurtles" "kubectlImage" }}
+          image: {{ index .Values "kubectlImage" }}
           args:
           - delete
           - validatingwebhookconfigurations.admissionregistration.k8s.io
