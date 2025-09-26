@@ -1,9 +1,9 @@
-{{- if and (index .Values "turtlesUI" "enabled") (index .Values "rancherTurtles" "rancherInstalled") }}
+{{- if and (index .Values "turtlesUI" "enabled") (index .Values "rancherInstalled") }}
 apiVersion: catalog.cattle.io/v1
 kind: UIPlugin
 metadata:
   name: capi
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 spec:
   plugin:
     endpoint: https://raw.githubusercontent.com/rancher/capi-ui-extension/gh-pages/extensions/capi/{{ index .Values "turtlesUI" "version" | toString }}

@@ -3331,7 +3331,7 @@ metadata:
     app.kubernetes.io/name: serviceaccount
     app.kubernetes.io/part-of: rancher-turtles
   name: rancher-turtles-manager
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -3344,7 +3344,7 @@ metadata:
     app.kubernetes.io/name: role
     app.kubernetes.io/part-of: rancher-turtles
   name: rancher-turtles-leader-election-role
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 rules:
 - apiGroups:
   - ""
@@ -3552,7 +3552,7 @@ metadata:
     app.kubernetes.io/name: rolebinding
     app.kubernetes.io/part-of: rancher-turtles
   name: rancher-turtles-leader-election-rolebinding
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -3560,7 +3560,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rancher-turtles-manager
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -3580,4 +3580,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rancher-turtles-manager
-  namespace: '{{ .Values.rancherTurtles.namespace }}'
+  namespace: '{{ .Values.namespace }}'
