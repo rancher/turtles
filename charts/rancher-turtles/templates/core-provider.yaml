@@ -1,4 +1,4 @@
-{{- if index .Values "cluster-api-operator" "cluster-api" "enabled" }}
+{{- if and (index .Values "cluster-api-operator" "cluster-api" "enabled") (not (index .Values "airGapped")) }}
 {{- $namespace := index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
 {{- if not (lookup "v1" "Namespace" "" $namespace) }}
 ---

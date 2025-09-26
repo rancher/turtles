@@ -31,6 +31,9 @@ rancherInstalled: true
 kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.31.4
 # shellImage: Image for shell tasks.
 shellImage: rancher/kuberlr-kubectl:v5.0.0
+# airGapped: Whether this is an airGapped installation
+# If it is, core CAPI manifest is embedded in the chart and no remote fetch is required.
+airGapped: false
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
