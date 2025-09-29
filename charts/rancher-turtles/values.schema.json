@@ -58,14 +58,6 @@
               "type": "boolean"
             }
           }
-        },
-        "no-cert-manager": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            }
-          }
         }
       }
     },
