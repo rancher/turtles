@@ -53,7 +53,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
 	"github.com/rancher/turtles/internal/sync"
 )
@@ -146,9 +145,7 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 
 	customAlterFuncs = append(customAlterFuncs, addClusterIndexedLabelFn)
 
-	if feature.Gates.Enabled(feature.NoCertManager) {
-		customAlterFuncs = append(customAlterFuncs, patchProviderManifestFn, removeCertManagerFn)
-	}
+	customAlterFuncs = append(customAlterFuncs, patchProviderManifestFn, removeCertManagerFn)
 
 	rec := controller.NewPhaseReconciler(
 		r.GenericProviderReconciler, r.Provider, r.ProviderList,
@@ -177,9 +174,8 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		rec.Finalize,
 	}
 
-	if feature.Gates.Enabled(feature.NoCertManager) {
-		r.ReconcilePhases = append(r.ReconcilePhases, r.purgeCertificateResources)
-	}
+	// Always purge cert-manager certificate resources.
+	r.ReconcilePhases = append(r.ReconcilePhases, r.purgeCertificateResources)
 
 	r.DeletePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,

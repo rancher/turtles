@@ -26,7 +26,7 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=agent-tls-mode={{ index .Values "features" "agent-tls-mode" "enabled"}},ui-plugin={{ index .Values "turtlesUI" "enabled"}},no-cert-manager={{ index .Values "features" "no-cert-manager" "enabled"}}
+        - --feature-gates=agent-tls-mode={{ index .Values "features" "agent-tls-mode" "enabled"}},ui-plugin={{ index .Values "turtlesUI" "enabled"}}
         {{- range .Values.managerArguments }}
         - {{ . }}
         {{- end }}  
