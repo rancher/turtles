@@ -54,4 +54,26 @@ spec:
     oci: {{ index .Values "providers" "bootstrapRKE2" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "infrastructureAzure" "enabled" }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: caprke2-azure-aggregated-role
+  labels:
+    cluster.x-k8s.io/aggregate-to-capz-manager: "true"
+rules:
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
+  - rke2configs
+  verbs:
+  - create
+  - update
+  - delete
+  - get
+  - list
+  - patch
+  - watch
+{{- end }}
 {{- end }}
