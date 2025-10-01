@@ -136,6 +136,9 @@ var (
 
 	//go:embed data/test-providers/clusterctlconfig-updated.yaml
 	ClusterctlConfigUpdated []byte
+
+	//go:embed data/rancher/pre-turtles-install.yaml
+	RancherTurtlesPreInstall []byte
 )
 
 const (

@@ -75,6 +75,16 @@ envsubst <test/e2e/data/rancher/ingress.yaml | kubectl apply -f -
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
 
+pre_install_configuration() {
+    kubectl apply -f test/e2e/data/rancher/pre-turtles-install.yaml
+    kubectl delete \
+        mutatingwebhookconfiguration mutating-webhook-configuration \
+        --ignore-not-found
+    kubectl delete \
+        validatingwebhookconfiguration validating-webhook-configuration \
+        --ignore-not-found
+}
+
 # Install the locally build chart of Rancher Turtles
 install_local_rancher_turtles_chart() {
     # Remove the previous chart directory
@@ -95,6 +105,9 @@ install_local_rancher_turtles_chart() {
 
     kubectl apply -f test/e2e/data/capi-operator/clusterctlconfig.yaml
 }
+
+# patch the removed pre-install hook
+pre_install_configuration
 
 echo "Installing local Rancher Turtles chart for development..."
 install_local_rancher_turtles_chart
