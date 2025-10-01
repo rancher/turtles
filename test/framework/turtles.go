@@ -83,7 +83,7 @@ func WaitForCAPIProviderRollout(ctx context.Context, input WaitForCAPIProviderRo
 // WaitForDeploymentsRemovedInput is the input for WaitForDeploymentsRemoved.
 type WaitForDeploymentsRemovedInput = capiframework.WaitForDeploymentsAvailableInput
 
-// WaitForDeploymentsAvRemoved waits until the Deployment is removed.
+// WaitForDeploymentsRemoved waits until the Deployment is removed.
 func WaitForDeploymentsRemoved(ctx context.Context, input WaitForDeploymentsRemovedInput, intervals ...interface{}) {
 	Byf("Waiting for deployment %s to be removed", klog.KObj(input.Deployment))
 	deployment := &appsv1.Deployment{}

@@ -148,15 +148,6 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		By("Waiting for CAAPF deployment to be available")
-		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-			Getter: bootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "caapf-controller-manager",
-				Namespace: e2e.RancherTurtlesNamespace,
-			}},
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
-
 		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 			Getter:  bootstrapClusterProxy.GetClient(),
 			Version: e2e.CAPIVersion,
@@ -169,49 +160,25 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Namespace: "capi-system",
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
+		By("Verifying Kubeadm CAPIProvider version has not changed after upgrade")
 		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 			Getter:    bootstrapClusterProxy.GetClient(),
-			Version:   e2e.CAPIVersion,
+			Version:   "v1.9.5", // provider version that was installed previously
+			Name:      "kubeadm-bootstrap",
+			Namespace: "capi-kubeadm-bootstrap-system",
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
+			Getter:    bootstrapClusterProxy.GetClient(),
+			Version:   "v1.9.5", // provider version that was installed previously
 			Name:      "kubeadm-control-plane",
 			Namespace: "capi-kubeadm-control-plane-system",
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter: bootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "rke2-bootstrap-controller-manager",
-				Namespace: "rke2-bootstrap-system",
-			}},
-			Image:     "registry.suse.com/rancher/cluster-api-provider-rke2-bootstrap:",
-			Name:      "rke2-bootstrap",
-			Namespace: "rke2-bootstrap-system",
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
-
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter: bootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "rke2-control-plane-controller-manager",
-				Namespace: "rke2-control-plane-system",
-			}},
-			Image:     "registry.suse.com/rancher/cluster-api-provider-rke2-controlplane:",
-			Name:      "rke2-control-plane",
-			Namespace: "rke2-control-plane-system",
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
-
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter: bootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "caapf-controller-manager",
-				Namespace: "rancher-turtles-system",
-			}},
-			Image:     "registry.suse.com/rancher/cluster-api-addon-provider-fleet:",
-			Name:      "fleet",
-			Namespace: "rancher-turtles-system",
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
-
+		By("Verifying CAPD CAPIProvider version has not changed after upgrade")
 		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
 			Getter:    bootstrapClusterProxy.GetClient(),
-			Version:   e2e.CAPIVersion,
+			Version:   "v1.9.5", // provider version that was installed previously
 			Name:      "docker",
 			Namespace: "capd-system",
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
