@@ -30,6 +30,12 @@ questions:
     type: boolean
     label: Enable Agent TLS Mode
     group: "Rancher Turtles Features Settings"
+  - variable: features.no-cert-manager.enabled
+    default: false
+    description: "[ALPHA] If enabled Turtles will remove cert-manager."
+    type: boolean
+    label: Remove cert-manager
+    group: "Rancher Turtles Features Settings"
   - variable: kubectlImage
     default: "registry.k8s.io/kubernetes/kubectl:v1.31.4"
     description: "Specify the image to use when running kubectl in jobs."
