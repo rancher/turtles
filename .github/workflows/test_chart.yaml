@@ -56,11 +56,16 @@ jobs:
       - name: Run chart-testing (lint)
         run: ct lint --validate-maintainers=false --charts out/charts/rancher-turtles/
 
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-$(uname)-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
       - name: Create kind cluster
-        uses: helm/kind-action@v1.12.0
-        with:
-          cluster_name: kind
-          node_image: kindest/node:v1.31.4
+        run: |
+          kind create cluster --name kind \
+            --image kindest/node@sha256:abd489f042d2b644e2d033f5c2d900bc707798d075e8186cb65e3f1367a9d5a1
 
       - name: Display kind version
         run: kind version
@@ -142,11 +147,16 @@ jobs:
       - name: Package operator chart
         run: make release-chart
 
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-$(uname)-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
       - name: Create kind cluster
-        uses: helm/kind-action@v1.12.0
-        with:
-          cluster_name: kind
-          node_image: kindest/node:v1.31.4
+        run: |
+          kind create cluster --name kind \
+            --image kindest/node@sha256:abd489f042d2b644e2d033f5c2d900bc707798d075e8186cb65e3f1367a9d5a1
 
       - name: Display kind version
         run: kind version
