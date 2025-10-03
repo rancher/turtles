@@ -92,6 +92,43 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 	Expect(createClusterRes.Error).NotTo(HaveOccurred(), "Failed to create cluster using eksctl. Stderr: %s", createClusterRes.Stderr)
 	Expect(createClusterRes.ExitCode).To(Equal(0), "Creating cluster returned non-zero exit code. Stderr: %s", createClusterRes.Stderr)
 
+	turtlesframework.Byf("Mapping IAM identity for user %s into cluster %s", "turtles-ci", k.name)
+	createIAMIdentityMappingRes := &turtlesframework.RunCommandResult{}
+	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "eksctl",
+		Args: []string{
+			"create",
+			"iamidentitymapping",
+			"--cluster",
+			k.name,
+			"--region",
+			k.region,
+			"--arn",
+			"arn:aws:iam::312662503588:user/turtles-ci", // ARN of the CI user is just a reference, it can stay public
+			"--username",
+			"turtles-ci",
+			"--group",
+			"system:masters",
+		},
+	}, createIAMIdentityMappingRes)
+	Expect(createIAMIdentityMappingRes.Error).NotTo(HaveOccurred(), "Failed to create IAM identity mapping using eksctl. Stderr: %s", createIAMIdentityMappingRes.Stderr)
+	Expect(createIAMIdentityMappingRes.ExitCode).To(Equal(0), "Creating IAM identity mapping returned non-zero exit code. Stderr: %s", createIAMIdentityMappingRes.Stderr)
+
+	turtlesframework.Byf("Creating ClusterRoleBinding for turtles-ci user with cluster-admin role")
+	createClusterRoleBindingRes := &turtlesframework.RunCommandResult{}
+	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "kubectl",
+		Args: []string{
+			"create",
+			"clusterrolebinding",
+			"turtles-ci-cluster-admin",
+			"--clusterrole=cluster-admin",
+			"--user=turtles-ci",
+			"--kubeconfig",
+			tempFile.Name(),
+		},
+	}, createClusterRoleBindingRes)
+
 	k.kubeconfigPath = tempFile.Name()
 }
 
