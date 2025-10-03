@@ -90,7 +90,27 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			CAPIProvidersYAML: [][]byte{
 				e2e.CapiProviders,
 			},
-			WaitForDeployments: testenv.DefaultDeployments,
+			WaitForDeployments: []testenv.NamespaceName{
+				{
+					Name:      "capi-controller-manager",
+					Namespace: "capi-system",
+				}, {
+					Name:      "capi-kubeadm-bootstrap-controller-manager",
+					Namespace: "capi-kubeadm-bootstrap-system",
+				}, {
+					Name:      "capi-kubeadm-control-plane-controller-manager",
+					Namespace: "capi-kubeadm-control-plane-system",
+				}, {
+					Name:      "capd-controller-manager",
+					Namespace: "capd-system",
+				}, {
+					Name:      "rke2-bootstrap-controller-manager",
+					Namespace: "rke2-bootstrap-system",
+				}, {
+					Name:      "rke2-control-plane-controller-manager",
+					Namespace: "rke2-control-plane-system",
+				},
+			},
 		})
 	})
 

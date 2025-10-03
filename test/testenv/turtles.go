@@ -48,12 +48,6 @@ var DefaultDeployments = []NamespaceName{
 	}, {
 		Name:      "capd-controller-manager",
 		Namespace: "capd-system",
-	}, {
-		Name:      "rke2-bootstrap-controller-manager",
-		Namespace: "rke2-bootstrap-system",
-	}, {
-		Name:      "rke2-control-plane-controller-manager",
-		Namespace: "rke2-control-plane-system",
 	},
 }
 
