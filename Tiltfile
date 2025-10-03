@@ -35,7 +35,7 @@ if settings.get("trigger_mode") == "manual":
 if settings.get("default_registry") != "":
     default_registry(settings.get("default_registry"))
 
-always_enable_projects = ["turtles", "turtles-capiproviders"]
+always_enable_projects = ["turtles"]
 
 projects = {
     "turtles": {
@@ -51,15 +51,6 @@ projects = {
         "kustomize_dir": "config/default",
         "label": "turtles",
         "binary_name" : "manager"
-    },
-    "turtles-capiproviders": {
-        "context": ".",
-        "live_reload_deps": [
-            "config"
-        ],
-        "kustomize_dir": "config/capiproviders",
-        "label": "turtles-capiproviders",
-        "op": "apply"
     }
 }
 
