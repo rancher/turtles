@@ -68,7 +68,7 @@ metadata:
   name: fleet
   namespace: {{ index .Values "providers" "addonFleet" "namespace" }}
 spec:
-  name: fleet
+  name: rancher-fleet
   type: addon
 {{- if index .Values  "providers" "addonFleet" "version" }}
   version: {{ index .Values "providers" "addonFleet" "version" }}
