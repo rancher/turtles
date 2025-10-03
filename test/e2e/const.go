@@ -136,6 +136,9 @@ var (
 
 	//go:embed data/test-providers/clusterctlconfig-updated.yaml
 	ClusterctlConfigUpdated []byte
+
+	//go:embed data/rancher/pre-turtles-install.yaml
+	RancherTurtlesPreInstall []byte
 )
 
 const (
@@ -194,7 +197,7 @@ const (
 )
 
 const (
-	CAPIVersion = "v1.10.5"
+	CAPIVersion = "v1.10.6"
 )
 
 const (

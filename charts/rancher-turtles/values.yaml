@@ -28,25 +28,11 @@ imagePullSecrets: []
 # rancherInstalled: True if Rancher already installed is in the cluster, this is the preferred installation way.
 rancherInstalled: true
 # kubectlImage: Image for kubectl tasks.
-kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.31.4
+kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.32.3
 # shellImage: Image for shell tasks.
 shellImage: rancher/kuberlr-kubectl:v5.0.0
 # features: Optional and experimental features.
 features:
-  # day2operations: Alpha feature.
-  day2operations:
-    # enabled: Turn on or off.
-    enabled: false
-    # image: Image for day-2 ops.
-    image: controller
-    # imageVersion: Image tag.
-    imageVersion: v0.0.0
-    # imagePullPolicy: Specify image pull policy.
-    imagePullPolicy: IfNotPresent
-    # etcdBackupRestore: Alpha feature. Manages etcd backup/restore.
-    etcdBackupRestore:
-      # enabled: Turn on (true) or off (false).
-      enabled: false
   # agent-tls-mode: Beta feature for agent TLS.
   agent-tls-mode:
     # enabled: Turn on or off.
@@ -106,40 +92,3 @@ cluster-api-operator:
         url: ""
         # selector: Config selector.
         selector: ""
-    # rke2: RKE2 provider settings.
-    rke2:
-      # enabled: Turn on or off.
-      enabled: true
-      # version: RKE2 version.
-      version: ""
-      # enableAutomaticUpdate: Allow the provider to update automatically when a new Turtles version is installed.
-      enableAutomaticUpdate: true
-      # bootstrap: RKE2 bootstrap provider.
-      bootstrap:
-        # namespace: Bootstrap namespace.
-        namespace: rke2-bootstrap-system
-        # imageUrl: Custom image URL.
-        imageUrl: ""
-        # fetchConfig: Config fetching settings.
-        fetchConfig:
-          # url: Config fetch URL.
-          url: ""
-          # selector: Config selector.
-          selector: ""
-      # controlPlane: RKE2 control plane provider.
-      controlPlane:
-        # namespace: Control plane namespace.
-        namespace: rke2-control-plane-system
-        # imageUrl: Custom image URL.
-        imageUrl: ""
-        # fetchConfig: Config fetching settings.
-        fetchConfig:
-          # url: Config fetch URL.
-          url: ""
-          # selector: Config selector.
-          selector: ""
-    fleet:
-      addon:
-        fetchConfig:
-          url: ""
-          selector: ""

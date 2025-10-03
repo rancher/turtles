@@ -27,11 +27,9 @@ RANCHER_PASSWORD=${RANCHER_PASSWORD:-rancheradmin}
 RANCHER_VERSION=${RANCHER_VERSION:-v2.12.1}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
-DAY2_CONTROLLER_IMAGE=${DAY2_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
-DAY2_CONTROLLER_IMAGE_TAG=${DAY2_CONTROLLER_IMAGE_TAG:-dev}
-CLUSTERCLASS_CONTROLLER_IMAGE=${CLUSTERCLASS_CONTROLLER_IMAGE:-ghcr.io/rancher/turtles}
-CLUSTERCLASS_CONTROLLER_IMAGE_TAG=${CLUSTERCLASS_CONTROLLER_IMAGE_TAG:-dev}
 USE_TILT_DEV=${USE_TILT_DEV:-true}
+TURTLES_VERSION=${TURTLES_VERSION:-dev}
+TURTLES_IMAGE=${TURTLES_IMAGE:-ghcr.io/rancher/turtles:$TURTLES_VERSION}
 
 BASEDIR=$(dirname "$0")
 
@@ -77,34 +75,39 @@ envsubst <test/e2e/data/rancher/ingress.yaml | kubectl apply -f -
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
 
+pre_install_configuration() {
+    kubectl apply -f test/e2e/data/rancher/pre-turtles-install.yaml
+    kubectl delete \
+        mutatingwebhookconfiguration mutating-webhook-configuration \
+        --ignore-not-found
+    kubectl delete \
+        validatingwebhookconfiguration validating-webhook-configuration \
+        --ignore-not-found
+}
+
 # Install the locally build chart of Rancher Turtles
 install_local_rancher_turtles_chart() {
     # Remove the previous chart directory
     rm -rf out
     # Build the chart locally
-    RELEASE_TAG=dev make build-chart
-    # Build the day2 controller image
+    RELEASE_TAG=$TURTLES_VERSION make build-chart
+    # Build the controller image
     make docker-build-prime
-    # Load the day2 controller image into the kind cluster
-    kind load docker-image $DAY2_CONTROLLER_IMAGE:$DAY2_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
-    # Load the clusterclass controller image into the kind cluster
-    kind load docker-image $CLUSTERCLASS_CONTROLLER_IMAGE:$CLUSTERCLASS_CONTROLLER_IMAGE_TAG --name $CLUSTER_NAME
-    # Install Rancher Turtles using a local chart with 'day2-operations' & 'clusterclass-operations'
-    # feature flags enabled to run day2 & clusterclass controllers
+    # Load the controller image
+    kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
+    # Install Rancher Turtles using a local chart
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
         -n rancher-turtles-system \
-    --set features.day2operations.enabled=true \
-    --set features.day2operations.imageVersion=dev \
-    --set features.day2operations.etcdBackupRestore.enabled=true \
-    --set features.clusterclass-operations.enabled=true \
-    --set features.clusterclass-operations.imageVersion=dev \
-    --set image.tag=dev \
+        --set image.tag=$TURTLES_VERSION \
         --dependency-update \
         --create-namespace --wait \
         --timeout 180s
 
     kubectl apply -f test/e2e/data/capi-operator/clusterctlconfig.yaml
 }
+
+# patch the removed pre-install hook
+pre_install_configuration
 
 echo "Installing local Rancher Turtles chart for development..."
 install_local_rancher_turtles_chart

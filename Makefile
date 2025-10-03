@@ -59,8 +59,6 @@ BIN_DIR := bin
 TEST_DIR := test
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/$(BIN_DIR))
-EXP_DAY2_DIR := exp/day2
-EXP_CLUSTERCLASS_DIR := exp/clusterclass
 
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
@@ -157,7 +155,7 @@ HELM_VER := v3.18.4
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-CLUSTERCTL_VER := v1.10.5
+CLUSTERCTL_VER := v1.10.6
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 
@@ -230,8 +228,6 @@ generate: vendor ## Run all generators
 	$(MAKE) vendor
 	$(MAKE) generate-modules
 	$(MAKE) generate-manifests-api
-	$(MAKE) generate-exp-day2-manifests-api
-	$(MAKE) generate-exp-clusterclass-manifests-api
 	$(MAKE) generate-manifests-external
 	$(MAKE) generate-go-deepcopy
 	$(MAKE) vendor-clean
@@ -252,37 +248,16 @@ generate-manifests-api: controller-gen ## Generate ClusterRole and CustomResourc
 			output:crd:artifacts:config=./config/crd/bases \
 			output:rbac:dir=./config/rbac \
 
-.PHONY: generate-exp-day2-manifests-api
-generate-exp-day2-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects for experimental API.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/day2/api/v1alpha1/..." \
-			paths=./exp/day2/controllers/... \
-			paths=./exp/day2/webhooks/... \
-			output:crd:artifacts:config=./exp/day2/config/crd/bases \
-			output:rbac:dir=./exp/day2/config/rbac \
-			output:webhook:dir=./exp/day2/config/webhook \
-			webhook
-
-.PHONY: generate-exp-clusterclass-manifests-api
-generate-exp-clusterclass-manifests-api: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects for experimental API.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./exp/clusterclass/api/v1alpha1/..." \
-			paths=./exp/clusterclass/internal/controller/... \
-			output:crd:artifacts:config=./exp/clusterclass/config/crd/bases \
-			output:rbac:dir=./exp/clusterclass/config/rbac
-
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
 	cd $(TEST_DIR); go mod tidy
-	cd $(EXP_DAY2_DIR); go mod tidy
-	cd $(EXP_CLUSTERCLASS_DIR); go mod tidy
 
 .PHONY: generate-go-deepcopy
 generate-go-deepcopy:  ## Run deepcopy generation
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt \
-		paths=./api/... \
-		paths=./exp/day2/api/...
-		paths=./exp/clusterclass/api/...
+		paths=./api/... 
 
 # Run go mod
 .PHONY: vendor
@@ -334,17 +309,9 @@ updatecli-apply: $(UPDATECLI)
 KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
 
 .PHONY: test
-test: $(SETUP_ENVTEST) manifests test-exp-day2 test-exp-clusterclass ## Run all generators and exp tests.
+test: $(SETUP_ENVTEST) manifests ## Run all generators and tests.
 	go clean -testcache
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -tags $(TARGET_BUILD) ./... $(TEST_ARGS)
-
-.PHONY: test-exp-day2
-test-exp-day2: $(SETUP_ENVTEST) ## Run tests for experimental day2 API.
-	cd $(EXP_DAY2_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -tags $(TARGET_BUILD) ./... $(TEST_ARGS)
-
-.PHONY: test-exp-clusterclass
-test-exp-clusterclass: $(SETUP_ENVTEST) ## Run tests for experimental clusterclass API.
-	cd $(EXP_CLUSTERCLASS_DIR); KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -tags $(TARGET_BUILD) ./... $(TEST_ARGS)
 
 ##@ Build
 
@@ -591,25 +558,12 @@ release: clean-release $(RELEASE_DIR)  ## Builds and push container images using
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
 	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
 	$(KUSTOMIZE) build ./config/operatorchart > $(CHART_DIR)/templates/operator-crds.yaml
-	$(KUSTOMIZE) build ./exp/day2/config/chart > $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
-	$(KUSTOMIZE) build ./exp/clusterclass/config/default > $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
-	./scripts/process-manifests.sh day2operations $(CHART_DIR)/templates/rancher-turtles-exp-day2-components.yaml
-	./scripts/process-manifests.sh clusterclass-operations $(CHART_DIR)/templates/rancher-turtles-exp-clusterclass-components.yaml
+
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 
 	sed -i -e 's/tag:.*/tag: '${RELEASE_TAG}'/' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i -e 's/imagePullPolicy:.*/imagePullPolicy: '$(PULL_POLICY)'/' $(CHART_RELEASE_DIR)/values.yaml
 	sed -i -e 's|repository:.*|repository: '${CONTROLLER_IMG}'|' $(CHART_RELEASE_DIR)/values.yaml
-
-	# day2operations
-	sed -i -e '/day2operations:/,/^[^[:space:]]/ s@^\([[:space:]]*image:\).*@\1 '"${CONTROLLER_IMG}"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e '/day2operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imageVersion:\).*@\1 '"${RELEASE_TAG}"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e '/day2operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imagePullPolicy:\).*@\1 '"${PULL_POLICY}"'@' $(CHART_RELEASE_DIR)/values.yaml
-
-	# clusterclass-operations
-	sed -i -e '/clusterclass-operations:/,/^[^[:space:]]/ s@^\([[:space:]]*image:\).*@\1 '"${CONTROLLER_IMG}"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e '/clusterclass-operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imageVersion:\).*@\1 '"${RELEASE_TAG}"'@' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e '/clusterclass-operations:/,/^[^[:space:]]/ s@^\([[:space:]]*imagePullPolicy:\).*@\1 '"${PULL_POLICY}"'@' $(CHART_RELEASE_DIR)/values.yaml
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)

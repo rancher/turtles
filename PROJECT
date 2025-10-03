@@ -17,31 +17,4 @@ resources:
   kind: CAPIProvider
   path: github.com/rancher/turtles/api/v1alpha1
   version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: cattle.io
-  group: turtles-capi
-  kind: ETCDMachineSnapshot
-  path: github.com/rancher/turtles/exp/day2/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: cattle.io
-  group: turtles-capi
-  kind: ETCDSnapshotRestore
-  path: github.com/rancher/turtles/exp/day2/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: cattle.io
-  group: turtles-capi
-  kind: RKE2EtcdMachineSnapshotConfig
-  path: github.com/rancher/turtles/exp/day2/api/v1alpha1
-  version: v1alpha1
 version: "3"

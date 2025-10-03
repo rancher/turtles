@@ -37,19 +37,8 @@ questions:
     label: Remove cert-manager
     group: "Rancher Turtles Features Settings"
   - variable: kubectlImage
-    default: "registry.k8s.io/kubernetes/kubectl:v1.31.4"
+    default: "registry.k8s.io/kubernetes/kubectl:v1.32.3"
     description: "Specify the image to use when running kubectl in jobs."
     type: string
     label: Kubectl Image
     group: "Rancher Turtles Features Settings"
-  - variable: features.day2operations.enabled
-    label: "Enable Day 2 Operations functionality in Rancher Turtles"
-    description: "Use this setting to configure Day 2 Operations functionality in Rancher Turtles, such as enabling ETCD Backup and Restore."
-    type: boolean
-    group: "Rancher Turtles Features Settings"
-  - variable: features.day2operations.etcdBackupRestore.enabled
-    label: "Enable ETCD Backup and Restore"
-    description: "[ALPHA] Enable ETCD Backup and Restore functionality in Rancher Turtles."
-    type: boolean
-    group: "ETCD Backup and Restore Settings"
-    show_if: "features.day2operations.enabled"

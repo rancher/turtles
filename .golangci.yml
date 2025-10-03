@@ -120,21 +120,11 @@ linters:
           - dupl
         path: internal/controllers/import_controller(_v3)?\.go
       - linters:
-          - dupl
-        path: exp/day2/controllers/.*.go
-      - linters:
           - revive
         text: var-naming
       - linters:
           - staticcheck
         text: ST1003
-      - linters:
-          - revive
-        path: exp/day2/controllers/.*.go
-        text: 'exported: exported method .*\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported'
-      - linters:
-          - unused
-        path: exp/day2/controllers/.*.go
       - linters:
           - revive
         text: 'package-comments: should have a package comment'
