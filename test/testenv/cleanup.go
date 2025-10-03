@@ -106,6 +106,10 @@ func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
 
 	path := path.Join(input.ArtifactsFolder, input.BootstrapClusterName, input.Path)
 	aargs := append([]string{"crust-gather", "collect", "--kubeconfig", kubeconfig, "-f", path, "-v", "ERROR"}, input.Args...)
+
+	aargs = append(aargs, "--exclude-group", "ext.cattle.io/tokens")
+	aargs = append(aargs, "--exclude-group", "ext.cattle.io/kubeconfigs")
+
 	for _, secret := range input.Secrets {
 		aargs = append(aargs, "-s", secret)
 	}
