@@ -41,16 +41,6 @@ features:
   no-cert-manager:
     # enabled: Turn on or off.
     enabled: false
-  # clusterclass-operations: Alpha feature. Manages cluster class ops. Not ready for testing yet.
-  clusterclass-operations:
-    # enabled: Turn on or off.
-    enabled: false
-    # image: Image for cluster class ops.
-    image: controller
-    # imageVersion: Image tag.
-    imageVersion: v0.0.0
-    # imagePullPolicy: Pull policy.
-    imagePullPolicy: IfNotPresent
 # volumes: Volumes for controller pods.
 volumes:
   - name: clusterctl-config
