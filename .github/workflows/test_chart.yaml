@@ -107,6 +107,94 @@ jobs:
       - name: Run chart re-install
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
 
+  prime-airgapped-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.3
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.9'
+          check-latest: true
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+        with:
+          version: v3.9.0
+
+      - name: setupGo
+        uses: actions/setup-go@v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build docker image (prime)
+        run: make docker-build-prime
+
+      - name: Package operator chart
+        run: make release-chart
+
+      - name: Run chart-testing (lint)
+        run: ct lint --validate-maintainers=false --charts out/charts/rancher-turtles/
+
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-$(uname)-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Create kind cluster
+        run: |
+          kind create cluster --name kind \
+            --image kindest/node@sha256:abd489f042d2b644e2d033f5c2d900bc707798d075e8186cb65e3f1367a9d5a1
+
+      - name: Display kind version
+        run: kind version
+
+      - name: Display docker version
+        run: docker version
+
+      - name: Add local docker image
+        run: kind load docker-image ${{ env.MANIFEST_IMG }}:${{ env.TAG }}
+
+      - name: Add cert-manager chart repo
+        run: helm repo add jetstack https://charts.jetstack.io
+
+      - name: Add rancher chart repo
+        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+
+      - name: Install cert-manager
+        run: helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set crds.enabled=true --set crds.keep=true --wait
+
+      - name: Install Rancher
+        run: helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --version ${{ env.RANCHER_VERSION }} --wait
+
+      - name: Run chart-testing (install)
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --set airGapped=true --set cluster-api-operator.cluster-api.core.fetchConfig.selector='\{"matchLabels":{"provider.cluster.x-k8s.io/name":"cluster-api"\}\}' --wait --debug
+
+      - name: Wait for core provider rollout
+        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m
+      - name: Check capi-controller-manager image
+        run: |
+          IMAGE=$(kubectl get deployment capi-controller-manager -n capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          if [[ "$IMAGE" != registry.suse.com/rancher/cluster-api-controller* ]]; then
+            echo "capi-controller-manager does not use registry.suse.com/rancher/cluster-api-controller based image"
+            exit 1
+          fi
+
+      - name: Run chart-testing (un-install)
+        run: helm uninstall rancher-turtles -n rancher-turtles-system --cascade foreground --wait --debug --timeout=10m
+
+      - name: Run chart re-install
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
+
   community-test:
     runs-on: ubuntu-latest
     steps:

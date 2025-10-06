@@ -21,7 +21,11 @@ metadata:
 spec:
   name: cluster-api
   type: core
+{{- if index .Values "airGapped" }}
+  enableAutomaticUpdate: false
+{{ else }}
   enableAutomaticUpdate: {{ index .Values "cluster-api-operator" "cluster-api" "core" "enableAutomaticUpdate" }}
+{{- end }}
 {{- if index .Values "cluster-api-operator" "cluster-api" "core" "version" }}
   version: {{ index .Values "cluster-api-operator" "cluster-api" "core" "version" }}
 {{- end }}
