@@ -31,7 +31,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -184,10 +183,6 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 	r.DeletePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
 		rec.Delete,
-	}
-
-	for i, phase := range r.ReconcilePhases {
-		r.ReconcilePhases[i] = finalizePhase(phase, r.setConditions)
 	}
 
 	return builder, nil
@@ -475,25 +470,6 @@ func setDefaultProviderSpec(o operatorv1.GenericProvider) {
 	providerSpec.ConfigSecret.Namespace = cmp.Or(providerSpec.ConfigSecret.Namespace, providerNamespace)
 
 	o.SetSpec(providerSpec)
-}
-
-// finalizePhase performs a finalization step after a phase is completed or failed.
-func finalizePhase(phase controller.PhaseFn, finalizePhase controller.PhaseFn) controller.PhaseFn {
-	return func(ctx context.Context) (*controller.Result, error) {
-		res, err := phase(ctx)
-		if err != nil {
-			// Perform finalization step after failed phase
-			_, finalizeErr := finalizePhase(ctx)
-			return res, kerrors.NewAggregate([]error{err, finalizeErr})
-		}
-
-		// Perform finalization step after early completion
-		if res != nil && res.Completed {
-			return finalizePhase(ctx)
-		}
-
-		return res, nil
-	}
 }
 
 func getProvider(provider operatorv1.GenericProvider) clusterctlv1.Provider {
