@@ -31,7 +31,7 @@ questions:
     label: Enable Agent TLS Mode
     group: "Rancher Turtles Features Settings"
   - variable: features.no-cert-manager.enabled
-    default: false
+    default: true
     description: "[ALPHA] If enabled Turtles will remove cert-manager."
     type: boolean
     label: Remove cert-manager

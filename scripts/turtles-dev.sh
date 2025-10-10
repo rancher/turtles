@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
+set -xe
 
 RANCHER_HOSTNAME=$1
 if [ -z "$RANCHER_HOSTNAME" ]; then
@@ -90,7 +90,7 @@ install_local_rancher_turtles_chart() {
     # Remove the previous chart directory
     rm -rf out
     # Build the chart locally
-    RELEASE_TAG=$TURTLES_VERSION make build-chart
+    make build-chart
     # Build the controller image
     make docker-build-prime
     # Load the controller image
@@ -106,11 +106,34 @@ install_local_rancher_turtles_chart() {
     kubectl apply -f test/e2e/data/capi-operator/clusterctlconfig.yaml
 }
 
+install_local_providers_chart() {
+    make build-providers-chart
+
+    kind export kubeconfig --name $CLUSTER_NAME
+    . ${BASH_SOURCE%/*}/migrate-providers-ownership.sh
+
+    helm upgrade --install rancher-turtles-providers out/charts/rancher-turtles-providers \
+        -n rancher-turtles-system \
+        --set providers.bootstrapKubeadm.enabled=true \
+        --set providers.controlplaneKubeadm.enabled=true \
+        --set providers.infrastructureDocker.enabled=true \
+        --set providers.infrastructureAWS.enabled=true \
+        --set providers.infrastructureAzure.enabled=true \
+        --set providers.infrastructureGCP.enabled=true \
+        --set providers.infrastructureGCP.variables.GCP_B64ENCODED_CREDENTIALS="" \
+        --set providers.infrastructureVSphere.enabled=true \
+        --create-namespace --wait \
+        --timeout 180s
+}
+
 # patch the removed pre-install hook
 pre_install_configuration
 
 echo "Installing local Rancher Turtles chart for development..."
 install_local_rancher_turtles_chart
+
+echo "Installing local Rancher Turtles Providers..."
+install_local_providers_chart
 
 if [ "$USE_TILT_DEV" == "true" ]; then
     echo "Using Tilt for development..."
