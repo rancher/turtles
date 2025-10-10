@@ -1,3 +1,0 @@
-# This is used by the tilt setup, not to build the chart.
-resources:
-- docker.yaml
