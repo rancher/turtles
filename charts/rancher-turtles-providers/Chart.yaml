@@ -14,11 +14,9 @@ keywords:
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Rancher Turtles Certified Providers
-  catalog.cattle.io/kube-version: '>= 1.23.0-0'
   catalog.cattle.io/namespace: rancher-turtles-system
   catalog.cattle.io/os: linux
   catalog.cattle.io/permits-os: linux
-  catalog.cattle.io/rancher-version: '>= 2.11.0-1'
-  catalog.cattle.io/release-name: rancher-turtles
+  catalog.cattle.io/release-name: rancher-turtles-providers
   catalog.cattle.io/scope: management
   catalog.cattle.io/type: cluster-tool
