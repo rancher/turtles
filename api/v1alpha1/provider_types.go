@@ -55,7 +55,7 @@ func (t Type) ToName() string {
 	case Infrastructure:
 		return "infrastructure-"
 	case Core:
-		return "core-"
+		return ""
 	case ControlPlane:
 		return "control-plane-"
 	case Bootstrap:

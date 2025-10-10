@@ -18,19 +18,11 @@ package controllers
 
 //nolint:gci
 import (
-	"bytes"
 	"cmp"
 	"context"
 	"fmt"
-	"maps"
-	"os"
-	"strconv"
-	"time"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -38,8 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"sigs.k8s.io/yaml"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-operator/controller"
@@ -53,7 +43,7 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/feature"
-	"github.com/rancher/turtles/internal/controllers/clusterctl"
+	"github.com/rancher/turtles/internal/provider"
 	"github.com/rancher/turtles/internal/sync"
 )
 
@@ -62,16 +52,6 @@ const (
 	configSecretNamespaceField = "spec.configSecret.namespace" //nolint:gosec
 	providerTypeField          = "spec.type"                   //nolint:gosec
 	providerNameField          = "spec.name"                   //nolint:gosec
-
-	certificateAnnotationKey       = "need-a-cert.cattle.io/secret-name"
-	certManagerInjectAnnotationKey = "cert-manager.io/inject-ca-from"
-
-	capiProviderLabel = "cluster.x-k8s.io/provider"
-
-	azureProvider = "azure"
-	gcpProvider   = "gcp"
-
-	clusterIndexedLabelKey = "auth.cattle.io/cluster-indexed"
 )
 
 // OperatorReconciler is a mapping wrapper for CAPIProvider -> operator provider resources.
@@ -143,10 +123,10 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 
 	customAlterFuncs := []repository.ComponentsAlterFn{}
 
-	customAlterFuncs = append(customAlterFuncs, addClusterIndexedLabelFn)
+	customAlterFuncs = append(customAlterFuncs, provider.AddClusterIndexedLabelFn)
 
 	if feature.Gates.Enabled(feature.NoCertManager) {
-		customAlterFuncs = append(customAlterFuncs, patchProviderManifestFn, removeCertManagerFn)
+		customAlterFuncs = append(customAlterFuncs, provider.WranglerPatcher)
 	}
 
 	rec := controller.NewPhaseReconciler(
@@ -177,7 +157,11 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 	}
 
 	if feature.Gates.Enabled(feature.NoCertManager) {
-		r.ReconcilePhases = append(r.ReconcilePhases, r.purgeCertificateResources)
+		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupCertManagerResources)
+	}
+
+	if !feature.Gates.Enabled(feature.NoCertManager) {
+		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupWranglerResources)
 	}
 
 	r.DeletePhases = []controller.PhaseFn{
@@ -291,37 +275,25 @@ func (r *CAPIProviderReconciler) Reconcile(ctx context.Context, provider *turtle
 	})
 }
 
-func setProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
-	setDefaultProviderSpec(provider)
-
-	if err := setLatestVersion(ctx, cl, provider); err != nil {
-		return err
-	}
-
-	switch provider.ProviderName() {
-	case azureProvider:
-		if provider.Status.Variables == nil {
-			provider.Status.Variables = map[string]string{}
-		}
-
-		provider.Status.Variables["EXP_AKS_RESOURCE_HEALTH"] = trueValue
-	case gcpProvider:
-		if provider.Status.Variables == nil {
-			provider.Status.Variables = map[string]string{}
-		}
-
-		provider.Status.Variables["EXP_CAPG_GKE"] = trueValue
-	}
-
-	return nil
-}
-
 func (r *CAPIProviderReconciler) setProviderSpec(ctx context.Context) (*controller.Result, error) {
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
-		return &controller.Result{}, setProviderSpec(ctx, r.Client, capiProvider)
+		return &controller.Result{}, provider.SetProviderSpec(ctx, r.Client, capiProvider)
 	}
 
 	return &controller.Result{}, nil
+}
+
+func setConditions(provider *turtlesv1.CAPIProvider) {
+	provider.SetProviderName()
+
+	switch {
+	case conditions.IsTrue(provider, operatorv1.ProviderInstalledCondition):
+		provider.SetPhase(turtlesv1.Ready)
+	case conditions.IsFalse(provider, operatorv1.PreflightCheckCondition):
+		provider.SetPhase(turtlesv1.Failed)
+	default:
+		provider.SetPhase(turtlesv1.Provisioning)
+	}
 }
 
 func (r *CAPIProviderReconciler) setConditions(_ context.Context) (*controller.Result, error) {
@@ -332,150 +304,26 @@ func (r *CAPIProviderReconciler) setConditions(_ context.Context) (*controller.R
 	return &controller.Result{}, nil
 }
 
-func (r *CAPIProviderReconciler) purgeCertificateResources(ctx context.Context) (*controller.Result, error) {
+func (r *CAPIProviderReconciler) cleanupCertManagerResources(ctx context.Context) (*controller.Result, error) {
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
-		return &controller.Result{}, purgeCertificateResources(ctx, r.Client, capiProvider)
+		return provider.CleanupCertManagerResources(ctx, r.Client, capiProvider)
 	}
 
 	return &controller.Result{}, nil
 }
 
-// patchProviderManifestFn is a function to patch the provider manifest that satisfies the type repository.ComponentsAlterFn.
-func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
-	if len(objs) == 0 {
-		return nil, nil
+func (r *CAPIProviderReconciler) cleanupWranglerResources(ctx context.Context) (*controller.Result, error) {
+	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
+		return provider.CleanupWranglerResources(ctx, r.Client, capiProvider)
 	}
 
-	var (
-		secretName string
-		serviceObj *unstructured.Unstructured
-	)
-
-	for i := range objs {
-		o := &objs[i]
-
-		var (
-			found bool
-			err   error
-		)
-
-		switch o.GetKind() {
-		case "Certificate":
-			secretName, found, err = unstructured.NestedString(o.Object, "spec", "secretName")
-			if err != nil {
-				return nil, err
-			}
-
-			if !found {
-				return nil, fmt.Errorf("secretName not found in Certificate spec for %s", o.GetName())
-			}
-		case "Service":
-			serviceObj = o
-		}
-
-		if secretName != "" && serviceObj != nil {
-			break
-		}
-	}
-
-	if secretName != "" && serviceObj != nil {
-		annotations := serviceObj.GetAnnotations()
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-
-		annotations[certificateAnnotationKey] = secretName
-		serviceObj.SetAnnotations(annotations)
-	}
-
-	return objs, nil
-}
-
-// addClusterIndexedLabelFn adds the auth.cattle.io/cluster-indexed="true" label to every CRD.
-func addClusterIndexedLabelFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
-	if len(objs) == 0 {
-		return nil, nil
-	}
-
-	for i := range objs {
-		o := &objs[i]
-		if o.GetKind() != "CustomResourceDefinition" {
-			continue
-		}
-
-		labels := o.GetLabels()
-		if labels == nil {
-			labels = map[string]string{}
-		}
-
-		labels[clusterIndexedLabelKey] = trueValue
-
-		o.SetLabels(labels)
-	}
-
-	return objs, nil
-}
-
-// removeCertManagerFn is a function that satisfies the type repository.ComponentsAlterFn
-// to remove cert-manager dependencies from the provider manifest.
-func removeCertManagerFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
-	if len(objs) == 0 {
-		return nil, nil
-	}
-
-	updatedObjs := []unstructured.Unstructured{}
-
-	for _, o := range objs {
-		annotations := o.GetAnnotations()
-
-		_, ok := annotations[certManagerInjectAnnotationKey]
-		if ok {
-			delete(annotations, certManagerInjectAnnotationKey)
-			o.SetAnnotations(annotations)
-		}
-
-		switch o.GetKind() {
-		case "Certificate", "Issuer":
-			continue
-		}
-
-		updatedObjs = append(updatedObjs, o)
-	}
-
-	return updatedObjs, nil
-}
-
-// setDefaultProviderSpec sets the default values for the provider spec.
-func setDefaultProviderSpec(o operatorv1.GenericProvider) {
-	providerSpec := o.GetSpec()
-	providerNamespace := o.GetNamespace()
-
-	if providerSpec.ConfigSecret != nil && providerSpec.ConfigSecret.Namespace == "" {
-		providerSpec.ConfigSecret.Namespace = providerNamespace
-	}
-
-	if providerSpec.AdditionalManifestsRef != nil && providerSpec.AdditionalManifestsRef.Namespace == "" {
-		providerSpec.AdditionalManifestsRef.Namespace = providerNamespace
-	}
-
-	if provider, ok := o.(*turtlesv1.CAPIProvider); ok {
-		setVariables(provider)
-		setFeatures(provider)
-	}
-
-	providerSpec.ConfigSecret = cmp.Or(providerSpec.ConfigSecret, &operatorv1.SecretReference{
-		Name: o.GetName(),
-	})
-
-	providerSpec.ConfigSecret.Namespace = cmp.Or(providerSpec.ConfigSecret.Namespace, providerNamespace)
-
-	o.SetSpec(providerSpec)
+	return &controller.Result{}, nil
 }
 
 func getProvider(provider operatorv1.GenericProvider) clusterctlv1.Provider {
 	clusterctlProvider := &clusterctlv1.Provider{}
 	if p, ok := provider.(*turtlesv1.CAPIProvider); ok {
-		clusterctlProvider.Name = p.Spec.Type.ToName() + cmp.Or(p.Spec.Name, p.GetName())
+		clusterctlProvider.Name = p.Spec.Type.ToName() + p.Spec.Name
 		clusterctlProvider.Namespace = provider.GetNamespace()
 		clusterctlProvider.Type = string(toClusterctlType(p))
 		clusterctlProvider.ProviderName = p.ProviderName()
@@ -556,22 +404,22 @@ func (r *CAPIProviderReconciler) listProviders(ctx context.Context, list *cluste
 }
 
 // GetGenericProvider returns the first of generic providers matching the type and the name from the configclient.Provider.
-func (r *CAPIProviderReconciler) getGenericProvider(ctx context.Context, provider configclient.Provider) (operatorv1.GenericProvider, error) {
+func (r *CAPIProviderReconciler) getGenericProvider(ctx context.Context, p configclient.Provider) (operatorv1.GenericProvider, error) {
 	list := &turtlesv1.CAPIProviderList{}
 	if err := r.List(ctx, list, client.MatchingFields{
-		providerTypeField: string(toProviderType(provider.Type())),
-		providerNameField: provider.Name(),
+		providerTypeField: string(toProviderType(p.Type())),
+		providerNameField: p.Name(),
 	}); err != nil {
 		return nil, err
 	}
 
 	if len(list.Items) == 0 {
-		return nil, fmt.Errorf("unable to find provider manifest with name %s and type %s", provider.Name(), toProviderType(provider.Type()))
+		return nil, fmt.Errorf("unable to find provider manifest with name %s and type %s", p.Name(), toProviderType(p.Type()))
 	}
 
 	pr := list.Items[0]
 	// We need to default provider spec here, otherwise vesion and other required fields may be empty
-	if err := setProviderSpec(ctx, r.Client, &pr); err != nil {
+	if err := provider.SetProviderSpec(ctx, r.Client, &pr); err != nil {
 		return nil, err
 	}
 
@@ -589,18 +437,18 @@ func indexFields(ctx context.Context, provider client.Object, mgr ctrl.Manager) 
 
 // configSecretNameIndexFunc is indexing config Secret name field.
 func configSecretNameIndexFunc(obj client.Object) []string {
-	provider, ok := obj.(operatorv1.GenericProvider)
+	p, ok := obj.(operatorv1.GenericProvider)
 	if !ok {
 		return nil
 	}
 
-	setDefaultProviderSpec(provider)
+	provider.SetDefaultProviderSpec(p)
 
-	if provider.GetSpec().ConfigSecret == nil {
+	if p.GetSpec().ConfigSecret == nil {
 		return nil
 	}
 
-	return []string{provider.GetSpec().ConfigSecret.Name}
+	return []string{p.GetSpec().ConfigSecret.Name}
 }
 
 // configSecretNamespaceIndexFunc is indexing config Secret namespace field.
@@ -637,122 +485,6 @@ func nameIndexFunc(obj client.Object) []string {
 	return []string{provider.ProviderName()}
 }
 
-func setVariables(capiProvider *turtlesv1.CAPIProvider) {
-	if capiProvider.Spec.Variables != nil {
-		maps.Copy(capiProvider.Status.Variables, capiProvider.Spec.Variables)
-	}
-}
-
-func setFeatures(capiProvider *turtlesv1.CAPIProvider) {
-	features := capiProvider.Spec.Features
-	variables := capiProvider.Status.Variables
-
-	if features != nil {
-		variables["EXP_CLUSTER_RESOURCE_SET"] = strconv.FormatBool(features.ClusterResourceSet)
-		variables["CLUSTER_TOPOLOGY"] = strconv.FormatBool(features.ClusterTopology)
-		variables["EXP_MACHINE_POOL"] = strconv.FormatBool(features.MachinePool)
-	}
-}
-
-func setConditions(provider *turtlesv1.CAPIProvider) {
-	provider.SetProviderName()
-
-	switch {
-	case conditions.IsTrue(provider, operatorv1.ProviderInstalledCondition):
-		provider.SetPhase(turtlesv1.Ready)
-	case conditions.IsFalse(provider, operatorv1.PreflightCheckCondition):
-		provider.SetPhase(turtlesv1.Failed)
-	default:
-		provider.SetPhase(turtlesv1.Provisioning)
-	}
-}
-
-// purgeCertificateResources will delete all Certificate and Issuer resources associated with a CAPI provider.
-func purgeCertificateResources(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
-	if conditions.IsTrue(provider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition) {
-		return nil
-	}
-
-	// select certificates/issuers found on provider namespace that include capi provider label.
-	listOpts := []client.ListOption{
-		client.InNamespace(provider.GetNamespace()),
-		client.HasLabels{capiProviderLabel},
-	}
-
-	certs := schema.GroupVersionKind{
-		Group:   "cert-manager.io",
-		Version: "v1",
-		Kind:    "Certificate",
-	}
-
-	certList := &unstructured.UnstructuredList{}
-	certList.SetGroupVersionKind(certs)
-
-	if err := cl.List(ctx, certList, listOpts...); err != nil {
-		return err
-	}
-
-	for _, cert := range certList.Items {
-		if err := cl.Delete(ctx, &cert); err != nil {
-			return err
-		}
-	}
-
-	issuers := schema.GroupVersionKind{
-		Group:   "cert-manager.io",
-		Version: "v1",
-		Kind:    "Issuer",
-	}
-
-	issuerList := &unstructured.UnstructuredList{}
-	issuerList.SetGroupVersionKind(issuers)
-
-	if err := cl.List(ctx, issuerList, listOpts...); err != nil {
-		return err
-	}
-
-	for _, issuer := range issuerList.Items {
-		if err := cl.Delete(ctx, &issuer); err != nil {
-			return err
-		}
-	}
-
-	return providerDeploymentRestart(ctx, cl, provider)
-}
-
-// providerDeploymentRestart will force a provider re-rollout by adding an annotation
-// to the provider deployment spec template. This will trigger the creation of a new provider controller pod.
-// It is used to restart a provider after removing cert-manager dependencies and resources from the manifest.
-func providerDeploymentRestart(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
-	deploymentList := &appsv1.DeploymentList{}
-	listOpts := []client.ListOption{
-		client.InNamespace(provider.GetNamespace()),
-		client.HasLabels{capiProviderLabel},
-	}
-
-	if err := cl.List(ctx, deploymentList, listOpts...); err != nil {
-		return err
-	}
-
-	for _, deployment := range deploymentList.Items {
-		if deployment.Spec.Template.Annotations == nil {
-			deployment.Spec.Template.Annotations = map[string]string{}
-		}
-
-		deployment.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
-
-		if err := cl.Update(ctx, &deployment); err != nil {
-			return err
-		}
-	}
-
-	conditions.Set(provider, conditions.TrueCondition(
-		turtlesv1.CAPIProviderWranglerManagedCertificatesCondition,
-	))
-
-	return nil
-}
-
 func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.Result, error) {
 	var err error
 
@@ -772,91 +504,6 @@ func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.R
 	return &controller.Result{}, err
 }
 
-func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
-	log := log.FromContext(ctx)
-
-	config, err := clusterctl.ClusterConfig(ctx, cl)
-	if err != nil {
-		return err
-	}
-
-	providerVersion, knownProvider := config.GetProviderVersion(ctx, provider.ProviderName(), provider.Spec.Type.ToKind())
-
-	latest, err := config.IsLatestVersion(providerVersion, provider.Spec.Version)
-	if err != nil {
-		return err
-	}
-
-	switch {
-	case !knownProvider:
-		conditions.MarkUnknown(provider, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknownReason, "Provider is unknown")
-	case latest:
-		conditions.MarkTrue(provider, turtlesv1.CheckLatestVersionTime)
-		provider.Spec.Version = providerVersion
-	case !latest && !provider.Spec.EnableAutomaticUpdate:
-		conditions.MarkFalse(
-			provider,
-			turtlesv1.CheckLatestVersionTime,
-			turtlesv1.CheckLatestUpdateAvailableReason,
-			clusterv1.ConditionSeverityInfo,
-			"Provider version update available. Current latest is %s", providerVersion,
-		)
-	case !latest && provider.Spec.EnableAutomaticUpdate:
-		lastCheck := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
-		updatedMessage := fmt.Sprintf("Updated to latest %s version", providerVersion)
-
-		if lastCheck == nil || lastCheck.Message != updatedMessage {
-			log.Info(fmt.Sprintf("Version %s is beyond current latest, updated to %s", cmp.Or(provider.Spec.Version, "latest"), providerVersion))
-
-			lastCheck = conditions.TrueCondition(turtlesv1.CheckLatestVersionTime)
-			lastCheck.Message = updatedMessage
-
-			conditions.Set(provider, lastCheck)
-		}
-
-		provider.Spec.Version = providerVersion
-	}
-
-	return nil
-}
-
-// waitForClusterctlConfigUpdate is a phase that waits for the clusterctl-config Configmap
-// mounted in `/config/clusterctl.yaml` to be updated with the intended content.
-// This should contain the base embedded in-memory ConfigMap, with overrides
-// from the user defined ClusterctlConfig, if any.
-// It may take a few minutes for the changes to take effect.
-// We need to wait since the cluster-api-operator library is going to use the mounted file
-// to deploy providers, therefore we need it to be synced with embedded and user overrides.
 func (r *CAPIProviderReconciler) waitForClusterctlConfigUpdate(ctx context.Context) (*controller.Result, error) {
-	logger := log.FromContext(ctx)
-
-	// Load the mounted config from filesystem
-	configBytes, err := os.ReadFile(clusterctl.ConfigPath)
-	if os.IsNotExist(err) {
-		logger.Info("ClusterctlConfig is not initialized yet, waiting for mounted ConfigMap to be updated.")
-		return &controller.Result{RequeueAfter: defaultRequeueDuration}, nil
-	} else if err != nil {
-		return &controller.Result{}, fmt.Errorf("reading %s file: %w", clusterctl.ConfigPath, err)
-	}
-
-	// Get the expected config with user overrides
-	config, err := clusterctl.ClusterConfig(ctx, r.Client)
-	if err != nil {
-		return &controller.Result{}, fmt.Errorf("getting updated ClusterctlConfig: %w", err)
-	}
-
-	// Compare the filesystem config with the expected one
-	clusterctlYaml, err := yaml.Marshal(config)
-	if err != nil {
-		return &controller.Result{}, fmt.Errorf("serializing updated ClusterctlConfig: %w", err)
-	}
-
-	synced := bytes.Equal(clusterctlYaml, configBytes)
-
-	if !synced {
-		logger.Info("ClusterctlConfig is not synced yet, waiting for mounted ConfigMap to be updated.")
-		return &controller.Result{RequeueAfter: 5 * time.Second}, nil
-	}
-
-	return &controller.Result{}, nil
+	return provider.WaitForClusterctlConfigUpdate(ctx, r.Client)
 }
