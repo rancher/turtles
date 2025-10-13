@@ -1,4 +1,4 @@
-namespace: rancher-turtles-system
+namespace: cattle-turtles-system
 questions:
   - variable: features.default
     default: "false"

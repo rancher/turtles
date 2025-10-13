@@ -129,7 +129,7 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 
 			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
 				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: "rancher-turtles-system",
+				ConfigMapNamespace: "cattle-turtles-system",
 				ConfigMapName:      "clusterctl-config",
 			})
 

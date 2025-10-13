@@ -97,7 +97,7 @@ install_local_rancher_turtles_chart() {
     kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
     # Install Rancher Turtles using a local chart
     helm upgrade --install rancher-turtles out/charts/rancher-turtles \
-        -n rancher-turtles-system \
+        -n cattle-turtles-system \
         --set image.tag=$TURTLES_VERSION \
         --dependency-update \
         --create-namespace --wait \
@@ -113,7 +113,7 @@ install_local_providers_chart() {
     . ${BASH_SOURCE%/*}/migrate-providers-ownership.sh
 
     helm upgrade --install rancher-turtles-providers out/charts/rancher-turtles-providers \
-        -n rancher-turtles-system \
+        -n cattle-turtles-system \
         --set providers.bootstrapKubeadm.enabled=true \
         --set providers.controlplaneKubeadm.enabled=true \
         --set providers.infrastructureDocker.enabled=true \

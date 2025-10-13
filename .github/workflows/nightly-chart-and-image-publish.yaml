@@ -63,4 +63,4 @@ jobs:
       - name: Print helm install command
         run: |
           echo "Nightly build can be installed using the following command:"
-          echo "helm install rancher-turtles oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart/rancher-turtles --version 0.0.0-${{ github.sha }}  -n rancher-turtles-system --create-namespace --wait"
+          echo "helm install rancher-turtles oci://ghcr.io/${{ github.repository_owner }}/rancher-turtles-chart/rancher-turtles --version 0.0.0-${{ github.sha }}  -n cattle-turtles-system --create-namespace --wait"

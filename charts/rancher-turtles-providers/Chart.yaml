@@ -14,7 +14,7 @@ keywords:
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Rancher Turtles Certified Providers
-  catalog.cattle.io/namespace: rancher-turtles-system
+  catalog.cattle.io/namespace: cattle-turtles-system
   catalog.cattle.io/os: linux
   catalog.cattle.io/permits-os: linux
   catalog.cattle.io/release-name: rancher-turtles-providers
