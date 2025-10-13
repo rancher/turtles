@@ -6,7 +6,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   annotations:
-    "helm.sh/hook": "post-install, post-upgrade"
     "helm.sh/hook-weight": "1"
   name: {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
 {{- end }}
@@ -35,15 +34,12 @@ spec:
 {{ else }}
     name: {{ index .Values "cluster-api-operator" "cluster-api" "configSecret" "defaultName" }}
 {{- end }}
-{{- if or (index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "url") (index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector") }}
   fetchConfig:
     {{- if index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "url" }}
     url: {{ index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "url" }}
+    {{- else if index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" }}
+    selector: {{ index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" | toYaml | nindent 6 }}
     {{- end }}
-    {{- if index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" }}
-    selector: {{ index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" }}
-    {{- end }}
-{{- end }}
 {{- if index .Values "cluster-api-operator" "cluster-api" "core" "imageUrl" }}
   deployment:
     containers:
