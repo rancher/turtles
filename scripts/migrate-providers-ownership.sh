@@ -40,7 +40,7 @@ EOF
 done
 
 RELEASE_NAME=${RELEASE_NAME:-rancher-turtles-providers}
-RELEASE_NAMESPACE=${RELEASE_NAMESPACE:-rancher-turtles-system}
+RELEASE_NAMESPACE=${RELEASE_NAMESPACE:-cattle-turtles-system}
 TURTLES_CHART_NAMESPACE=${TURTLES_CHART_NAMESPACE:-rancher-turtles-system}
 
 NAMESPACE_FLEET=${NAMESPACE_FLEET:-rancher-turtles-system}

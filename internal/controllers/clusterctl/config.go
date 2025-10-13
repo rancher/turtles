@@ -65,7 +65,7 @@ type ConfigImage struct {
 func Config() *corev1.ConfigMap {
 	configMap := config.DeepCopy()
 
-	namespace := cmp.Or(os.Getenv("POD_NAMESPACE"), "rancher-turtles-system")
+	namespace := cmp.Or(os.Getenv("POD_NAMESPACE"), "cattle-turtles-system")
 	configMap.Namespace = namespace
 	configMap.Annotations["meta.helm.sh/release-namespace"] = namespace
 
