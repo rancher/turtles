@@ -141,7 +141,15 @@
                   "type": "object",
                   "properties": {
                     "url": { "type": "string" },
-                    "selector": { "type": "string" }
+                    "selector": {
+                        "type": "object",
+                        "properties": {
+                            "matchLabels": {
+                                "type": "object",
+                                "additionalProperties": { "type": "string" }
+                            }
+                        }
+                    }
                   }
                 },
                 "enableAutomaticUpdates": {
