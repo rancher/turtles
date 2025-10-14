@@ -68,10 +68,6 @@ spec:
           - delete
           - mutatingwebhookconfigurations.admissionregistration.k8s.io
           - capi-mutating-webhook-configuration
-          - capi-kubeadm-bootstrap-mutating-webhook-configuration
-          - capi-kubeadm-control-plane-mutating-webhook-configuration
-          - rke2-bootstrap-mutating-webhook-configuration
-          - rke2-control-plane-mutating-webhook-configuration
           - --ignore-not-found=true
       restartPolicy: Never
 ---
@@ -96,10 +92,6 @@ spec:
           - delete
           - validatingwebhookconfigurations.admissionregistration.k8s.io
           - capi-validating-webhook-configuration
-          - capi-kubeadm-bootstrap-validating-webhook-configuration
-          - capi-kubeadm-control-plane-validating-webhook-configuration
-          - rke2-bootstrap-validating-webhook-configuration
-          - rke2-control-plane-validating-webhook-configuration
           - --ignore-not-found=true
       restartPolicy: Never
 ---
@@ -126,23 +118,5 @@ spec:
         - deployments.apps/capi-controller-manager
         - -n
         - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
-        - --ignore-not-found=true
-      - name: delete-capi-kubeadm-bootstrap-controller-manager
-        image: {{ .Values.kubectlImage }}
-        command: ["kubectl"]
-        args:
-        - delete
-        - deployments.apps/capi-kubeadm-bootstrap-controller-manager
-        - -n
-        - capi-kubeadm-bootstrap-system
-        - --ignore-not-found=true
-      - name: delete-capi-kubeadm-control-plane-controller-manager
-        image: {{ .Values.kubectlImage }}
-        command: ["kubectl"]
-        args:
-        - delete
-        - deployments.apps/capi-kubeadm-control-plane-controller-manager
-        - -n
-        - capi-kubeadm-control-plane-system
         - --ignore-not-found=true
 {{- end }}
