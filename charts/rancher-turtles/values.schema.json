@@ -159,48 +159,6 @@
                   "type": "string"
                 }
               }
-            },
-            "rke2": {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean"
-                },
-                "version": {
-                  "type": "string"
-                },
-                "enableAutomaticUpdates": {
-                  "type": "boolean"
-                },
-                "bootstrap": {
-                  "type": "object",
-                  "properties": {
-                    "namespace": { "type": "string" },
-                    "imageUrl": { "type": "string" },
-                    "fetchConfig": {
-                      "type": "object",
-                      "properties": {
-                        "url": { "type": "string" },
-                        "selector": { "type": "string" }
-                      }
-                    }
-                  }
-                },
-                "controlPlane": {
-                  "type": "object",
-                  "properties": {
-                    "namespace": { "type": "string" },
-                    "imageUrl": { "type": "string" },
-                    "fetchConfig": {
-                      "type": "object",
-                      "properties": {
-                        "url": { "type": "string" },
-                        "selector": { "type": "string" }
-                      }
-                    }
-                  }
-                }
-              }
             }
           }
         }
