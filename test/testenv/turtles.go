@@ -17,7 +17,6 @@ limitations under the License.
 package testenv
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -159,31 +158,6 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		}
 		_, err := addChart.Run(nil)
 		Expect(err).ToNot(HaveOccurred())
-	}
-
-	// this is a temporary workaround for installing turtles chart as extension
-	// after the pre-install hook has been removed and before it becomes a part of Rancher.
-	By("Disabling Rancher embedded CAPI")
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, e2e.RancherTurtlesPreInstall)).To(Succeed())
-	webhooks := map[string]string{
-		"mutatingwebhookconfiguration":   "mutating-webhook-configuration",
-		"validatingwebhookconfiguration": "validating-webhook-configuration",
-	}
-	for wtype, wname := range webhooks {
-		By("Removing " + wname + " webhook")
-		cmd := exec.Command("kubectl", []string{
-			"--kubeconfig", input.BootstrapClusterProxy.GetKubeconfigPath(),
-			"delete",
-			wtype, wname,
-			"--ignore-not-found",
-		}...)
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		cmd.WaitDelay = time.Minute
-
-		err := cmd.Run()
-		Expect(err).ToNot(HaveOccurred(), "Failed to remove webhook %s: %s", wname, stderr.String())
 	}
 
 	By("Installing rancher-turtles chart")
