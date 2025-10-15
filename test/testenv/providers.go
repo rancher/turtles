@@ -278,6 +278,7 @@ func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string
 	cmd.Env = append(os.Environ(),
 		"RELEASE_NAME="+e2e.ProvidersChartName,
 		"RELEASE_NAMESPACE="+e2e.RancherTurtlesNamespace,
+		"TURTLES_CHART_NAMESPACE="+e2e.RancherTurtlesNamespace,
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -391,7 +392,7 @@ func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesPr
 			By("Configuring Docker provider with OCI registry")
 			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
 				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: "rancher-turtles-system",
+				ConfigMapNamespace: "cattle-turtles-system",
 				ConfigMapName:      "clusterctl-config",
 			})
 			dockerVersion := getProviderVersion(clusterctl, "docker")

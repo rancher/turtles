@@ -226,7 +226,7 @@ type CreateDockerRegistrySecretInput struct {
 	Name string `envDefault:"regcred"`
 
 	// Namespace is the namespace where the secret will be created.
-	Namespace string `envDefault:"rancher-turtles-system"`
+	Namespace string `envDefault:"cattle-turtles-system"`
 
 	// DockerServer is the Docker server URL.
 	DockerServer string `envDefault:"https://ghcr.io/"`

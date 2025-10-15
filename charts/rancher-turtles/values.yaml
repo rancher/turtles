@@ -20,7 +20,7 @@ image:
   imagePullPolicy: IfNotPresent
 
 # namespace: Select namespace for Turtles to run.
-namespace: rancher-turtles-system
+namespace: cattle-turtles-system
 # managerArguments: Extra args for the controller.
 managerArguments: []
 # imagePullSecrets: Secrets for private registries.

@@ -89,7 +89,7 @@ jobs:
         run: helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Run chart-testing (install)
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
         run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m
@@ -102,10 +102,10 @@ jobs:
           fi
 
       - name: Run chart-testing (un-install)
-        run: helm uninstall rancher-turtles -n rancher-turtles-system --cascade foreground --wait --debug --timeout=10m
+        run: helm uninstall rancher-turtles -n cattle-turtles-system --cascade foreground --wait --debug --timeout=10m
 
       - name: Run chart re-install
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
 
   community-test:
     runs-on: ubuntu-latest
@@ -158,7 +158,7 @@ jobs:
         run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest && helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Install rancher-turtles chart
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --create-namespace --wait --debug
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
         run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m

@@ -70,7 +70,9 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			TurtlesChartRepoName:  "rancher-turtles",
 			TurtlesChartUrl:       "https://rancher.github.io/turtles",
 			Version:               "v0.21.0",
-			AdditionalValues:      map[string]string{},
+			AdditionalValues: map[string]string{
+				"rancherTurtles.namespace": e2e.RancherTurtlesNamespace,
+			},
 		}
 		testenv.DeployRancherTurtles(ctx, rtInput)
 
