@@ -13,3 +13,6 @@ data:
     - name:         "cluster-api"
       url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.10.6/core-components.yaml"
       type:         "CoreProvider"
+    images:
+      cluster-api:
+        repository: "registry.k8s.io/cluster-api"

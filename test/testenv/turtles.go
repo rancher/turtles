@@ -88,7 +88,7 @@ type DeployRancherTurtlesInput struct {
 	ConfigurationPatches [][]byte
 
 	// Namespace is the namespace for deploying Rancher Turtles.
-	Namespace string `envDefault:"rancher-turtles-system"`
+	Namespace string `envDefault:"cattle-turtles-system"`
 
 	// ImageRegistry is the image registry for Rancher Turtles.
 	ImageRegistry string `env:"TURTLES_IMAGE_REGISTRY"`
@@ -121,7 +121,7 @@ type UninstallRancherTurtlesInput struct {
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// Namespace is the namespace where Rancher Turtles are installed.
-	Namespace string `envDefault:"rancher-turtles-system"`
+	Namespace string `envDefault:"cattle-turtles-system"`
 
 	// DeleteWaitInterval is the wait interval for deleting resources.
 	DeleteWaitInterval []interface{} `envDefault:"10m,10s"`
@@ -283,7 +283,7 @@ type UpgradeRancherTurtlesInput struct {
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// Namespace is the namespace for the deployment.
-	Namespace string `envDefault:"rancher-turtles-system"`
+	Namespace string `envDefault:"cattle-turtles-system"`
 
 	// WaitDeploymentsReadyInterval is the interval for waiting until deployments are ready.
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`

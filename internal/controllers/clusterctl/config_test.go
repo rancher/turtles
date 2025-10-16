@@ -82,7 +82,7 @@ data:
 				&v1alpha1.ClusterctlConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "clusterctl-config",
-						Namespace: "rancher-turtles-system",
+						Namespace: "cattle-turtles-system",
 					},
 					Spec: v1alpha1.ClusterctlConfigSpec{
 						Providers: []v1alpha1.Provider{

@@ -1,4 +1,4 @@
-namespace: rancher-turtles-system
+namespace: cattle-turtles-system
 questions:
   - variable: features.default
     default: "false"
@@ -19,11 +19,6 @@ questions:
     type: boolean
     label: Cleanup CAPI Operator installation
     group: "CAPI Operator cleanup settings"
-  - variable: cluster-api-operator.cluster-api.rke2.enabled
-    default: true
-    description: "Flag to enable or disable installation of the RKE2 provider for Cluster API. By default this is enabled."
-    label: "Enable RKE2 Provider"
-    type: boolean
   - variable: features.agent-tls-mode.enabled
     default: true
     description: "[BETA] If enabled Turtles will use the agent-tls-mode setting to determine CA cert trust mode for importing clusters."
@@ -31,7 +26,7 @@ questions:
     label: Enable Agent TLS Mode
     group: "Rancher Turtles Features Settings"
   - variable: features.no-cert-manager.enabled
-    default: false
+    default: true
     description: "[ALPHA] If enabled Turtles will remove cert-manager."
     type: boolean
     label: Remove cert-manager

@@ -20,7 +20,7 @@ image:
   imagePullPolicy: IfNotPresent
 
 # namespace: Select namespace for Turtles to run.
-namespace: rancher-turtles-system
+namespace: cattle-turtles-system
 # managerArguments: Extra args for the controller.
 managerArguments: []
 # imagePullSecrets: Secrets for private registries.
@@ -73,7 +73,7 @@ cluster-api-operator:
       # version: Core ClusterAPI version.
       version: ""
       # enableAutomaticUpdate: Allow the provider to update automatically when a new Turtles version is installed.
-      enableAutomaticUpdate: true
+      enableAutomaticUpdate: false
       # imageUrl: Custom image URL.
       imageUrl: ""
       # fetchConfig: Config fetching settings.
@@ -81,4 +81,8 @@ cluster-api-operator:
         # url: Config fetch URL.
         url: ""
         # selector: Config selector.
-        selector: ""
+        selector:
+          matchLabels:
+            managed-by.turtles.cattle.io: "true"
+            provider.cluster.x-k8s.io/name: cluster-api
+            provider.cluster.x-k8s.io/type: core

@@ -145,7 +145,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		verifyManagerImage(ctx, deploymentKey, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.13.0")
 	})
 
-	It("Should not automatically update Uknown provider", func() {
+	It("Should not automatically update Unknown provider", func() {
 		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.UnknownProvider)).Should(Succeed())
 		provider := &turtlesv1.CAPIProvider{}
 		checkLastVersionCondition := &clusterv1.Condition{}
