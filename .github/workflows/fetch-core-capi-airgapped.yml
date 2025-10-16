@@ -7,7 +7,7 @@ on:
 
 env:
   TURTLES_REF: "${{ github.ref_name }}"
-  GH_TOKEN: "${{ secrets.GH_TOKEN }}"
+  GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
 jobs:
   create-core-capi-turtles-pr:
