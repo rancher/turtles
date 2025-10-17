@@ -60,7 +60,7 @@ const (
 	providerVSphere             = "vsphere"
 
 	deployCAPIControllerManager = "capi-controller-manager"
-	namespaceCAPISystem         = "capi-system"
+	namespaceCAPISystem         = "cattle-capi-system"
 
 	deployKubeadmBootstrapControllerManager = "capi-kubeadm-bootstrap-controller-manager"
 	namespaceKubeadmBootstrapSystem         = "capi-kubeadm-bootstrap-system"

@@ -155,6 +155,14 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 	})
 
 	It("Should upgrade Turtles to head/main and validate providers", func() {
+		// There can be only one core CAPI provider installed at a time.
+		By("Remove the core CAPI provider before upgrade")
+		testenv.RemoveCAPIProvider(ctx, testenv.RemoveCAPIProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ProviderName:          "cluster-api",
+			ProviderNamespace:     "capi-system",
+		})
+
 		// Upgrade Turtles chart to locally built one
 		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
@@ -175,11 +183,11 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Version: e2e.CAPIVersion,
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      "capi-controller-manager",
-				Namespace: "capi-system",
+				Namespace: "cattle-capi-system",
 			}},
 			Image:     "registry.suse.com/rancher/cluster-api-controller:",
 			Name:      "cluster-api",
-			Namespace: "capi-system",
+			Namespace: "cattle-capi-system",
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Verifying Kubeadm CAPIProvider version has not changed after upgrade")
