@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read # to checkout code
+  contents: write # to checkout code and create releases
   id-token: write # to read vault secrets
 
 jobs:
@@ -155,6 +155,10 @@ jobs:
           --yes \
           --sign-container-identity="${{ env.PRIME_REGISTRY }}/rancher/${IMAGE}" \
           "${MULTI_PLATFORM_IMAGE}"
+        cosign verify \
+          "${MULTI_PLATFORM_IMAGE}" \
+          --certificate-identity=https://github.com/rancher/turtles/.github/workflows/release-v2.yaml@${{ github.ref }} \
+          --certificate-oidc-issuer=https://token.actions.githubusercontent.com 
 
     - name: Attest provenance
       shell: bash
@@ -178,3 +182,49 @@ jobs:
 
         cat provenance-slsav1.json
         cosign attest --yes --predicate provenance-slsav1.json --type slsaprovenance1 "${MULTI_PLATFORM_IMAGE}"
+
+  package:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
+      ORG: ${{ vars.RANCHER_ORG }}
+      RELEASE_DIR: .cr-release-packages
+      CONTROLLER_IMG: ${{ vars.IMAGE_NAME }}
+    needs:
+    - merge
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      with:
+        fetch-depth: 0
+
+    - name: Setup Go
+      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      with:
+        go-version-file: go.mod
+
+    - name: Install chart-releaser
+      uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1
+      with:
+        install_only: true
+
+    - name: Configure Git
+      run: |
+        git config user.name "$GITHUB_ACTOR"
+        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+    - name: Package operator chart
+      run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} CONTROLLER_IMG="${{ env.ORG }}/${{ env.CONTROLLER_IMG }}" ORG=${{ env.ORG }} make release
+
+    - name: Upload chart package to GitHub Pages and update index
+      env:
+        CR_OWNER: ${{ github.repository_owner }}
+        CR_GIT_REPO: ${{ github.event.repository.name }}
+        CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        rm -rf .cr-index
+        mkdir -p .cr-index
+        # Create a GitHub release for the new tag and upload Helm chart package as a release artifact 
+        cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ env.TAG }}" --make-release-latest=false
+        # Update Helm repo index.yaml on gh-pages branch
+        cr index --push --release-name-template "${{ env.TAG }}"
