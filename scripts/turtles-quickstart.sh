@@ -335,10 +335,10 @@ helm install rancher-turtles turtles/rancher-turtles --version ${RANCHER_TURTLES
 
 show_step "Waiting for deployment capi-controller-manager to be created..."
 
-until kubectl get deployment capi-controller-manager -n capi-system > /dev/null 2>&1; do
+until kubectl get deployment capi-controller-manager -n cattle-capi-system > /dev/null 2>&1; do
   sleep 1
 done
-kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=180s
+kubectl rollout status deployment capi-controller-manager -n cattle-capi-system --timeout=180s
 
 
 if [ "$WITH_EXAMPLE" -eq 1 ]; then
@@ -403,7 +403,7 @@ EOF
     kubectl -n rke2-control-plane-system wait --for=jsonpath='{.status.readyReplicas}'=1 deployments/rke2-control-plane-controller-manager
     kubectl -n rke2-bootstrap-system wait --for=jsonpath='{.status.readyReplicas}'=1 deployments/rke2-bootstrap-controller-manager
     kubectl -n capd-system wait --for=jsonpath='{.status.readyReplicas}'=1 deployments/capd-controller-manager
-    kubectl -n capi-system wait --for=jsonpath='{.status.readyReplicas}'=1 deployments/capi-controller-manager
+    kubectl -n cattle-capi-system wait --for=jsonpath='{.status.readyReplicas}'=1 deployments/capi-controller-manager
     kubectl rollout status deployment capd-controller-manager -n capd-system --timeout=180s
 
     sleep 5

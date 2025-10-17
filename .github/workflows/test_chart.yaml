@@ -92,10 +92,10 @@ jobs:
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
-        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m
+        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n cattle-capi-system --timeout=10m
       - name: Check capi-controller-manager image
         run: |
-          IMAGE=$(kubectl get deployment capi-controller-manager -n capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          IMAGE=$(kubectl get deployment capi-controller-manager -n cattle-capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
           if [[ "$IMAGE" != registry.suse.com/rancher/cluster-api-controller* ]]; then
             echo "capi-controller-manager does not use registry.suse.com/rancher/cluster-api-controller based image"
             exit 1
@@ -161,11 +161,11 @@ jobs:
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
-        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n capi-system --timeout=10m
+        run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n cattle-capi-system --timeout=10m
 
       - name: Check capi-controller-manager image is from kubernetes-sigs (community)
         run: |
-          IMAGE=$(kubectl get deployment capi-controller-manager -n capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          IMAGE=$(kubectl get deployment capi-controller-manager -n cattle-capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
           if [[ "$IMAGE" != registry.k8s.io/cluster-api/cluster-api-controller* ]]; then
             echo "capi-controller-manager does not use registry.k8s.io/cluster-api/cluster-api-controller based image"
             exit 1

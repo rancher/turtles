@@ -39,7 +39,7 @@ import (
 var DefaultDeployments = []NamespaceName{
 	{
 		Name:      "capi-controller-manager",
-		Namespace: "capi-system",
+		Namespace: "cattle-capi-system",
 	}, {
 		Name:      "capi-kubeadm-bootstrap-controller-manager",
 		Namespace: "capi-kubeadm-bootstrap-system",

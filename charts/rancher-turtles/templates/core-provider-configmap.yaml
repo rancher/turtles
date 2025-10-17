@@ -8,13 +8,13 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
         control-plane: controller-manager
-      name: capi-system
+      name: cattle-capi-system
     ---
     apiVersion: apiextensions.k8s.io/v1
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -26,7 +26,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -2841,7 +2841,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -2853,7 +2853,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -3161,7 +3161,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -3173,7 +3173,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -3787,7 +3787,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -3799,7 +3799,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -6905,7 +6905,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -6917,7 +6917,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -8731,7 +8731,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -8743,7 +8743,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -9141,7 +9141,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -9153,7 +9153,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -10144,7 +10144,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -10156,7 +10156,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -11768,7 +11768,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -11780,7 +11780,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -13239,7 +13239,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
         controller-gen.kubebuilder.io/version: v0.17.2
       labels:
         cluster.x-k8s.io/provider: cluster-api
@@ -13251,7 +13251,7 @@ data:
           clientConfig:
             service:
               name: capi-webhook-service
-              namespace: capi-system
+              namespace: cattle-capi-system
               path: /convert
           conversionReviewVersions:
           - v1
@@ -14833,7 +14833,7 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-manager
-      namespace: capi-system
+      namespace: cattle-capi-system
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: Role
@@ -14841,7 +14841,7 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-leader-election-role
-      namespace: capi-system
+      namespace: cattle-capi-system
     rules:
     - apiGroups:
       - ""
@@ -15062,7 +15062,7 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-leader-election-rolebinding
-      namespace: capi-system
+      namespace: cattle-capi-system
     roleRef:
       apiGroup: rbac.authorization.k8s.io
       kind: Role
@@ -15070,7 +15070,7 @@ data:
     subjects:
     - kind: ServiceAccount
       name: capi-manager
-      namespace: capi-system
+      namespace: cattle-capi-system
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
@@ -15085,7 +15085,7 @@ data:
     subjects:
     - kind: ServiceAccount
       name: capi-manager
-      namespace: capi-system
+      namespace: cattle-capi-system
     ---
     apiVersion: v1
     kind: Service
@@ -15093,7 +15093,7 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-webhook-service
-      namespace: capi-system
+      namespace: cattle-capi-system
     spec:
       ports:
       - port: 443
@@ -15108,7 +15108,7 @@ data:
         cluster.x-k8s.io/provider: cluster-api
         control-plane: controller-manager
       name: capi-controller-manager
-      namespace: capi-system
+      namespace: cattle-capi-system
     spec:
       replicas: 1
       selector:
@@ -15198,11 +15198,11 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-serving-cert
-      namespace: capi-system
+      namespace: cattle-capi-system
     spec:
       dnsNames:
-      - capi-webhook-service.capi-system.svc
-      - capi-webhook-service.capi-system.svc.cluster.local
+      - capi-webhook-service.cattle-capi-system.svc
+      - capi-webhook-service.cattle-capi-system.svc.cluster.local
       issuerRef:
         kind: Issuer
         name: capi-selfsigned-issuer
@@ -15217,7 +15217,7 @@ data:
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-selfsigned-issuer
-      namespace: capi-system
+      namespace: cattle-capi-system
     spec:
       selfSigned: {}
     ---
@@ -15225,7 +15225,7 @@ data:
     kind: MutatingWebhookConfiguration
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-mutating-webhook-configuration
@@ -15236,7 +15236,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-cluster
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15258,7 +15258,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-clusterclass
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15280,7 +15280,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-addons-cluster-x-k8s-io-v1beta1-clusterresourceset
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15302,7 +15302,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-machine
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15324,7 +15324,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-machinedeployment
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15346,7 +15346,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-machinehealthcheck
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15368,7 +15368,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-machineset
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15390,7 +15390,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-runtime-cluster-x-k8s-io-v1alpha1-extensionconfig
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15412,7 +15412,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /mutate-cluster-x-k8s-io-v1beta1-machinepool
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15433,7 +15433,7 @@ data:
     kind: ValidatingWebhookConfiguration
     metadata:
       annotations:
-        cert-manager.io/inject-ca-from: capi-system/capi-serving-cert
+        cert-manager.io/inject-ca-from: cattle-capi-system/capi-serving-cert
       labels:
         cluster.x-k8s.io/provider: cluster-api
       name: capi-validating-webhook-configuration
@@ -15444,7 +15444,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-cluster
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15467,7 +15467,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-clusterclass
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15490,7 +15490,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-addons-cluster-x-k8s-io-v1beta1-clusterresourceset
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15512,7 +15512,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-addons-cluster-x-k8s-io-v1beta1-clusterresourcesetbinding
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15534,7 +15534,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-machine
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15556,7 +15556,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-machinedeployment
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15578,7 +15578,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-machinedrainrule
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15600,7 +15600,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-machinehealthcheck
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15622,7 +15622,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-machineset
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15644,7 +15644,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-runtime-cluster-x-k8s-io-v1alpha1-extensionconfig
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15666,7 +15666,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-cluster-x-k8s-io-v1beta1-machinepool
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15688,7 +15688,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-ipam-cluster-x-k8s-io-v1beta1-ipaddress
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15711,7 +15711,7 @@ data:
       clientConfig:
         service:
           name: capi-webhook-service
-          namespace: capi-system
+          namespace: cattle-capi-system
           path: /validate-ipam-cluster-x-k8s-io-v1beta1-ipaddressclaim
       failurePolicy: Fail
       matchPolicy: Equivalent
@@ -15780,4 +15780,4 @@ metadata:
     provider.cluster.x-k8s.io/version: v1.10.6
     managed-by.turtles.cattle.io: "true"
   name: core-cluster-api-v1.10.6
-  namespace: capi-system
+  namespace: cattle-capi-system
