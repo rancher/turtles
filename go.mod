@@ -1,6 +1,6 @@
 module github.com/rancher/turtles
 
-go 1.24.4
+go 1.24.9
 
 require (
 	github.com/blang/semver/v4 v4.0.0
