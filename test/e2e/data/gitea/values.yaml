@@ -1,0 +1,18 @@
+gitea:
+  admin:
+    username: gitea
+  config:
+    database:
+      DB_TYPE: sqlite3
+    session:
+      PROVIDER: memory
+    cache:
+      ADAPTER: memory
+    queue:
+      TYPE: level
+persistence:
+  enabled: false
+postgresql:
+  enabled: false
+postgresql-ha:
+  enabled: false
