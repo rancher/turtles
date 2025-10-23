@@ -3,7 +3,7 @@
 # script-specific variables
 CAPI_VERSION="${CAPI_VERSION:-latest}"
 CAPI_RELEASE_URL="${CAPI_RELEASE_URL:-https://github.com/rancher-sandbox/cluster-api/releases/${CAPI_VERSION}/core-components.yaml}"
-CORE_CAPI_NAMESPACE="${CORE_CAPI_NAMESPACE:-capi-system}"
+CORE_CAPI_NAMESPACE="${CORE_CAPI_NAMESPACE:-cattle-capi-system}"
 OUTPUT_DIR="${OUTPUT_DIR:-/tmp}"
 OUTPUT_FILE="${OUTPUT_FILE:-core-provider-configmap.yaml}"
 MANAGED_BY_LABEL="managed-by.turtles.cattle.io"
@@ -38,6 +38,9 @@ kubectl operator preload --core cluster-api:${CORE_CAPI_NAMESPACE} -u ${CAPI_REL
 sed -i '/{{[^-]/d' ${OUTPUT_DIR}/${OUTPUT_FILE}
 # label as managed by turtles for easier filtering
 sed -i -r 's/^(\s*)(provider\.cluster\.x-k8s\.io\/version:.*)/\1\2\n\1'"${MANAGED_BY_LABEL}"': "true"/' ${OUTPUT_DIR}/${OUTPUT_FILE}
+# change namespace from capi-system to cattle-capi-system
+sed -i 's/: capi-system/: cattle-capi-system/g' ${OUTPUT_DIR}/${OUTPUT_FILE}
+sed -i 's/.capi-system.svc/.cattle-capi-system.svc/g' ${OUTPUT_DIR}/${OUTPUT_FILE}
 
 # embed this in Turtles chart
 mv ${OUTPUT_DIR}/${OUTPUT_FILE} ./charts/rancher-turtles/templates/${OUTPUT_FILE}

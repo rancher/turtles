@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
@@ -222,4 +223,30 @@ func extractVersionFromURL(url string, regex *regexp.Regexp) string {
 		return matches[1]
 	}
 	return ""
+}
+
+type RemoveCAPIProviderInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	ProviderName          string
+	ProviderNamespace     string
+}
+
+func RemoveCAPIProvider(ctx context.Context, input RemoveCAPIProviderInput) {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
+	Expect(ctx).NotTo(BeNil(), "ctx is required for RemoveCAPIProvider")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RemoveCAPIProvider")
+	Expect(input.ProviderName).ToNot(BeEmpty(), "ProviderName is required for RemoveCAPIProvider")
+	Expect(input.ProviderNamespace).ToNot(BeEmpty(), "ProviderNamespace is required for RemoveCAPIProvider")
+
+	By("Removing CAPI Operator provider: " + input.ProviderName)
+
+	err := input.BootstrapClusterProxy.GetClient().Delete(ctx, &turtlesv1.CAPIProvider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      input.ProviderName,
+			Namespace: input.ProviderNamespace,
+		},
+	})
+
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete CAPI operator provider: "+input.ProviderName)
 }
