@@ -16,7 +16,7 @@ env:
   CONTROLLER_IMG: controller
   PULL_POLICY: Never
   CERT_MANAGER_VERSION: v1.16.3
-  RANCHER_VERSION: v2.12.1
+  RANCHER_VERSION: v2.13.0-alpha3
 
 jobs:
   prime-test:
@@ -80,16 +80,16 @@ jobs:
         run: helm repo add jetstack https://charts.jetstack.io
 
       - name: Add rancher chart repo
-        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+        run: helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
 
       - name: Install cert-manager
         run: helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set crds.enabled=true --set crds.keep=true --wait
 
       - name: Install Rancher
-        run: helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --version ${{ env.RANCHER_VERSION }} --wait
+        run: helm install rancher rancher-alpha/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Run chart-testing (install)
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
         run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n cattle-capi-system --timeout=10m
@@ -102,10 +102,10 @@ jobs:
           fi
 
       - name: Run chart-testing (un-install)
-        run: helm uninstall rancher-turtles -n cattle-turtles-system --cascade foreground --wait --debug --timeout=10m
+        run: helm uninstall rancher-turtles -n rancher-turtles-system --cascade foreground --wait --debug --timeout=10m
 
       - name: Run chart re-install
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 
   community-test:
     runs-on: ubuntu-latest
@@ -155,10 +155,10 @@ jobs:
         run: helm repo add jetstack https://charts.jetstack.io && helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set crds.enabled=true --set crds.keep=true --wait
 
       - name: Install Rancher
-        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest && helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --version ${{ env.RANCHER_VERSION }} --wait
+        run: helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha && helm install rancher rancher-alpha/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Install rancher-turtles chart
-        run: helm install rancher-turtles out/charts/rancher-turtles/ -n cattle-turtles-system --create-namespace --wait --debug
+        run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 
       - name: Wait for core provider rollout
         run: sleep 30 && kubectl rollout status deployment capi-controller-manager -n cattle-capi-system --timeout=10m
