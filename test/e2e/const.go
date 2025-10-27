@@ -136,13 +136,10 @@ var (
 
 	//go:embed data/test-providers/clusterctlconfig-updated.yaml
 	ClusterctlConfigUpdated []byte
-
-	//go:embed data/rancher/pre-turtles-install.yaml
-	RancherTurtlesPreInstall []byte
 )
 
 const (
-	RancherTurtlesNamespace = "cattle-turtles-system"
+	RancherTurtlesNamespace = "rancher-turtles-system"
 	RancherNamespace        = "cattle-system"
 	NginxIngressNamespace   = "ingress-nginx"
 	NginxIngressDeployment  = "ingress-nginx-controller"

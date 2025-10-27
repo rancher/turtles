@@ -17,7 +17,6 @@ limitations under the License.
 package testenv
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -88,7 +87,7 @@ type DeployRancherTurtlesInput struct {
 	ConfigurationPatches [][]byte
 
 	// Namespace is the namespace for deploying Rancher Turtles.
-	Namespace string `envDefault:"cattle-turtles-system"`
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// ImageRegistry is the image registry for Rancher Turtles.
 	ImageRegistry string `env:"TURTLES_IMAGE_REGISTRY"`
@@ -121,7 +120,7 @@ type UninstallRancherTurtlesInput struct {
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// Namespace is the namespace where Rancher Turtles are installed.
-	Namespace string `envDefault:"cattle-turtles-system"`
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// DeleteWaitInterval is the wait interval for deleting resources.
 	DeleteWaitInterval []interface{} `envDefault:"10m,10s"`
@@ -167,34 +166,10 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	// this is a temporary workaround for installing turtles chart as extension
-	// after the pre-install hook has been removed and before it becomes a part of Rancher.
-	By("Disabling Rancher embedded CAPI")
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, e2e.RancherTurtlesPreInstall)).To(Succeed())
-	webhooks := map[string]string{
-		"mutatingwebhookconfiguration":   "mutating-webhook-configuration",
-		"validatingwebhookconfiguration": "validating-webhook-configuration",
-	}
-	for wtype, wname := range webhooks {
-		By("Removing " + wname + " webhook")
-		cmd := exec.Command("kubectl", []string{
-			"--kubeconfig", input.BootstrapClusterProxy.GetKubeconfigPath(),
-			"delete",
-			wtype, wname,
-			"--ignore-not-found",
-		}...)
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		cmd.WaitDelay = time.Minute
-
-		err := cmd.Run()
-		Expect(err).ToNot(HaveOccurred(), "Failed to remove webhook %s: %s", wname, stderr.String())
-	}
-
 	By("Installing rancher-turtles chart")
 	values := map[string]string{
 		"cluster-api-operator.cluster-api.configSecret.name": "variables",
+		"namespace": input.Namespace,
 	}
 
 	if input.Version == "" {
@@ -283,7 +258,7 @@ type UpgradeRancherTurtlesInput struct {
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
 	// Namespace is the namespace for the deployment.
-	Namespace string `envDefault:"cattle-turtles-system"`
+	Namespace string `envDefault:"rancher-turtles-system"`
 
 	// WaitDeploymentsReadyInterval is the interval for waiting until deployments are ready.
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
