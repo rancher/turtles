@@ -192,6 +192,12 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		}
 	}
 
+	By("Waiting for rancher webhook rollout")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter:     input.BootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "rancher-webhook", Namespace: e2e.RancherNamespace}},
+	}, e2e.LoadE2EConfig().GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...)
+
 	By("Installing rancher-turtles-providers chart")
 
 	maps.Copy(values, input.AdditionalValues) // Merge additional values into the values map
