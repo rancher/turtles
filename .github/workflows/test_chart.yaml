@@ -88,6 +88,11 @@ jobs:
       - name: Install Rancher
         run: helm install rancher rancher-alpha/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
 
+      - name: Wait for rancher-webhook
+        run: |
+          kubectl --namespace cattle-system wait --for=create deployments/rancher-webhook --timeout=300s
+          kubectl --namespace cattle-system wait --for=condition=Available deployment/rancher-webhook --timeout=300s
+
       - name: Run chart-testing (install)
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 
@@ -157,6 +162,11 @@ jobs:
       - name: Install Rancher
         run: helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha && helm install rancher rancher-alpha/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
 
+      - name: Wait for rancher-webhook
+        run: |
+          kubectl --namespace cattle-system wait --for=create deployments/rancher-webhook --timeout=300s
+          kubectl --namespace cattle-system wait --for=condition=Available deployment/rancher-webhook --timeout=300s
+      
       - name: Install rancher-turtles chart
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 

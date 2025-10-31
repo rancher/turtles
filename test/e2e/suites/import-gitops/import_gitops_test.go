@@ -183,9 +183,6 @@ var _ = Describe("[Azure] [Kubeadm] Create and delete CAPI cluster from cluster 
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
-			AdditionalTemplateVariables: map[string]string{
-				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.AzureKubernetesVersionVar), // override the default k8s version
-			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-class-kubeadm",
@@ -287,9 +284,6 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class"
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
-			AdditionalTemplateVariables: map[string]string{
-				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.AWSKubernetesVersionVar), // override the default k8s version
-			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-eks",
@@ -328,10 +322,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
-			AdditionalTemplateVariables: map[string]string{
-				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.AWSKubernetesVersionVar), // override the default k8s version
-			},
-			TopologyNamespace: topologyNamespace,
+			TopologyNamespace:              topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-regular",

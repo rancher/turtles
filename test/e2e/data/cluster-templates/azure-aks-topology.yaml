@@ -38,7 +38,7 @@ spec:
       value: highlander-e2e-azure-aks
     - name: azureClusterIdentityName
       value: cluster-identity
-    version: ${KUBERNETES_VERSION}
+    version: ${AZURE_AKS_VERSION}
     workers:
       machinePools:
       - class: default-system

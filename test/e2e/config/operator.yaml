@@ -38,23 +38,31 @@ variables:
   SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,GCP_IMAGE_ID,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2,DOCKER_REGISTRY_TOKEN,DOCKER_REGISTRY_USERNAME,DOCKER_REGISTRY_CONFIG"
 
   # Kubernetes Configuration
-  KUBERNETES_VERSION: "v1.32.3"
-  KUBERNETES_MANAGEMENT_VERSION: "v1.32.3"
-  RKE2_VERSION: "v1.32.9+rke2r1"
+  KUBERNETES_VERSION: "v1.34.0" # Depends on kindest/node
+  KUBERNETES_MANAGEMENT_VERSION: "v1.34.0" # Depends on kindest/node
+  RKE2_VERSION: "v1.34.1+rke2r1"
   RKE2_CNI: "none"
 
   # Azure Configuration
   #
   # Azure Kubeadm tests need specific k8s version.
   # This is due to the limited availability of published AMIs.
-  # For example: https://portal.azure.com/#@suseazuredev.onmicrosoft.com/resource/providers/Microsoft.Compute/locations/FranceCentral/CommunityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/Images/capi-ubun2-2204/overview
-  AZURE_KUBERNETES_VERSION: "v1.32.0"
+  # For example: https://portal.azure.com/#view/Microsoft_Azure_ComputeHub/ComputeHubMenuBlade/~/communityImagesBrowse
+  #              Filter `capi-ubun2-2404` images. Beware: not all versions are published on all regions.
+  AZURE_KUBERNETES_VERSION: "v1.34.1"
+  AZURE_AKS_VERSION: "v1.33.3"
 
   # AWS Configuration
   #
   # AWS Kubeadm tests need specific k8s version.
   # This is due to the limited availability of published AMIs.
   # For a complete list, run: clusterawsadm ami list
+  # Alternatively, seach for `capa-ami` in https://eu-west-2.console.aws.amazon.com/ec2/home?region=eu-west-2#AMICatalog:
+  #
+  # Note: the same version variable is also used for EKS. 
+  # EKS also needs versioned images, that may not be available for recent versions of k8s.
+  # To verify availability, you can run: aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.34/amazon-linux-2/recommended/image_id
+  # Recent versions will return a 'ParameterNotFound' error, preventing EKS from deploying.
   AWS_KUBERNETES_VERSION: "v1.32.0"
   AWS_REGION: "eu-west-2"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
@@ -65,6 +73,14 @@ variables:
   AWS_AMI_ID: "ami-096c298c2ab1493d7" # Public upstream AMI
 
   # GCP Configuration
+  #
+  # GCP images are manually built and pushed to the e2e GCP Project.
+  # For more information on how to build the image, see: https://cluster-api-gcp.sigs.k8s.io/prerequisites#building-images
+  # For example to build a specific version image:
+  #   PACKER_FLAGS="--var 'use_internal_ip=true'  --var 'kubernetes_semver=v1.34.1' --var 'kubernetes_series=v1.34' --var 'kubernetes_deb_version=1.34.1-1.1'" make build-gce-ubuntu-2404
+  # The actual GCP_IMAGE_ID value is loaded from ci secrets.
+  GCP_IMAGE_ID: ""
+  GCP_KUBERNETES_VERSION: "v1.32.3" # Depends on a new image to be built with the kubeadm components matching the k8s version.
   GCP_MACHINE_TYPE: "n1-standard-2"
   
   # CLI Tool Paths

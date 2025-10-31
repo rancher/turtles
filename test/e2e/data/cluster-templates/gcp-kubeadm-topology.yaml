@@ -35,4 +35,4 @@ spec:
         value: ${GCP_IMAGE_ID}
       - name: machineType
         value: ${GCP_MACHINE_TYPE}
-    version: ${KUBERNETES_VERSION}
+    version: ${GCP_KUBERNETES_VERSION}
