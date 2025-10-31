@@ -137,12 +137,15 @@ var (
 	//go:embed data/test-providers/clusterctlconfig-updated.yaml
 	ClusterctlConfigUpdated []byte
 
-	//go:embed data/rancher/pre-turtles-install.yaml
-	RancherTurtlesPreInstall []byte
+	//go:embed data/gitea/ingress.yaml
+	GiteaIngress []byte
+
+	//go:embed data/gitea/values.yaml
+	GiteaValues []byte
 )
 
 const (
-	RancherTurtlesNamespace = "cattle-turtles-system"
+	RancherTurtlesNamespace = "rancher-turtles-system"
 	RancherNamespace        = "cattle-system"
 	NginxIngressNamespace   = "ingress-nginx"
 	NginxIngressDeployment  = "ingress-nginx-controller"
@@ -194,6 +197,13 @@ const (
 	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
 	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
 	OwnedLabelName                 = "cluster-api.cattle.io/owned"
+
+	GiteaRepoNameVar     = "GITEA_REPO_NAME"
+	GiteaRepoURLVar      = "GITEA_REPO_URL"
+	GiteaChartNameVar    = "GITEA_CHART_NAME"
+	GiteaChartVersionVar = "GITEA_CHART_VERSION"
+	GiteaUserNameVar     = "GITEA_USER_NAME"
+	GiteaUserPasswordVar = "GITEA_USER_PWD"
 )
 
 const (

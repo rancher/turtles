@@ -1,2 +1,3 @@
+namePrefix: cattle-turtles-
 resources:
 - namespace.yaml

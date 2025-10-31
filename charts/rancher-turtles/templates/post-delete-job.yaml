@@ -69,6 +69,15 @@ spec:
           - mutatingwebhookconfigurations.admissionregistration.k8s.io
           - capi-mutating-webhook-configuration
           - --ignore-not-found=true
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
       restartPolicy: Never
 ---
 apiVersion: batch/v1
@@ -93,6 +102,15 @@ spec:
           - validatingwebhookconfigurations.admissionregistration.k8s.io
           - capi-validating-webhook-configuration
           - --ignore-not-found=true
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
       restartPolicy: Never
 ---
 apiVersion: batch/v1
@@ -119,4 +137,13 @@ spec:
         - -n
         - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
         - --ignore-not-found=true
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
 {{- end }}

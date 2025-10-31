@@ -69,7 +69,7 @@ cluster-api-operator:
     # core: Core Cluster API settings.
     core:
       # namespace: Core component namespace.
-      namespace: capi-system
+      namespace: cattle-capi-system
       # version: Core ClusterAPI version.
       version: ""
       # enableAutomaticUpdate: Allow the provider to update automatically when a new Turtles version is installed.

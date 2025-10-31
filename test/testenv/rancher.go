@@ -233,6 +233,8 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"--namespace", input.RancherNamespace,
 		"--create-namespace",
 		"--values", input.HelmExtraValuesPath,
+		"--set", "extraEnv[0].name=CATTLE_FEATURES",
+		"--set", "extraEnv[0].value=turtles=false",
 	)
 	if input.RancherVersion != "" {
 		installFlags = append(installFlags, "--version", input.RancherVersion)
@@ -291,12 +293,6 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 			},
 		})).To(Succeed())
 	}
-
-	By("Waiting for rancher webhook rollout")
-	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
-		Getter:     input.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "rancher-webhook", Namespace: input.RancherNamespace}},
-	}, input.RancherWaitInterval...)
 
 	// hack: fleet controller needs to be restarted first to pickup config change with a valid API url.
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{

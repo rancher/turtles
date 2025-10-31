@@ -62,5 +62,14 @@ spec:
           - --namespace={{ .Values.namespace }}
           - clusterctl-config
           - --ignore-not-found=true
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
       restartPolicy: Never
 {{- end }}

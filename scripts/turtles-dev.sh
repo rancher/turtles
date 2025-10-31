@@ -22,14 +22,20 @@ if [ -z "$RANCHER_HOSTNAME" ]; then
     exit 1
 fi
 
-RANCHER_CHANNEL=${RANCHER_CHANNEL:-latest}
+RANCHER_CHANNEL=${RANCHER_CHANNEL:-alpha}
 RANCHER_PASSWORD=${RANCHER_PASSWORD:-rancheradmin}
-RANCHER_VERSION=${RANCHER_VERSION:-v2.12.1}
-RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.13.0-alpha3}
+RANCHER_IMAGE_TAG=${RANCHER_IMAGE_TAG:-$RANCHER_VERSION} # Set RANCHER_IMAGE_TAG=head to test with latest build
+RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_IMAGE_TAG}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 USE_TILT_DEV=${USE_TILT_DEV:-true}
 TURTLES_VERSION=${TURTLES_VERSION:-dev}
 TURTLES_IMAGE=${TURTLES_IMAGE:-ghcr.io/rancher/turtles:$TURTLES_VERSION}
+
+GITEA_PASSWORD=${GITEA_PASSWORD:-giteaadmin}
+RANCHER_CHARTS_REPO_DIR=${RANCHER_CHARTS_REPO_DIR}
+RANCHER_CHART_DEV_VERSION=${RANCHER_CHART_DEV_VERSION}
+RANCHER_CHARTS_BASE_BRANCH=${RANCHER_CHARTS_BASE_BRANCH}
 
 BASEDIR=$(dirname "$0")
 
@@ -42,6 +48,7 @@ kubectl rollout status deployment coredns -n kube-system --timeout=90s
 helm repo add rancher-$RANCHER_CHANNEL https://releases.rancher.com/server-charts/$RANCHER_CHANNEL --force-update
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo add ngrok https://charts.ngrok.com --force-update
+helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update
 helm repo update
 
 helm install cert-manager jetstack/cert-manager \
@@ -57,6 +64,28 @@ helm upgrade ngrok ngrok/ngrok-operator \
     --timeout 5m \
     --set credentials.apiKey=$NGROK_API_KEY \
     --set credentials.authtoken=$NGROK_AUTHTOKEN
+kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
+
+helm install gitea gitea-charts/gitea \
+    -f test/e2e/data/gitea/values.yaml \
+    --set gitea.admin.password=$GITEA_PASSWORD \
+    --wait
+
+envsubst <test/e2e/data/gitea/ingress.yaml | kubectl apply -f -
+
+# Build and load the controller image
+make docker-build-prime
+kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
+
+# Create Gitea repo for the Rancher charts fork
+until [ "$(curl -s -o /dev/null -w "%{http_code}" https://gitea.$RANCHER_HOSTNAME)" = "200" ]; do echo "Waiting for gitea"; sleep 1; done;
+curl -X POST "https://gitea:$GITEA_PASSWORD@gitea.$RANCHER_HOSTNAME/api/v1/user/repos" \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"charts"}'
+# Push to repo
+git -C $RANCHER_CHARTS_REPO_DIR remote add fork https://gitea:$GITEA_PASSWORD@gitea.$RANCHER_HOSTNAME/gitea/charts.git
+git -C $RANCHER_CHARTS_REPO_DIR push fork --force
 
 helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --namespace cattle-system \
@@ -64,53 +93,27 @@ helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --set bootstrapPassword=$RANCHER_PASSWORD \
     --set replicas=1 \
     --set hostname="$RANCHER_HOSTNAME" \
+    --set image.tag=$RANCHER_IMAGE_TAG \
+    --set extraEnv[0].name=CATTLE_CHART_DEFAULT_URL \
+    --set extraEnv[0].value=https://gitea.$RANCHER_HOSTNAME/gitea/charts.git \
+    --set extraEnv[1].name=CATTLE_CHART_DEFAULT_BRANCH \
+    --set extraEnv[1].value=$RANCHER_CHARTS_BASE_BRANCH \
+    --set extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION \
+    --set extraEnv[2].value=$RANCHER_CHART_DEV_VERSION \
     --version="$RANCHER_VERSION" \
     --wait
 
-kubectl rollout status deployment rancher -n cattle-system --timeout=180s
-
-kubectl apply -f test/e2e/data/rancher/ingress-class-patch.yaml
 kubectl apply -f test/e2e/data/rancher/rancher-service-patch.yaml
 envsubst <test/e2e/data/rancher/ingress.yaml | kubectl apply -f -
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
 
-pre_install_configuration() {
-    kubectl apply -f test/e2e/data/rancher/pre-turtles-install.yaml
-    kubectl delete \
-        mutatingwebhookconfiguration mutating-webhook-configuration \
-        --ignore-not-found
-    kubectl delete \
-        validatingwebhookconfiguration validating-webhook-configuration \
-        --ignore-not-found
-}
-
-# Install the locally build chart of Rancher Turtles
-install_local_rancher_turtles_chart() {
-    # Remove the previous chart directory
-    rm -rf out
-    # Build the chart locally
-    make build-chart
-    # Build the controller image
-    make docker-build-prime
-    # Load the controller image
-    kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
-    # Install Rancher Turtles using a local chart
-    helm upgrade --install rancher-turtles out/charts/rancher-turtles \
-        -n cattle-turtles-system \
-        --set image.tag=$TURTLES_VERSION \
-        --dependency-update \
-        --create-namespace --wait \
-        --timeout 180s
-
-    kubectl apply -f test/e2e/data/capi-operator/clusterctlconfig.yaml
-}
-
 install_local_providers_chart() {
     make build-providers-chart
 
-    kind export kubeconfig --name $CLUSTER_NAME
-    . ${BASH_SOURCE%/*}/migrate-providers-ownership.sh
+    # Wait for Turtles to be ready. This may take a few minutes before Rancher installs the system chart.
+    # The providers chart depends on CAPIProvider crd.
+    kubectl wait --for=create crds/capiproviders.turtles-capi.cattle.io --timeout=300s
 
     helm upgrade --install rancher-turtles-providers out/charts/rancher-turtles-providers \
         -n cattle-turtles-system \
@@ -126,16 +129,11 @@ install_local_providers_chart() {
         --timeout 180s
 }
 
-# patch the removed pre-install hook
-pre_install_configuration
-
-echo "Installing local Rancher Turtles chart for development..."
-install_local_rancher_turtles_chart
-
 echo "Installing local Rancher Turtles Providers..."
 install_local_providers_chart
 
 if [ "$USE_TILT_DEV" == "true" ]; then
+    kubectl wait --for=create deployments/rancher-turtles-controller-manager --namespace cattle-turtles-system --timeout=300s
     echo "Using Tilt for development..."
     tilt up
 fi

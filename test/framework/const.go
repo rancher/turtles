@@ -26,5 +26,5 @@ const (
 	// MagicDNS is the dns name to use in isolated mode
 	MagicDNS = "sslip.io"
 	// DefaulRancherTurtlesNamespace is the name of the default namespace for Rancher Turtles.
-	DefaultRancherTurtlesNamespace = "cattle-turtles-system"
+	DefaultRancherTurtlesNamespace = "rancher-turtles-system"
 )

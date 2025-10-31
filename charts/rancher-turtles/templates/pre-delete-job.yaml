@@ -65,5 +65,14 @@ spec:
           - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
           - --ignore-not-found=true
           - --cascade=foreground
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
       restartPolicy: Never
 {{- end }}

@@ -184,13 +184,18 @@ IID_FILE ?= $(shell mktemp)
 RELEASE_TAG ?= $(shell git describe --abbrev=0 --exclude 'examples/*' --exclude 'test/*' 2>/dev/null)
 # Exclude the current RELEASE_TAG and any tags with the prefix 'test/'
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) --exclude 'examples/*' --exclude 'test/*' 2>/dev/null)
-HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
+HELM_CHART_TAG ?= $(shell echo $(RELEASE_TAG) | cut -c 2-)
 CHART_DIR := charts/rancher-turtles
 PROVIDERS_CHART_DIR := charts/rancher-turtles-providers
 RELEASE_DIR ?= out
 CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
 CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
 PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
+
+# Rancher charts testing
+export RANCHER_CHARTS_REPO_DIR ?= $(RELEASE_DIR)/rancher-charts
+export RANCHER_CHART_DEV_VERSION ?= 108.0.0+up99.99.99
+export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.13
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= IfNotPresent
@@ -271,7 +276,7 @@ vendor-clean:
 	rm -rf vendor
 
 .PHOHY: dev-env
-dev-env: ## Create a local development environment
+dev-env: build-local-rancher-charts ## Create a local development environment
 	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
 
 ## --------------------------------------
@@ -579,6 +584,13 @@ release-chart: $(HELM) $(NOTES) build-chart verify-gen
 	$(NOTES) --repository $(REPO) -add-kubernetes-version-support=false -from=tags/$(PREVIOUS_TAG) -release=$(RELEASE_TAG) -branch=main > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
+## --------------------------------------
+## Rancher charts testing
+## --------------------------------------
+.PHONY: build-local-rancher-charts
+build-local-rancher-charts:
+	RELEASE_TAG=$(TAG) HELM_CHART_TAG=$(RANCHER_CHART_DEV_VERSION) $(MAKE) build-chart
+	CHART_RELEASE_DIR=$(CHART_RELEASE_DIR) HELM=$(HELM) ./scripts/build-local-rancher-charts.sh
 
 ## --------------------------------------
 ## E2E Tests

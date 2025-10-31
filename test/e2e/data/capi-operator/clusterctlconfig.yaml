@@ -2,7 +2,7 @@ apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: ClusterctlConfig
 metadata:
   name: clusterctl-config
-  namespace: cattle-turtles-system
+  namespace: rancher-turtles-system
 spec:
   images:
   - name: infrastructure-docker
