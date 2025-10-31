@@ -12,6 +12,9 @@ gitea:
       TYPE: level
 persistence:
   enabled: false
+  
+redis-cluster:
+  enabled: false
 postgresql:
   enabled: false
 postgresql-ha:

@@ -27,8 +27,16 @@ require (
 )
 
 require (
+	github.com/42wim/httpsig v1.2.3 // indirect
+	github.com/davidmz/go-pageant v1.0.2 // indirect
+	github.com/go-fed/httpsig v1.1.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
+)
+
+require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
 	cel.dev/expr v0.20.0 // indirect
+	code.gitea.io/sdk/gitea v0.22.1
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
