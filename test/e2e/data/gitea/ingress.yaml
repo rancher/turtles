@@ -4,7 +4,7 @@ metadata:
   name: gitea-http
   namespace: default
 spec:
-  ingressClassName: ${GITEA_INGRESS_CLASS_NAME:=ngrok}
+  ingressClassName: ${GITEA_INGRESS_CLASS_NAME}
   rules:
   - host: gitea.${RANCHER_HOSTNAME}
     http:
