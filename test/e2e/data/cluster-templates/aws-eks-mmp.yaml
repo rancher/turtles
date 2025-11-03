@@ -74,4 +74,5 @@ metadata:
   namespace: "${NAMESPACE}"
   annotations:
     "helm.sh/resource-policy": keep
-spec: {}
+spec:
+  amiType: AL2023_x86_64_STANDARD
