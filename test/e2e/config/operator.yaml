@@ -73,7 +73,7 @@ variables:
   HELM_EXTRA_VALUES_FOLDER: "/tmp"
 
   # Rancher Configuration
-  RANCHER_VERSION: "v2.12.1"
+  RANCHER_VERSION: "v2.12.3"
   RANCHER_REPO_NAME: "rancher-latest"
   RANCHER_PATH: "rancher-latest/rancher"
   RANCHER_URL: "https://releases.rancher.com/server-charts/latest"
