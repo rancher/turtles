@@ -50,6 +50,7 @@ variables:
   # For example: https://portal.azure.com/#view/Microsoft_Azure_ComputeHub/ComputeHubMenuBlade/~/communityImagesBrowse
   #              Filter `capi-ubun2-2404` images. Beware: not all versions are published on all regions.
   AZURE_KUBERNETES_VERSION: "v1.33.5"
+  AZURE_AKS_KUBERNETES_VERSION: "v1.33.3"
 
   # AWS Configuration
   #
@@ -68,6 +69,9 @@ variables:
 
   # GCP Configuration
   GCP_MACHINE_TYPE: "n1-standard-2"
+
+  # vSphere Configuration
+  VSPHERE_TEMPLATE: "turtles-ci/ubuntu-2404-kube-v1.33.5"
   
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""
