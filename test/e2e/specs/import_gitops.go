@@ -150,6 +150,13 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			return found
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
+		By("Rancher cluster should have the 'provisioning.cattle.io/externally-managed' annotation")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
+			return found
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			ClusterProxy:     input.BootstrapClusterProxy,
