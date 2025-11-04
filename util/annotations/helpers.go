@@ -29,6 +29,8 @@ const (
 	// This is required so that logs don't get flooded with errors when project handler and cluster handler
 	// attempt to create `ClusterOwner` and `ProjectOwner` roles.
 	NoCreatorRBACAnnotation = "field.cattle.io/no-creator-rbac"
+	// ExternalFleetAnnotation represents cluster provisioned and managed by external fleet.
+	ExternalFleetAnnotation = "provisioning.cattle.io/externally-managed"
 	// EtcdAutomaticSnapshot represents automatically generated etcd snapshot.
 	EtcdAutomaticSnapshot = "etcd.turtles.cattle.io/automatic-snapshot"
 	// UpstreamSystemAgentAnnotation is a cluster annotation, allowing to pull the agent binary from the github repo instead of rancher url.
