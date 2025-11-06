@@ -32,7 +32,7 @@ spec:
         value:
           - "${GCP_REGION}-a"
       - name: imageId
-        value: ${GCP_IMAGE_ID}
+        value: ${GCP_IMAGE_ID_FORMATTED}
       - name: machineType
         value: ${GCP_MACHINE_TYPE}
-    version: ${KUBERNETES_VERSION}
+    version: ${GCP_KUBERNETES_VERSION}

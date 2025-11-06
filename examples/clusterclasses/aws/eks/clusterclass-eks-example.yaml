@@ -72,7 +72,6 @@ spec:
             controlPlane: true
         jsonPatches:
           - op: add
-            enabledIf: '{{ ne .eksClusterName }}'
             path: /spec/template/spec/eksClusterName
             valueFrom:
               variable: eksClusterName
@@ -81,7 +80,6 @@ spec:
             valueFrom:
               variable: region
           - op: add
-            enabledIf: '{{ ne .sshKeyName }}'
             path: /spec/template/spec/sshKeyName
             valueFrom:
               variable: sshKeyName
@@ -105,7 +103,6 @@ spec:
               - default-worker
         jsonPatches:
           - op: add
-            enabledIf: '{{ ne .sshKeyName }}'
             path: /spec/template/spec/sshKeyName
             valueFrom:
               variable: sshKeyName

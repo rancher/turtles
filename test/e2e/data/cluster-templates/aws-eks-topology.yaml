@@ -21,7 +21,7 @@ spec:
   topology:
     class: aws-eks-example
     classNamespace: ${TOPOLOGY_NAMESPACE}
-    version: ${AWS_KUBERNETES_VERSION}
+    version: ${AWS_EKS_VERSION}
     variables:
       - name: region
         value: ${AWS_REGION}
