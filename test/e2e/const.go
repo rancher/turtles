@@ -163,6 +163,7 @@ const (
 	AWSKubernetesVersionVar      = "AWS_KUBERNETES_VERSION"
 	AzureKubernetesVersionVar    = "AZURE_KUBERNETES_VERSION"
 	AzureAKSKubernetesVersionVar = "AZURE_AKS_KUBERNETES_VERSION"
+	DockerKubernetesVersionVar   = "DOCKER_KUBERNETES_VERSION"
 	RancherHostnameVar           = "RANCHER_HOSTNAME"
 
 	ArtifactsFolderVar     = "ARTIFACTS_FOLDER"

@@ -55,6 +55,9 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.DockerKubernetesVersionVar), // override the default k8s version
+			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
@@ -100,6 +103,9 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			TopologyNamespace:              topologyNamespace,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.DockerKubernetesVersionVar), // override the default k8s version
+			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",

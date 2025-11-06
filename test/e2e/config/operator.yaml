@@ -72,6 +72,9 @@ variables:
 
   # vSphere Configuration
   VSPHERE_TEMPLATE: "turtles-ci/ubuntu-2404-kube-v1.33.5"
+
+  # Docker Configuration
+  DOCKER_KUBERNETES_VERSION: "v1.33.4"
   
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""

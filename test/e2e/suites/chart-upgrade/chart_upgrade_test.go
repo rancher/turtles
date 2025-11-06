@@ -114,6 +114,9 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 				TopologyNamespace:              topologyNamespace,
 				SkipCleanup:                    true,
 				SkipDeletionTest:               true,
+				AdditionalTemplateVariables: map[string]string{
+					e2e.KubernetesVersionVar: e2e.LoadE2EConfig().GetVariableOrEmpty(e2e.DockerKubernetesVersionVar), // override the default k8s version
+				},
 				AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
 					{
 						Name:            "docker-cluster-classes-regular",
