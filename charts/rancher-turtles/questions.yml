@@ -32,7 +32,7 @@ questions:
     label: Remove cert-manager
     group: "Rancher Turtles Features Settings"
   - variable: kubectlImage
-    default: "registry.k8s.io/kubernetes/kubectl:v1.32.3"
+    default: "registry.k8s.io/kubernetes/kubectl:v1.34.1"
     description: "Specify the image to use when running kubectl in jobs."
     type: string
     label: Kubectl Image

@@ -36,6 +36,8 @@ spec:
       value: ${AWS_NODE_MACHINE_TYPE}
     - name: awsClusterIdentityName
       value: cluster-identity
+    - name: amiID
+      value: ${AWS_AMI_ID}
     version: ${AWS_KUBERNETES_VERSION}
     workers:
       machineDeployments:
