@@ -38,34 +38,43 @@ variables:
   SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,GCP_IMAGE_ID,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2,DOCKER_REGISTRY_TOKEN,DOCKER_REGISTRY_USERNAME,DOCKER_REGISTRY_CONFIG"
 
   # Kubernetes Configuration
-  KUBERNETES_VERSION: "v1.31.4"
-  KUBERNETES_MANAGEMENT_VERSION: "v1.31.4"
-  RKE2_VERSION: "v1.31.7+rke2r1"
+  KUBERNETES_VERSION: "v1.33.5"
+  KUBERNETES_MANAGEMENT_VERSION: "v1.32.3"
+  RKE2_VERSION: "v1.33.5+rke2r1"
   RKE2_CNI: "none"
 
   # Azure Configuration
   #
   # Azure Kubeadm tests need specific k8s version.
   # This is due to the limited availability of published AMIs.
-  # For example: https://portal.azure.com/#@suseazuredev.onmicrosoft.com/resource/providers/Microsoft.Compute/locations/FranceCentral/CommunityGalleries/ClusterAPI-f72ceb4f-5159-4c26-a0fe-2ea738f0d019/Images/capi-ubun2-2204/overview
-  AZURE_KUBERNETES_VERSION: "v1.31.1"
+  # For example: https://portal.azure.com/#view/Microsoft_Azure_ComputeHub/ComputeHubMenuBlade/~/communityImagesBrowse
+  #              Filter `capi-ubun2-2404` images. Beware: not all versions are published on all regions.
+  AZURE_KUBERNETES_VERSION: "v1.33.5"
+  AZURE_AKS_KUBERNETES_VERSION: "v1.33.3"
 
   # AWS Configuration
   #
   # AWS Kubeadm tests need specific k8s version.
   # This is due to the limited availability of published AMIs.
   # For a complete list, run: clusterawsadm ami list
-  AWS_KUBERNETES_VERSION: "v1.31.0"
+  # Alternatively, seach for `capa-ami` in https://eu-west-2.console.aws.amazon.com/ec2/home?region=eu-west-2#AMICatalog:
+  AWS_KUBERNETES_VERSION: "v1.33.5"
   AWS_REGION: "eu-west-2"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   AWS_CONTROL_PLANE_MACHINE_TYPE: "t3.large"
   AWS_NODE_MACHINE_TYPE: "t3.large"
   AWS_RKE2_CONTROL_PLANE_MACHINE_TYPE: "t3.xlarge"
   AWS_RKE2_NODE_MACHINE_TYPE: "t3.xlarge"
-  AWS_AMI_ID: "ami-012e88f0aa221423a" # Public upstream AMI
+  AWS_AMI_ID: "ami-0cd9e4e7906f4c9dd" # Private AMI present only in eu-west-2
 
   # GCP Configuration
   GCP_MACHINE_TYPE: "n1-standard-2"
+
+  # vSphere Configuration
+  VSPHERE_TEMPLATE: "turtles-ci/ubuntu-2404-kube-v1.33.5"
+
+  # Docker Configuration
+  DOCKER_KUBERNETES_VERSION: "v1.33.4"
   
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""
@@ -97,7 +106,6 @@ variables:
   CERT_MANAGER_REPO_NAME: "jetstack"
   CERT_MANAGER_URL: "https://charts.jetstack.io"
   CERT_MANAGER_PATH: "jetstack/cert-manager"
-  CPI_IMAGE_K8S_VERSION: "v1.31.0"
 
   # Ingress Configuration (Ngrok)
   NGROK_REPO_NAME: "ngrok"

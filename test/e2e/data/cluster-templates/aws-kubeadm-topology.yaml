@@ -34,6 +34,8 @@ spec:
       value: ${AWS_CONTROL_PLANE_MACHINE_TYPE}
     - name: workerMachineType
       value: ${AWS_NODE_MACHINE_TYPE}
+    - name: amiID
+      value: ${AWS_AMI_ID}
     - name: awsClusterIdentityName
       value: cluster-identity
     version: ${AWS_KUBERNETES_VERSION}

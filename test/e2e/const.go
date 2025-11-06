@@ -159,10 +159,12 @@ const (
 
 	BootstrapClusterNameVar = "BOOTSTRAP_CLUSTER_NAME"
 
-	KubernetesVersionVar      = "KUBERNETES_VERSION"
-	AWSKubernetesVersionVar   = "AWS_KUBERNETES_VERSION"
-	AzureKubernetesVersionVar = "AZURE_KUBERNETES_VERSION"
-	RancherHostnameVar        = "RANCHER_HOSTNAME"
+	KubernetesVersionVar         = "KUBERNETES_VERSION"
+	AWSKubernetesVersionVar      = "AWS_KUBERNETES_VERSION"
+	AzureKubernetesVersionVar    = "AZURE_KUBERNETES_VERSION"
+	AzureAKSKubernetesVersionVar = "AZURE_AKS_KUBERNETES_VERSION"
+	DockerKubernetesVersionVar   = "DOCKER_KUBERNETES_VERSION"
+	RancherHostnameVar           = "RANCHER_HOSTNAME"
 
 	ArtifactsFolderVar     = "ARTIFACTS_FOLDER"
 	UseExistingClusterVar  = "USE_EXISTING_CLUSTER"
