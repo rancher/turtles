@@ -23,7 +23,7 @@ RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 RANCHER_CLUSTER_NAME=${RANCHER_CLUSTER_NAME:-rancher-cluster}
 RANCHER_TURTLES_VERSION=${RANCHER_TURTLES_VERSION:-v0.24.1}
 CAPI_CLUSTER_NAME=${CAPI_CLUSTER_NAME:-capi-cluster1}
-KIND_IMAGE_VERSION=${KIND_IMAGE_VERSION:-v1.32.8}
+KIND_IMAGE_VERSION=${KIND_IMAGE_VERSION:-v1.34.0}
 
 CONFIG_DIR="/tmp/turtles"
 mkdir -p $CONFIG_DIR
@@ -416,7 +416,7 @@ EOF
     export NAMESPACE=capi-clusters
     export CONTROL_PLANE_MACHINE_COUNT=1
     export WORKER_MACHINE_COUNT=1
-    export KUBERNETES_VERSION=v1.32.3
+    export KUBERNETES_VERSION=v1.34.0
 
     curl -s https://raw.githubusercontent.com/rancher/turtles/refs/heads/main/test/e2e/data/cluster-templates/docker-kubeadm.yaml | envsubst > ${CONFIG_DIR}/${CAPI_CLUSTER_NAME}.yaml
 

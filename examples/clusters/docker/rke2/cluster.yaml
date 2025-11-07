@@ -24,8 +24,8 @@ spec:
     - name: rke2CNI
       value: none
     - name: dockerImage
-      value: kindest/node:v1.32.8
-    version: v1.32.9+rke2r1
+      value: kindest/node:v1.34.0
+    version: v1.34.1+rke2r1
     workers:
       machineDeployments:
       - class: default-worker

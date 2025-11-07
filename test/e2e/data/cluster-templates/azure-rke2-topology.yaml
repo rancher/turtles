@@ -44,7 +44,7 @@ spec:
       value: highlander-e2e-azure-rke2
     - name: azureClusterIdentityName
       value: cluster-identity
-    version: ${AZURE_RKE2_VERSION}
+    version: ${RKE2_VERSION}
     workers:
       machineDeployments:
       - class: rke2-default-worker

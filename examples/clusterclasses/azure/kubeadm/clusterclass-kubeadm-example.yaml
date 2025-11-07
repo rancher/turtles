@@ -265,12 +265,10 @@ spec:
       kubeadmConfigSpec:
         clusterConfiguration:
           apiServer:
-            extraArgs: {}
             timeoutForControlPlane: 20m
           controllerManager:
             extraArgs:
               allocate-node-cidrs: "false"
-              cloud-provider: external
               cluster-name: "TO_BE_REPLACED_BY_PATCH"
           etcd:
             local:

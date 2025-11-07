@@ -204,6 +204,10 @@ const (
 	GiteaChartVersionVar = "GITEA_CHART_VERSION"
 	GiteaUserNameVar     = "GITEA_USER_NAME"
 	GiteaUserPasswordVar = "GITEA_USER_PWD"
+
+	GCPImageIDVar          = "GCP_IMAGE_ID"
+	GCPImageIDFormattedVar = "GCP_IMAGE_ID_FORMATTED"
+	GCPProjectIDVar        = "GCP_PROJECT"
 )
 
 const (
