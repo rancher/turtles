@@ -1,0 +1,112 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pre-install-job
+  namespace: '{{ .Values.namespace }}'
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pre-install-job-patch-crds
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+rules:
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pre-install-job-patch-crds
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+subjects:
+  - kind: ServiceAccount
+    name: pre-install-job
+    namespace: '{{ .Values.namespace }}'
+roleRef:
+  kind: ClusterRole
+  name: pre-install-job-patch-crds
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rancher-turtles-pre-install-crd-patch-script
+  namespace: '{{ .Values.namespace }}'
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+data:
+  crd-patch.sh: |
+    #!/usr/bin/env bash
+
+    set -euo pipefail
+
+    patch_crd() {
+      local resource_type="$1"
+      if kubectl get crd $resource_type > /dev/null 2>&1; then
+        kubectl patch crd $resource_type --type merge -p '[{"op": "add", "path": "/metadata/annotations/meta.helm.sh~1release-namespace", "value": "{{ .Values.namespace }}"]'
+      else
+        echo "Resource type $resource_type does not exist, skipping patching."
+      fi
+    }
+
+    resource_types=(
+      "capiproviders.turtles-capi.cattle.io"
+      "clusterctlconfigs.turtles-capi.cattle.io"
+    )
+
+    for resource_type in "${resource_types[@]}"; do
+      patch_crd "$resource_type"
+    done
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rancher-turtles-pre-install-crd-patch
+  namespace: '{{ .Values.namespace }}'
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: pre-install-job
+      containers:
+        - name: rancher-turtles-pre-install-crd-patch
+          image: {{ .Values.shellImage }}
+          command: ["/bin/bash"]
+          args:
+          - "-c"
+          - "/scripts/crd-patch.sh"
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+      volumes:
+        - name: script
+          configMap:
+            name: rancher-turtles-pre-install-crd-patch-script
+            defaultMode: 0777
+      restartPolicy: Never
