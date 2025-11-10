@@ -167,6 +167,8 @@ GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 NOTES_BIN := notes
 NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 
+CHART_TESTING_VER := v3.14.0
+
 # Registry / images
 TAG ?= dev
 ARCH ?= linux/$(shell go env GOARCH)
@@ -537,7 +539,7 @@ $(HELM): ## Put helm into tools folder.
 
 $(CLUSTERCTL): $(TOOLS_BIN_DIR) ## Download and install clusterctl
 	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) https://github.com/kubernetes-sigs/cluster-api/releases/download/$(CLUSTERCTL_VER)/clusterctl-linux-amd64
-	chmod +x $(CLUSTERCTL)
+	chmod +x $(CLUSTERCTL) 
 
 ## --------------------------------------
 ## Release
@@ -583,6 +585,15 @@ build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(C
 release-chart: $(HELM) $(NOTES) build-chart verify-gen
 	$(NOTES) --repository $(REPO) -add-kubernetes-version-support=false -from=tags/$(PREVIOUS_TAG) -release=$(RELEASE_TAG) -branch=main > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
+
+.PHONY: test-chart
+test-chart: build-chart
+	docker run --rm -v $(shell pwd):/charts --workdir /charts quay.io/helmpack/chart-testing:$(CHART_TESTING_VER) ct lint --validate-maintainers=false --charts $(CHART_RELEASE_DIR)
+
+.PHONY: test-providers-chart
+test-providers-chart: build-providers-chart
+	docker run --rm -v $(shell pwd):/charts --workdir /charts quay.io/helmpack/chart-testing:$(CHART_TESTING_VER) ct lint --validate-maintainers=false --charts $(PROVIDERS_CHART_RELEASE_DIR)
+
 
 ## --------------------------------------
 ## Rancher charts testing
