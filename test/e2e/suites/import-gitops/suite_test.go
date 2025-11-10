@@ -80,7 +80,9 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
+			UseLegacyCAPINamespace:  false,
+			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
 		})
 
 		data, err := json.Marshal(e2e.Setup{
