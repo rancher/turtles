@@ -62,7 +62,7 @@ This rule only applies to instances tagged with `packer`, which we'll add to the
 The build process needs Packer and Ansible. Install them with:
 
 ```bash
-make deps-ami
+make deps-gce
 ```
 
 This installs Python, Ansible, Packer, and initializes Packer plugins. If you're on macOS, the tools get installed to `.local/bin` in the current directory. Add them to your PATH:
