@@ -32,16 +32,6 @@ jobs:
         with:
           version: v3.14.3
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.9'
-          check-latest: true
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.7.0
-        with:
-          version: v3.9.0
-
       - name: setupGo
         uses: actions/setup-go@v6.0.0
         with:
@@ -54,7 +44,7 @@ jobs:
         run: make release-chart
 
       - name: Run chart-testing (lint)
-        run: ct lint --validate-maintainers=false --charts out/charts/rancher-turtles/
+        run: make test-chart
 
       - name: Install kind
         run: |
