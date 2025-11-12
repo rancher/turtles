@@ -41,13 +41,19 @@ import (
 )
 
 const (
-	bootstrapKubeadmPath    = "providers.bootstrapKubeadm.enabled"
-	controlplaneKubeadmPath = "providers.controlplaneKubeadm.enabled"
-	dockerPath              = "providers.infrastructureDocker.enabled"
-	awsPath                 = "providers.infrastructureAWS.enabled"
-	azurePath               = "providers.infrastructureAzure.enabled"
-	gcpPath                 = "providers.infrastructureGCP.enabled"
-	vspherePath             = "providers.infrastructureVSphere.enabled"
+	providerEnabledKey   = "enabled"
+	providerVerbosityKey = "manager.verbosity"
+	debugVerbosityValue  = "5"
+
+	bootstrapRKE2Path       = "providers.bootstrapRKE2."
+	controlplaneRKE2Path    = "providers.controlplaneRKE2."
+	bootstrapKubeadmPath    = "providers.bootstrapKubeadm."
+	controlplaneKubeadmPath = "providers.controlplaneKubeadm."
+	dockerPath              = "providers.infrastructureDocker."
+	awsPath                 = "providers.infrastructureAWS."
+	azurePath               = "providers.infrastructureAzure."
+	gcpPath                 = "providers.infrastructureGCP."
+	vspherePath             = "providers.infrastructureVSphere."
 
 	defaultOCIRegistry = "registry.rancher.com/rancher/cluster-api-controller-components"
 
@@ -172,19 +178,29 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		for _, p := range providerList {
 			provider := strings.TrimSpace(strings.ToLower(p))
 			switch provider {
+			case "rke2":
+				values[bootstrapRKE2Path+providerVerbosityKey] = debugVerbosityValue
+				values[controlplaneRKE2Path+providerVerbosityKey] = debugVerbosityValue
 			case "kubeadm":
-				values[bootstrapKubeadmPath] = "true"
-				values[controlplaneKubeadmPath] = "true"
+				values[bootstrapKubeadmPath+providerEnabledKey] = "true"
+				values[bootstrapKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+				values[controlplaneKubeadmPath+providerEnabledKey] = "true"
+				values[controlplaneKubeadmPath+providerVerbosityKey] = debugVerbosityValue
 			case "docker", "capd":
-				values[dockerPath] = "true"
+				values[dockerPath+providerEnabledKey] = "true"
+				values[dockerPath+providerVerbosityKey] = debugVerbosityValue
 			case "aws", "capa":
-				values[awsPath] = "true"
+				values[awsPath+providerEnabledKey] = "true"
+				values[awsPath+providerVerbosityKey] = debugVerbosityValue
 			case "azure", "capz":
-				values[azurePath] = "true"
+				values[azurePath+providerEnabledKey] = "true"
+				values[azurePath+providerVerbosityKey] = debugVerbosityValue
 			case "gcp", "capg":
-				values[gcpPath] = "true"
+				values[gcpPath+providerEnabledKey] = "true"
+				values[gcpPath+providerVerbosityKey] = debugVerbosityValue
 			case "vsphere", "capv":
-				values[vspherePath] = "true"
+				values[vspherePath+providerEnabledKey] = "true"
+				values[vspherePath+providerVerbosityKey] = debugVerbosityValue
 			case "", "all":
 			default:
 				log.FromContext(ctx).Info("Unknown provider in TURTLES_PROVIDERS, ignoring", "provider", provider)
@@ -295,13 +311,22 @@ func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string
 }
 
 func enableAllProviders(values map[string]string) {
-	values[bootstrapKubeadmPath] = "true"
-	values[controlplaneKubeadmPath] = "true"
-	values[dockerPath] = "true"
-	values[awsPath] = "true"
-	values[azurePath] = "true"
-	values[gcpPath] = "true"
-	values[vspherePath] = "true"
+	values[bootstrapRKE2Path+providerVerbosityKey] = debugVerbosityValue
+	values[controlplaneRKE2Path+providerVerbosityKey] = debugVerbosityValue
+	values[bootstrapKubeadmPath+providerEnabledKey] = "true"
+	values[bootstrapKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+	values[controlplaneKubeadmPath+providerEnabledKey] = "true"
+	values[controlplaneKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+	values[dockerPath+providerEnabledKey] = "true"
+	values[dockerPath+providerVerbosityKey] = debugVerbosityValue
+	values[awsPath+providerEnabledKey] = "true"
+	values[awsPath+providerVerbosityKey] = debugVerbosityValue
+	values[azurePath+providerEnabledKey] = "true"
+	values[azurePath+providerVerbosityKey] = debugVerbosityValue
+	values[gcpPath+providerEnabledKey] = "true"
+	values[gcpPath+providerVerbosityKey] = debugVerbosityValue
+	values[vspherePath+providerEnabledKey] = "true"
+	values[vspherePath+providerVerbosityKey] = debugVerbosityValue
 }
 
 func getAdoptArgsForEnabledProviders(enabled []string, values map[string]string) []string {
@@ -335,25 +360,25 @@ func getAdoptArgsForEnabledProviders(enabled []string, values map[string]string)
 
 func getEnabledCAPIProviders(values map[string]string) []string {
 	out := []string{}
-	if values[bootstrapKubeadmPath] == "true" {
+	if values[bootstrapKubeadmPath+providerEnabledKey] == "true" {
 		out = append(out, providerKubeadmBootstrap)
 	}
-	if values[controlplaneKubeadmPath] == "true" {
+	if values[controlplaneKubeadmPath+providerEnabledKey] == "true" {
 		out = append(out, providerKubeadmControlPlane)
 	}
-	if values[dockerPath] == "true" {
+	if values[dockerPath+providerEnabledKey] == "true" {
 		out = append(out, providerDocker)
 	}
-	if values[awsPath] == "true" {
+	if values[awsPath+providerEnabledKey] == "true" {
 		out = append(out, providerAWS)
 	}
-	if values[azurePath] == "true" {
+	if values[azurePath+providerEnabledKey] == "true" {
 		out = append(out, providerAzure)
 	}
-	if values[gcpPath] == "true" {
+	if values[gcpPath+providerEnabledKey] == "true" {
 		out = append(out, providerGCP)
 	}
-	if values[vspherePath] == "true" {
+	if values[vspherePath+providerEnabledKey] == "true" {
 		out = append(out, providerVSphere)
 	}
 	return out
