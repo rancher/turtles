@@ -24,11 +24,11 @@
         },
         "version": {
           "type": "string",
-      "description": "Optional provider version."
+          "description": "Optional provider version."
         },
         "credentials": {
           "type": "object",
-      "description": "Optional Secret reference containing Rancher credentials",
+          "description": "Optional Secret reference containing Rancher credentials",
           "required": [
             "name",
             "namespace"
@@ -46,7 +46,7 @@
         },
         "configSecret": {
           "type": "object",
-      "description": "ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.",
+          "description": "ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.",
           "required": [
             "name",
             "namespace"
@@ -64,7 +64,7 @@
         },
         "features": {
           "type": "object",
-      "description": "Optional feature flags for this provider.",
+          "description": "Optional feature flags for this provider.",
           "properties": {
             "machinePool": {
               "type": "boolean",
@@ -82,25 +82,31 @@
         },
         "variables": {
           "type": "object",
-      "description": "Optional environment variables exposed to the controller manager.",
+          "description": "Optional environment variables exposed to the controller manager.",
           "additionalProperties": {
             "type": "string"
           }
         },
         "manager": {
           "type": "object",
-      "description": "Optional controller manager settings.",
+          "description": "Optional controller manager settings.",
           "properties": {
             "syncPeriod": {
               "type": "string",
               "description": "Controller sync period duration, e.g. '5m'"
+            },
+            "verbosity": {
+              "type": "number",
+              "description": "Verbosity set the logs verbosity. Defaults to 1.",
+              "minimum": 1,
+              "maximum": 5
             }
           }
         },
         "fetchConfig": {
           "type": "object",
-      "description": "Override default artifact source via URL or OCI (specify one).",
-          "oneOf": [ 
+          "description": "Override default artifact source via URL or OCI (specify one).",
+          "oneOf": [
             {
               "properties": {
                 "url": {
@@ -109,18 +115,22 @@
                 }
               },
               "additionalProperties": false,
-              "required": ["url"]
+              "required": [
+                "url"
+              ]
             },
             {
-              "properties": {            
+              "properties": {
                 "oci": {
                   "type": "string",
                   "description": "OCI to be used for fetching the provider components and metadata."
                 }
               },
               "additionalProperties": false,
-              "required": ["oci"]
-            } 
+              "required": [
+                "oci"
+              ]
+            }
           ]
         }
       }
@@ -130,19 +140,39 @@
   "properties": {
     "providers": {
       "type": "object",
-    "description": "Providers configuration.",
+      "description": "Providers configuration.",
       "properties": {
-        "addonFleet": { "$ref": "#/$defs/providerSchema"},
-        "bootstrapKubeadm": { "$ref": "#/$defs/providerSchema"},
-        "bootstrapRKE2": { "$ref": "#/$defs/providerSchema"},
-        "controlplaneKubeadm": { "$ref": "#/$defs/providerSchema"},
-        "controlplaneRKE2": { "$ref": "#/$defs/providerSchema"},
-        "infrastructureAWS": { "$ref": "#/$defs/providerSchema"},
-        "infrastructureAzure": { "$ref": "#/$defs/providerSchema"},
-        "infrastructureDocker": { "$ref": "#/$defs/providerSchema"},
-        "infrastructureGCP": { "$ref": "#/$defs/providerSchema"},
-        "infrastructureVSphere": { "$ref": "#/$defs/providerSchema"}
+        "addonFleet": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "bootstrapKubeadm": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "bootstrapRKE2": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "controlplaneKubeadm": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "controlplaneRKE2": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "infrastructureAWS": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "infrastructureAzure": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "infrastructureDocker": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "infrastructureGCP": {
+          "$ref": "#/$defs/providerSchema"
+        },
+        "infrastructureVSphere": {
+          "$ref": "#/$defs/providerSchema"
+        }
       }
-  }
+    }
   }
 }
