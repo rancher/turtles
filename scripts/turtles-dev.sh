@@ -118,14 +118,23 @@ install_local_providers_chart() {
 
     helm upgrade --install rancher-turtles-providers out/charts/rancher-turtles-providers \
         -n cattle-turtles-system \
+        --set providers.bootstrapRKE2.manager.verbosity=5 \
+        --set providers.controlplaneRKE2.manager.verbosity=5 \
         --set providers.bootstrapKubeadm.enabled=true \
+        --set providers.bootstrapKubeadm.manager.verbosity=5 \
         --set providers.controlplaneKubeadm.enabled=true \
+        --set providers.controlplaneKubeadm.manager.verbosity=5 \
         --set providers.infrastructureDocker.enabled=true \
+        --set providers.infrastructureDocker.manager.verbosity=5 \
         --set providers.infrastructureAWS.enabled=true \
+        --set providers.infrastructureAWS.manager.verbosity=5 \
         --set providers.infrastructureAzure.enabled=true \
+        --set providers.infrastructureAzure.manager.verbosity=5 \
         --set providers.infrastructureGCP.enabled=true \
+        --set providers.infrastructureGCP.manager.verbosity=5 \
         --set providers.infrastructureGCP.variables.GCP_B64ENCODED_CREDENTIALS="" \
         --set providers.infrastructureVSphere.enabled=true \
+        --set providers.infrastructureVSphere.manager.verbosity=5 \
         --create-namespace --wait \
         --timeout 180s
 }
