@@ -55,24 +55,25 @@ spec:
     spec:
       serviceAccountName: pre-delete-job
       containers:
-        - name: rancher-capiprovider-cleanup
-          image: {{ .Values.kubectlImage }}
-          args:
-          - delete
-          - capiprovider
-          - cluster-api
-          - -n
-          - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
-          - --ignore-not-found=true
-          - --cascade=foreground
-          securityContext:
-            seccompProfile:
-              type: RuntimeDefault
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
+      - name: rancher-capiprovider-cleanup
+        image: {{ .Values.shellImage }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - capiprovider
+        - cluster-api
+        - -n
+        - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+        - --ignore-not-found=true
+        - --cascade=foreground
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
       restartPolicy: Never
 {{- end }}
