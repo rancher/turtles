@@ -16,7 +16,7 @@ env:
   CONTROLLER_IMG: controller
   PULL_POLICY: Never
   CERT_MANAGER_VERSION: v1.16.3
-  RANCHER_VERSION: v2.13.0-alpha3
+  RANCHER_VERSION: v2.13.0-rc1
 
 jobs:
   prime-test:
@@ -70,13 +70,13 @@ jobs:
         run: helm repo add jetstack https://charts.jetstack.io
 
       - name: Add rancher chart repo
-        run: helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
+        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 
       - name: Install cert-manager
         run: helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set crds.enabled=true --set crds.keep=true --wait
 
       - name: Install Rancher
-        run: helm install rancher rancher-alpha/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
+        run: helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Wait for rancher-webhook
         run: |
@@ -150,7 +150,7 @@ jobs:
         run: helm repo add jetstack https://charts.jetstack.io && helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version ${{ env.CERT_MANAGER_VERSION }} --set crds.enabled=true --set crds.keep=true --wait
 
       - name: Install Rancher
-        run: helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha && helm install rancher rancher-alpha/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
+        run: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest && helm install rancher rancher-latest/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=rancheradmin --set replicas=1 --set hostname="e2e.dev.rancher" --set 'extraEnv[0].name=CATTLE_FEATURES' --set 'extraEnv[0].value=turtles=false' --version ${{ env.RANCHER_VERSION }} --wait
 
       - name: Wait for rancher-webhook
         run: |
