@@ -24,7 +24,7 @@ fi
 
 RANCHER_CHANNEL=${RANCHER_CHANNEL:-alpha}
 RANCHER_PASSWORD=${RANCHER_PASSWORD:-rancheradmin}
-RANCHER_VERSION=${RANCHER_VERSION:-v2.13.0-alpha3}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.13.0-rc1}
 RANCHER_IMAGE_TAG=${RANCHER_IMAGE_TAG:-$RANCHER_VERSION} # Set RANCHER_IMAGE_TAG=head to test with latest build
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_IMAGE_TAG}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
@@ -101,6 +101,7 @@ helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --set extraEnv[1].value=$RANCHER_CHARTS_BASE_BRANCH \
     --set extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION \
     --set extraEnv[2].value=$RANCHER_CHART_DEV_VERSION \
+    --set debug=true \
     --version="$RANCHER_VERSION" \
     --wait
 

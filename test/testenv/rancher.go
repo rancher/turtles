@@ -108,6 +108,9 @@ type DeployRancherInput struct {
 
 	// RancherInstallationTimeout is the timeout for Rancher installation.
 	RancherInstallationTimeout string `env:"RANCHER_INSTALLATION_TIMEOUT" envDefault:"5m"`
+
+	// RancherDebug enables the `debug` chart value
+	RancherDebug bool `env:"RANCHER_DEBUG"`
 }
 
 type deployRancherValuesFile struct {
@@ -236,6 +239,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"--set", "extraEnv[0].name=CATTLE_FEATURES",
 		"--set", "extraEnv[0].value=turtles=false",
 	)
+	if input.RancherDebug {
+		installFlags = append(installFlags, "--set", "debug=true")
+	}
 	if input.RancherVersion != "" {
 		installFlags = append(installFlags, "--version", input.RancherVersion)
 	}
