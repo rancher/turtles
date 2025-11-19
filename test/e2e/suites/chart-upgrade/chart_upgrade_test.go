@@ -36,7 +36,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util"
 )
 
 var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
@@ -48,6 +47,8 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 	BeforeAll(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
+
+		clusterName = fmt.Sprintf("cluster-docker-rke2")
 	})
 
 	// This test suite validates the ZERO-DOWNTIME migration from Rancher 2.12.x/Turtles v0.24.x
@@ -69,9 +70,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 	// 8. Upgrade Rancher to 2.13.x (enables system chart controller)
 	// 9. Install additional CAPI providers via system chart controller
 	// 10. Verify workload cluster survived the upgrade (zero-downtime validated)
-	It("Should migrate from Rancher 2.12.3/Turtles v0.24.3 to Rancher 2.13.x with zero-downtime", func() {
-		clusterName = fmt.Sprintf("docker-rke2-%s", util.RandomString(6))
-
+	It("Should install Rancher 2.12.3/Turtles v0.24.3 and provision a workload cluster", func() {
 		By("Installing Rancher 2.12.3 (simulating existing Rancher installation)")
 		testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
@@ -111,44 +110,47 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 				"providers.infrastructureDocker.enabled": "true",
 			},
 		})
+	})
 
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		By("Provisioning workload cluster (validates zero-downtime requirement)")
-		specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
-			return specs.CreateUsingGitOpsSpecInput{
-				E2EConfig:                      e2e.LoadE2EConfig(),
-				BootstrapClusterProxy:          bootstrapClusterProxy,
-				ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
-				ClusterName:                    clusterName,
-				ControlPlaneMachineCount:       ptr.To(1),
-				WorkerMachineCount:             ptr.To(1),
-				LabelNamespace:                 true,
-				TestClusterReimport:            false,
-				RancherServerURL:               hostName,
-				CAPIClusterCreateWaitName:      "wait-rancher",
-				DeleteClusterWaitName:          "wait-controllers",
-				CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-				CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-				OwnedLabelName:                 e2e.OwnedLabelName,
-				TopologyNamespace:              topologyNamespace,
-				SkipCleanup:                    true, // Keep cluster running during upgrade
-				SkipDeletionTest:               true,
-				AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
-					{
-						Name:            "docker-cluster-classes-regular",
-						Paths:           []string{"examples/clusterclasses/docker/rke2"},
-						ClusterProxy:    bootstrapClusterProxy,
-						TargetNamespace: topologyNamespace,
-					},
-					{
-						Name:            "docker-cni",
-						Paths:           []string{"examples/applications/cni/calico"},
-						ClusterProxy:    bootstrapClusterProxy,
-						TargetNamespace: topologyNamespace,
-					},
-				},
-			}
-		})
 
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
+			ClusterName:                    clusterName,
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			LabelNamespace:                 true,
+			TestClusterReimport:            false,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-rancher",
+			DeleteClusterWaitName:          "wait-controllers",
+			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
+			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
+			OwnedLabelName:                 e2e.OwnedLabelName,
+			TopologyNamespace:              topologyNamespace,
+			SkipCleanup:                    true, // Keep cluster running during upgrade
+			SkipDeletionTest:               true,
+			AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/docker/rke2"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "docker-cni",
+					Paths:           []string{"examples/applications/cni/calico"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+
+	It("Should migrate to Rancher 2.13.x with zero-downtime", func() {
 		By("Uninstalling Turtles v0.24.3 (providers and workload cluster keep running)")
 		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
