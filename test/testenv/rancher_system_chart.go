@@ -316,7 +316,8 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 	})
 
 	// Construct the HTTP URL for Rancher to use (plain HTTP without auth in URL)
-	httpURL := fmt.Sprintf("http://%s/git/%s", serverAddr, input.GiteaRepoName)
+	// Format: http://gitea-address/username/repo.git (matches Gitea's repository URL structure)
+	httpURL := fmt.Sprintf("http://%s/%s/%s.git", serverAddr, input.GiteaUsername, input.GiteaRepoName)
 
 	return &BuildAndPushRancherChartsToGiteaResult{
 		ChartRepoURL:     repoURL,
