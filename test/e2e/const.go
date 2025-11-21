@@ -145,10 +145,11 @@ var (
 )
 
 const (
-	RancherTurtlesNamespace = "rancher-turtles-system"
-	RancherNamespace        = "cattle-system"
-	NginxIngressNamespace   = "ingress-nginx"
-	NginxIngressDeployment  = "ingress-nginx-controller"
+	RancherTurtlesNamespace    = "rancher-turtles-system"
+	NewRancherTurtlesNamespace = "cattle-turtles-system"
+	RancherNamespace           = "cattle-system"
+	NginxIngressNamespace      = "ingress-nginx"
+	NginxIngressDeployment     = "ingress-nginx-controller"
 )
 
 type ManagementClusterEnvironmentType string

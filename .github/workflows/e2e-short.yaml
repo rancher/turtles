@@ -17,7 +17,7 @@ env:
 
 jobs:
   e2e:
-    runs-on: runs-on,runner=4cpu-linux-x64,run-id=${{ github.run_id }}
+    runs-on: runs-on,runner=8cpu-linux-x64,ram=16+24,run-id=${{ github.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5

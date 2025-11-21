@@ -259,33 +259,25 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		return result
 	}
 
-	By("Waiting for Gitea endpoint to be available")
-	url := fmt.Sprintf("%s/api/v1/version", result.GitAddress)
-	Eventually(func() error {
-		resp, err := http.Get(url)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
+	// Only check HTTP endpoint for environments where it's accessible from the test runner
+	// In isolated-kind, the service uses NodePort but is only accessible from within Docker network
+	if input.EnvironmentType != e2e.ManagementClusterEnvironmentIsolatedKind {
+		By("Waiting for Gitea endpoint to be available")
+		url := fmt.Sprintf("%s/api/v1/version", result.GitAddress)
+		Eventually(func() error {
+			resp, err := http.Get(url)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("expected status OK, got %v", resp.Status)
-		}
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("expected status OK, got %v", resp.Status)
+			}
 
-		return nil
-	}, input.ServiceWaitInterval...).Should(Succeed())
-
-	By("Creating gitea secret")
-	turtlesframework.CreateSecret(ctx, turtlesframework.CreateSecretInput{
-		Creator:   input.BootstrapClusterProxy.GetClient(),
-		Name:      input.AuthSecretName,
-		Namespace: turtlesframework.FleetLocalNamespace,
-		Type:      corev1.SecretTypeBasicAuth,
-		Data: map[string]string{
-			"username": input.Username,
-			"password": input.Password,
-		},
-	})
+			return nil
+		}, input.ServiceWaitInterval...).Should(Succeed())
+	}
 
 	return result
 }
