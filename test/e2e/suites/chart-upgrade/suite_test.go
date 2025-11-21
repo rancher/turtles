@@ -171,10 +171,6 @@ var _ = SynchronizedAfterSuite(
 			return
 		}
 
-		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		})
-
 		By("Uninstalling Gitea")
 		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
