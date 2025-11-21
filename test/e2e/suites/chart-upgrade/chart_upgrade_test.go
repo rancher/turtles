@@ -20,6 +20,7 @@ limitations under the License.
 package chart_upgrade
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 
@@ -108,6 +109,8 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			ProviderList:                 "docker",
 			AdditionalValues: map[string]string{
 				"providers.infrastructureDocker.enabled": "true",
+				"providers.infrastructureAWS.enabled":    "true",
+				"providers.infrastructureGCP.enabled":    "true",
 			},
 		})
 	})
@@ -206,6 +209,10 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 				Namespace: e2e.NewRancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+		By("Creating ClusterctlConfig for CAPD registry override in cattle-turtles-system namespace")
+		clusterctlConfigYAML := bytes.Replace(e2e.ClusterctlConfig, []byte("rancher-turtles-system"), []byte("cattle-turtles-system"), 1)
+		framework.Apply(ctx, bootstrapClusterProxy, clusterctlConfigYAML)
 
 		By("Installing CAPI providers via system chart controller (post-upgrade, uses cattle-capi-system namespace)")
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
