@@ -38,10 +38,8 @@ yq -i '.appVersion = "dev"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RAN
 yq -i '.urls[0] += "assets/rancher-turtles/rancher-turtles-'$RANCHER_CHART_DEV_VERSION'.tgz"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/Chart.yaml
 # Optionally override image repository and tag if environment variables are set (e.g., for e2e tests with preloaded images)
 if [ -n "$TURTLES_IMAGE_OVERRIDE_REPO" ] && [ -n "$TURTLES_IMAGE_OVERRIDE_TAG" ]; then
-  yq -i '.rancherTurtles.managerArguments.rancherKubeconfig.image.repository = "'$TURTLES_IMAGE_OVERRIDE_REPO'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
-  yq -i '.rancherTurtles.managerArguments.rancherKubeconfig.image.tag = "'$TURTLES_IMAGE_OVERRIDE_TAG'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
-  yq -i '.rancherTurtles.image.repository = "'$TURTLES_IMAGE_OVERRIDE_REPO'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
-  yq -i '.rancherTurtles.image.tag = "'$TURTLES_IMAGE_OVERRIDE_TAG'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
+    yq -i '.image.repository = "'$TURTLES_IMAGE_OVERRIDE_REPO'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
+    yq -i '.image.tag = "'$TURTLES_IMAGE_OVERRIDE_TAG'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
 fi
 # Populate release.yaml and index.yaml
 yq -i '.rancher-turtles += "'$RANCHER_CHART_DEV_VERSION'"' $RANCHER_CHARTS_REPO_DIR/release.yaml

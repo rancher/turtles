@@ -181,11 +181,12 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		By("Upgrading Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
 		testenv.UpgradeRancherWithGitea(ctx, testenv.UpgradeRancherWithGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			RancherVersion:        "2.13.0",
-			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
-			ChartRepoBranch:       chartsResult.Branch,
-			ChartVersion:          chartsResult.ChartVersion,
-			RancherWaitInterval:   e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
+			// at the time of adding this test, there's no stable chart in `rancher-latest` for v2.13.0, so we use a release candidate
+			RancherVersion:  "2.13.0-rc2",
+			ChartRepoURL:    chartsResult.ChartRepoHTTPURL,
+			ChartRepoBranch: chartsResult.Branch,
+			ChartVersion:        chartsResult.ChartVersion,
+			RancherWaitInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
 		})
 
 		By("Waiting for Rancher to be ready after upgrade")
@@ -202,7 +203,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Getter: bootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      "rancher-turtles-controller-manager",
-				Namespace: e2e.RancherTurtlesNamespace,
+				Namespace: e2e.NewRancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 

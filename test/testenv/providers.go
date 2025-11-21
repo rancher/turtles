@@ -423,6 +423,11 @@ func getDeploymentsForEnabledProviders(enabled []string, useLegacyCAPINamespace 
 }
 
 func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesProvidersInput, values map[string]string, enabled []string) {
+	turtlesNamespace := e2e.RancherTurtlesNamespace
+	if !input.UseLegacyCAPINamespace {
+		turtlesNamespace = e2e.NewRancherTurtlesNamespace
+	}
+
 	for _, name := range enabled {
 		switch name {
 		case providerAWS:
@@ -434,7 +439,7 @@ func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesPr
 			By("Configuring Docker provider with OCI registry")
 			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
 				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: e2e.RancherTurtlesNamespace,
+				ConfigMapNamespace: turtlesNamespace,
 				ConfigMapName:      "clusterctl-config",
 			})
 			dockerVersion := getProviderVersion(clusterctl, "docker")
