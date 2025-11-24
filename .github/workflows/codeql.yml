@@ -25,7 +25,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v5
     - name: setupGo
-      uses: actions/setup-go@v6.0.0
+      uses: actions/setup-go@v6.1.0
       with:
         go-version-file: go.mod
     - name: Initialize CodeQL
