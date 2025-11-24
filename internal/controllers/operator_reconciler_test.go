@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/provider"
 	corev1 "k8s.io/api/core/v1"
@@ -50,6 +51,7 @@ var _ = Describe("Provider sync", func() {
 		capiProviderAzure   *turtlesv1.CAPIProvider
 		capiProviderGCP     *turtlesv1.CAPIProvider
 		clusterctlconfig    *turtlesv1.ClusterctlConfig
+		setting             *managementv3.Setting
 	)
 
 	BeforeEach(func() {
@@ -103,6 +105,13 @@ var _ = Describe("Provider sync", func() {
 			},
 		}
 
+		setting = &managementv3.Setting{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "system-default-registry",
+			},
+			Value: "",
+		}
+
 		os.Setenv("POD_NAMESPACE", ns.Name)
 	})
 
@@ -113,7 +122,7 @@ var _ = Describe("Provider sync", func() {
 	It("Should sync spec down and leave version to latest", func() {
 		origin := capiProvider.DeepCopy()
 		origin.Spec.EnableAutomaticUpdate = true
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -135,7 +144,7 @@ var _ = Describe("Provider sync", func() {
 
 	It("Should use unknown provider to clusterctl override with unchanged 'latest' version", func() {
 		origin := unknownCAPIProvider.DeepCopy()
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -162,7 +171,7 @@ var _ = Describe("Provider sync", func() {
 	It("Should reconcile unknown provider to clusterctl override with a specified version unchanged", func() {
 		origin := unknownCAPIProvider.DeepCopy()
 		origin.Spec.Version = "v1.0.0"
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -190,7 +199,7 @@ var _ = Describe("Provider sync", func() {
 	It("Should set custom provider version to latest according to clusterctlconfig override", func() {
 		origin := customCAPIProvider.DeepCopy()
 		origin.Spec.EnableAutomaticUpdate = true
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, clusterctlconfig).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, clusterctlconfig, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -218,7 +227,7 @@ var _ = Describe("Provider sync", func() {
 	It("Should not change custom provider version even if it is in the clusterctlconfig override", func() {
 		origin := customCAPIProvider.DeepCopy()
 		origin.Spec.Version = "v1.0.0"
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, clusterctlconfig).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, clusterctlconfig, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -243,7 +252,7 @@ var _ = Describe("Provider sync", func() {
 
 	It("Should sync azure spec", func() {
 		origin := capiProviderAzure.DeepCopy()
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -261,7 +270,7 @@ var _ = Describe("Provider sync", func() {
 
 	It("Should sync gcp spec", func() {
 		origin := capiProviderGCP.DeepCopy()
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{
@@ -280,7 +289,7 @@ var _ = Describe("Provider sync", func() {
 	It("Should sync status up and set provisioning state", func() {
 		origin := capiProvider.DeepCopy()
 		origin.Spec.EnableAutomaticUpdate = true
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin).Build()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
 		r := &CAPIProviderReconciler{
 			Client: fakeClient,
 			GenericProviderReconciler: controller.GenericProviderReconciler{

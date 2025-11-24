@@ -68,5 +68,5 @@ data:
         repository: "registry.suse.com/rancher"
       infrastructure-vsphere:
         repository: "registry.suse.com/rancher"
-      addon-fleet:
+      addon-rancher-fleet:
         repository: "registry.suse.com/rancher"

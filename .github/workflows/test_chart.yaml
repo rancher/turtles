@@ -83,6 +83,12 @@ jobs:
           kubectl --namespace cattle-system wait --for=create deployments/rancher-webhook --timeout=300s
           kubectl --namespace cattle-system wait --for=condition=Available deployment/rancher-webhook --timeout=300s
 
+      - name: Set default registry
+        run: |
+          kubectl patch setting.management.cattle.io -n cattle-system system-default-registry \
+            --type merge \
+            --patch '{"value":"registry.suse.com"}'
+
       - name: Run chart-testing (install)
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 
@@ -166,7 +172,7 @@ jobs:
       - name: Check capi-controller-manager image is from kubernetes-sigs (community)
         run: |
           IMAGE=$(kubectl get deployment capi-controller-manager -n cattle-capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
-          if [[ "$IMAGE" != registry.k8s.io/cluster-api/cluster-api-controller* ]]; then
-            echo "capi-controller-manager does not use registry.k8s.io/cluster-api/cluster-api-controller based image"
+          if [[ "$IMAGE" != rancher/cluster-api-controller* ]]; then
+            echo "capi-controller-manager does not use rancher/cluster-api-controller based image"
             exit 1
           fi
