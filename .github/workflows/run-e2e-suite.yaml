@@ -92,7 +92,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.0.0
+        uses: actions/setup-go@v6.1.0
         with:
           go-version-file: go.mod
       - name: Display kind version
