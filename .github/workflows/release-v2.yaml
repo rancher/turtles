@@ -143,7 +143,11 @@ jobs:
           IMAGE_DIGEST=$( docker inspect --format='{{index .RepoDigests 0}}' ${URL} | sed 's/.*@//' )
           # Set as environment variable for next steps
           MULTI_PLATFORM_IMAGE="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
-          echo "MULTI_PLATFORM_IMAGE"=${MULTI_PLATFORM_IMAGE} >> "$GITHUB_ENV" 
+          echo "MULTI_PLATFORM_IMAGE"=${MULTI_PLATFORM_IMAGE} >> "$GITHUB_ENV"
+
+          # Also set a tag-specific variable for provenance attestation step
+          MULTI_PLATFORM_IMAGE_TAG="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}@${IMAGE_DIGEST}"
+          echo "MULTI_PLATFORM_IMAGE_TAG"=${MULTI_PLATFORM_IMAGE_TAG} >> "$GITHUB_ENV"
         fi
 
     - name: Sign multi-platform image
@@ -165,7 +169,7 @@ jobs:
         i=0
 
         while [ "${i}" -lt "${max_retries}" ]; do
-            if slsactl download provenance --format=slsav1 "${MULTI_PLATFORM_IMAGE}" > provenance-slsav1.json; then
+            if slsactl download provenance --format=slsav1 "${MULTI_PLATFORM_IMAGE_TAG}" > provenance-slsav1.json; then
                 break
             fi
             if [ "${i}" -eq "$(( max_retries - 1 ))" ]; then
