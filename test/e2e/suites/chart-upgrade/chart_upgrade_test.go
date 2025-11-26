@@ -172,12 +172,12 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		By("Upgrading Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
 		testenv.UpgradeRancherWithGitea(ctx, testenv.UpgradeRancherWithGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			// at the time of adding this test, there's no stable chart in `rancher-latest` for v2.13.0, so we use a release candidate
-			RancherVersion:      "2.13.0-rc2",
-			ChartRepoURL:        chartsResult.ChartRepoHTTPURL,
-			ChartRepoBranch:     chartsResult.Branch,
-			ChartVersion:        chartsResult.ChartVersion,
-			RancherWaitInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
+			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
+			ChartRepoBranch:       chartsResult.Branch,
+			ChartVersion:          chartsResult.ChartVersion,
+			TurtlesImageRepo:      "ghcr.io/rancher/turtles-e2e",
+			TurtlesImageTag:       "v0.0.1",
+			RancherWaitInterval:   e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
 		})
 
 		By("Waiting for Rancher to be ready after upgrade")
@@ -209,36 +209,39 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			UseLegacyCAPINamespace:       false, // v0.25.x uses new cattle-capi-system namespace
 			RancherTurtlesNamespace:      e2e.NewRancherTurtlesNamespace,
 			ProviderList:                 "docker,aws,gcp",
-			AdditionalValues: map[string]string{
-				"providers.infrastructureDocker.enabled": "true",
-				"providers.infrastructureAWS.enabled":    "true",
-				"providers.infrastructureGCP.enabled":    "true",
-			},
 		})
 
 		By("Verifying all CAPI providers are running after upgrade")
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter:    bootstrapClusterProxy.GetClient(),
-			Name:      "cluster-api",
-			Namespace: "cattle-capi-system",
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-controller-manager",
+				Namespace: "cattle-capi-system",
+			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter:    bootstrapClusterProxy.GetClient(),
-			Name:      "docker",
-			Namespace: "cattle-capi-system",
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capd-controller-manager",
+				Namespace: "capd-system",
+			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter:    bootstrapClusterProxy.GetClient(),
-			Name:      "aws",
-			Namespace: "cattle-capi-system",
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capa-controller-manager",
+				Namespace: "capa-system",
+			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		framework.WaitForCAPIProviderRollout(ctx, framework.WaitForCAPIProviderRolloutInput{
-			Getter:    bootstrapClusterProxy.GetClient(),
-			Name:      "gcp",
-			Namespace: "cattle-capi-system",
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "capg-controller-manager",
+				Namespace: "capg-system",
+			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Verifying workload cluster survived the upgrade (zero-downtime validated)")
