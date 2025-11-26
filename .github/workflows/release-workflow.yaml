@@ -5,7 +5,10 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+      # Will only match if `<v0.25.x`
+      - "v0.[0-9].*"
+      - "v0.1[0-9].*"
+      - "v0.2[0-4].*"
 
 jobs:
   build-push-services:
@@ -44,47 +47,12 @@ jobs:
       secret_registry: ${{ matrix.secret_registry }}
     secrets: inherit
 
-  release:
-    name: Create helm release
+  chart-release:
+    name: Helm chart release
+    uses: ./.github/workflows/chart-release.yml
     needs: [build-push-services]
-    runs-on: ubuntu-latest
-    env:
-      TAG: ${{ github.ref_name }}
-      ORG: ${{ vars.RANCHER_ORG }}
-      CONTROLLER_IMG: ${{ vars.IMAGE_NAME }}
-      RELEASE_DIR: .cr-release-packages
-      CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-      GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: setupGo
-        uses: actions/setup-go@v6.1.0
-        with:
-          go-version-file: go.mod
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      - name: Package operator chart
-        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${RELEASE_DIR} CONTROLLER_IMG="${{ env.ORG }}/${{ env.CONTROLLER_IMG }}" ORG=${{ env.ORG }} make release
-
-      - name: Install chart-releaser
-        uses: helm/chart-releaser-action@v1.7.0
-        with:
-          install_only: true
-
-      - name: Prepare environment for the chart releaser
-        run: |
-          echo "CR_OWNER=$(cut -d '/' -f 1 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
-          echo "CR_GIT_REPO=$(cut -d '/' -f 2 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
-          rm -rf .cr-index
-          mkdir -p .cr-index
-
-      - name: Run chart-releaser upload
-        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ env.TAG }}" --make-release-latest=false
-
-      - name: Run chart-releaser index
-        run: cr index --push --release-name-template "${{ env.TAG }}"
+    with:
+      tag: ${{ github.ref_name }}
+      org: ${{ vars.RANCHER_ORG }}
+      image: ${{ vars.IMAGE_NAME }}
+    secrets: inherit
