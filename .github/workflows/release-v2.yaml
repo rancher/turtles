@@ -3,7 +3,11 @@ name: Turtles release
 on:
   push:
     tags:
-      - 'v*'
+      # This is just a temporary filter while we maintain two release workflows.
+      # TODO: change to "v*" when this becomes the only one.
+      - "v0.2[5-9].*"
+      - "v0.[3-9]*"
+      - "v[1-9]*"
   workflow_dispatch:
 
 permissions:
@@ -182,3 +186,14 @@ jobs:
 
         cat provenance-slsav1.json
         cosign attest --yes --predicate provenance-slsav1.json --type slsaprovenance1 "${MULTI_PLATFORM_IMAGE}"
+
+  chart-release:
+    name: Helm chart release
+    uses: ./.github/workflows/chart-release.yml
+    needs:
+    - merge
+    with:
+      tag: ${{ github.ref_name }}
+      org: rancher
+      image: turtles
+    secrets: inherit
