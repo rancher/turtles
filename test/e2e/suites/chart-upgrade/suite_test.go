@@ -107,9 +107,6 @@ var _ = SynchronizedBeforeSuite(
 			RancherChartsBaseBranch: "dev-v2.13",
 			GiteaServerAddress:      giteaResult.GitAddress,
 			GiteaRepoName:           "charts",
-			// Use preloaded e2e image from kind cluster
-			TurtlesImageRepo: "ghcr.io/rancher/turtles-e2e",
-			TurtlesImageTag:  "v0.0.1",
 			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
 		})
 

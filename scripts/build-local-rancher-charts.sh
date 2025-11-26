@@ -21,9 +21,6 @@ RANCHER_CHART_DEV_VERSION=${RANCHER_CHART_DEV_VERSION}
 RANCHER_CHARTS_BASE_BRANCH=${RANCHER_CHARTS_BASE_BRANCH}
 CHART_RELEASE_DIR=${CHART_RELEASE_DIR}
 HELM=${HELM}
-# Optional: Override image repository and tag in the chart (useful for e2e tests with preloaded images)
-TURTLES_IMAGE_OVERRIDE_REPO=${TURTLES_IMAGE_OVERRIDE_REPO:-}
-TURTLES_IMAGE_OVERRIDE_TAG=${TURTLES_IMAGE_OVERRIDE_TAG:-}
 
 # Cleanup
 rm -rf $RANCHER_CHARTS_REPO_DIR
@@ -36,11 +33,6 @@ cp -r $CHART_RELEASE_DIR/* $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANC
 yq -i '.version = "'$RANCHER_CHART_DEV_VERSION'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/Chart.yaml
 yq -i '.appVersion = "dev"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/Chart.yaml
 yq -i '.urls[0] += "assets/rancher-turtles/rancher-turtles-'$RANCHER_CHART_DEV_VERSION'.tgz"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/Chart.yaml
-# Optionally override image repository and tag if environment variables are set (e.g., for e2e tests with preloaded images)
-if [ -n "$TURTLES_IMAGE_OVERRIDE_REPO" ] && [ -n "$TURTLES_IMAGE_OVERRIDE_TAG" ]; then
-    yq -i '.image.repository = "'$TURTLES_IMAGE_OVERRIDE_REPO'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
-    yq -i '.image.tag = "'$TURTLES_IMAGE_OVERRIDE_TAG'"' $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/values.yaml
-fi
 # Populate release.yaml and index.yaml
 yq -i '.rancher-turtles += "'$RANCHER_CHART_DEV_VERSION'"' $RANCHER_CHARTS_REPO_DIR/release.yaml
 index_entry=$(yq -o=j -I=0 $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION/Chart.yaml)
