@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
@@ -143,6 +144,114 @@ func GitCommitAndPush(ctx context.Context, input GitCommitAndPushInput) {
 		}
 		return err
 	}, input.GitPushWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
+}
+
+// GitSetRemoteInput is the input to GitSetRemote.
+type GitSetRemoteInput struct {
+	// RepoLocation is the directory where the repository is located.
+	RepoLocation string
+
+	// RemoteName is the name of the remote (e.g., "origin").
+	RemoteName string `envDefault:"origin"`
+
+	// RemoteURL is the URL for the remote repository.
+	RemoteURL string
+
+	// Username is the username for authentication (optional).
+	Username string `env:"GITEA_USER_NAME"`
+
+	// Password is the password for authentication (optional).
+	Password string `env:"GITEA_USER_PWD"`
+}
+
+// GitSetRemote sets or updates the remote URL for a git repository.
+// If credentials are provided, they will be embedded in the URL.
+func GitSetRemote(ctx context.Context, input GitSetRemoteInput) {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
+	Expect(ctx).NotTo(BeNil(), "ctx is required for GitSetRemote")
+	Expect(input.RepoLocation).ToNot(BeEmpty(), "Invalid argument. input.RepoLocation can't be empty when calling GitSetRemote")
+	Expect(input.RemoteName).ToNot(BeEmpty(), "Invalid argument. input.RemoteName can't be empty when calling GitSetRemote")
+	Expect(input.RemoteURL).ToNot(BeEmpty(), "Invalid argument. input.RemoteURL can't be empty when calling GitSetRemote")
+
+	repo, err := git.PlainOpen(input.RepoLocation)
+	Expect(err).ShouldNot(HaveOccurred(), "Failed opening the repo at %s", input.RepoLocation)
+
+	// Try to delete the remote if it exists
+	_ = repo.DeleteRemote(input.RemoteName)
+
+	// Construct the remote URL with credentials if provided
+	remoteURL := input.RemoteURL
+	if input.Username != "" && input.Password != "" {
+		// Parse URL to inject credentials
+		if strings.HasPrefix(remoteURL, "http://") {
+			remoteURL = fmt.Sprintf("http://%s:%s@%s", input.Username, input.Password, strings.TrimPrefix(remoteURL, "http://"))
+		} else if strings.HasPrefix(remoteURL, "https://") {
+			remoteURL = fmt.Sprintf("https://%s:%s@%s", input.Username, input.Password, strings.TrimPrefix(remoteURL, "https://"))
+		}
+	}
+
+	// Create the new remote
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: input.RemoteName,
+		URLs: []string{remoteURL},
+	})
+	Expect(err).ShouldNot(HaveOccurred(), "Failed creating remote %s with URL %s", input.RemoteName, input.RemoteURL)
+}
+
+// GitPushInput is the input to GitPush.
+type GitPushInput struct {
+	// RepoLocation is the directory where the repository is located.
+	RepoLocation string
+
+	// RemoteName is the name of the remote to push to.
+	RemoteName string `envDefault:"origin"`
+
+	// RefSpec is the refspec to push (e.g., "refs/heads/main:refs/heads/main").
+	// If empty, the default git push behavior is used (push current branch to upstream).
+	RefSpec string
+
+	// Username is the username for authentication (optional).
+	Username string `env:"GITEA_USER_NAME"`
+
+	// Password is the password for authentication (optional).
+	Password string `env:"GITEA_USER_PWD"`
+
+	// Force indicates whether to force push.
+	Force bool
+}
+
+// GitPush pushes changes to the remote repository.
+func GitPush(ctx context.Context, input GitPushInput) {
+	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
+	Expect(ctx).NotTo(BeNil(), "ctx is required for GitPush")
+	Expect(input.RepoLocation).ToNot(BeEmpty(), "Invalid argument. input.RepoLocation can't be empty when calling GitPush")
+	Expect(input.RemoteName).ToNot(BeEmpty(), "Invalid argument. input.RemoteName can't be empty when calling GitPush")
+
+	repo, err := git.PlainOpen(input.RepoLocation)
+	Expect(err).ShouldNot(HaveOccurred(), "Failed opening the repo at %s", input.RepoLocation)
+
+	pushOptions := &git.PushOptions{
+		RemoteName: input.RemoteName,
+		Force:      input.Force,
+	}
+
+	// If a refspec is provided, use it. Otherwise, push will use the default behavior
+	// (push current branch to upstream)
+	if input.RefSpec != "" {
+		pushOptions.RefSpecs = []config.RefSpec{config.RefSpec(input.RefSpec)}
+	}
+
+	if input.Username != "" {
+		pushOptions.Auth = &http.BasicAuth{
+			Username: input.Username,
+			Password: input.Password,
+		}
+	}
+
+	err = repo.Push(pushOptions)
+	Expect(err).ShouldNot(HaveOccurred(), "Failed pushing to remote %s", input.RemoteName)
 }
 
 // defaultToCurrentGitRepo retrieves the repository URL and the current branch
