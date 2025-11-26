@@ -126,7 +126,7 @@ type UpgradeRancherWithGiteaInput struct {
 	RancherNamespace string `env:"RANCHER_NAMESPACE" envDefault:"cattle-system"`
 
 	// RancherVersion is the version to upgrade to.
-	RancherVersion string
+	RancherVersion string `env:"RANCHER_VERSION"`
 
 	// ChartRepoURL is the URL of the Gitea chart repository (e.g., http://gitea.address/git/charts).
 	ChartRepoURL string
@@ -136,6 +136,12 @@ type UpgradeRancherWithGiteaInput struct {
 
 	// ChartVersion is the Turtles chart version (e.g., "108.0.0+up99.99.99").
 	ChartVersion string
+
+	// TurtlesImageRepo is the image repository to override in rancher-config ConfigMap (optional, for e2e with preloaded images).
+	TurtlesImageRepo string
+
+	// TurtlesImageTag is the image tag to override in rancher-config ConfigMap (optional, for e2e with preloaded images).
+	TurtlesImageTag string
 
 	// RancherWaitInterval is the wait interval for Rancher.
 	RancherWaitInterval []interface{} `envDefault:"15m,30s"`
@@ -191,6 +197,21 @@ func UpgradeRancherWithGitea(ctx context.Context, input UpgradeRancherWithGiteaI
 			},
 		},
 	}, input.RancherWaitInterval...)
+
+	// Optionally configure image overrides via rancher-config ConfigMap for e2e tests with preloaded images
+	if input.TurtlesImageRepo != "" && input.TurtlesImageTag != "" {
+		By("Patching rancher-config ConfigMap to override Turtles image")
+		patchCmd := exec.Command(
+			"kubectl",
+			"patch", "configmap", "rancher-config",
+			"-n", e2e.RancherNamespace,
+			"--type", "merge",
+			"--patch", fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag),
+		)
+		patchCmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", input.BootstrapClusterProxy.GetKubeconfigPath()))
+		patchOutput, patchErr := patchCmd.CombinedOutput()
+		Expect(patchErr).ToNot(HaveOccurred(), "Failed to patch rancher-config ConfigMap: %s", string(patchOutput))
+	}
 }
 
 // BuildAndPushRancherChartsToGiteaInput represents the input parameters for building and pushing Rancher charts to Gitea.
@@ -223,12 +244,6 @@ type BuildAndPushRancherChartsToGiteaInput struct {
 	// ChartVersion is the version string for the Turtles chart.
 	// If not provided, will use RANCHER_CHART_DEV_VERSION from environment or Makefile default.
 	ChartVersion string `env:"RANCHER_CHART_DEV_VERSION" envDefault:"108.0.0+up99.99.99"`
-
-	// TurtlesImageRepo is the image repository to use in the chart (optional, for e2e with preloaded images).
-	TurtlesImageRepo string `env:"TURTLES_IMAGE_OVERRIDE_REPO"`
-
-	// TurtlesImageTag is the image tag to use in the chart (optional, for e2e with preloaded images).
-	TurtlesImageTag string `env:"TURTLES_IMAGE_OVERRIDE_TAG"`
 }
 
 // BuildAndPushRancherChartsToGiteaResult represents the result of building and pushing charts.
@@ -287,13 +302,6 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 		fmt.Sprintf("RANCHER_CHARTS_REPO_DIR=%s", input.RancherChartsRepoDir),
 		fmt.Sprintf("RANCHER_CHARTS_BASE_BRANCH=%s", input.RancherChartsBaseBranch),
 		fmt.Sprintf("RANCHER_CHART_DEV_VERSION=%s", input.ChartVersion),
-	}
-	// Optionally override image repository and tag for e2e tests with preloaded images
-	if input.TurtlesImageRepo != "" {
-		envVars = append(envVars, fmt.Sprintf("TURTLES_IMAGE_OVERRIDE_REPO=%s", input.TurtlesImageRepo))
-	}
-	if input.TurtlesImageTag != "" {
-		envVars = append(envVars, fmt.Sprintf("TURTLES_IMAGE_OVERRIDE_TAG=%s", input.TurtlesImageTag))
 	}
 	makeCmd.Env = append(os.Environ(), envVars...)
 	output, err := makeCmd.CombinedOutput()
