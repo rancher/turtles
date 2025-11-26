@@ -89,6 +89,9 @@ type DeployRancherInput struct {
 	// RancherPatches are the patches for Rancher.
 	RancherPatches [][]byte
 
+	// AdditionalValues are additional helm values to pass to the Rancher chart.
+	AdditionalValues map[string]string
+
 	// RancherWaitInterval is the wait interval for Rancher.
 	RancherWaitInterval []interface{} `envDefault:"15m,30s"`
 
@@ -272,6 +275,10 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	}
 	if input.RancherIngressClassName != "" {
 		values["ingress.ingressClassName"] = input.RancherIngressClassName
+	}
+	// Merge additional values
+	for k, v := range input.AdditionalValues {
+		values[k] = v
 	}
 
 	_, err = chart.Run(values)

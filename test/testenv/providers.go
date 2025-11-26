@@ -67,6 +67,7 @@ const (
 
 	deployCAPIControllerManager = "capi-controller-manager"
 	namespaceCAPISystem         = "cattle-capi-system"
+	legacyNamespaceCAPISystem   = "capi-system"
 
 	deployKubeadmBootstrapControllerManager = "capi-kubeadm-bootstrap-controller-manager"
 	namespaceKubeadmBootstrapSystem         = "capi-kubeadm-bootstrap-system"
@@ -125,6 +126,14 @@ type DeployRancherTurtlesProvidersInput struct {
 
 	// MigrationScriptPath is the path to the providers ownership migration script.
 	MigrationScriptPath string `env:"TURTLES_MIGRATION_SCRIPT_PATH"`
+
+	// UseLegacyCAPINamespace indicates whether to use legacy namespace (capi-system) for core CAPI provider.
+	// Set to true when installing/upgrading from old Turtles versions (v0.24.x and earlier).
+	// Set to false for new installations with system chart controller (v0.25.x+).
+	UseLegacyCAPINamespace bool
+
+	// RancherTurtlesNamespace indicates the namespace where rancher-turtles is deployed.
+	RancherTurtlesNamespace string
 }
 
 // DeployRancherTurtlesProviders installs the rancher-turtles-providers chart with provided values and waits for deployments.
@@ -227,13 +236,13 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	configureProviderWaiters(input, enabledProviders, &providerWaiters)
 	adoptArgs := getAdoptArgsForEnabledProviders(enabledProviders, values)
 	log.FromContext(ctx).Info("Providers adoption args prepared", "args", adoptArgs, "enabled", enabledProviders)
-	runProviderMigration(ctx, input.MigrationScriptPath, input.BootstrapClusterProxy.GetKubeconfigPath(), adoptArgs...)
+	runProviderMigration(ctx, input.MigrationScriptPath, input.BootstrapClusterProxy.GetKubeconfigPath(), input.RancherTurtlesNamespace, adoptArgs...)
 
 	command := []string{
 		"upgrade", e2e.ProvidersChartName, chartPath,
 		"--install",
 		"--dependency-update",
-		"-n", e2e.RancherTurtlesNamespace,
+		"-n", input.RancherTurtlesNamespace,
 		"--create-namespace",
 		"--wait",
 		"--reuse-values",
@@ -264,7 +273,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		Expect(fmt.Errorf("Unable to install providers chart: %w\nOutput: %s, Command: %s", err, out, strings.Join(fullCommand, " "))).ToNot(HaveOccurred())
 	}
 
-	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders)
+	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders, input.UseLegacyCAPINamespace)
 	if len(deploymentsToWait) > 0 {
 		By("Waiting for provider deployments to be ready")
 		Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required when waiting for deployments")
@@ -286,7 +295,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	}
 }
 
-func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string, extraArgs ...string) {
+func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath, turtlesNamespace string, extraArgs ...string) {
 	if _, err := os.Stat(scriptPath); err != nil {
 		Expect(fmt.Errorf("migration script not found: %s", scriptPath)).ToNot(HaveOccurred())
 	}
@@ -299,7 +308,7 @@ func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string
 	cmd := exec.Command(scriptPath, args...)
 	cmd.Env = append(os.Environ(),
 		"RELEASE_NAME="+e2e.ProvidersChartName,
-		"RELEASE_NAMESPACE="+e2e.RancherTurtlesNamespace,
+		"RELEASE_NAMESPACE="+turtlesNamespace,
 		"TURTLES_CHART_NAMESPACE="+e2e.RancherTurtlesNamespace,
 	)
 	out, err := cmd.CombinedOutput()
@@ -384,9 +393,14 @@ func getEnabledCAPIProviders(values map[string]string) []string {
 	return out
 }
 
-func getDeploymentsForEnabledProviders(enabled []string) []NamespaceName {
+func getDeploymentsForEnabledProviders(enabled []string, useLegacyCAPINamespace bool) []NamespaceName {
+	capiNamespace := namespaceCAPISystem
+	if useLegacyCAPINamespace {
+		capiNamespace = legacyNamespaceCAPISystem
+	}
+
 	deployments := []NamespaceName{
-		{Name: deployCAPIControllerManager, Namespace: namespaceCAPISystem},
+		{Name: deployCAPIControllerManager, Namespace: capiNamespace},
 	}
 
 	for _, name := range enabled {
@@ -423,7 +437,7 @@ func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesPr
 			By("Configuring Docker provider with OCI registry")
 			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
 				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: e2e.RancherTurtlesNamespace,
+				ConfigMapNamespace: input.RancherTurtlesNamespace,
 				ConfigMapName:      "clusterctl-config",
 			})
 			dockerVersion := getProviderVersion(clusterctl, "docker")
