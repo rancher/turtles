@@ -23,7 +23,7 @@ jobs:
       security-events: write
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.1
     - name: setupGo
       uses: actions/setup-go@v6.1.0
       with:
