@@ -1,15 +1,16 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: unknown-provider
+  name: cluster-api-provider-vcluster-system
 spec: {}
 ---
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
 metadata:
   name: vcluster
-  namespace: unknown-provider
+  namespace: cluster-api-provider-vcluster-system
 spec:
   enableAutomaticUpdate: true # Since this provider is unknown, enabling automatic updates should have no effect.
   version: v0.2.1
   type: infrastructure
+  name: vcluster

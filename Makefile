@@ -195,7 +195,7 @@ CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
 PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 
 # Rancher charts testing
-export RANCHER_CHARTS_REPO_DIR ?= $(RELEASE_DIR)/rancher-charts
+export RANCHER_CHARTS_REPO_DIR ?=  $(abspath $(RELEASE_DIR)/rancher-charts)
 export RANCHER_CHART_DEV_VERSION ?= 108.0.0+up99.99.99
 export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.13
 
@@ -632,7 +632,7 @@ E2E_RUN_COMMAND=$(E2ECONFIG_VARS) $(GINKGO) -v --trace -p -procs=10 -poll-progre
 		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(GINKGO_TESTS)
 
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image ## Run the end-to-end tests
+test-e2e: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl e2e-image build-local-rancher-charts ## Run the end-to-end tests
 	$(E2E_RUN_COMMAND)
 
 .PHONY: test-e2e-push-image

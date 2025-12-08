@@ -34,6 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -393,32 +394,32 @@ func getEnabledCAPIProviders(values map[string]string) []string {
 	return out
 }
 
-func getDeploymentsForEnabledProviders(enabled []string, useLegacyCAPINamespace bool) []NamespaceName {
+func getDeploymentsForEnabledProviders(enabled []string, useLegacyCAPINamespace bool) []types.NamespacedName {
 	capiNamespace := namespaceCAPISystem
 	if useLegacyCAPINamespace {
 		capiNamespace = legacyNamespaceCAPISystem
 	}
 
-	deployments := []NamespaceName{
+	deployments := []types.NamespacedName{
 		{Name: deployCAPIControllerManager, Namespace: capiNamespace},
 	}
 
 	for _, name := range enabled {
 		switch name {
 		case providerKubeadmBootstrap:
-			deployments = append(deployments, NamespaceName{Name: deployKubeadmBootstrapControllerManager, Namespace: namespaceKubeadmBootstrapSystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployKubeadmBootstrapControllerManager, Namespace: namespaceKubeadmBootstrapSystem})
 		case providerKubeadmControlPlane:
-			deployments = append(deployments, NamespaceName{Name: deployKubeadmControlPlaneControllerManager, Namespace: namespaceKubeadmControlPlaneSystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployKubeadmControlPlaneControllerManager, Namespace: namespaceKubeadmControlPlaneSystem})
 		case providerDocker:
-			deployments = append(deployments, NamespaceName{Name: deployCAPDControllerManager, Namespace: namespaceCAPDSystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployCAPDControllerManager, Namespace: namespaceCAPDSystem})
 		case providerAWS:
-			deployments = append(deployments, NamespaceName{Name: deployCAPAControllerManager, Namespace: namespaceCAPASystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployCAPAControllerManager, Namespace: namespaceCAPASystem})
 		case providerAzure:
-			deployments = append(deployments, NamespaceName{Name: deployCAPZControllerManager, Namespace: namespaceCAPZSystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployCAPZControllerManager, Namespace: namespaceCAPZSystem})
 		case providerGCP:
-			deployments = append(deployments, NamespaceName{Name: deployCAPGControllerManager, Namespace: namespaceCAPGSystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployCAPGControllerManager, Namespace: namespaceCAPGSystem})
 		case providerVSphere:
-			deployments = append(deployments, NamespaceName{Name: deployCAPVControllerManager, Namespace: namespaceCAPVSystem})
+			deployments = append(deployments, types.NamespacedName{Name: deployCAPVControllerManager, Namespace: namespaceCAPVSystem})
 		}
 	}
 

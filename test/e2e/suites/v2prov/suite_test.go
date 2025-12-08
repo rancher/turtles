@@ -68,6 +68,10 @@ var _ = SynchronizedBeforeSuite(
 			Scheme:    e2e.InitScheme(),
 		})
 
+		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		})
+
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 			CustomIngress:            e2e.NginxIngress,
