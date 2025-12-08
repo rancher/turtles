@@ -10,6 +10,7 @@ metadata:
   name: docker
   namespace: capd-system
 spec:
+  name: docker
   type: infrastructure
 ---
 apiVersion: v1
