@@ -35,10 +35,10 @@ features:
   agent-tls-mode:
     # enabled: Turn on or off.
     enabled: true
-  # no-cert-manager: Alpha feature for cert-manager removal.
+  # no-cert-manager: Beta feature for cert-manager removal.
   no-cert-manager:
     # enabled: Turn on or off.
-    enabled: false
+    enabled: true
   # use-rancher-default-registry: Alpha feature to use Rancher's default registry for provider images.
   use-rancher-default-registry:
     # enabled: Turn on or off.

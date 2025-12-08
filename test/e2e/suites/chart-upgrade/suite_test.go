@@ -49,7 +49,7 @@ var (
 	giteaResult *testenv.DeployGiteaResult
 
 	// chartsResult stores the result of building and pushing charts to Gitea
-	chartsResult *testenv.BuildAndPushRancherChartsToGiteaResult
+	chartsResult *testenv.PushRancherChartsToGiteaResult
 
 	ctx = context.Background()
 
@@ -86,6 +86,10 @@ var _ = SynchronizedBeforeSuite(
 			KubernetesVersion: "v1.32.0",
 		})
 
+		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+		})
+
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 			CustomIngress:            e2e.NginxIngress,
@@ -100,13 +104,10 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		By("Building and pushing Rancher charts to Gitea for later upgrade")
-		chartsResult = testenv.BuildAndPushRancherChartsToGitea(ctx, testenv.BuildAndPushRancherChartsToGiteaInput{
-			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
-			RootDir:                 e2eConfig.GetVariableOrEmpty("ROOT_DIR"),
-			RancherChartsRepoDir:    e2eConfig.GetVariableOrEmpty(e2e.ArtifactsFolderVar) + "/rancher-charts",
-			RancherChartsBaseBranch: "dev-v2.13",
-			GiteaServerAddress:      giteaResult.GitAddress,
-			GiteaRepoName:           "charts",
+		chartsResult = testenv.PushRancherChartsToGitea(ctx, testenv.PushRancherChartsToGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			GiteaServerAddress:    giteaResult.GitAddress,
+			GiteaRepoName:         "charts",
 			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
 		})
 
@@ -134,7 +135,7 @@ var _ = SynchronizedBeforeSuite(
 			GitAddress: setup.GitAddress,
 		}
 
-		chartsResult = &testenv.BuildAndPushRancherChartsToGiteaResult{
+		chartsResult = &testenv.PushRancherChartsToGiteaResult{
 			ChartRepoURL:     setup.ChartRepoURL,
 			ChartRepoHTTPURL: setup.ChartRepoHTTPURL,
 			Branch:           setup.ChartBranch,
@@ -160,11 +161,6 @@ var _ = SynchronizedAfterSuite(
 			// add a log line about skipping charts uninstallation and cluster cleanup
 			return
 		}
-
-		By("Uninstalling Gitea")
-		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		})
 
 		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 			SetupTestClusterResult: *setupClusterResult,

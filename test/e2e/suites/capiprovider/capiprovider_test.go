@@ -26,32 +26,36 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/framework"
+	"github.com/rancher/turtles/test/testenv"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/framework"
-	"github.com/rancher/turtles/test/testenv"
-
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const (
-	deploymentName      = "capv-controller-manager"
-	deploymentNamespace = "capv-system"
-)
+	// vSphere is used as a sample certified provider.
+	capvDeploymentName = "capv-controller-manager"
+	capvNamespace      = "capv-system"
+	capvProviderName   = "vsphere"
 
-var (
-	deploymentKey = types.NamespacedName{Namespace: deploymentNamespace, Name: deploymentName}
+	// vCluster is used as an uknown provider.
+	// Uknown in this context means this provider is not certified and not known by clusterctl upstream.
+	// See: https://github.com/kubernetes-sigs/cluster-api/blob/main/cmd/clusterctl/client/config/providers_client.go
+	vclusterDeploymentName = "cluster-api-provider-vcluster-controller-manager"
+	vclusterNamespace      = "cluster-api-provider-vcluster-system"
+	vclusterProviderName   = "vcluster"
 )
 
 var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), func() {
-	BeforeEach(func() {
+	BeforeAll(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 	})
@@ -61,28 +65,26 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 	})
 
 	It("Should install latest available provider version from ClusterctlConfig when version is empty", func() {
-		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.CAPVProviderNamespace)).Should(Succeed())
-
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersYAML: [][]byte{
 				e2e.CAPVProviderNoVersion,
 			},
-			WaitForDeployments: []testenv.NamespaceName{
+			WaitForDeployments: []types.NamespacedName{
 				{
-					Name:      deploymentName,
-					Namespace: deploymentNamespace,
+					Name:      capvDeploymentName,
+					Namespace: capvNamespace,
 				},
 			},
 		})
 
-		verifyManagerImage(ctx, deploymentKey, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.12.0")
+		verifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace}, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.12.0")
 	})
 
 	It("Should have pinned latest installed version", func() {
 		provider := &turtlesv1.CAPIProvider{}
 		Expect(bootstrapClusterProxy.GetClient().
-			Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
+			Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 			Should(Succeed())
 		Expect(provider.Spec.Version).Should(Equal("v1.12.0"))
 	})
@@ -93,7 +95,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		checkLastVersionCondition := &clusterv1.Condition{}
 		Eventually(func() bool {
 			Expect(bootstrapClusterProxy.GetClient().
-				Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
+				Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 				Should(Succeed())
 			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
 			if checkLastVersionCondition == nil {
@@ -112,23 +114,23 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 	It("Should not automatically update provider version", func() {
 		provider := &turtlesv1.CAPIProvider{}
 		Expect(bootstrapClusterProxy.GetClient().
-			Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
+			Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 			Should(Succeed())
 		Expect(provider.Spec.Version).Should(Equal("v1.12.0"))
-		consistentlyVerifyManagerImage(ctx, deploymentKey, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.12.0")
+		consistentlyVerifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace}, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.12.0")
 	})
 
 	It("Should automatically update provider version if EnabledAutomaticUpdate", func() {
 		provider := &turtlesv1.CAPIProvider{}
 		Expect(bootstrapClusterProxy.GetClient().
-			Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
+			Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 			Should(Succeed())
 		provider.Spec.EnableAutomaticUpdate = true
 		Expect(bootstrapClusterProxy.GetClient().Update(ctx, provider)).Should(Succeed())
 
 		Eventually(func() bool {
 			Expect(bootstrapClusterProxy.GetClient().
-				Get(ctx, types.NamespacedName{Namespace: "capv-system", Name: "vsphere"}, provider)).
+				Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 				Should(Succeed())
 			checkLastVersionCondition := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
 			if checkLastVersionCondition == nil {
@@ -142,16 +144,20 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition True")
 
 		Expect(provider.Spec.Version).Should(Equal("v1.13.0"))
-		verifyManagerImage(ctx, deploymentKey, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.13.0")
+		verifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace}, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.13.0")
 	})
 
-	It("Should not automatically update Unknown provider", func() {
+	It("Should delete vSphere provider and namespace", func() {
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.CAPVProviderNoVersion)).Should(Succeed())
+	})
+
+	It("Should install but not automatically update Unknown provider", func() {
 		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.UnknownProvider)).Should(Succeed())
 		provider := &turtlesv1.CAPIProvider{}
 		checkLastVersionCondition := &clusterv1.Condition{}
 		Eventually(func() bool {
 			Expect(bootstrapClusterProxy.GetClient().
-				Get(ctx, types.NamespacedName{Namespace: "unknown-provider", Name: "vcluster"}, provider)).
+				Get(ctx, types.NamespacedName{Namespace: vclusterNamespace, Name: vclusterProviderName}, provider)).
 				Should(Succeed())
 			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
 			if checkLastVersionCondition == nil {
@@ -165,12 +171,75 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		Expect(checkLastVersionCondition.Reason).Should(Equal(turtlesv1.CheckLatestProviderUnknownReason))
 
 		Expect(provider.Spec.Version).Should(Equal("v0.2.1"))
-		consistentlyVerifyManagerImage(ctx, deploymentKey, "docker.io/loftsh/cluster-api-provider-vcluster:0.2.1")
+		consistentlyVerifyManagerImage(ctx, types.NamespacedName{Name: vclusterDeploymentName, Namespace: vclusterNamespace}, "docker.io/loftsh/cluster-api-provider-vcluster:0.2.1")
+	})
+
+	It("Should delete Unknown provider and namespace", func() {
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.UnknownProvider)).Should(Succeed())
+	})
+
+	It("Should delete ClusterctlConfig", func() {
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.ClusterctlConfigUpdated)).Should(Succeed())
+	})
+})
+
+var _ = Describe("no-cert-manager feature verification", Ordered, Label(e2e.ShortTestLabel), func() {
+	BeforeAll(func() {
+		SetClient(bootstrapClusterProxy.GetClient())
+		SetContext(ctx)
+	})
+
+	It("Should install provider", func() {
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersYAML: [][]byte{
+				e2e.CAPVProviderNoVersion,
+			},
+			WaitForDeployments: []types.NamespacedName{
+				{
+					Name:      capvDeploymentName,
+					Namespace: capvNamespace,
+				},
+			},
+		})
+	})
+
+	It("Should test no-cert-manager conversion", func() {
+		framework.VerifyCertificatesInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+		framework.VerifyIssuersInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+		framework.VerifyCertManagerAnnotationsForProvider(ctx, bootstrapClusterProxy.GetClient(), "infrastructure-vsphere")
+		framework.VerifyWranglerAnnotationsInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+	})
+
+	It("Should verify WranglerManagedCertificates Condition", func() {
+		Eventually(func() bool {
+			capiProvider := &turtlesv1.CAPIProvider{}
+			Expect(bootstrapClusterProxy.GetClient().Get(ctx,
+				types.NamespacedName{
+					Namespace: capvNamespace,
+					Name:      capvProviderName,
+				}, capiProvider)).Should(Succeed())
+			condition := conditions.Get(capiProvider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
+			if condition == nil || condition.Status != corev1.ConditionTrue {
+				return false
+			}
+			return true
+		}, e2e.LoadE2EConfig().GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
+			Should(BeTrue(), "WranglerManagedCertificates condition must be True")
+	})
+
+	It("Should apply dummy resource that uses webhooks", func() {
+		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+		// Early cleanup since it's not used
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+	})
+
+	It("Should uninstall provider", func() {
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.CAPVProviderNoVersion)).Should(Succeed())
 	})
 })
 
 func verifyManagerImage(ctx context.Context, deploymentKey types.NamespacedName, desiredImage string) {
-	GinkgoHelper()
 	deployment := &appsv1.Deployment{}
 	Expect(bootstrapClusterProxy.GetClient().Get(ctx, deploymentKey, deployment)).Should(Succeed())
 	foundImage := ""

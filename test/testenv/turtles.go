@@ -30,12 +30,13 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var DefaultDeployments = []NamespaceName{
+var DefaultDeployments = []types.NamespacedName{
 	{
 		Name:      "capi-controller-manager",
 		Namespace: "cattle-capi-system",
@@ -99,7 +100,7 @@ type DeployRancherTurtlesInput struct {
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// WaitForDeployments is the list of deployments to wait for.
-	WaitForDeployments []NamespaceName
+	WaitForDeployments []types.NamespacedName
 
 	// AdditionalValues are the additional values for Rancher Turtles.
 	AdditionalValues map[string]string
