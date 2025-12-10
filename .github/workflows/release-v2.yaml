@@ -3,7 +3,11 @@ name: Turtles release
 on:
   push:
     tags:
-      - 'v*'
+      # This is just a temporary filter while we maintain two release workflows.
+      # TODO: change to "v*" when this becomes the only one.
+      - "v0.2[5-9].*"
+      - "v0.[3-9]*"
+      - "v[1-9]*"
   workflow_dispatch:
 
 permissions:
@@ -24,12 +28,12 @@ jobs:
       TAG: ${{ github.ref_name }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
       with:
         fetch-depth: 0
 
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
       with:
         image: tonistiigi/binfmt:qemu-v8.1.5
         cache-image: false
@@ -119,7 +123,7 @@ jobs:
 
     - name: Install slsactl
       if: ${{ matrix.image-type == 'prime' }}
-      uses: rancherlabs/slsactl/actions/install-slsactl@2539cebd3fe5c291e5431f042e225c5b65850f50 # v0.1.1
+      uses: rancherlabs/slsactl/actions/install-slsactl@1d0317776fbf526919f9dacdb97e405ac7a350cf # v0.1.9
 
     - name: Create multi-platform image and push
       shell: bash
@@ -143,7 +147,11 @@ jobs:
           IMAGE_DIGEST=$( docker inspect --format='{{index .RepoDigests 0}}' ${URL} | sed 's/.*@//' )
           # Set as environment variable for next steps
           MULTI_PLATFORM_IMAGE="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
-          echo "MULTI_PLATFORM_IMAGE"=${MULTI_PLATFORM_IMAGE} >> "$GITHUB_ENV" 
+          echo "MULTI_PLATFORM_IMAGE"=${MULTI_PLATFORM_IMAGE} >> "$GITHUB_ENV"
+
+          # Also set a tag-specific variable for provenance attestation step
+          MULTI_PLATFORM_IMAGE_TAG="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}@${IMAGE_DIGEST}"
+          echo "MULTI_PLATFORM_IMAGE_TAG"=${MULTI_PLATFORM_IMAGE_TAG} >> "$GITHUB_ENV"
         fi
 
     - name: Sign multi-platform image
@@ -165,7 +173,7 @@ jobs:
         i=0
 
         while [ "${i}" -lt "${max_retries}" ]; do
-            if slsactl download provenance --format=slsav1 "${MULTI_PLATFORM_IMAGE}" > provenance-slsav1.json; then
+            if slsactl download provenance --format=slsav1 "${MULTI_PLATFORM_IMAGE_TAG}" > provenance-slsav1.json; then
                 break
             fi
             if [ "${i}" -eq "$(( max_retries - 1 ))" ]; then
@@ -178,3 +186,14 @@ jobs:
 
         cat provenance-slsav1.json
         cosign attest --yes --predicate provenance-slsav1.json --type slsaprovenance1 "${MULTI_PLATFORM_IMAGE}"
+
+  chart-release:
+    name: Helm chart release
+    uses: ./.github/workflows/chart-release.yml
+    needs:
+    - merge
+    with:
+      tag: ${{ github.ref_name }}
+      org: rancher
+      image: turtles
+    secrets: inherit

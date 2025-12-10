@@ -7,3 +7,7 @@ spec:
   images:
   - name: infrastructure-docker
     repository: "gcr.io/k8s-staging-cluster-api"
+  - name: infrastructure-aws
+    repository: "registry.k8s.io/cluster-api-aws"
+  - name: infrastructure-gcp
+    repository: "registry.k8s.io/cluster-api-gcp"

@@ -459,9 +459,17 @@ func providerDeploymentRestart(ctx context.Context, cl client.Client, provider *
 }
 
 func getSelector(provider *turtlesv1.CAPIProvider) ([]client.ListOption, error) {
-	matchingLabels := []string{
-		provider.Spec.Type.ToName() + provider.Spec.Name,
-		provider.Spec.Name, // ex. "fleet"
+	var matchingLabels []string
+	if provider.Spec.Name != "" {
+		matchingLabels = []string{
+			provider.Spec.Type.ToName() + provider.Spec.Name,
+			provider.Spec.Name, // ex. "fleet"
+		}
+	} else { // support for CAPIProvider's name used as CAPIProvider.spec.name
+		matchingLabels = []string{
+			provider.Spec.Type.ToName() + provider.GetName(),
+			provider.GetName(),
+		}
 	}
 
 	requirement, err := labels.NewRequirement(CAPIProviderLabel, selection.In, matchingLabels)

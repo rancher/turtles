@@ -101,11 +101,20 @@ sources:
 
 # update config.yaml accordingly
 targets:
-  bumpcapi:
-    name: bump core capi
+  bumpcapiprime:
+    name: bump core capi - prime
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
+      matchpattern: 'https://github.com/rancher-sandbox/cluster-api/releases/(.*)/'
+      replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
+    scmid: turtles
+    sourceid: capirelease # Will be ignored as `replacepattern` is specified
+  bumpcapicommunity:
+    name: bump core capi - community
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config-community.yaml
       matchpattern: 'https://github.com/rancher-sandbox/cluster-api/releases/(.*)/'
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
@@ -114,7 +123,7 @@ targets:
     name: bump docker capi
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/(.*)/'
       replacepattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
@@ -141,7 +150,7 @@ targets:
     name: bump caprke2 provider
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/(.*)/'
       replacepattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/{{ source "caprke2release" }}/'
     scmid: turtles
@@ -150,7 +159,7 @@ targets:
     name: bump capz provider
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/(.*)/'
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/{{ source "capzrelease" }}/'
     scmid: turtles
@@ -159,7 +168,7 @@ targets:
     name: bump capa provider
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/(.*)/'
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/{{ source "caparelease" }}/'
     scmid: turtles
@@ -168,7 +177,7 @@ targets:
     name: bump capg provider
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/(.*)/'
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/{{ source "capgrelease" }}/'
     scmid: turtles
@@ -177,7 +186,7 @@ targets:
     name: bump capv provider
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/(.*)/'
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
     scmid: turtles
@@ -186,7 +195,7 @@ targets:
     name: bump capi fleet addon provider
     kind: file
     spec:
-      file: ./internal/controllers/clusterctl/config-default.yaml
+      file: ./internal/controllers/clusterctl/config-prime.yaml
       matchpattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/(.*)/'
       replacepattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
     scmid: turtles

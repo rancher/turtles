@@ -42,9 +42,6 @@
     "rancherInstalled": {
       "type": "boolean"
     },
-    "kubectlImage": {
-      "type": "string"
-    },
     "shellImage": {
       "type": "string"
     },

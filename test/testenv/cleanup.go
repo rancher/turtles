@@ -141,8 +141,8 @@ func CollectArtifacts(ctx context.Context, input CollectArtifactsInput) error {
 	return nil
 }
 
-func DumpBootstrapCluster(ctx context.Context) {
-	err := CollectArtifacts(ctx, CollectArtifactsInput{})
+func DumpBootstrapCluster(ctx context.Context, kubeconfigPath string) {
+	err := CollectArtifacts(ctx, CollectArtifactsInput{KubeconfigPath: kubeconfigPath})
 	if err != nil {
 		fmt.Printf("Failed to artifacts for the bootstrap cluster: %v\n", err)
 		return

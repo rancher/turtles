@@ -31,7 +31,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
       - name: Build an image
         run: |
           TAG=${{ github.sha }} make docker-build-prime

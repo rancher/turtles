@@ -45,11 +45,27 @@ var (
 	// hostName is the host name for the Rancher Manager server.
 	hostName string
 
+	// giteaResult stores the result of Gitea deployment
+	giteaResult *testenv.DeployGiteaResult
+
+	// chartsResult stores the result of building and pushing charts to Gitea
+	chartsResult *testenv.BuildAndPushRancherChartsToGiteaResult
+
 	ctx = context.Background()
 
 	setupClusterResult    *testenv.SetupTestClusterResult
 	bootstrapClusterProxy capiframework.ClusterProxy
 )
+
+// setupData is the data structure shared between SynchronizedBeforeSuite parallel runs
+type setupData struct {
+	e2e.Setup
+	GitAddress       string
+	ChartRepoURL     string
+	ChartRepoHTTPURL string
+	ChartBranch      string
+	ChartVersion     string
+}
 
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -66,6 +82,8 @@ var _ = SynchronizedBeforeSuite(
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
+			// Use v1.32.0 for Rancher 2.12.3 compatibility (requires < v1.34.0) and v1.33 causes issues with CAAPF
+			KubernetesVersion: "v1.32.0",
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
@@ -74,26 +92,54 @@ var _ = SynchronizedBeforeSuite(
 			DefaultIngressClassPatch: e2e.IngressClassPatch,
 		})
 
-		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+		By("Deploying Gitea for chart repository")
+		giteaResult = testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			RancherHost:           hostName,
-			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
+			ValuesFile:            e2e.GiteaValues,
+			CustomIngressConfig:   e2e.GiteaIngress,
 		})
 
-		data, err := json.Marshal(e2e.Setup{
-			ClusterName:     setupClusterResult.ClusterName,
-			KubeconfigPath:  setupClusterResult.KubeconfigPath,
-			RancherHostname: rancherHookResult.Hostname,
+		By("Building and pushing Rancher charts to Gitea for later upgrade")
+		chartsResult = testenv.BuildAndPushRancherChartsToGitea(ctx, testenv.BuildAndPushRancherChartsToGiteaInput{
+			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
+			RootDir:                 e2eConfig.GetVariableOrEmpty("ROOT_DIR"),
+			RancherChartsRepoDir:    e2eConfig.GetVariableOrEmpty(e2e.ArtifactsFolderVar) + "/rancher-charts",
+			RancherChartsBaseBranch: "dev-v2.13",
+			GiteaServerAddress:      giteaResult.GitAddress,
+			GiteaRepoName:           "charts",
+			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
+		})
+
+		data, err := json.Marshal(setupData{
+			Setup: e2e.Setup{
+				ClusterName:    setupClusterResult.ClusterName,
+				KubeconfigPath: setupClusterResult.KubeconfigPath,
+			},
+			GitAddress:       giteaResult.GitAddress,
+			ChartRepoURL:     chartsResult.ChartRepoURL,
+			ChartRepoHTTPURL: chartsResult.ChartRepoHTTPURL,
+			ChartBranch:      chartsResult.Branch,
+			ChartVersion:     chartsResult.ChartVersion,
 		})
 		Expect(err).ToNot(HaveOccurred())
 		return data
 	},
 	func(sharedData []byte) {
-		setup := e2e.Setup{}
+		setup := setupData{}
 		Expect(json.Unmarshal(sharedData, &setup)).To(Succeed())
 
 		e2eConfig = e2e.LoadE2EConfig()
-		hostName = setup.RancherHostname
+
+		giteaResult = &testenv.DeployGiteaResult{
+			GitAddress: setup.GitAddress,
+		}
+
+		chartsResult = &testenv.BuildAndPushRancherChartsToGiteaResult{
+			ChartRepoURL:     setup.ChartRepoURL,
+			ChartRepoHTTPURL: setup.ChartRepoHTTPURL,
+			Branch:           setup.ChartBranch,
+			ChartVersion:     setup.ChartVersion,
+		}
 
 		bootstrapClusterProxy = capiframework.NewClusterProxy(setup.ClusterName, setup.KubeconfigPath, e2e.InitScheme(), capiframework.WithMachineLogCollector(capiframework.DockerLogCollector{}))
 		Expect(bootstrapClusterProxy).ToNot(BeNil(), "cluster proxy should not be nil")
@@ -105,7 +151,7 @@ var _ = SynchronizedAfterSuite(
 	},
 	func() {
 		By("Dumping artifacts from the bootstrap cluster")
-		testenv.DumpBootstrapCluster(ctx)
+		testenv.DumpBootstrapCluster(ctx, bootstrapClusterProxy.GetKubeconfigPath())
 
 		config := e2e.LoadE2EConfig()
 		// skipping error check since it is already done at the beginning of the test in e2e.ValidateE2EConfig()
@@ -115,7 +161,8 @@ var _ = SynchronizedAfterSuite(
 			return
 		}
 
-		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
+		By("Uninstalling Gitea")
+		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 		})
 

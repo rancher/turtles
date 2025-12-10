@@ -37,6 +37,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # bootstrapKubeadm: Kubeadm Bootstrap Provider.
   bootstrapKubeadm:
     # enabled: Enables the installation of this provider.
@@ -70,6 +71,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # bootstrapRKE2: RKE2 Bootstrap Provider.
   bootstrapRKE2:
     # enabled: Enables the installation of this provider.
@@ -103,6 +105,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # controlplaneKubeadm: Kubeadm Control Plane Provider.
   controlplaneKubeadm:
     # enabled: Enables the installation of this provider.
@@ -136,6 +139,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # controlplaneRKE2: RKE2 Control Plane Provider.
   controlplaneRKE2:
     # enabled: Enables the installation of this provider.
@@ -169,6 +173,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # infrastructureAWS: AWS Infrastructure Provider (CAPA).
   infrastructureAWS:
     # enabled: Enables the installation of this provider.
@@ -202,6 +207,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # infrastructureAzure: Azure Infrastructure Provider (CAPZ).
   infrastructureAzure:
     # enabled: Enables the installation of this provider.
@@ -235,6 +241,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # infrastructureDocker: Docker Infrastructure Provider (CAPD).
   infrastructureDocker:
     # enabled: Enables the installation of this provider.
@@ -268,6 +275,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   # infrastructureGCP: GCP Infrastructure Provider (CAPG).
   infrastructureGCP:
     # enabled: Enables the installation of this provider.
@@ -302,6 +310,7 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5
   infrastructureVSphere:
     # enabled: Enables the installation of this provider.
     enabled: false
@@ -335,3 +344,4 @@ providers:
   # manager: Optional controller manager settings.
   # manager:
   #   syncPeriod: "5m"
+  #   verbosity: 5

@@ -1,0 +1,65 @@
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: Tag for the release
+        required: true
+
+      org:
+        type: string
+        description: Organization part of the image name
+        required: true
+
+      image:
+        type: string
+        description: Static image value for the build
+
+      release_dir:
+        type: string
+        description: Directory where release is stored
+        default: .cr-release-packages
+
+jobs:
+  release:
+    name: Create helm release
+    runs-on: ubuntu-latest
+    env:
+      CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: setupGo
+        uses: actions/setup-go@v6.1.0
+        with:
+          go-version-file: go.mod
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Package operator chart
+        run: RELEASE_TAG=${GITHUB_REF##*/} CHART_PACKAGE_DIR=${{ inputs.release_dir }} CONTROLLER_IMG="${{ inputs.org }}/${{ inputs.image }}" ORG=${{ inputs.org }} make release
+
+      - name: Install chart-releaser
+        uses: helm/chart-releaser-action@v1.7.0
+        with:
+          install_only: true
+
+      - name: Prepare environment for the chart releaser
+        run: |
+          echo "CR_OWNER=$(cut -d '/' -f 1 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+          echo "CR_GIT_REPO=$(cut -d '/' -f 2 <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+          rm -rf .cr-index
+          mkdir -p .cr-index
+
+      - name: Run chart-releaser upload
+        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ inputs.tag }}" --make-release-latest=false
+
+      - name: Run chart-releaser index
+        run: cr index --push --release-name-template "${{ inputs.tag }}"

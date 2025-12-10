@@ -41,13 +41,19 @@ import (
 )
 
 const (
-	bootstrapKubeadmPath    = "providers.bootstrapKubeadm.enabled"
-	controlplaneKubeadmPath = "providers.controlplaneKubeadm.enabled"
-	dockerPath              = "providers.infrastructureDocker.enabled"
-	awsPath                 = "providers.infrastructureAWS.enabled"
-	azurePath               = "providers.infrastructureAzure.enabled"
-	gcpPath                 = "providers.infrastructureGCP.enabled"
-	vspherePath             = "providers.infrastructureVSphere.enabled"
+	providerEnabledKey   = "enabled"
+	providerVerbosityKey = "manager.verbosity"
+	debugVerbosityValue  = "5"
+
+	bootstrapRKE2Path       = "providers.bootstrapRKE2."
+	controlplaneRKE2Path    = "providers.controlplaneRKE2."
+	bootstrapKubeadmPath    = "providers.bootstrapKubeadm."
+	controlplaneKubeadmPath = "providers.controlplaneKubeadm."
+	dockerPath              = "providers.infrastructureDocker."
+	awsPath                 = "providers.infrastructureAWS."
+	azurePath               = "providers.infrastructureAzure."
+	gcpPath                 = "providers.infrastructureGCP."
+	vspherePath             = "providers.infrastructureVSphere."
 
 	defaultOCIRegistry = "registry.rancher.com/rancher/cluster-api-controller-components"
 
@@ -61,6 +67,7 @@ const (
 
 	deployCAPIControllerManager = "capi-controller-manager"
 	namespaceCAPISystem         = "cattle-capi-system"
+	legacyNamespaceCAPISystem   = "capi-system"
 
 	deployKubeadmBootstrapControllerManager = "capi-kubeadm-bootstrap-controller-manager"
 	namespaceKubeadmBootstrapSystem         = "capi-kubeadm-bootstrap-system"
@@ -119,6 +126,14 @@ type DeployRancherTurtlesProvidersInput struct {
 
 	// MigrationScriptPath is the path to the providers ownership migration script.
 	MigrationScriptPath string `env:"TURTLES_MIGRATION_SCRIPT_PATH"`
+
+	// UseLegacyCAPINamespace indicates whether to use legacy namespace (capi-system) for core CAPI provider.
+	// Set to true when installing/upgrading from old Turtles versions (v0.24.x and earlier).
+	// Set to false for new installations with system chart controller (v0.25.x+).
+	UseLegacyCAPINamespace bool
+
+	// RancherTurtlesNamespace indicates the namespace where rancher-turtles is deployed.
+	RancherTurtlesNamespace string
 }
 
 // DeployRancherTurtlesProviders installs the rancher-turtles-providers chart with provided values and waits for deployments.
@@ -172,19 +187,29 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		for _, p := range providerList {
 			provider := strings.TrimSpace(strings.ToLower(p))
 			switch provider {
+			case "rke2":
+				values[bootstrapRKE2Path+providerVerbosityKey] = debugVerbosityValue
+				values[controlplaneRKE2Path+providerVerbosityKey] = debugVerbosityValue
 			case "kubeadm":
-				values[bootstrapKubeadmPath] = "true"
-				values[controlplaneKubeadmPath] = "true"
+				values[bootstrapKubeadmPath+providerEnabledKey] = "true"
+				values[bootstrapKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+				values[controlplaneKubeadmPath+providerEnabledKey] = "true"
+				values[controlplaneKubeadmPath+providerVerbosityKey] = debugVerbosityValue
 			case "docker", "capd":
-				values[dockerPath] = "true"
+				values[dockerPath+providerEnabledKey] = "true"
+				values[dockerPath+providerVerbosityKey] = debugVerbosityValue
 			case "aws", "capa":
-				values[awsPath] = "true"
+				values[awsPath+providerEnabledKey] = "true"
+				values[awsPath+providerVerbosityKey] = debugVerbosityValue
 			case "azure", "capz":
-				values[azurePath] = "true"
+				values[azurePath+providerEnabledKey] = "true"
+				values[azurePath+providerVerbosityKey] = debugVerbosityValue
 			case "gcp", "capg":
-				values[gcpPath] = "true"
+				values[gcpPath+providerEnabledKey] = "true"
+				values[gcpPath+providerVerbosityKey] = debugVerbosityValue
 			case "vsphere", "capv":
-				values[vspherePath] = "true"
+				values[vspherePath+providerEnabledKey] = "true"
+				values[vspherePath+providerVerbosityKey] = debugVerbosityValue
 			case "", "all":
 			default:
 				log.FromContext(ctx).Info("Unknown provider in TURTLES_PROVIDERS, ignoring", "provider", provider)
@@ -211,13 +236,13 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	configureProviderWaiters(input, enabledProviders, &providerWaiters)
 	adoptArgs := getAdoptArgsForEnabledProviders(enabledProviders, values)
 	log.FromContext(ctx).Info("Providers adoption args prepared", "args", adoptArgs, "enabled", enabledProviders)
-	runProviderMigration(ctx, input.MigrationScriptPath, input.BootstrapClusterProxy.GetKubeconfigPath(), adoptArgs...)
+	runProviderMigration(ctx, input.MigrationScriptPath, input.BootstrapClusterProxy.GetKubeconfigPath(), input.RancherTurtlesNamespace, adoptArgs...)
 
 	command := []string{
 		"upgrade", e2e.ProvidersChartName, chartPath,
 		"--install",
 		"--dependency-update",
-		"-n", e2e.RancherTurtlesNamespace,
+		"-n", input.RancherTurtlesNamespace,
 		"--create-namespace",
 		"--wait",
 		"--reuse-values",
@@ -248,7 +273,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		Expect(fmt.Errorf("Unable to install providers chart: %w\nOutput: %s, Command: %s", err, out, strings.Join(fullCommand, " "))).ToNot(HaveOccurred())
 	}
 
-	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders)
+	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders, input.UseLegacyCAPINamespace)
 	if len(deploymentsToWait) > 0 {
 		By("Waiting for provider deployments to be ready")
 		Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required when waiting for deployments")
@@ -270,7 +295,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	}
 }
 
-func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string, extraArgs ...string) {
+func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath, turtlesNamespace string, extraArgs ...string) {
 	if _, err := os.Stat(scriptPath); err != nil {
 		Expect(fmt.Errorf("migration script not found: %s", scriptPath)).ToNot(HaveOccurred())
 	}
@@ -283,7 +308,7 @@ func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string
 	cmd := exec.Command(scriptPath, args...)
 	cmd.Env = append(os.Environ(),
 		"RELEASE_NAME="+e2e.ProvidersChartName,
-		"RELEASE_NAMESPACE="+e2e.RancherTurtlesNamespace,
+		"RELEASE_NAMESPACE="+turtlesNamespace,
 		"TURTLES_CHART_NAMESPACE="+e2e.RancherTurtlesNamespace,
 	)
 	out, err := cmd.CombinedOutput()
@@ -295,13 +320,22 @@ func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath string
 }
 
 func enableAllProviders(values map[string]string) {
-	values[bootstrapKubeadmPath] = "true"
-	values[controlplaneKubeadmPath] = "true"
-	values[dockerPath] = "true"
-	values[awsPath] = "true"
-	values[azurePath] = "true"
-	values[gcpPath] = "true"
-	values[vspherePath] = "true"
+	values[bootstrapRKE2Path+providerVerbosityKey] = debugVerbosityValue
+	values[controlplaneRKE2Path+providerVerbosityKey] = debugVerbosityValue
+	values[bootstrapKubeadmPath+providerEnabledKey] = "true"
+	values[bootstrapKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+	values[controlplaneKubeadmPath+providerEnabledKey] = "true"
+	values[controlplaneKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+	values[dockerPath+providerEnabledKey] = "true"
+	values[dockerPath+providerVerbosityKey] = debugVerbosityValue
+	values[awsPath+providerEnabledKey] = "true"
+	values[awsPath+providerVerbosityKey] = debugVerbosityValue
+	values[azurePath+providerEnabledKey] = "true"
+	values[azurePath+providerVerbosityKey] = debugVerbosityValue
+	values[gcpPath+providerEnabledKey] = "true"
+	values[gcpPath+providerVerbosityKey] = debugVerbosityValue
+	values[vspherePath+providerEnabledKey] = "true"
+	values[vspherePath+providerVerbosityKey] = debugVerbosityValue
 }
 
 func getAdoptArgsForEnabledProviders(enabled []string, values map[string]string) []string {
@@ -335,33 +369,38 @@ func getAdoptArgsForEnabledProviders(enabled []string, values map[string]string)
 
 func getEnabledCAPIProviders(values map[string]string) []string {
 	out := []string{}
-	if values[bootstrapKubeadmPath] == "true" {
+	if values[bootstrapKubeadmPath+providerEnabledKey] == "true" {
 		out = append(out, providerKubeadmBootstrap)
 	}
-	if values[controlplaneKubeadmPath] == "true" {
+	if values[controlplaneKubeadmPath+providerEnabledKey] == "true" {
 		out = append(out, providerKubeadmControlPlane)
 	}
-	if values[dockerPath] == "true" {
+	if values[dockerPath+providerEnabledKey] == "true" {
 		out = append(out, providerDocker)
 	}
-	if values[awsPath] == "true" {
+	if values[awsPath+providerEnabledKey] == "true" {
 		out = append(out, providerAWS)
 	}
-	if values[azurePath] == "true" {
+	if values[azurePath+providerEnabledKey] == "true" {
 		out = append(out, providerAzure)
 	}
-	if values[gcpPath] == "true" {
+	if values[gcpPath+providerEnabledKey] == "true" {
 		out = append(out, providerGCP)
 	}
-	if values[vspherePath] == "true" {
+	if values[vspherePath+providerEnabledKey] == "true" {
 		out = append(out, providerVSphere)
 	}
 	return out
 }
 
-func getDeploymentsForEnabledProviders(enabled []string) []NamespaceName {
+func getDeploymentsForEnabledProviders(enabled []string, useLegacyCAPINamespace bool) []NamespaceName {
+	capiNamespace := namespaceCAPISystem
+	if useLegacyCAPINamespace {
+		capiNamespace = legacyNamespaceCAPISystem
+	}
+
 	deployments := []NamespaceName{
-		{Name: deployCAPIControllerManager, Namespace: namespaceCAPISystem},
+		{Name: deployCAPIControllerManager, Namespace: capiNamespace},
 	}
 
 	for _, name := range enabled {
@@ -398,7 +437,7 @@ func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesPr
 			By("Configuring Docker provider with OCI registry")
 			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
 				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: e2e.RancherTurtlesNamespace,
+				ConfigMapNamespace: input.RancherTurtlesNamespace,
 				ConfigMapName:      "clusterctl-config",
 			})
 			dockerVersion := getProviderVersion(clusterctl, "docker")

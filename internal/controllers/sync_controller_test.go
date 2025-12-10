@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
@@ -71,10 +72,21 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 
 		ns, err = testEnv.CreateNamespace(ctx, "capiprovider")
 		Expect(err).ToNot(HaveOccurred())
+		testEnv.Create(ctx, &managementv3.Setting{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "system-default-registry",
+			},
+			Value: "",
+		})
 	})
 
 	AfterEach(func() {
 		Expect(testEnv.Delete(ctx, ns)).Should(Succeed())
+		Expect(testEnv.Delete(ctx, &managementv3.Setting{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "system-default-registry",
+			},
+		})).Should(Succeed())
 	})
 
 	It("Should create CAPIProvider secret", func() {

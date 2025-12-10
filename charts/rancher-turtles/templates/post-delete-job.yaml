@@ -61,23 +61,23 @@ spec:
     spec:
       serviceAccountName: post-delete-job
       containers:
-        - name: cluster-api-operator-mutatingwebhook-cleanup
-          image: {{ .Values.kubectlImage }}
-          command: ["kubectl"]
-          args:
-          - delete
-          - mutatingwebhookconfigurations.admissionregistration.k8s.io
-          - capi-mutating-webhook-configuration
-          - --ignore-not-found=true
-          securityContext:
-            seccompProfile:
-              type: RuntimeDefault
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
+      - name: cluster-api-operator-mutatingwebhook-cleanup
+        image: {{ .Values.shellImage }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - mutatingwebhookconfigurations.admissionregistration.k8s.io
+        - capi-mutating-webhook-configuration
+        - --ignore-not-found=true
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
       restartPolicy: Never
 ---
 apiVersion: batch/v1
@@ -94,23 +94,23 @@ spec:
     spec:
       serviceAccountName: post-delete-job
       containers:
-        - name: cluster-api-operator-validatingwebhook-cleanup
-          image: {{ .Values.kubectlImage }}
-          command: ["kubectl"]
-          args:
-          - delete
-          - validatingwebhookconfigurations.admissionregistration.k8s.io
-          - capi-validating-webhook-configuration
-          - --ignore-not-found=true
-          securityContext:
-            seccompProfile:
-              type: RuntimeDefault
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
+      - name: cluster-api-operator-validatingwebhook-cleanup
+        image: {{ .Values.shellImage }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - validatingwebhookconfigurations.admissionregistration.k8s.io
+        - capi-validating-webhook-configuration
+        - --ignore-not-found=true
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
       restartPolicy: Never
 ---
 apiVersion: batch/v1
@@ -129,7 +129,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: delete-capi-controller-manager
-        image: {{ .Values.kubectlImage }}
+        image: {{ .Values.shellImage }}
         command: ["kubectl"]
         args:
         - delete

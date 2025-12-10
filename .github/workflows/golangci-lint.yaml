@@ -20,12 +20,12 @@ jobs:
         working-directory:
           - ""
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6.0.0
+      - uses: actions/checkout@v6.0.1
+      - uses: actions/setup-go@v6.1.0
         with:
           go-version-file: go.mod
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           version: v2.1.6
           working-directory: ${{matrix.working-directory}}

@@ -31,6 +31,9 @@ const (
 
 	// NoCertManager if enabled Turtles will remove cert-manager, including Certificate and Issuer.
 	NoCertManager featuregate.Feature = "no-cert-manager"
+
+	// UseRancherDefaultRegistry if enabled Turtles will use the Rancher default registry for pulling provider images.
+	UseRancherDefaultRegistry featuregate.Feature = "use-rancher-default-registry"
 )
 
 func init() {
@@ -38,7 +41,8 @@ func init() {
 }
 
 var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AgentTLSMode:  {Default: true, PreRelease: featuregate.Beta},
-	UIPlugin:      {Default: false, PreRelease: featuregate.Alpha},
-	NoCertManager: {Default: false, PreRelease: featuregate.Alpha},
+	AgentTLSMode:              {Default: true, PreRelease: featuregate.Beta},
+	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
+	NoCertManager:             {Default: false, PreRelease: featuregate.Alpha},
+	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Alpha},
 }

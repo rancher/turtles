@@ -15,4 +15,4 @@ data:
       type:         "CoreProvider"
     images:
       cluster-api:
-        repository: "registry.k8s.io/cluster-api"
+        repository: "rancher"

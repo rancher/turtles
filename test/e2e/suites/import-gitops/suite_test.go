@@ -80,7 +80,9 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
+			UseLegacyCAPINamespace:  false,
+			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
 		})
 
 		data, err := json.Marshal(e2e.Setup{
@@ -107,7 +109,7 @@ var _ = SynchronizedAfterSuite(
 	},
 	func() {
 		By("Dumping artifacts from the bootstrap cluster")
-		testenv.DumpBootstrapCluster(ctx)
+		testenv.DumpBootstrapCluster(ctx, bootstrapClusterProxy.GetKubeconfigPath())
 
 		config := e2e.LoadE2EConfig()
 		// skipping error check since it is already done at the beginning of the test in e2e.ValidateE2EConfig()

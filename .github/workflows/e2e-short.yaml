@@ -20,11 +20,11 @@ jobs:
     runs-on: runs-on,runner=4cpu-linux-x64,run-id=${{ github.run_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.0.0
+        uses: actions/setup-go@v6.1.0
         with:
           go-version-file: go.mod
       - name: Display kind version

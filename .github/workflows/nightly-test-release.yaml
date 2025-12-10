@@ -18,7 +18,7 @@ jobs:
         branch: [ main, release-0.23]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.1
         with:
           ref: ${{ matrix.branch }}
           fetch-depth: 0
@@ -28,7 +28,7 @@ jobs:
         run: |
           git tag ${{ env.RELEASE_TAG }}
       - name: setupGo
-        uses: actions/setup-go@v6.0.0
+        uses: actions/setup-go@v6.1.0
         with:
           go-version-file: go.mod
       - name: Test release

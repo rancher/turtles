@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	"github.com/rancher/turtles/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +52,9 @@ var _ = Describe("ClusterConfig Tests", func() {
 
 		// Register the v1alpha1.ClusterctlConfig type
 		Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
+
+		// Register the management.Setting type
+		Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 
 		// Override the configDefault variable to provide custom data for the test
 		configDefault := []byte(`
@@ -110,6 +114,12 @@ data:
 							},
 						},
 					},
+				},
+				&managementv3.Setting{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "system-default-registry",
+					},
+					Value: "registry.example.com",
 				},
 			).
 			Build()

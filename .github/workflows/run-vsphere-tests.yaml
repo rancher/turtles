@@ -12,7 +12,6 @@ env:
   VSPHERE_DATACENTER: ${{ secrets.VSPHERE_DATACENTER }}
   VSPHERE_DATASTORE: ${{ secrets.VSPHERE_DATASTORE }}
   VSPHERE_FOLDER: ${{ secrets.VSPHERE_FOLDER }}
-  VSPHERE_TEMPLATE: ${{ secrets.VSPHERE_TEMPLATE }}
   VSPHERE_NETWORK: ${{ secrets.VSPHERE_NETWORK }}
   VSPHERE_RESOURCE_POOL: ${{ secrets.VSPHERE_RESOURCE_POOL }}
   VSPHERE_USERNAME: ${{ secrets.VSPHERE_USERNAME }}
@@ -34,11 +33,11 @@ jobs:
     runs-on: [self-hosted, vsphere]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.0.0
+        uses: actions/setup-go@v6.1.0
         with:
           go-version-file: go.mod
       - name: Display kind version

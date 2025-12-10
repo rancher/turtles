@@ -378,11 +378,14 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		cluster := rancherClusters.Items[0]
 		Expect(cluster.Name).To(ContainSubstring("c-"))
 
+		_, err := testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
+
 		conditions.Set(&cluster, conditions.TrueCondition(managementv3.ClusterConditionReady))
 		Expect(conditions.IsTrue(&cluster, managementv3.ClusterConditionReady)).To(BeTrue())
 		Expect(cl.Status().Update(ctx, &cluster)).To(Succeed())
 
-		_, err := r.Reconcile(ctx, reconcile.Request{
+		_, err = r.Reconcile(ctx, reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Namespace: capiCluster.Namespace,
 				Name:      capiCluster.Name,

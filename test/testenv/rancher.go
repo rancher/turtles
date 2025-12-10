@@ -89,6 +89,9 @@ type DeployRancherInput struct {
 	// RancherPatches are the patches for Rancher.
 	RancherPatches [][]byte
 
+	// AdditionalValues are additional helm values to pass to the Rancher chart.
+	AdditionalValues map[string]string
+
 	// RancherWaitInterval is the wait interval for Rancher.
 	RancherWaitInterval []interface{} `envDefault:"15m,30s"`
 
@@ -108,6 +111,9 @@ type DeployRancherInput struct {
 
 	// RancherInstallationTimeout is the timeout for Rancher installation.
 	RancherInstallationTimeout string `env:"RANCHER_INSTALLATION_TIMEOUT" envDefault:"5m"`
+
+	// RancherDebug enables the `debug` chart value
+	RancherDebug bool `env:"RANCHER_DEBUG"`
 }
 
 type deployRancherValuesFile struct {
@@ -236,6 +242,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"--set", "extraEnv[0].name=CATTLE_FEATURES",
 		"--set", "extraEnv[0].value=turtles=false",
 	)
+	if input.RancherDebug {
+		installFlags = append(installFlags, "--set", "debug=true")
+	}
 	if input.RancherVersion != "" {
 		installFlags = append(installFlags, "--version", input.RancherVersion)
 	}
@@ -266,6 +275,10 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	}
 	if input.RancherIngressClassName != "" {
 		values["ingress.ingressClassName"] = input.RancherIngressClassName
+	}
+	// Merge additional values
+	for k, v := range input.AdditionalValues {
+		values[k] = v
 	}
 
 	_, err = chart.Run(values)

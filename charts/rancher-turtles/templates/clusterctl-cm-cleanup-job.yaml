@@ -54,22 +54,23 @@ spec:
     spec:
       serviceAccountName: pre-upgrade-job
       containers:
-        - name: rancher-clusterctl-configmap-cleanup
-          image: {{ .Values.kubectlImage }}
-          args:
-          - delete
-          - configmap
-          - --namespace={{ .Values.namespace }}
-          - clusterctl-config
-          - --ignore-not-found=true
-          securityContext:
-            seccompProfile:
-              type: RuntimeDefault
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
+      - name: rancher-clusterctl-configmap-cleanup
+        image: {{ .Values.shellImage }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - configmap
+        - --namespace={{ .Values.namespace }}
+        - clusterctl-config
+        - --ignore-not-found=true
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
       restartPolicy: Never
 {{- end }}

@@ -47,9 +47,7 @@ env:
   AWS_SSH_KEY_NAME: ${{ secrets.AWS_SSH_KEY_NAME }}
   # GCP Credentials and Configuration
   GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-  GCP_REGION: ${{ secrets.GCP_REGION }}
   GCP_NETWORK_NAME: ${{ secrets.GCP_NETWORK_NAME }}
-  GCP_IMAGE_ID: ${{ secrets.GCP_IMAGE_ID }}
   CAPG_ENCODED_CREDS: ${{ secrets.CAPG_ENCODED_CREDS }}
   # Azure Credentials
   AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -90,11 +88,11 @@ jobs:
 
           aws-iam-authenticator version
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.0.0
+        uses: actions/setup-go@v6.1.0
         with:
           go-version-file: go.mod
       - name: Display kind version
