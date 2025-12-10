@@ -31,7 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	"github.com/rancher/turtles/feature"
 )
 
 var config *corev1.ConfigMap
@@ -146,14 +148,58 @@ func ClusterConfig(ctx context.Context, c client.Client) (*ConfigRepository, err
 		}
 	}
 
+	if feature.Gates.Enabled(feature.UseRancherDefaultRegistry) {
+		log.Info("Turtles configured to use Rancher default registry for images")
+
+		setting := &managementv3.Setting{}
+		if err := c.Get(ctx, client.ObjectKey{Name: "system-default-registry"}, setting); err != nil {
+			log.Error(err, "Unable to get system-default-registry setting")
+			return nil, err
+		}
+
+		registry := setting.Value
+		if registry != "" {
+			log.Info("Rancher default registry has been set", "registry", registry)
+
+			if !strings.HasSuffix(registry, "/") {
+				registry += "/"
+			}
+
+			// Iterate through all images for the supported providers and override
+			// the repository to use Rancher's system default registry
+			for image, url := range clusterctlConfig.Images {
+				namespace := extractNamespace(url.Repository)
+
+				clusterctlConfig.Images[image] = ConfigImage{
+					Tag:        url.Tag,
+					Repository: registry + namespace,
+				}
+				log.Info("Overridden provider image to use Rancher default registry", "image", image,
+					"repository", clusterctlConfig.Images[image].Repository, "tag", url.Tag)
+			}
+		}
+	}
+
+	// Override images from ClusterctlConfig
 	for _, image := range config.Spec.Images {
 		clusterctlConfig.Images[image.Name] = ConfigImage{
 			Tag:        image.Tag,
 			Repository: image.Repository,
 		}
+
+		log.Info("Overridden provider image from ClusterctlConfig", "image", image.Name, "repository", image.Repository, "tag", image.Tag)
 	}
 
 	return clusterctlConfig, nil
+}
+
+func extractNamespace(imageURI string) string {
+	parts := strings.Split(imageURI, "/")
+	if len(parts) > 1 {
+		return strings.Join(parts[1:], "/")
+	}
+
+	return imageURI
 }
 
 // GetProviderVersion collects version of the collected provider overrides state.

@@ -39,6 +39,10 @@ features:
   no-cert-manager:
     # enabled: Turn on or off.
     enabled: false
+  # use-rancher-default-registry: Alpha feature to use Rancher's default registry for provider images.
+  use-rancher-default-registry:
+    # enabled: Turn on or off.
+    enabled: true
 # volumes: Volumes for controller pods.
 volumes:
   - name: clusterctl-config

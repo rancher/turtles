@@ -76,6 +76,7 @@ func (r *ClusterctlConfigReconciler) SetupWithManager(_ context.Context, mgr ctr
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlconfigs/status,verbs=get;list;watch;patch
 //+kubebuilder:rbac:groups=turtles-capi.cattle.io,resources=clusterctlconfigs/finalizers,verbs=get;list;watch;patch;update
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;patch
+//+kubebuilder:rbac:groups="management.cattle.io",resources=settings,verbs=get;list;watch
 
 // Reconcile reconciles the ClusterctlConfig object.
 func (r *ClusterctlConfigReconciler) Reconcile(ctx context.Context, _ reconcile.Request) (ctrl.Result, error) {
