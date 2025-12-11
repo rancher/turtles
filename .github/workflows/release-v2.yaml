@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read # to checkout code
+  contents: write # to create new releases
   id-token: write # to read vault secrets
 
 jobs:
