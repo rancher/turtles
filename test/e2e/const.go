@@ -122,9 +122,6 @@ var (
 
 	// CAPIProvider test data
 
-	//go:embed data/test-providers/namespace.yaml
-	CAPVProviderNamespace []byte
-
 	//go:embed data/test-providers/capv-provider-no-ver.yaml
 	CAPVProviderNoVersion []byte
 
@@ -136,6 +133,11 @@ var (
 
 	//go:embed data/test-providers/clusterctlconfig-updated.yaml
 	ClusterctlConfigUpdated []byte
+
+	//go:embed data/test-providers/dummy-vsphere-template.yaml
+	CAPVDummyMachineTemplate []byte
+
+	// Extra Environment
 
 	//go:embed data/gitea/ingress.yaml
 	GiteaIngress []byte
