@@ -26,12 +26,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/rancher/turtles/test/e2e"
+	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
 
@@ -74,19 +77,58 @@ var _ = SynchronizedBeforeSuite(
 			DefaultIngressClassPatch:  e2e.IngressClassPatch,
 		})
 
-		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+		By("Deploying Gitea for chart repository")
+		giteaResult := testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			ValuesFile:            e2e.GiteaValues,
+			CustomIngressConfig:   e2e.GiteaIngress,
+		})
+
+		By("Pushing Rancher charts to Gitea for Turtles installation")
+		chartsResult := testenv.PushRancherChartsToGitea(ctx, testenv.PushRancherChartsToGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			GiteaServerAddress:    giteaResult.GitAddress,
+			GiteaRepoName:         "charts",
+			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
+		})
+
+		By("Installing Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
+		rancherHookResult := testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
+			ChartRepoBranch:       chartsResult.Branch,
+			ChartVersion:          chartsResult.ChartVersion,
+			TurtlesImageRepo:      "ghcr.io/rancher/turtles-e2e",
+			TurtlesImageTag:       "v0.0.1",
+			RancherWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
-		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		})
+		By("Waiting for Rancher to be ready")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "rancher",
+				Namespace: e2e.RancherNamespace,
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...)
+
+		By("Waiting for Turtles controller to be installed by system chart controller")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "rancher-turtles-controller-manager",
+				Namespace: e2e.NewRancherTurtlesNamespace,
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+
+		By("Applying test ClusterctlConfig")
+		Expect(framework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
 
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			UseLegacyCAPINamespace:  false,
-			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
+			RancherTurtlesNamespace: e2e.NewRancherTurtlesNamespace,
 		})
 
 		data, err := json.Marshal(e2e.Setup{
@@ -122,10 +164,6 @@ var _ = SynchronizedAfterSuite(
 			// add a log line about skipping charts uninstallation and cluster cleanup
 			return
 		}
-
-		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-		})
 
 		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 			SetupTestClusterResult: *setupClusterResult,
