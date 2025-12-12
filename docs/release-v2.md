@@ -97,7 +97,7 @@ This part of the release is also automated via a GitHub Actions workflow, that n
 - Use workflow from: Branch: main
   This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.25`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
 - Submit PR against the following rancher/rancher branch (e.g. release/v2.12): release/v2.12
-  This must be set to the `rancher/rancher` branch that needs to be updated, with the new Turtles release. `release/v2.12` is used for Rancher 2.12.x, `release/v2.13` (which is not yet present) will be used for Rancher 2.13.x and so on.
+  This must be set to the `rancher/rancher` branch that needs to be updated, with the new Turtles release. `release/v2.12` is used for Rancher 2.12.x, `release/v2.13` is used for Rancher 2.13.x and so on.
 - Previous Turtles version (e.g. v0.23.0-rc.0)
   This is self explanatory, the value must be set to the previous Turtles version, for example `v0.25.1-rc.0`.
 - New Turtles version (e.g. v0.23.0)
