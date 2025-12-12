@@ -115,6 +115,9 @@ type UpgradeInstallRancherWithGiteaInput struct {
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
 
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
+
 	// HelmBinaryPath is the path to the Helm binary.
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
 
@@ -160,7 +163,7 @@ type UpgradeInstallRancherWithGiteaInput struct {
 
 // UpgradeInstallRancherWithGitea upgrades Rancher to a new version and configures it with Gitea chart repository
 // environment variables to enable the system chart controller.
-func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRancherWithGiteaInput) {
+func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRancherWithGiteaInput) PreRancherInstallHookResult {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for UpgradeInstallRancherWithGitea")
@@ -208,8 +211,7 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 	input.RancherPatches = append(input.RancherPatches, rancherHookResult.ConfigPatches...)
 
 	// Run helm upgrade with environment variables for system chart controller
-	upgradeCmd := exec.Command(
-		input.HelmBinaryPath,
+	args := []string{
 		"upgrade", "rancher",
 		fmt.Sprintf("%s/rancher", input.RancherChartRepoName),
 		"--install",
@@ -225,7 +227,9 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--set", "extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION",
 		"--set", fmt.Sprintf("extraEnv[2].value=%s", input.ChartVersion),
 		"--wait",
-	)
+	}
+
+	upgradeCmd := exec.Command(input.HelmBinaryPath, args...)
 	upgradeCmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", input.BootstrapClusterProxy.GetKubeconfigPath()))
 
 	output, err := upgradeCmd.CombinedOutput()
@@ -244,13 +248,21 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 
 	// Optionally configure image overrides via rancher-config ConfigMap for e2e tests with preloaded images
 	if input.TurtlesImageRepo != "" && input.TurtlesImageTag != "" {
+		patch := fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag)
+
+		// regcred is needed on EKS to pull the e2e test image.
+		// See: framework.CreateDockerRegistrySecret
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentEKS {
+			patch = fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\nimagePullSecrets:\n- regcred\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag)
+		}
+
 		By("Patching rancher-config ConfigMap to override Turtles image")
 		patchCmd := exec.Command(
 			"kubectl",
 			"patch", "configmap", "rancher-config",
 			"-n", e2e.RancherNamespace,
 			"--type", "merge",
-			"--patch", fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag),
+			"--patch", patch,
 		)
 		patchCmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", input.BootstrapClusterProxy.GetKubeconfigPath()))
 		patchOutput, patchErr := patchCmd.CombinedOutput()
@@ -267,6 +279,8 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 			},
 		})).To(Succeed())
 	}
+
+	return rancherHookResult
 }
 
 // PushRancherChartsToGiteaInput represents the input parameters for building and pushing Rancher charts to Gitea.
