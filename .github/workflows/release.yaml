@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # to create new releases
+  contents: write # to create releases
   id-token: write # to read vault secrets
 
 jobs:
@@ -141,7 +141,7 @@ jobs:
             "${URL}-linux-amd64" \
             "${URL}-linux-arm64"
           echo "Pushed multi-platform image: ${URL}"
-          
+
           # Extract the multi-platform image digest for signing
           docker pull ${URL}
           IMAGE_DIGEST=$( docker inspect --format='{{index .RepoDigests 0}}' ${URL} | sed 's/.*@//' )
