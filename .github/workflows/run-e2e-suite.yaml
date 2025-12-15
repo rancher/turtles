@@ -109,7 +109,7 @@ jobs:
         run: make test-e2e
       - name: Collect run artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: artifacts_${{ inputs.artifact_name }}
           path: _artifacts
