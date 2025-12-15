@@ -55,18 +55,22 @@ data:
     # Image overrides
     images:
       cluster-api:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
+      control-plane-kubeadm:
+        repository: "registry.rancher.com/rancher"
+      bootstrap-kubeadm:
+        repository: "registry.rancher.com/rancher"
       control-plane-rke2:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
       bootstrap-rke2:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
       infrastructure-aws:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
       infrastructure-azure:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
       infrastructure-gcp:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
       infrastructure-vsphere:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
       addon-rancher-fleet:
-        repository: "registry.suse.com/rancher"
+        repository: "registry.rancher.com/rancher"
