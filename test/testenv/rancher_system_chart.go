@@ -233,6 +233,10 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--wait",
 	}
 
+	if rancherHookResult.IngressClassName != "" {
+		args = append(args, "--set", fmt.Sprintf("ingress.ingressClassName=%s", rancherHookResult.IngressClassName))
+	}
+
 	upgradeCmd := exec.Command(input.HelmBinaryPath, args...)
 	upgradeCmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", input.BootstrapClusterProxy.GetKubeconfigPath()))
 
