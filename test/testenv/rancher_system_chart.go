@@ -130,6 +130,9 @@ type UpgradeInstallRancherWithGiteaInput struct {
 	// RancherHostname is the hostname to be used by Rancher. This depends on the result of PreRancherInstallHook and it's based on MANAGEMENT_CLUSTER_ENVIRONMENT.
 	RancherHostname string `env:"RANCHER_HOSTNAME"`
 
+	// RancherReplicas is the number of replicas for Rancher.
+	RancherReplicas int `env:"RANCHER_REPLICAS" envDefault:"1"`
+
 	// RancherIngressClassName is the class name of the Ingress used by Rancher.
 	RancherIngressClassName string
 
@@ -220,6 +223,7 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--version", input.RancherVersion,
 		"--reuse-values",
 		"--set", fmt.Sprintf("hostname=%s", rancherHookResult.Hostname),
+		"--set", fmt.Sprintf("replicas=%v", input.RancherReplicas),
 		"--set", "extraEnv[0].name=CATTLE_CHART_DEFAULT_URL",
 		"--set", fmt.Sprintf("extraEnv[0].value=%s", input.ChartRepoURL),
 		"--set", "extraEnv[1].name=CATTLE_CHART_DEFAULT_BRANCH",
