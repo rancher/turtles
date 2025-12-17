@@ -13,6 +13,7 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 - [Write release description for non-developers](#write-release-description-for-non-developers)
 - [Update `rancher/charts` repository](#update-ranchercharts-repository)
 - [Update `rancher/rancher` repository](#update-rancherrancher-repository)
+- [Release providers chart](#release-providers-chart)
 - [Rancher Turtles Community Documentation](#rancher-turtles-community-documentation) (required only when cutting minor/major versions)
 - [Create a JIRA ticket for syncing Turtles Community Docs with Product Docs](#create-a-jira-ticket-for-syncing-turtles-community-docs-with-product-docs) (required only when cutting minor/major versions)
 
@@ -106,6 +107,19 @@ This part of the release is also automated via a GitHub Actions workflow, that n
   This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`. 
 
 Once this workflow has finished, a new PR should have been created in the `rancher/rancher` repository that updates the selected branch with the new Turtles version. You need to review and merge this PR. When this PR gets merged, you will have completed the process of releasing a new version of Turtles and including it in an upcoming version of Rancher.
+
+### Release providers chart
+
+The providers chart should also be released whenever there is a new version of Turtles. To release the providers chart:
+
+1. Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release. The version should match the Turtles version.
+
+2. Invoke the 'Manual Trigger for Auto Bump' CI workflow from the Prime charts repository and pass the following parameters:
+- Use workflow from: Branch: dev-v2.13
+- Chart name: rancher-turtles-providers
+- Version override: auto
+
+Once this workflow finishes, a new PR should have been created in the Prime charts repository that updates the selected branch with the new version of the chart. You need to review and merge this PR.
 
 ### Rancher Turtles Community Documentation
 
