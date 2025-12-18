@@ -115,7 +115,7 @@ The providers chart should also be released whenever there is a new version of T
 1. Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release. The version should match the Turtles version.
 
 2. Invoke the 'Manual Trigger for Auto Bump' CI workflow from the Prime charts repository and pass the following parameters:
-- Use workflow from: Branch: dev-v2.13
+- Use workflow from: Branch: dev-v2.13 (replace `v2.13` with the desired Rancher minor version)
 - Chart name: rancher-turtles-providers
 - Version override: auto
 
