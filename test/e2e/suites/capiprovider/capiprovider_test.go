@@ -29,7 +29,9 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -226,6 +228,16 @@ var _ = Describe("no-cert-manager feature verification", Ordered, Label(e2e.Shor
 			return true
 		}, e2e.LoadE2EConfig().GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
 			Should(BeTrue(), "WranglerManagedCertificates condition must be True")
+	})
+
+	It("Should wait for Deployment to be available", func() {
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      capvDeploymentName,
+				Namespace: capvNamespace,
+			}},
+		}, e2e.LoadE2EConfig().GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 	})
 
 	It("Should apply dummy resource that uses webhooks", func() {

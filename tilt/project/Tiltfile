@@ -149,7 +149,7 @@ def update_manager(yaml, containerName, debug, env, name, project):
                         debugArgs.append(arg)
                     if debug_verbose:
                         debugArgs.append("--v=5")
-                    debugArgs.append("--feature-gates=agent-tls-mode=true,no-cert-manager=false,use-rancher-default-registry=true")
+                    debugArgs.append("--feature-gates=agent-tls-mode=true,no-cert-manager=true,use-rancher-default-registry=true")
                     c["command"] = cmd
                     print(cmd)
                     if len(debugArgs) == 0:
