@@ -53,7 +53,7 @@ jobs:
           ref: ${{ inputs.tag }}
       - name: Build the image
         id: image
-        uses: ./.github/workflows/release_build
+        uses: ./.github/workflows/legacy_release_build
         with:
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
           org: ${{ vars[inputs.org] }}
@@ -76,11 +76,11 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.tag }}
       - name: Sign image with cosign
-        uses: ./.github/workflows/release_sign
+        uses: ./.github/workflows/legacy_release_sign
         with:
           image: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}/${{ vars[inputs.org] }}/${{ vars[inputs.image] }}
           digest: ${{ needs.build.outputs.digest }}
-          identity: https://github.com/${{ vars[inputs.org] }}/turtles/.github/workflows/release.yml@${{ github.ref }}
+          identity: https://github.com/${{ vars[inputs.org] }}/turtles/.github/workflows/legacy-release.yml@${{ github.ref }}
           oids-issuer: https://token.actions.githubusercontent.com
           registry: ${{ inputs.secret_registry && secrets[inputs.registry] || inputs.registry }}
           username: ${{ inputs.secret_registry && secrets[inputs.username] || inputs.username }}

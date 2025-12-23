@@ -1,5 +1,5 @@
 
-name: release
+name: Legacy Release <v0.25.x
 
 on:
   workflow_dispatch:
@@ -36,7 +36,7 @@ jobs:
           password: REGISTRY_PASSWORD
           secret_registry: true
     name: Release
-    uses: ./.github/workflows/release.yml
+    uses: ./.github/workflows/legacy-release.yml
     with:
       password: ${{ matrix.password }}
       username: ${{ matrix.username }}
