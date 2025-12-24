@@ -568,6 +568,13 @@ func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHo
 			IngressClassName: input.RancherIngressClassName,
 			ConfigPatches:    [][]byte{e2e.RancherServicePatch, e2e.IngressConfig, e2e.SystemStoreSettingPatch},
 		}
+
+	case e2e.ManagementClusterEnvironmentInternalKind:
+		By("Using RANCHER_HOSTNAME for internal kind")
+		return PreRancherInstallHookResult{
+			Hostname: input.RancherHostname,
+		}
+
 	default:
 		Fail(fmt.Sprintf("Unknown MANAGEMENT_CLUSTER_ENVIRONMENT: %s", input.EnvironmentType))
 		return PreRancherInstallHookResult{}
