@@ -210,6 +210,15 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 	rancherClient = cmp.Or(rancherClient, mgr.GetClient())
 
+	// Create uncached client for the local cluster (where CAPI clusters exist).
+	// Important: In out-of-cluster mode (--rancher-kubeconfig flag), we need two distinct clients:
+	//   1. RancherClient: points to remote Rancher Management Server (from --rancher-kubeconfig)
+	//   2. UncachedClient: points to local cluster where Turtles is running (from mgr.GetConfig())
+	//
+	// The UncachedClient is used by shouldAutoImportUncached() to verify CAPI cluster existence
+	// on the local cluster before creating the corresponding v3 cluster on the remote RMS.
+	// Using the wrong client here would query the RMS for CAPI clusters, causing 404 errors
+	// and preventing cluster import. See ADR-0004 and issue #1959 for details.
 	options := client.Options{
 		Scheme: mgr.GetClient().Scheme(),
 		Cache: &client.CacheOptions{
@@ -219,20 +228,10 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		},
 	}
 
-	uncachedClient, err := setupRancherClient(options)
+	uncachedClient, err := client.New(mgr.GetConfig(), options)
 	if err != nil {
-		setupLog.Error(err, "failed to create uncached rancher client")
+		setupLog.Error(err, "failed to create uncached client for local cluster")
 		os.Exit(1)
-	}
-
-	if uncachedClient == nil {
-		cl, err := client.New(mgr.GetConfig(), options)
-		if err != nil {
-			setupLog.Error(err, "failed to create uncached rancher client (same cluster)")
-			os.Exit(1)
-		}
-
-		uncachedClient = cl
 	}
 
 	if err := (&controllers.CAPIImportManagementV3Reconciler{
