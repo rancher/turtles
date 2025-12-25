@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
-var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.ShortTestLabel), func() {
+var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.FullTestLabel), func() {
 	var turtlesHelmApp, capiHelmApp turtlesframework.GetHelmAppInput
 	const (
 		oldCAPINamespace = "cattle-provisioning-capi-system"
