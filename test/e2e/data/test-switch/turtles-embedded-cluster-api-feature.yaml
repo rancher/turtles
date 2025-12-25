@@ -3,11 +3,11 @@ kind: Feature
 metadata:
   name: turtles
 spec:
-  value: true
+  value: ${ENABLE_TURTLES_FEATURE}
 ---
 apiVersion: management.cattle.io/v3
 kind: Feature
 metadata:
   name: embedded-cluster-api
 spec:
-  value: false
+  value: ${ENABLE_EMBEDDED_CAPI_FEATURE}

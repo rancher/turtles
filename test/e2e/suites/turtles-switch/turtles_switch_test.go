@@ -2,7 +2,7 @@
 // +build e2e
 
 /*
-Copyright © 2023 - 2024 SUSE LLC
+Copyright © 2023 - 2025 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ package turtles_switch
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher/turtles/test/e2e"
@@ -60,9 +62,8 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 		}
 	})
 
-	It("Should have Turtles as the source of truth", func() {
+	It("should use Turtles as the source of truth", func() {
 		By("turtles helm app is installed", func() {
-			// TODO: ensure this is active - condition is not available for helm app
 			app, err := turtlesframework.GetHelmApp(ctx, turtlesHelmApp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(app).ToNot(BeNil())
@@ -128,7 +129,18 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 
 	It("Disabling turtles feature should work with zero-downtime requirement", func() {
 		By("Enable embedded-cluster-api feature by disabling turtles", func() {
-			Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, e2e.EnableEmbeddedCAPIFeature)).To(Succeed(), "Failed enable embedded-cluster-api feature")
+			enableEmbeddedCAPIFeature, err := envsubst.Eval(string(e2e.TurtlesEmbeddedCAPIFeature), func(s string) string {
+				switch s {
+				case "ENABLE_TURTLES_FEATURE":
+					return "false"
+				case "ENABLE_EMBEDDED_CAPI_FEATURE":
+					return "true"
+				default:
+					return os.Getenv(s)
+				}
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, []byte(enableEmbeddedCAPIFeature))).To(Succeed(), "Failed to enable embedded-cluster-api feature")
 		})
 
 		By("Ensure cluster-api helm app is installed", func() {
@@ -170,7 +182,18 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 
 	It("Re-enabling turtles feature should work with zero-downtime requirement", func() {
 		By("Disable embedded-cluster-api feature", func() {
-			Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, e2e.EnableTurtlesFeature)).To(Succeed(), "Failed to enable turtles feature")
+			enableTurtlesFeature, err := envsubst.Eval(string(e2e.TurtlesEmbeddedCAPIFeature), func(s string) string {
+				switch s {
+				case "ENABLE_TURTLES_FEATURE":
+					return "true"
+				case "ENABLE_EMBEDDED_CAPI_FEATURE":
+					return "false"
+				default:
+					return os.Getenv(s)
+				}
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(turtlesframework.Apply(ctx, bootstrapClusterProxy, []byte(enableTurtlesFeature))).To(Succeed(), "Failed to enable turtles feature")
 		})
 
 		By("rancher-turtles is installed", func() {
