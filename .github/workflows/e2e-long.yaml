@@ -34,8 +34,17 @@ jobs:
       artifact_name: v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
+  e2e_turtles_switch:
+    needs: publish_e2e_image
+    uses: ./.github/workflows/run-e2e-suite.yaml
+    with:
+      test_suite: test/e2e/suites/turtles-switch
+      test_name: Switch between turtles and embedded-cluster-api feature
+      artifact_name: turtles_switch
+      MANAGEMENT_CLUSTER_ENVIRONMENT: isolated-kind
+    secrets: inherit
   e2e_cleanup:
     if: always()
-    needs: [e2e_import_gitops, e2e_v2prov]
+    needs: [e2e_import_gitops, e2e_v2prov, e2e_turtles_switch]
     uses: ./.github/workflows/e2e-cleanup.yaml
     secrets: inherit
