@@ -34,8 +34,8 @@ import (
 
 // CAPICleanupReconciler is a reconciler for cleanup of managementv3 clusters.
 type CAPICleanupReconciler struct {
-	RancherClient client.Client
-	Scheme        *runtime.Scheme
+	Client client.Client
+	Scheme *runtime.Scheme
 }
 
 // SetupWithManager sets up reconciler with manager.
@@ -48,7 +48,7 @@ func (r *CAPICleanupReconciler) SetupWithManager(_ context.Context, mgr ctrl.Man
 			_, exist := object.GetLabels()[ownedLabelName]
 			return exist
 		})).
-		Complete(reconcile.AsReconciler(r.RancherClient, r)); err != nil {
+		Complete(reconcile.AsReconciler(r.Client, r)); err != nil {
 		return fmt.Errorf("creating new downgrade controller: %w", err)
 	}
 
@@ -66,7 +66,7 @@ func (r *CAPICleanupReconciler) Reconcile(ctx context.Context, cluster *manageme
 		return
 	}
 
-	if err = r.RancherClient.Patch(ctx, cluster, patchBase); err != nil {
+	if err = r.Client.Patch(ctx, cluster, patchBase); err != nil {
 		log.Error(err, "Unable to remove turtles finalizer from cluster"+cluster.GetName())
 	}
 
