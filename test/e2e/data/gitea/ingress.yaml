@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: gitea-http
   namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "1000m"
 spec:
   ingressClassName: ${GITEA_INGRESS_CLASS_NAME}
   rules:
