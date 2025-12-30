@@ -71,9 +71,6 @@ type DeployRancherInput struct {
 	// RancherPassword is the password for Rancher.
 	RancherPassword string `env:"RANCHER_PASSWORD"`
 
-	// RancherFeatures are the features for Rancher.
-	RancherFeatures string
-
 	// RancherPatches are the patches for Rancher.
 	RancherPatches [][]byte
 
@@ -122,7 +119,7 @@ type deployRancherIngressValuesFile struct {
 // If RancherServicePatch is provided, the function updates the Rancher service.
 // The function waits for the Rancher webhook rollout and the fleet controller rollout.
 //
-// Deprecated: Use UpgradeInstallRancherWithGitea instead to bootstrap Rancher using a custom Turtles system chart.
+// Note: Use UpgradeInstallRancherWithGitea instead to bootstrap Rancher using a custom Turtles system chart.
 func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInstallHookResult {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
@@ -187,8 +184,6 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"--namespace", input.RancherNamespace,
 		"--create-namespace",
 		"--values", input.HelmExtraValuesPath,
-		"--set", "extraEnv[0].name=CATTLE_FEATURES",
-		"--set", "extraEnv[0].value=turtles=false",
 	)
 	if input.RancherDebug {
 		installFlags = append(installFlags, "--set", "debug=true")
@@ -215,9 +210,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"global.cattle.psp.enabled": "false",
 		"replicas":                  "1",
 	}
-	if input.RancherFeatures != "" {
-		values["features"] = input.RancherFeatures
-	}
+
 	if input.RancherImageTag != "" {
 		values["rancherImageTag"] = input.RancherImageTag
 	}
