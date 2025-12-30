@@ -61,7 +61,6 @@ const (
 type CAPIImportManagementV3Reconciler struct {
 	Client             client.Client
 	UncachedClient     client.Client
-	RancherClient      client.Client
 	recorder           record.EventRecorder
 	WatchFilterValue   string
 	Scheme             *runtime.Scheme
@@ -219,7 +218,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		client.MatchingLabels(labels),
 	}
 
-	if err := r.RancherClient.List(ctx, rancherClusterList, selectors...); client.IgnoreNotFound(err) != nil {
+	if err := r.Client.List(ctx, rancherClusterList, selectors...); client.IgnoreNotFound(err) != nil {
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -314,7 +313,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 			return ctrl.Result{}, err
 		}
 
-		if err := r.RancherClient.Create(ctx, rancherCluster); err != nil {
+		if err := r.Client.Create(ctx, rancherCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
@@ -356,7 +355,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 	}
 
 	// get the registration manifest
-	manifest, err := getClusterRegistrationManifest(ctx, rancherCluster.Name, rancherCluster.Name, r.RancherClient, caCert, r.InsecureSkipVerify)
+	manifest, err := getClusterRegistrationManifest(ctx, rancherCluster.Name, rancherCluster.Name, r.Client, caCert, r.InsecureSkipVerify)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -524,7 +523,7 @@ func (r *CAPIImportManagementV3Reconciler) deleteDependentRancherCluster(ctx con
 		},
 	}
 
-	return client.IgnoreNotFound(r.RancherClient.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...))
+	return client.IgnoreNotFound(r.Client.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...))
 }
 
 // verifyV1ClusterMigration verifies if a v1 cluster has been successfully migrated.
@@ -540,7 +539,7 @@ func (r *CAPIImportManagementV3Reconciler) verifyV1ClusterMigration(ctx context.
 		},
 	}
 
-	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(v1rancherCluster), v1rancherCluster)
+	err := r.Client.Get(ctx, client.ObjectKeyFromObject(v1rancherCluster), v1rancherCluster)
 	if client.IgnoreNotFound(err) != nil {
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(v1rancherCluster)))
 		return false, err
