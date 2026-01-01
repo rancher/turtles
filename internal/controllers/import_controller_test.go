@@ -629,4 +629,31 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			Expect(rancherClusters.Items).To(HaveLen(0))
 		}).Should(Succeed())
 	})
+
+	It("should have custom description on the imported rancher cluster", func() {
+		const description = "This cluster has a custom description"
+		capiCluster.Annotations = map[string]string{
+			turtlesannotations.ClusterDescriptionAnnotation: description,
+		}
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		capiCluster.Status.ControlPlaneReady = true
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			res, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res.Requeue).To(BeTrue())
+		}).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+			g.Expect(rancherClusters.Items[0].Spec.Description).To(Equal(description))
+		}).Should(Succeed())
+	})
 })
