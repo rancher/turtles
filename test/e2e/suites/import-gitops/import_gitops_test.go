@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
-var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = FDescribe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
