@@ -86,18 +86,6 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
-  capiuirelease:
-    kind: githubrelease
-    name: Get the latest CAPI UI extension release
-    spec:
-      owner: "rancher"
-      repository: "capi-ui-extension"
-      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
-      typeFilter:
-        latest: true
-    transformers:
-    - trimprefix: "capi-"
 
 # update config.yaml accordingly
 targets:
@@ -200,14 +188,6 @@ targets:
       replacepattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
     scmid: turtles
     sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
-  bumpcapiui:
-    name: bump CAPI UI version
-    kind: yaml
-    spec:
-      file: "charts/rancher-turtles/values.yaml"
-      key: "$.turtlesUI.version"
-    scmid: turtles
-    sourceid: capiuirelease # Will be ignored as `replacepattern` is specified
 
 # create a pr with the changes
 actions:

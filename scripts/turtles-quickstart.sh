@@ -328,7 +328,6 @@ helm repo add turtles https://rancher.github.io/turtles
 helm repo update
 helm install rancher-turtles turtles/rancher-turtles --version ${RANCHER_TURTLES_VERSION} \
     -n cattle-turtles-system \
-    --set turtlesUI.enabled=true \
     --dependency-update \
     --create-namespace --wait \
     --timeout 180s
