@@ -28,9 +28,6 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "rancherInstalled": {
-      "type": "boolean"
-    },
     "shellImage": {
       "type": "string"
     },

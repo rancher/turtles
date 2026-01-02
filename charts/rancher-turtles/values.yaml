@@ -18,8 +18,6 @@ namespace: cattle-turtles-system
 managerArguments: []
 # imagePullSecrets: Secrets for private registries.
 imagePullSecrets: []
-# rancherInstalled: True if Rancher already installed is in the cluster, this is the preferred installation way.
-rancherInstalled: true
 # shellImage: Image for shell tasks.
 shellImage: rancher/kuberlr-kubectl:v5.0.0
 # features: Optional and experimental features.
