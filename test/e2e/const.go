@@ -144,6 +144,9 @@ var (
 
 	//go:embed data/gitea/values.yaml
 	GiteaValues []byte
+
+	//go:embed data/test-switch/turtles-embedded-cluster-api-feature.yaml
+	TurtlesEmbeddedCAPIFeature []byte
 )
 
 const (
