@@ -62,6 +62,7 @@ func CreateEKSBootstrapClusterAndValidateImages(ctx context.Context, input Creat
 		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 			Command: "docker",
 			Args: []string{
+				"manifest",
 				"inspect",
 				image.Name,
 			},

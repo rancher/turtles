@@ -29,7 +29,7 @@ on:
 
 permissions:
   contents: read
-  packages: read
+  packages: write
 
 env:
   # GitHub Credentials
@@ -59,7 +59,7 @@ env:
   SKIP_RESOURCE_CLEANUP: ${{ inputs.skip_resource_cleanup}}
   SKIP_DELETION_TEST: ${{ inputs.skip_deletion_test }}
   # Ginkgo Test Configurations
-  GINKGO_LABEL_FILTER: full 
+  GINKGO_LABEL_FILTER: full
   GINKGO_TESTS: ${{ github.workspace }}/${{ inputs.test_suite }}
   GINKGO_NODES: 7
   # Version Tag

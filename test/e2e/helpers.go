@@ -137,7 +137,6 @@ func CreateClusterctlLocalRepository(ctx context.Context, input CreateClusterctl
 func ValidateE2EConfig(config *clusterctl.E2EConfig) {
 	Expect(os.MkdirAll(config.GetVariableOrEmpty(ArtifactsFolderVar), 0o755)).To(Succeed(), "Invalid test suite argument. Can't create artifacts folder %q", config.GetVariableOrEmpty(ArtifactsFolderVar))
 	Expect(config.GetVariableOrEmpty(HelmBinaryPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. HELM_BINARY_PATH should be an existing file.")
-	Expect(config.GetVariableOrEmpty(TurtlesPathVar)).To(BeAnExistingFile(), "Invalid test suite argument. TURTLES_PATH should be an existing file.")
 
 	_, err := strconv.ParseBool(config.GetVariableOrEmpty(UseExistingClusterVar))
 	Expect(err).ToNot(HaveOccurred(), "Invalid test suite argument. Can't parse USE_EXISTING_CLUSTER %q", config.GetVariableOrEmpty(UseExistingClusterVar))
