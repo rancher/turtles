@@ -360,11 +360,10 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 			By("Removing 'imported' annotation from CAPI cluster")
 			Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			annotations := capiCluster.GetAnnotations()
-			delete(annotations, "imported")
-			capiCluster.SetAnnotations(annotations)
-			err = input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
-			Expect(err).NotTo(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
+			patch := []byte(`[{"op": "remove", "path": "/metadata/annotations/imported"}]`)
+			Eventually(func() error {
+				return input.BootstrapClusterProxy.GetClient().Patch(ctx, capiCluster, client.RawPatch(types.JSONPatchType, patch))
+			}).ShouldNot(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
 
 			By("Validating annotation is removed from CAPI cluster")
 			Eventually(func() bool {
