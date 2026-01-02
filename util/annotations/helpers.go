@@ -37,7 +37,7 @@ const (
 	UpstreamSystemAgentAnnotation = "cluster-api.cattle.io/upstream-system-agent"
 	// LocalSystemAgentAnnotation is a cluster annotation, allowing to specify agent binary location from the node in the airgapped environment.
 	LocalSystemAgentAnnotation = "cluster-api.cattle.io/local-system-agent"
-	// ClusterDescriptionAnnotation is a cluster annotation, allowing user to provide a custom cluster description
+	// ClusterDescriptionAnnotation is a cluster annotation, allowing user to provide a custom cluster description.
 	ClusterDescriptionAnnotation = "cluster-api.cattle.io/cluster-description"
 )
 

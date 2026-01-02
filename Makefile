@@ -91,7 +91,7 @@ USE_EXISTING_CLUSTER ?= false
 GINKGO_NOCOLOR ?= false
 GINKGO_LABEL_FILTER ?= short
 TURTLES_PROVIDERS ?= ALL
-GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/import-gitops
+GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
 TURTLES_MIGRATION_SCRIPT_PATH ?= $(ROOT_DIR)/scripts/migrate-providers-ownership.sh
 
 MANAGEMENT_CLUSTER_ENVIRONMENT ?= eks
