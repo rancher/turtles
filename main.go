@@ -209,7 +209,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.CAPIImportManagementV3Reconciler{
+	if err := (&controllers.CAPIImportReconciler{
 		Client:             mgr.GetClient(),
 		Scheme:             mgr.GetScheme(),
 		UncachedClient:     uncachedClient,
