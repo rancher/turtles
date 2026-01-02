@@ -294,7 +294,13 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		},
 		Spec: managementv3.ClusterSpec{
 			DisplayName: capiCluster.Name,
-			Description: "CAPI cluster imported to Rancher",
+			Description: func() string {
+				annotation := capiCluster.Annotations[turtlesannotations.ClusterDescriptionAnnotation]
+				if annotation == "" {
+					return "CAPI cluster imported to Rancher"
+				}
+				return annotation
+			}(),
 		},
 	}
 
