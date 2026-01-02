@@ -3,17 +3,6 @@
   "title": "Helm Chart Values Schema",
   "type": "object",
   "properties": {
-    "turtlesUI": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
     "image": {
       "type": "object",
       "properties": {
