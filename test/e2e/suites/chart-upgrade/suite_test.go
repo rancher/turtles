@@ -22,6 +22,7 @@ package chart_upgrade
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -78,6 +79,13 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		e2eConfig := e2e.LoadE2EConfig()
+
+		// Must load a custom Turtles image with an updated version of CAPI for this test
+		e2eConfig.Images = append(e2eConfig.Images, clusterctl.ContainerImage{
+			Name:         fmt.Sprintf("%s:%s-capi", e2eConfig.Variables["TURTLES_IMAGE"], e2eConfig.Variables["TURTLES_VERSION"]),
+			LoadBehavior: clusterctl.LoadImageBehavior("tryLoad"),
+		})
+
 		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-chart-upgrade"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
