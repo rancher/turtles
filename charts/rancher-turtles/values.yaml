@@ -3,7 +3,7 @@ turtlesUI:
   # enabled: Turn UI on or off.
   enabled: false
   # version: UI version to use.
-  version: 0.8.2
+  version: 0.8.3
 
 # Rancher global parameters
 global:
