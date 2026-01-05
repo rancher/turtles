@@ -47,7 +47,7 @@ import (
 
 var _ = Describe("reconcile CAPI Cluster", func() {
 	var (
-		r                        *CAPIImportManagementV3Reconciler
+		r                        *CAPIImportReconciler
 		ns                       *corev1.Namespace
 		capiCluster              *clusterv1.Cluster
 		rancherClusters          *managementv3.ClusterList
@@ -75,7 +75,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			map[string]string{"${TEST_CASE_NAME}": "mgmtv3"},
 		)
 
-		r = &CAPIImportManagementV3Reconciler{
+		r = &CAPIImportReconciler{
 			Client:             cl,
 			UncachedClient:     cl,
 			remoteClientGetter: remote.NewClusterClient,
