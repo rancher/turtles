@@ -111,7 +111,8 @@ type DeployRancherTurtlesProvidersInput struct {
 	ProvidersChartRepoName string `env:"TURTLES_PROVIDERS_REPO_NAME" envDefault:"turtles"`
 
 	// Version is the chart version to install.
-	Version string
+	// Since rancher-turtles-providers version is aligned with rancher-turtles, it uses RANCHER_CHART_DEV_VERSION from environment or Makefile default.
+	Version string `env:"RANCHER_CHART_DEV_VERSION" envDefault:"108.0.0+up99.99.99"`
 
 	// AdditionalValues are additional Helm values to pass to the chart (for example to
 	// enable specific infrastructure providers).

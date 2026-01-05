@@ -21,12 +21,18 @@ RANCHER_CHART_DEV_VERSION=${RANCHER_CHART_DEV_VERSION}
 RANCHER_CHARTS_BASE_BRANCH=${RANCHER_CHARTS_BASE_BRANCH}
 CHART_RELEASE_DIR=${CHART_RELEASE_DIR}
 HELM=${HELM}
+# if CLEANUP is false:
+# changes are applied on top of the existing local copy of the Rancher Charts repository.
+CLEANUP=${CLEANUP:-true}
 
 # Cleanup
-rm -rf $RANCHER_CHARTS_REPO_DIR
-mkdir -p $RANCHER_CHARTS_REPO_DIR
-# Build and copy Turtles chart into Rancher Charts local repo
-git clone -b $RANCHER_CHARTS_BASE_BRANCH https://github.com/rancher/charts.git $RANCHER_CHARTS_REPO_DIR
+if [ "$CLEANUP" = "true" ]; then
+    rm -rf $RANCHER_CHARTS_REPO_DIR
+    mkdir -p $RANCHER_CHARTS_REPO_DIR
+    # Build and copy Turtles chart into Rancher Charts local repo
+    git clone -b $RANCHER_CHARTS_BASE_BRANCH https://github.com/rancher/charts.git $RANCHER_CHARTS_REPO_DIR
+fi
+
 mkdir -p $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION
 cp -r $CHART_RELEASE_DIR/* $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION
 # Populate Chart.yaml with correct version
