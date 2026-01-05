@@ -35,11 +35,6 @@ spec:
   manager:
 {{ toYaml (index .Values "providers" "bootstrapRKE2" "manager") | nindent 4 }}
 {{- end }}
-{{- if or (index .Values "providers" "bootstrapRKE2" "credentials") }}
-  credentials:
-    name: {{ index .Values "providers" "bootstrapRKE2" "credentials" "name" }}
-    namespace: {{ index .Values "providers" "bootstrapRKE2" "credentials" "namespace" }}
-{{- end }}
 {{- if or (index .Values "providers" "bootstrapRKE2" "configSecret") }}
   configSecret:
     name: {{ index .Values "providers" "bootstrapRKE2" "configSecret" "name" }}

@@ -22,10 +22,6 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
-  # credentials: Optional Secret reference containing Rancher credentials
-  # credentials:
-  #   name: ""
-  #   namespace: ""
   # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
   # configSecret:
   #   name: ""
@@ -56,10 +52,6 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
-  # credentials: Optional Secret reference containing Rancher credentials
-  # credentials:
-  #   name: ""
-  #   namespace: ""
   # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
   # configSecret:
   #   name: ""
@@ -90,10 +82,6 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
-  # credentials: Optional Secret reference containing Rancher credentials
-  # credentials:
-  #   name: ""
-  #   namespace: ""
   # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
   # configSecret:
   #   name: ""
@@ -124,10 +112,6 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
-  # credentials: Optional Secret reference containing Rancher credentials
-  # credentials:
-  #   name: ""
-  #   namespace: ""
   # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
   # configSecret:
   #   name: ""
@@ -158,10 +142,6 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
-  # credentials: Optional Secret reference containing Rancher credentials
-  # credentials:
-  #   name: ""
-  #   namespace: ""
   # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
   # configSecret:
   #   name: ""
@@ -260,10 +240,6 @@ providers:
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
-  # credentials: Optional Secret reference containing Rancher credentials
-  # credentials:
-  #   name: ""
-  #   namespace: ""
   # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
   # configSecret:
   #   name: ""
