@@ -8,7 +8,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
-	github.com/go-git/go-git/v5 v5.16.2
+	github.com/go-git/go-git/v5 v5.16.4
 	github.com/onsi/ginkgo/v2 v2.27.3
 	github.com/onsi/gomega v1.38.3
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
@@ -20,10 +20,10 @@ require (
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 	sigs.k8s.io/cluster-api v1.10.6
 	sigs.k8s.io/cluster-api-operator v0.23.1
-	sigs.k8s.io/cluster-api-operator/test v0.23.0
+	sigs.k8s.io/cluster-api-operator/test v0.23.1
 	sigs.k8s.io/cluster-api/test v1.10.6
 	sigs.k8s.io/controller-runtime v0.20.4
-	sigs.k8s.io/kind v0.29.0
+	sigs.k8s.io/kind v0.31.0
 )
 
 require (
