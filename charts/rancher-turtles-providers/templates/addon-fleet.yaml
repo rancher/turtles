@@ -92,11 +92,6 @@ spec:
   manager:
 {{ toYaml (index .Values "providers" "addonFleet" "manager") | nindent 4 }}
 {{- end }}
-{{- if or (index .Values "providers" "addonFleet" "credentials") }}
-  credentials:
-    name: {{ index .Values "providers" "addonFleet" "credentials" "name" }}
-    namespace: {{ index .Values "providers" "addonFleet" "credentials" "namespace" }}
-{{- end }}
 {{- if or (index .Values "providers" "addonFleet" "configSecret") }}
   configSecret:
     name: {{ index .Values "providers" "addonFleet" "configSecret" "name" }}

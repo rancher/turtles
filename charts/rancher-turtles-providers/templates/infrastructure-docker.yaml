@@ -35,11 +35,6 @@ spec:
   manager:
 {{ toYaml (index .Values "providers" "infrastructureDocker" "manager") | nindent 4 }}
 {{- end }}
-{{- if or (index .Values "providers" "infrastructureDocker" "credentials") }}
-  credentials:
-    name: {{ index .Values "providers" "infrastructureDocker" "credentials" "name" }}
-    namespace: {{ index .Values "providers" "infrastructureDocker" "credentials" "namespace" }}
-{{- end }}
 {{- if or (index .Values "providers" "infrastructureDocker" "configSecret") }}
   configSecret:
     name: {{ index .Values "providers" "infrastructureDocker" "configSecret" "name" }}

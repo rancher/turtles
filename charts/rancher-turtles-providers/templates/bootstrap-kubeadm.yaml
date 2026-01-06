@@ -35,11 +35,6 @@ spec:
   manager:
 {{ toYaml (index .Values "providers" "bootstrapKubeadm" "manager") | nindent 4 }}
 {{- end }}
-{{- if or (index .Values "providers" "bootstrapKubeadm" "credentials") }}
-  credentials:
-    name: {{ index .Values "providers" "bootstrapKubeadm" "credentials" "name" }}
-    namespace: {{ index .Values "providers" "bootstrapKubeadm" "credentials" "namespace" }}
-{{- end }}
 {{- if or (index .Values "providers" "bootstrapKubeadm" "configSecret") }}
   configSecret:
     name: {{ index .Values "providers" "bootstrapKubeadm" "configSecret" "name" }}
