@@ -51,7 +51,6 @@ const (
 	ownedLabelName            = "cluster-api.cattle.io/owned"
 	capiClusterOwner          = "cluster-api.cattle.io/capi-cluster-owner"
 	capiClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
-	v1ClusterMigrated         = "cluster-api.cattle.io/migrated"
 	fleetNamespaceMigrated    = "cluster-api.cattle.io/fleet-namespace-migrated"
 	fleetDisabledLabel        = "cluster-api.cattle.io/disable-fleet-auto-import"
 
