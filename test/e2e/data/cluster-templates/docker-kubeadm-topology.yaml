@@ -3,6 +3,8 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
+  annotations:
+    cluster-api.cattle.io/cluster-description: "This is a custom cluster description"
   labels:
     cni: calico
 spec:

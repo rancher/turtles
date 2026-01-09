@@ -6,6 +6,8 @@ CAPI_RELEASE_URL="${CAPI_RELEASE_URL:-https://github.com/rancher-sandbox/cluster
 CORE_CAPI_NAMESPACE="${CORE_CAPI_NAMESPACE:-cattle-capi-system}"
 OUTPUT_DIR="${OUTPUT_DIR:-/tmp}"
 OUTPUT_FILE="${OUTPUT_FILE:-core-provider-configmap.yaml}"
+CHART_DIR="${CHART_DIR:-./charts/rancher-turtles}"
+CHART_TEMPLATES_DIR="${CHART_DIR}/templates"
 MANAGED_BY_LABEL="managed-by.turtles.cattle.io"
 
 # parameters that must be substituted in CAPI manifest
@@ -43,4 +45,4 @@ sed -i 's/: capi-system/: cattle-capi-system/g' ${OUTPUT_DIR}/${OUTPUT_FILE}
 sed -i 's/.capi-system.svc/.cattle-capi-system.svc/g' ${OUTPUT_DIR}/${OUTPUT_FILE}
 
 # embed this in Turtles chart
-mv ${OUTPUT_DIR}/${OUTPUT_FILE} ./charts/rancher-turtles/templates/${OUTPUT_FILE}
+mv ${OUTPUT_DIR}/${OUTPUT_FILE} ${CHART_TEMPLATES_DIR}/${OUTPUT_FILE}

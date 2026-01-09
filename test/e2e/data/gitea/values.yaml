@@ -12,7 +12,8 @@ gitea:
       TYPE: level
 persistence:
   enabled: false
-  
+valkey-cluster:
+  enabled: false
 redis-cluster:
   enabled: false
 postgresql:

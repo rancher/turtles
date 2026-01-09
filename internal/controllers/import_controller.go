@@ -57,11 +57,10 @@ const (
 	missingLabelMsg = "missing label"
 )
 
-// CAPIImportManagementV3Reconciler represents a reconciler for importing CAPI clusters in Rancher.
-type CAPIImportManagementV3Reconciler struct {
+// CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
+type CAPIImportReconciler struct {
 	Client             client.Client
 	UncachedClient     client.Client
-	RancherClient      client.Client
 	recorder           record.EventRecorder
 	WatchFilterValue   string
 	Scheme             *runtime.Scheme
@@ -73,7 +72,7 @@ type CAPIImportManagementV3Reconciler struct {
 }
 
 // SetupWithManager sets up reconciler with manager.
-func (r *CAPIImportManagementV3Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := log.FromContext(ctx)
 
 	if r.remoteClientGetter == nil {
@@ -141,7 +140,7 @@ func (r *CAPIImportManagementV3Reconciler) SetupWithManager(ctx context.Context,
 //nolint:lll
 
 // Reconcile reconciles a CAPI cluster, creating a Rancher cluster if needed and applying the import manifests.
-func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling CAPI cluster")
 
@@ -198,7 +197,7 @@ func (r *CAPIImportManagementV3Reconciler) Reconcile(ctx context.Context, req ct
 	return result, nil
 }
 
-func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (res ctrl.Result, reterr error) {
+func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (res ctrl.Result, reterr error) {
 	log := log.FromContext(ctx)
 
 	migrated, err := r.verifyV1ClusterMigration(ctx, capiCluster)
@@ -219,7 +218,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 		client.MatchingLabels(labels),
 	}
 
-	if err := r.RancherClient.List(ctx, rancherClusterList, selectors...); client.IgnoreNotFound(err) != nil {
+	if err := r.Client.List(ctx, rancherClusterList, selectors...); client.IgnoreNotFound(err) != nil {
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -270,7 +269,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcile(ctx context.Context, capiCl
 	return res, reterr
 }
 
-func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, capiCluster *clusterv1.Cluster,
+func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster *clusterv1.Cluster,
 	rancherCluster *managementv3.Cluster,
 ) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -295,7 +294,13 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 		},
 		Spec: managementv3.ClusterSpec{
 			DisplayName: capiCluster.Name,
-			Description: "CAPI cluster imported to Rancher",
+			Description: func() string {
+				annotation := capiCluster.Annotations[turtlesannotations.ClusterDescriptionAnnotation]
+				if annotation == "" {
+					return "CAPI cluster imported to Rancher"
+				}
+				return annotation
+			}(),
 		},
 	}
 
@@ -314,7 +319,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 			return ctrl.Result{}, err
 		}
 
-		if err := r.RancherClient.Create(ctx, rancherCluster); err != nil {
+		if err := r.Client.Create(ctx, rancherCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
@@ -356,7 +361,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 	}
 
 	// get the registration manifest
-	manifest, err := getClusterRegistrationManifest(ctx, rancherCluster.Name, rancherCluster.Name, r.RancherClient, caCert, r.InsecureSkipVerify)
+	manifest, err := getClusterRegistrationManifest(ctx, rancherCluster.Name, rancherCluster.Name, r.Client, caCert, r.InsecureSkipVerify)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -389,7 +394,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileNormal(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-func (r *CAPIImportManagementV3Reconciler) shouldAutoImportUncached(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
+func (r *CAPIImportReconciler) shouldAutoImportUncached(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
 	log := log.FromContext(ctx)
 
 	if err := r.UncachedClient.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
@@ -407,7 +412,7 @@ func (r *CAPIImportManagementV3Reconciler) shouldAutoImportUncached(ctx context.
 	return true, nil
 }
 
-func (r *CAPIImportManagementV3Reconciler) rancherV3ClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
+func (r *CAPIImportReconciler) rancherV3ClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, cluster client.Object) []ctrl.Request {
@@ -448,7 +453,7 @@ func (r *CAPIImportManagementV3Reconciler) rancherV3ClusterToCapiCluster(ctx con
 	}
 }
 
-func (r *CAPIImportManagementV3Reconciler) rancherV1ClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
+func (r *CAPIImportReconciler) rancherV1ClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
 	log := log.FromContext(ctx)
 
 	return func(_ context.Context, cluster client.Object) []ctrl.Request {
@@ -485,7 +490,7 @@ func (r *CAPIImportManagementV3Reconciler) rancherV1ClusterToCapiCluster(ctx con
 	}
 }
 
-func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) error {
+func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling rancher cluster deletion")
 
@@ -512,7 +517,7 @@ func (r *CAPIImportManagementV3Reconciler) reconcileDelete(ctx context.Context, 
 	return nil
 }
 
-func (r *CAPIImportManagementV3Reconciler) deleteDependentRancherCluster(ctx context.Context, capiCluster *clusterv1.Cluster) error {
+func (r *CAPIImportReconciler) deleteDependentRancherCluster(ctx context.Context, capiCluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx)
 	log.Info("capi cluster is being deleted, deleting dependent rancher cluster")
 
@@ -524,13 +529,13 @@ func (r *CAPIImportManagementV3Reconciler) deleteDependentRancherCluster(ctx con
 		},
 	}
 
-	return client.IgnoreNotFound(r.RancherClient.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...))
+	return client.IgnoreNotFound(r.Client.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...))
 }
 
 // verifyV1ClusterMigration verifies if a v1 cluster has been successfully migrated.
 // It checks if the v1 cluster exists for a v3 cluster and if it has the "cluster-api.cattle.io/migrated" annotation.
 // If the cluster is not migrated yet, it returns false and requeues the reconciliation.
-func (r *CAPIImportManagementV3Reconciler) verifyV1ClusterMigration(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
+func (r *CAPIImportReconciler) verifyV1ClusterMigration(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
 	log := log.FromContext(ctx)
 
 	v1rancherCluster := &provisioningv1.Cluster{
@@ -540,7 +545,7 @@ func (r *CAPIImportManagementV3Reconciler) verifyV1ClusterMigration(ctx context.
 		},
 	}
 
-	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(v1rancherCluster), v1rancherCluster)
+	err := r.Client.Get(ctx, client.ObjectKeyFromObject(v1rancherCluster), v1rancherCluster)
 	if client.IgnoreNotFound(err) != nil {
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(v1rancherCluster)))
 		return false, err
@@ -563,7 +568,7 @@ func (r *CAPIImportManagementV3Reconciler) verifyV1ClusterMigration(ctx context.
 
 // optOutOfClusterOwner annotates the cluster with the opt-out annotation.
 // Rancher will detect this annotation and it won't create ProjectOwner or ClusterOwner roles.
-func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Context, rancherCluster *managementv3.Cluster) {
+func (r *CAPIImportReconciler) optOutOfClusterOwner(ctx context.Context, rancherCluster *managementv3.Cluster) {
 	log := log.FromContext(ctx)
 
 	annotations := rancherCluster.GetAnnotations()
@@ -583,7 +588,7 @@ func (r *CAPIImportManagementV3Reconciler) optOutOfClusterOwner(ctx context.Cont
 
 // optOutOfFleetManagement annotates the cluster with the fleet provisioning opt-out annotation,
 // allowing external fleet cluster management.
-func (r *CAPIImportManagementV3Reconciler) optOutOfFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster) {
+func (r *CAPIImportReconciler) optOutOfFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster) {
 	log := log.FromContext(ctx)
 
 	annotations := rancherCluster.GetAnnotations()

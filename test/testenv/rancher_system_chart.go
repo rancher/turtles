@@ -31,7 +31,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -108,10 +110,13 @@ func UpdateRancherDeploymentWithChartConfig(ctx context.Context, input UpdateRan
 	Expect(input.BootstrapClusterProxy.GetClient().Update(ctx, deployment)).To(Succeed())
 }
 
-// UpgradeRancherWithGiteaInput represents the input for UpgradeRancherWithGitea.
-type UpgradeRancherWithGiteaInput struct {
+// UpgradeInstallRancherWithGiteaInput represents the input for UpgradeInstallRancherWithGitea.
+type UpgradeInstallRancherWithGiteaInput struct {
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
+
+	// EnvironmentType is the environment type
+	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
 
 	// HelmBinaryPath is the path to the Helm binary.
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
@@ -122,8 +127,20 @@ type UpgradeRancherWithGiteaInput struct {
 	// RancherChartURL is the URL for Rancher chart.
 	RancherChartURL string `env:"RANCHER_URL"`
 
+	// RancherHostname is the hostname to be used by Rancher. This depends on the result of PreRancherInstallHook and it's based on MANAGEMENT_CLUSTER_ENVIRONMENT.
+	RancherHostname string `env:"RANCHER_HOSTNAME"`
+
+	// RancherReplicas is the number of replicas for Rancher.
+	RancherReplicas int `env:"RANCHER_REPLICAS" envDefault:"1"`
+
+	// RancherIngressClassName is the class name of the Ingress used by Rancher.
+	RancherIngressClassName string
+
 	// RancherNamespace is the namespace for Rancher.
 	RancherNamespace string `env:"RANCHER_NAMESPACE" envDefault:"cattle-system"`
+
+	// RancherPatches are the patches for Rancher.
+	RancherPatches [][]byte
 
 	// RancherVersion is the version to upgrade to.
 	RancherVersion string `env:"RANCHER_VERSION"`
@@ -147,16 +164,17 @@ type UpgradeRancherWithGiteaInput struct {
 	RancherWaitInterval []interface{} `envDefault:"15m,30s"`
 }
 
-// UpgradeRancherWithGitea upgrades Rancher to a new version and configures it with Gitea chart repository
+// UpgradeInstallRancherWithGitea upgrades Rancher to a new version and configures it with Gitea chart repository
 // environment variables to enable the system chart controller.
-func UpgradeRancherWithGitea(ctx context.Context, input UpgradeRancherWithGiteaInput) {
+func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRancherWithGiteaInput) PreRancherInstallHookResult {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
-	Expect(ctx).NotTo(BeNil(), "ctx is required for UpgradeRancherWithGitea")
+	Expect(ctx).NotTo(BeNil(), "ctx is required for UpgradeInstallRancherWithGitea")
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "BootstrapClusterProxy is required")
 	Expect(input.HelmBinaryPath).NotTo(BeEmpty(), "HelmBinaryPath is required")
 	Expect(input.RancherChartRepoName).NotTo(BeEmpty(), "RancherChartRepoName is required")
 	Expect(input.RancherChartURL).NotTo(BeEmpty(), "RancherChartURL is required")
+	Expect(input.RancherHostname).NotTo(BeEmpty(), "RancherHostname is required")
 	Expect(input.RancherNamespace).NotTo(BeEmpty(), "RancherNamespace is required")
 	Expect(input.RancherVersion).NotTo(BeEmpty(), "RancherVersion is required")
 	Expect(input.ChartRepoURL).NotTo(BeEmpty(), "ChartRepoURL is required")
@@ -164,16 +182,48 @@ func UpgradeRancherWithGitea(ctx context.Context, input UpgradeRancherWithGiteaI
 	Expect(input.ChartVersion).NotTo(BeEmpty(), "ChartVersion is required")
 	Expect(input.RancherWaitInterval).NotTo(BeNil(), "RancherWaitInterval is required")
 
-	By(fmt.Sprintf("Upgrading Rancher to version %s with Gitea chart repository", input.RancherVersion))
+	By("Adding Rancher chart repo")
+	addChart := &opframework.HelmChart{
+		BinaryPath:      input.HelmBinaryPath,
+		Name:            input.RancherChartRepoName,
+		Path:            input.RancherChartURL,
+		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
+		AdditionalFlags: opframework.Flags("--force-update"),
+		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
+	}
+	_, err := addChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	updateChart := &opframework.HelmChart{
+		BinaryPath: input.HelmBinaryPath,
+		Commands:   opframework.Commands(opframework.Repo, opframework.Update),
+		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
+	}
+	_, err = updateChart.Run(nil)
+	Expect(err).ToNot(HaveOccurred())
+
+	By(fmt.Sprintf("Upgrading/Installing Rancher to version %s with Gitea chart repository", input.RancherVersion))
+
+	By("Running rancher pre-install hook")
+	rancherHookResult := PreRancherInstallHook(PreRancherInstallHookInput{
+		Ctx:                     ctx,
+		BootstrapClusterProxy:   input.BootstrapClusterProxy,
+		RancherIngressClassName: input.RancherIngressClassName,
+		RancherHostname:         input.RancherHostname,
+	})
+	input.RancherPatches = append(input.RancherPatches, rancherHookResult.ConfigPatches...)
 
 	// Run helm upgrade with environment variables for system chart controller
-	upgradeCmd := exec.Command(
-		input.HelmBinaryPath,
+	args := []string{
 		"upgrade", "rancher",
 		fmt.Sprintf("%s/rancher", input.RancherChartRepoName),
+		"--install",
+		"--create-namespace",
 		"--namespace", input.RancherNamespace,
 		"--version", input.RancherVersion,
 		"--reuse-values",
+		"--set", fmt.Sprintf("hostname=%s", rancherHookResult.Hostname),
+		"--set", fmt.Sprintf("replicas=%v", input.RancherReplicas),
 		"--set", "extraEnv[0].name=CATTLE_CHART_DEFAULT_URL",
 		"--set", fmt.Sprintf("extraEnv[0].value=%s", input.ChartRepoURL),
 		"--set", "extraEnv[1].name=CATTLE_CHART_DEFAULT_BRANCH",
@@ -181,13 +231,19 @@ func UpgradeRancherWithGitea(ctx context.Context, input UpgradeRancherWithGiteaI
 		"--set", "extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION",
 		"--set", fmt.Sprintf("extraEnv[2].value=%s", input.ChartVersion),
 		"--wait",
-	)
+	}
+
+	if rancherHookResult.IngressClassName != "" {
+		args = append(args, "--set", fmt.Sprintf("ingress.ingressClassName=%s", rancherHookResult.IngressClassName))
+	}
+
+	upgradeCmd := exec.Command(input.HelmBinaryPath, args...)
 	upgradeCmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", input.BootstrapClusterProxy.GetKubeconfigPath()))
 
 	output, err := upgradeCmd.CombinedOutput()
 	Expect(err).ToNot(HaveOccurred(), "Failed to upgrade Rancher: %s", string(output))
 
-	By("Waiting for Rancher deployment to be ready after upgrade")
+	By("Waiting for Rancher deployment to be ready")
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
 		Getter: input.BootstrapClusterProxy.GetClient(),
 		Deployment: &appsv1.Deployment{
@@ -200,34 +256,52 @@ func UpgradeRancherWithGitea(ctx context.Context, input UpgradeRancherWithGiteaI
 
 	// Optionally configure image overrides via rancher-config ConfigMap for e2e tests with preloaded images
 	if input.TurtlesImageRepo != "" && input.TurtlesImageTag != "" {
+		patch := fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag)
+
+		// regcred is needed on EKS to pull the e2e test image.
+		// See: framework.CreateDockerRegistrySecret
+		if input.EnvironmentType == e2e.ManagementClusterEnvironmentEKS {
+			patch = fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\nimagePullSecrets:\n- regcred\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag)
+		}
+
 		By("Patching rancher-config ConfigMap to override Turtles image")
 		patchCmd := exec.Command(
 			"kubectl",
 			"patch", "configmap", "rancher-config",
 			"-n", e2e.RancherNamespace,
 			"--type", "merge",
-			"--patch", fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag),
+			"--patch", patch,
 		)
 		patchCmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", input.BootstrapClusterProxy.GetKubeconfigPath()))
 		patchOutput, patchErr := patchCmd.CombinedOutput()
 		Expect(patchErr).ToNot(HaveOccurred(), "Failed to patch rancher-config ConfigMap: %s", string(patchOutput))
 	}
+
+	By("Applying additional patches")
+	for _, patch := range input.RancherPatches {
+		Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Proxy:    input.BootstrapClusterProxy,
+			Template: patch,
+			AddtionalEnvironmentVariables: map[string]string{
+				e2e.RancherHostnameVar: rancherHookResult.Hostname,
+			},
+		})).To(Succeed())
+	}
+
+	return rancherHookResult
 }
 
-// BuildAndPushRancherChartsToGiteaInput represents the input parameters for building and pushing Rancher charts to Gitea.
-type BuildAndPushRancherChartsToGiteaInput struct {
+// PushRancherChartsToGiteaInput represents the input parameters for building and pushing Rancher charts to Gitea.
+type PushRancherChartsToGiteaInput struct {
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
 
-	// RootDir is the root directory of the turtles repository.
-	RootDir string
-
 	// RancherChartsRepoDir is the directory where the rancher/charts repo will be created by the Makefile.
-	RancherChartsRepoDir string
+	RancherChartsRepoDir string `env:"RANCHER_CHARTS_REPO_DIR"`
 
 	// RancherChartsBaseBranch is the branch name to use in the charts repo (e.g., dev-v2.13).
 	// Turtles integration with Rancher system chart controller starts from Rancher v2.13.0.
-	RancherChartsBaseBranch string `envDefault:"dev-v2.13"`
+	RancherChartsBaseBranch string `env:"RANCHER_CHARTS_BASE_BRANCH" envDefault:"dev-v2.13"`
 
 	// GiteaServerAddress is the address of the Gitea server.
 	GiteaServerAddress string
@@ -246,8 +320,8 @@ type BuildAndPushRancherChartsToGiteaInput struct {
 	ChartVersion string `env:"RANCHER_CHART_DEV_VERSION" envDefault:"108.0.0+up99.99.99"`
 }
 
-// BuildAndPushRancherChartsToGiteaResult represents the result of building and pushing charts.
-type BuildAndPushRancherChartsToGiteaResult struct {
+// PushRancherChartsToGiteaResult represents the result of building and pushing charts.
+type PushRancherChartsToGiteaResult struct {
 	// ChartRepoURL is the URL of the chart repository in Gitea (for git clone).
 	ChartRepoURL string
 
@@ -264,27 +338,25 @@ type BuildAndPushRancherChartsToGiteaResult struct {
 	ChartVersion string
 }
 
-// BuildAndPushRancherChartsToGitea builds the Turtles chart using the Makefile target and pushes it to a Gitea server.
+// PushRancherChartsToGitea pushes the Turtles chart to a Gitea server.
 // This is used for testing the system chart controller integration with Rancher.
-// It leverages the existing build-local-rancher-charts Makefile target and then pushes the result to Gitea.
+// The chart is expected to be prepared before the tests run, using `make build-local-rancher-charts`.`
 //
 // The result can be used to configure Rancher with environment variables:
 //   - CATTLE_CHART_DEFAULT_URL: result.ChartRepoHTTPURL
 //   - CATTLE_CHART_DEFAULT_BRANCH: result.Branch
 //   - CATTLE_RANCHER_TURTLES_VERSION: input.ChartVersion
-func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRancherChartsToGiteaInput) *BuildAndPushRancherChartsToGiteaResult {
+func PushRancherChartsToGitea(ctx context.Context, input PushRancherChartsToGiteaInput) *PushRancherChartsToGiteaResult {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
-	Expect(ctx).NotTo(BeNil(), "ctx is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.RootDir).ToNot(BeEmpty(), "RootDir is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.RancherChartsRepoDir).ToNot(BeEmpty(), "RancherChartsRepoDir is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.RancherChartsBaseBranch).ToNot(BeEmpty(), "RancherChartsBaseBranch is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.GiteaServerAddress).ToNot(BeEmpty(), "GiteaServerAddress is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.GiteaRepoName).ToNot(BeEmpty(), "GiteaRepoName is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.GiteaUsername).ToNot(BeEmpty(), "GiteaUsername is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.GiteaPassword).ToNot(BeEmpty(), "GiteaPassword is required for BuildAndPushRancherChartsToGitea")
-	Expect(input.ChartVersion).ToNot(BeEmpty(), "ChartVersion is required for BuildAndPushRancherChartsToGitea")
+	Expect(ctx).NotTo(BeNil(), "ctx is required for PushRancherChartsToGitea")
+	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for PushRancherChartsToGitea")
+	Expect(input.RancherChartsRepoDir).ToNot(BeEmpty(), "RancherChartsRepoDir is required for PushRancherChartsToGitea")
+	Expect(input.GiteaServerAddress).ToNot(BeEmpty(), "GiteaServerAddress is required for PushRancherChartsToGitea")
+	Expect(input.GiteaRepoName).ToNot(BeEmpty(), "GiteaRepoName is required for PushRancherChartsToGitea")
+	Expect(input.GiteaUsername).ToNot(BeEmpty(), "GiteaUsername is required for PushRancherChartsToGitea")
+	Expect(input.GiteaPassword).ToNot(BeEmpty(), "GiteaPassword is required for PushRancherChartsToGitea")
+	Expect(input.ChartVersion).ToNot(BeEmpty(), "ChartVersion is required for PushRancherChartsToGitea")
 
 	By("Creating Gitea repository for Rancher charts")
 	repoURL := turtlesframework.GiteaCreateRepo(ctx, turtlesframework.GiteaCreateRepoInput{
@@ -294,18 +366,9 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 		Password:   input.GiteaPassword,
 	})
 
-	By("Building local rancher charts using Makefile target")
-	// Run make build-local-rancher-charts which already handles all the chart building logic
-	makeCmd := exec.Command("make", "build-local-rancher-charts")
-	makeCmd.Dir = input.RootDir
-	envVars := []string{
-		fmt.Sprintf("RANCHER_CHARTS_REPO_DIR=%s", input.RancherChartsRepoDir),
-		fmt.Sprintf("RANCHER_CHARTS_BASE_BRANCH=%s", input.RancherChartsBaseBranch),
-		fmt.Sprintf("RANCHER_CHART_DEV_VERSION=%s", input.ChartVersion),
-	}
-	makeCmd.Env = append(os.Environ(), envVars...)
-	output, err := makeCmd.CombinedOutput()
-	Expect(err).ToNot(HaveOccurred(), "Failed to run make build-local-rancher-charts: %s", string(output))
+	// Use random remote name.
+	// This is needed since different suites may be adding remotes to different gitea instances concurrently.
+	remoteName := util.RandomString(6)
 
 	By("Configuring git remote to point to Gitea")
 	// Strip protocol prefix from server address
@@ -320,7 +383,7 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 
 	turtlesframework.GitSetRemote(ctx, turtlesframework.GitSetRemoteInput{
 		RepoLocation: input.RancherChartsRepoDir,
-		RemoteName:   "origin",
+		RemoteName:   remoteName,
 		RemoteURL:    giteaRemoteURL,
 		Username:     input.GiteaUsername,
 		Password:     input.GiteaPassword,
@@ -331,7 +394,7 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 	// Force push is needed because Gitea creates an initial commit with README
 	turtlesframework.GitPush(ctx, turtlesframework.GitPushInput{
 		RepoLocation: input.RancherChartsRepoDir,
-		RemoteName:   "origin",
+		RemoteName:   remoteName,
 		Username:     input.GiteaUsername,
 		Password:     input.GiteaPassword,
 		Force:        true,
@@ -341,7 +404,7 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 	// Format: http://gitea-address/username/repo.git (matches Gitea's repository URL structure)
 	httpURL := fmt.Sprintf("http://%s/%s/%s.git", serverAddr, input.GiteaUsername, input.GiteaRepoName)
 
-	return &BuildAndPushRancherChartsToGiteaResult{
+	return &PushRancherChartsToGiteaResult{
 		ChartRepoURL:     repoURL,
 		ChartRepoHTTPURL: httpURL,
 		LocalRepoDir:     input.RancherChartsRepoDir,

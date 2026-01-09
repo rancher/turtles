@@ -1,0 +1,12 @@
+# This is a dummy template to test the provider webhook configuration
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: VSphereMachineTemplate
+metadata:
+  name: dummy-vsphere-test
+  namespace: default
+spec:
+  template:
+    spec:
+      template: 'foo'
+      network:
+       devices: []

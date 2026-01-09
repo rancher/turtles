@@ -37,8 +37,11 @@ spec:
 {{- end }}
 {{- if or (index .Values "providers" "infrastructureGCP" "credentials") }}
   credentials:
-    name: {{ index .Values "providers" "infrastructureGCP" "credentials" "name" }}
-    namespace: {{ index .Values "providers" "infrastructureGCP" "credentials" "namespace" }}
+    {{- if and (index .Values "providers" "infrastructureGCP" "credentials" "name") (not (index .Values "providers" "infrastructureGCP" "credentials" "namespace")) }}
+    rancherCloudCredential: {{ index .Values "providers" "infrastructureGCP" "credentials" "name" }}
+    {{- else if and (index .Values "providers" "infrastructureGCP" "credentials" "namespace") (index .Values "providers" "infrastructureGCP" "credentials" "name")}}
+    rancherCloudCredentialNamespaceName: {{ index .Values "providers" "infrastructureGCP" "credentials" "namespace" }}:{{ index .Values "providers" "infrastructureGCP" "credentials" "name" }}
+    {{- end }}
 {{- end }}
 {{- if or (index .Values "providers" "infrastructureGCP" "configSecret") }}
   configSecret:

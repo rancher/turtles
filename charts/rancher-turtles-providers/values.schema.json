@@ -30,8 +30,7 @@
           "type": "object",
           "description": "Optional Secret reference containing Rancher credentials",
           "required": [
-            "name",
-            "namespace"
+            "name"
           ],
           "properties": {
             "name": {

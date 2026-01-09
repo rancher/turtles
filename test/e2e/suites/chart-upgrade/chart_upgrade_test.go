@@ -20,11 +20,14 @@ limitations under the License.
 package chart_upgrade
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"github.com/rancher/turtles/test/e2e"
@@ -33,23 +36,46 @@ import (
 	"github.com/rancher/turtles/test/testenv"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util/conditions"
+)
+
+const (
+	// CAPI-specific constants
+	capiDeploymentName = "capi-controller-manager"
+	capiNamespace      = "cattle-capi-system"
+	capiProviderName   = "cluster-api"
+
+	// vSphere is used as a sample certified provider.
+	capvDeploymentName = "capv-controller-manager"
+	capvNamespace      = "capv-system"
+	capvProviderName   = "vsphere"
+
+	// Upstream CAPI image URL is used for verifying controller image after update
+	upstreamCAPIImageURL = "registry.k8s.io/cluster-api/cluster-api-controller"
 )
 
 var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
 	var (
 		clusterName       string
 		topologyNamespace = "creategitops-docker-rke2"
+
+		toBeWranglerConvertedPod *corev1.Pod
 	)
 
 	BeforeAll(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
 
-		clusterName = fmt.Sprintf("cluster-docker-rke2")
+		clusterName = "cluster-docker-rke2"
 	})
 
 	// This test suite validates the ZERO-DOWNTIME migration from Rancher 2.12.x/Turtles v0.24.x
@@ -141,6 +167,50 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		}
 	})
 
+	It("Should install a CAPIProvider to test cert-manager migration", func() {
+		By("Installing vSphere CAPIProvider")
+		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			CAPIProvidersYAML: [][]byte{
+				e2e.CAPVProviderNoVersion,
+			},
+			WaitForDeployments: []types.NamespacedName{
+				{
+					Name:      capvDeploymentName,
+					Namespace: capvNamespace,
+				},
+			},
+		})
+		By("Consistently verifying wrangler is not in use for the provider")
+		Consistently(func() {
+			capiProvider := &turtlesv1.CAPIProvider{}
+			Expect(bootstrapClusterProxy.GetClient().Get(ctx,
+				types.NamespacedName{
+					Namespace: capvNamespace,
+					Name:      capvProviderName,
+				}, capiProvider)).Should(Succeed())
+
+			condition := conditions.Get(capiProvider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
+			Expect(condition).Should(BeNil(), "WranglerManagedCertificates condition should not be present")
+		}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second)
+
+		By("Applying and deleting a dummy resource that uses webhooks")
+		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+
+		By("Fetching the provider manager Pod for later")
+		podList := &corev1.PodList{}
+		Expect(bootstrapClusterProxy.GetClient().List(ctx, podList, &client.ListOptions{Namespace: capvNamespace}))
+		Expect(podList.Items).ShouldNot(BeEmpty(), "Provider must have at least one pod running")
+		for i, pod := range podList.Items {
+			if strings.HasPrefix(pod.Name, capvDeploymentName) {
+				toBeWranglerConvertedPod = &podList.Items[i]
+			}
+		}
+		Expect(toBeWranglerConvertedPod).ShouldNot(BeNil(), "Provider must have a controller manager pod running")
+		GinkgoWriter.Printf("Found manager pod: %s\n", toBeWranglerConvertedPod.GetName())
+	})
+
 	It("Should migrate to Rancher 2.13.x with zero-downtime", func() {
 		By("Uninstalling Turtles v0.24.3 (providers and workload cluster keep running)")
 		testenv.UninstallRancherTurtles(ctx, testenv.UninstallRancherTurtlesInput{
@@ -170,13 +240,14 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		}, &framework.RunCommandResult{})
 
 		By("Upgrading Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
-		testenv.UpgradeRancherWithGitea(ctx, testenv.UpgradeRancherWithGiteaInput{
+		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
 			ChartRepoBranch:       chartsResult.Branch,
 			ChartVersion:          chartsResult.ChartVersion,
 			TurtlesImageRepo:      "ghcr.io/rancher/turtles-e2e",
 			TurtlesImageTag:       "v0.0.1",
+			RancherHostname:       hostName,
 			RancherWaitInterval:   e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
 		})
 
@@ -199,8 +270,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Creating ClusterctlConfig for CAPD registry override in cattle-turtles-system namespace")
-		clusterctlConfigYAML := bytes.Replace(e2e.ClusterctlConfig, []byte("rancher-turtles-system"), []byte("cattle-turtles-system"), 1)
-		framework.Apply(ctx, bootstrapClusterProxy, clusterctlConfigYAML)
+		Expect(framework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
 
 		By("Installing CAPI providers via providers chart (post-upgrade, uses cattle-capi-system namespace)")
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
@@ -215,8 +285,8 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: bootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "capi-controller-manager",
-				Namespace: "cattle-capi-system",
+				Name:      capiDeploymentName,
+				Namespace: capiNamespace,
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
@@ -252,5 +322,100 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Name:                    clusterName,
 			DeleteAfterVerification: true,
 		})
+	})
+
+	It("Should verify CAPIProvider was converted to wrangler certificates", func() {
+		By("Verifying CAPIProvider has the WranglerManagedCertificates condition")
+		Eventually(func() bool {
+			capiProvider := &turtlesv1.CAPIProvider{}
+			Expect(bootstrapClusterProxy.GetClient().Get(ctx,
+				types.NamespacedName{
+					Namespace: capvNamespace,
+					Name:      capvProviderName,
+				}, capiProvider)).Should(Succeed())
+			condition := conditions.Get(capiProvider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
+			if condition == nil || condition.Status != corev1.ConditionTrue {
+				return false
+			}
+			return true
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
+			Should(BeTrue(), "WranglerManagedCertificates condition must be True")
+
+		By("Verifying cert-manager resources are deleted and Services are wrangler annotated")
+		framework.VerifyCertificatesInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+		framework.VerifyIssuersInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+		framework.VerifyCertManagerAnnotationsForProvider(ctx, bootstrapClusterProxy.GetClient(), "infrastructure-vsphere")
+		framework.VerifyWranglerAnnotationsInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+
+		By("Verifying the provider manager Pod was rolled out")
+		Eventually(func() bool {
+			err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(toBeWranglerConvertedPod), toBeWranglerConvertedPod)
+			return apierrors.IsNotFound(err)
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
+			Should(BeTrue(), "Previously running pod should have been rolled out")
+
+		By("Applying and deleting a dummy resource that uses webhooks")
+		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+	})
+
+	It("Should bump core CAPI when a new version of Turtles ships with a newer version of CAPI", func() {
+		By("Upgrading Turtles to 2.13.x from Gitea with newer core CAPI version")
+		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
+			ChartRepoBranch:       chartsResult.Branch,
+			ChartVersion:          fmt.Sprintf("%s.1", chartsResult.ChartVersion),
+			TurtlesImageRepo:      "ghcr.io/rancher/turtles-e2e",
+			TurtlesImageTag:       "v0.0.1-capi",
+			RancherHostname:       hostName,
+			RancherWaitInterval:   e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
+		})
+
+		By("Waiting for core CAPI Provider to be updated")
+		Eventually(func() bool {
+			capiProvider := &turtlesv1.CAPIProvider{}
+			err := bootstrapClusterProxy.GetClient().Get(ctx,
+				types.NamespacedName{
+					Namespace: capiNamespace,
+					Name:      capiProviderName,
+				}, capiProvider)
+			if err != nil {
+				return false
+			}
+
+			version := capiProvider.GetSpec().Version
+			expected := e2eConfig.GetVariableOrEmpty(e2e.CAPIVersionBump)
+
+			return version == expected
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
+			Should(BeTrue(), "Failed to verify CAPIProvider version after upgrade")
+
+		By("Verifying core CAPI controller pod runs the expected version after upgrade")
+		Eventually(func() bool {
+			podList := corev1.PodList{}
+			podLabels := map[string]string{
+				"cluster.x-k8s.io/provider": capiProviderName,
+				"control-plane":             "controller-manager",
+			}
+			err := bootstrapClusterProxy.GetClient().List(ctx, &podList,
+				&client.ListOptions{
+					Namespace:     capiNamespace,
+					LabelSelector: labels.SelectorFromSet(podLabels),
+				})
+			if err != nil {
+				return false
+			}
+
+			if len(podList.Items) == 0 {
+				return false
+			}
+
+			image := podList.Items[0].Spec.Containers[0].Image
+			expected := fmt.Sprintf("%s:%s", upstreamCAPIImageURL, e2eConfig.GetVariableOrEmpty(e2e.CAPIVersionBump))
+
+			return image == expected
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
+			Should(BeTrue(), "Failed to verify CAPI controller pod image after upgrade")
 	})
 })

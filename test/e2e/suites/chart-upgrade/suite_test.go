@@ -22,6 +22,7 @@ package chart_upgrade
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -49,7 +50,7 @@ var (
 	giteaResult *testenv.DeployGiteaResult
 
 	// chartsResult stores the result of building and pushing charts to Gitea
-	chartsResult *testenv.BuildAndPushRancherChartsToGiteaResult
+	chartsResult *testenv.PushRancherChartsToGiteaResult
 
 	ctx = context.Background()
 
@@ -78,12 +79,23 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		e2eConfig := e2e.LoadE2EConfig()
+
+		// Must load a custom Turtles image with an updated version of CAPI for this test
+		e2eConfig.Images = append(e2eConfig.Images, clusterctl.ContainerImage{
+			Name:         fmt.Sprintf("%s:%s-capi", e2eConfig.Variables["TURTLES_IMAGE"], e2eConfig.Variables["TURTLES_VERSION"]),
+			LoadBehavior: clusterctl.LoadImageBehavior("tryLoad"),
+		})
+
 		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-chart-upgrade"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
 			// Use v1.32.0 for Rancher 2.12.3 compatibility (requires < v1.34.0) and v1.33 causes issues with CAAPF
 			KubernetesVersion: "v1.32.0",
+		})
+
+		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
@@ -100,13 +112,10 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		By("Building and pushing Rancher charts to Gitea for later upgrade")
-		chartsResult = testenv.BuildAndPushRancherChartsToGitea(ctx, testenv.BuildAndPushRancherChartsToGiteaInput{
-			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
-			RootDir:                 e2eConfig.GetVariableOrEmpty("ROOT_DIR"),
-			RancherChartsRepoDir:    e2eConfig.GetVariableOrEmpty(e2e.ArtifactsFolderVar) + "/rancher-charts",
-			RancherChartsBaseBranch: "dev-v2.13",
-			GiteaServerAddress:      giteaResult.GitAddress,
-			GiteaRepoName:           "charts",
+		chartsResult = testenv.PushRancherChartsToGitea(ctx, testenv.PushRancherChartsToGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			GiteaServerAddress:    giteaResult.GitAddress,
+			GiteaRepoName:         "charts",
 			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
 		})
 
@@ -134,7 +143,7 @@ var _ = SynchronizedBeforeSuite(
 			GitAddress: setup.GitAddress,
 		}
 
-		chartsResult = &testenv.BuildAndPushRancherChartsToGiteaResult{
+		chartsResult = &testenv.PushRancherChartsToGiteaResult{
 			ChartRepoURL:     setup.ChartRepoURL,
 			ChartRepoHTTPURL: setup.ChartRepoHTTPURL,
 			Branch:           setup.ChartBranch,
@@ -160,11 +169,6 @@ var _ = SynchronizedAfterSuite(
 			// add a log line about skipping charts uninstallation and cluster cleanup
 			return
 		}
-
-		By("Uninstalling Gitea")
-		testenv.UninstallGitea(ctx, testenv.UninstallGiteaInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		})
 
 		testenv.CleanupTestCluster(ctx, testenv.CleanupTestClusterInput{
 			SetupTestClusterResult: *setupClusterResult,

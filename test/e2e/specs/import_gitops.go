@@ -130,6 +130,19 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		rancherCluster = &rancherClusters.Items[0]
 		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
+		By("Rancher cluster should have the custom description if it is provided")
+		capiClusterObject := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace.Name,
+			Name:      input.ClusterName,
+		}}
+		Eventually(komega.Get(capiClusterObject), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		annotations := capiClusterObject.GetAnnotations()
+		description := annotations[turtlesannotations.ClusterDescriptionAnnotation]
+		if description == "" {
+			description = "CAPI cluster imported to Rancher"
+		}
+		Expect(rancherCluster.Spec.Description).To(Equal(description))
+
 		By("Waiting for the rancher cluster to have a deployed agent")
 		Eventually(func() bool {
 			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
@@ -359,12 +372,13 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be unimported (deleted)")
 
 			By("Removing 'imported' annotation from CAPI cluster")
-			Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			annotations := capiCluster.GetAnnotations()
-			delete(annotations, "imported")
-			capiCluster.SetAnnotations(annotations)
-			err = input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
-			Expect(err).NotTo(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
+			Eventually(func() error {
+				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				annotations := capiCluster.GetAnnotations()
+				delete(annotations, "imported")
+				capiCluster.SetAnnotations(annotations)
+				return input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
+			}).ShouldNot(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
 
 			By("Validating annotation is removed from CAPI cluster")
 			Eventually(func() bool {

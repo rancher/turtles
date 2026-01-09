@@ -35,6 +35,9 @@ import (
 
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/testenv"
+
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Test suite global vars.
@@ -68,28 +71,61 @@ var _ = SynchronizedBeforeSuite(
 			Scheme:    e2e.InitScheme(),
 		})
 
-		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
-			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-			CustomIngress:            e2e.NginxIngress,
-			DefaultIngressClassPatch: e2e.IngressClassPatch,
+		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 		})
 
-		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
+		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
+			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
+			CustomIngress:             e2e.NginxIngress,
+			CustomIngressLoadBalancer: e2e.NginxIngressLoadBalancer,
+			DefaultIngressClassPatch:  e2e.IngressClassPatch,
+		})
+
+		By("Deploying Gitea for chart repository")
+		giteaResult := testenv.DeployGitea(ctx, testenv.DeployGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			Development:           true,
+			ValuesFile:            e2e.GiteaValues,
+			CustomIngressConfig:   e2e.GiteaIngress,
+		})
+
+		By("Pushing Rancher charts to Gitea for Turtles installation")
+		chartsResult := testenv.PushRancherChartsToGitea(ctx, testenv.PushRancherChartsToGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			GiteaServerAddress:    giteaResult.GitAddress,
+			GiteaRepoName:         "charts",
+			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
+		})
+
+		By("Installing Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
+		rancherHookResult := testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
+			ChartRepoBranch:       chartsResult.Branch,
+			ChartVersion:          chartsResult.ChartVersion,
+			TurtlesImageRepo:      "ghcr.io/rancher/turtles-e2e",
+			TurtlesImageTag:       "v0.0.1",
+			RancherWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
-		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			CAPIProvidersYAML:     e2e.CapiProviders,
-			WaitForDeployments:    testenv.DefaultDeployments,
-			AdditionalValues:      map[string]string{},
-		})
+		By("Waiting for Rancher to be ready")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "rancher",
+				Namespace: e2e.RancherNamespace,
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...)
 
-		testenv.RestartRancher(ctx, testenv.RestartRancherInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		})
+		By("Waiting for Turtles controller to be installed by system chart controller")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "rancher-turtles-controller-manager",
+				Namespace: e2e.NewRancherTurtlesNamespace,
+			}},
+		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		data, err := json.Marshal(e2e.Setup{
 			ClusterName:     setupClusterResult.ClusterName,

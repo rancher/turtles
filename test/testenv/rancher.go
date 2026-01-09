@@ -18,13 +18,13 @@ package testenv
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 
-	"github.com/drone/envsubst/v2"
 	"github.com/rancher/turtles/test/e2e"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -46,18 +46,6 @@ type DeployRancherInput struct {
 
 	// HelmExtraValuesPath is the path to the Helm extra values file.
 	HelmExtraValuesPath string `env:",expand" envDefault:"${HELM_EXTRA_VALUES_FOLDER}/deploy-rancher.yaml"`
-
-	// InstallCertManager is the flag indicating whether to install Cert Manager.
-	InstallCertManager bool `env:"INSTALL_CERT_MANAGER" envDefault:"true"`
-
-	// CertManagerChartPath is the path to the Cert Manager chart.
-	CertManagerChartPath string `env:"CERT_MANAGER_PATH"`
-
-	// CertManagerUrl is the URL for Cert Manager.
-	CertManagerUrl string `env:"CERT_MANAGER_URL"`
-
-	// CertManagerRepoName is the repository name for Cert Manager.
-	CertManagerRepoName string `env:"CERT_MANAGER_REPO_NAME"`
 
 	// RancherChartRepoName is the repository name for Rancher chart.
 	RancherChartRepoName string `env:"RANCHER_REPO_NAME"`
@@ -83,9 +71,6 @@ type DeployRancherInput struct {
 	// RancherPassword is the password for Rancher.
 	RancherPassword string `env:"RANCHER_PASSWORD"`
 
-	// RancherFeatures are the features for Rancher.
-	RancherFeatures string
-
 	// RancherPatches are the patches for Rancher.
 	RancherPatches [][]byte
 
@@ -98,12 +83,7 @@ type DeployRancherInput struct {
 	// ControllerWaitInterval is the wait interval for the controller.
 	ControllerWaitInterval []interface{} `envDefault:"15m,10s"`
 
-	// RancherIngressConfig is the ingress configuration for Rancher.
-	RancherIngressConfig []byte
-
-	// RancherServicePatch is the service patch for Rancher.
-	RancherServicePatch []byte
-
+	// RancherIngressClassName is the class name of the Ingress used by Rancher.
 	RancherIngressClassName string
 
 	// Development is the flag indicating whether it is a development environment.
@@ -138,14 +118,10 @@ type deployRancherIngressValuesFile struct {
 // If RancherIngressConfig is provided, the function sets up the ingress for Rancher.
 // If RancherServicePatch is provided, the function updates the Rancher service.
 // The function waits for the Rancher webhook rollout and the fleet controller rollout.
+//
+// Note: Use UpgradeInstallRancherWithGitea instead to bootstrap Rancher using a custom Turtles system chart.
 func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInstallHookResult {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
-
-	By("Running rancher pre-install hook")
-	rancherHookResult := PreRancherInstallHook(&PreRancherInstallHookInput{
-		Ctx:          ctx,
-		RancherInput: &input,
-	})
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for DeployRancher")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for DeployRancher")
@@ -160,29 +136,19 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	Expect(input.RancherWaitInterval).ToNot(BeNil(), "RancherWaitInterval is required for DeployRancher")
 	Expect(input.ControllerWaitInterval).ToNot(BeNil(), "ControllerWaitInterval is required for DeployRancher")
 
+	By("Running rancher pre-install hook")
+	rancherHookResult := PreRancherInstallHook(PreRancherInstallHookInput{
+		Ctx:                     ctx,
+		BootstrapClusterProxy:   input.BootstrapClusterProxy,
+		RancherIngressClassName: input.RancherIngressClassName,
+		RancherHostname:         input.RancherHost,
+	})
+
 	if input.RancherVersion == "" && input.RancherImageTag == "" {
 		Fail("RancherVersion or RancherImageTag is required")
 	}
 	if input.RancherVersion != "" && input.RancherImageTag != "" {
 		Fail("Only one of RancherVersion or RancherImageTag cen be used")
-	}
-
-	if input.InstallCertManager {
-		Expect(input.CertManagerRepoName).ToNot(BeEmpty(), "CertManagerRepoName is required for DeployRancher")
-		Expect(input.CertManagerUrl).ToNot(BeEmpty(), "CertManagerUrl is required for DeployRancher")
-		Expect(input.CertManagerChartPath).ToNot(BeEmpty(), "CertManagerChartPath is required for DeployRancher")
-
-		By("Add cert manager chart repo")
-		certChart := &opframework.HelmChart{
-			BinaryPath:      input.HelmBinaryPath,
-			Name:            input.CertManagerRepoName,
-			Path:            input.CertManagerUrl,
-			Commands:        opframework.Commands(opframework.Repo, opframework.Add),
-			AdditionalFlags: opframework.Flags("--force-update"),
-			Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
-		}
-		_, certErr := certChart.Run(nil)
-		Expect(certErr).ToNot(HaveOccurred())
 	}
 
 	By("Adding Rancher chart repo")
@@ -205,30 +171,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	_, err = updateChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
-	if input.InstallCertManager {
-		By("Installing cert-manager")
-		certManagerChart := &opframework.HelmChart{
-			BinaryPath: input.HelmBinaryPath,
-			Path:       input.CertManagerChartPath,
-			Name:       "cert-manager",
-			Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
-			AdditionalFlags: opframework.Flags(
-				"--namespace", "cert-manager",
-				"--version", "v1.16.3",
-				"--create-namespace",
-			),
-			Wait: true,
-		}
-		_, err = certManagerChart.Run(map[string]string{
-			"crds.enabled": "true",
-			"crds.keep":    "true",
-		})
-		Expect(err).ToNot(HaveOccurred())
-	}
-
 	yamlExtraValues, err := yaml.Marshal(deployRancherValuesFile{
 		BootstrapPassword: input.RancherPassword,
-		Hostname:          input.RancherHost,
+		Hostname:          rancherHookResult.Hostname,
 	})
 	Expect(err).ToNot(HaveOccurred())
 	err = os.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
@@ -239,8 +184,6 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"--namespace", input.RancherNamespace,
 		"--create-namespace",
 		"--values", input.HelmExtraValuesPath,
-		"--set", "extraEnv[0].name=CATTLE_FEATURES",
-		"--set", "extraEnv[0].value=turtles=false",
 	)
 	if input.RancherDebug {
 		installFlags = append(installFlags, "--set", "debug=true")
@@ -267,14 +210,12 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"global.cattle.psp.enabled": "false",
 		"replicas":                  "1",
 	}
-	if input.RancherFeatures != "" {
-		values["features"] = input.RancherFeatures
-	}
+
 	if input.RancherImageTag != "" {
 		values["rancherImageTag"] = input.RancherImageTag
 	}
-	if input.RancherIngressClassName != "" {
-		values["ingress.ingressClassName"] = input.RancherIngressClassName
+	if rancherHookResult.IngressClassName != "" {
+		values["ingress.ingressClassName"] = rancherHookResult.IngressClassName
 	}
 	// Merge additional values
 	for k, v := range input.AdditionalValues {
@@ -284,16 +225,8 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	_, err = chart.Run(values)
 	Expect(err).ToNot(HaveOccurred())
 
-	if len(input.RancherIngressConfig) > 0 { // only true when using kind + ngrok
-		By("Setting up ingress")
-		ingress, err := envsubst.Eval(string(input.RancherIngressConfig), os.Getenv)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(ingress))).To(Succeed())
-		input.RancherPatches = append(input.RancherPatches, e2e.SystemStoreSettingPatch)
-	}
-	if len(input.RancherServicePatch) > 0 {
-		By("Updating rancher svc")
-		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.RancherServicePatch)).To(Succeed())
+	if len(rancherHookResult.ConfigPatches) > 0 {
+		input.RancherPatches = append(input.RancherPatches, rancherHookResult.ConfigPatches...)
 	}
 
 	By("Updating rancher configuration")
@@ -302,7 +235,7 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 			Proxy:    input.BootstrapClusterProxy,
 			Template: patch,
 			AddtionalEnvironmentVariables: map[string]string{
-				e2e.RancherHostnameVar: input.RancherHost,
+				e2e.RancherHostnameVar: rancherHookResult.Hostname,
 			},
 		})).To(Succeed())
 	}
@@ -558,11 +491,14 @@ type PreRancherInstallHookInput struct {
 	// Ctx is the context for the hook execution.
 	Ctx context.Context
 
+	// BootstrapClusterProxy is the cluster proxy for bootstrapping.
+	BootstrapClusterProxy framework.ClusterProxy
+
 	// EnvironmentType is the environment type
 	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
 
-	// RancherInput is the input parameters for deploying Rancher.
-	RancherInput *DeployRancherInput `env:",init"`
+	// RancherIngressClassName is the class name of the Ingress used by Rancher.
+	RancherIngressClassName string
 
 	// IngressWaitInterval is the interval to wait between ingress checks.
 	IngressWaitInterval []interface{} `envDefault:"15m,10s"`
@@ -575,6 +511,10 @@ type PreRancherInstallHookInput struct {
 type PreRancherInstallHookResult struct {
 	// Hostname is the hostname of the Rancher installation.
 	Hostname string
+	// IngressClassName is the class name of the Ingress used by Rancher.
+	IngressClassName string
+	// ConfigPatches is an optional list of additional patches that need to be applied to configure Rancher.
+	ConfigPatches [][]byte
 }
 
 // PreRancherInstallHook is a function that performs pre-installation tasks for Rancher.
@@ -583,43 +523,53 @@ type PreRancherInstallHookResult struct {
 // It also deploys ghcr details by creating a Docker registry secret.
 // If the infrastructure type is e2e.ManagementClusterEnvironmentIsolatedKind, it sets the isolated host name as the Rancher host.
 // If the infrastructure type is e2e.ManagementClusterEnvironmentKind, it sets the Rancher ingress config and service patch based on the provided values.
-// The function returns the host name as part of the PreRancherInstallHookResult.
-func PreRancherInstallHook(input *PreRancherInstallHookInput) PreRancherInstallHookResult {
-	Expect(turtlesframework.Parse(input)).To(Succeed(), "Failed to parse environment variables")
-
-	hostName := ""
+func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHookResult {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	switch input.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		By("Getting ingress hostname")
 		svcRes := &WaitForServiceIngressHostnameResult{}
 		WaitForServiceIngressHostname(input.Ctx, WaitForServiceIngressHostnameInput{
-			BootstrapClusterProxy: input.RancherInput.BootstrapClusterProxy,
+			BootstrapClusterProxy: input.BootstrapClusterProxy,
 			ServiceName:           "ingress-nginx-controller",
 			ServiceNamespace:      "ingress-nginx",
 			IngressWaitInterval:   input.IngressWaitInterval,
 		}, svcRes)
 
-		hostName = svcRes.Hostname
-		input.RancherInput.RancherHost = hostName
-
 		By("Deploying ghcr details")
 		turtlesframework.CreateDockerRegistrySecret(input.Ctx, turtlesframework.CreateDockerRegistrySecretInput{
-			BootstrapClusterProxy: input.RancherInput.BootstrapClusterProxy,
+			BootstrapClusterProxy: input.BootstrapClusterProxy,
 		})
 
-		input.RancherInput.RancherIngressClassName = "nginx"
+		return PreRancherInstallHookResult{
+			Hostname:         svcRes.Hostname,
+			IngressClassName: "nginx",
+		}
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
-		hostName = getInternalClusterHostname(input.Ctx, input.RancherInput.BootstrapClusterProxy)
-		input.RancherInput.RancherHost = hostName
+		By("Getting internal cluster hostname")
+		hostname := getInternalClusterHostname(input.Ctx, input.BootstrapClusterProxy)
+		return PreRancherInstallHookResult{
+			Hostname:         hostname,
+			IngressClassName: input.RancherIngressClassName,
+		}
 	case e2e.ManagementClusterEnvironmentKind:
+		By("Using RANCHER_HOSTNAME")
 		// i.e. we are using ngrok locally
-		input.RancherInput.RancherIngressConfig = e2e.IngressConfig
-		input.RancherInput.RancherServicePatch = e2e.RancherServicePatch
-		input.RancherInput.RancherHost = input.RancherHostname
-	}
+		return PreRancherInstallHookResult{
+			Hostname:         input.RancherHostname,
+			IngressClassName: input.RancherIngressClassName,
+			ConfigPatches:    [][]byte{e2e.RancherServicePatch, e2e.IngressConfig, e2e.SystemStoreSettingPatch},
+		}
 
-	return PreRancherInstallHookResult{
-		Hostname: input.RancherInput.RancherHost,
+	case e2e.ManagementClusterEnvironmentInternalKind:
+		By("Using RANCHER_HOSTNAME for internal kind")
+		return PreRancherInstallHookResult{
+			Hostname: input.RancherHostname,
+		}
+
+	default:
+		Fail(fmt.Sprintf("Unknown MANAGEMENT_CLUSTER_ENVIRONMENT: %s", input.EnvironmentType))
+		return PreRancherInstallHookResult{}
 	}
 }

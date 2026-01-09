@@ -13,6 +13,7 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 - [Write release description for non-developers](#write-release-description-for-non-developers)
 - [Update `rancher/charts` repository](#update-ranchercharts-repository)
 - [Update `rancher/rancher` repository](#update-rancherrancher-repository)
+- [Release providers chart](#release-providers-chart)
 - [Rancher Turtles Community Documentation](#rancher-turtles-community-documentation) (required only when cutting minor/major versions)
 - [Create a JIRA ticket for syncing Turtles Community Docs with Product Docs](#create-a-jira-ticket-for-syncing-turtles-community-docs-with-product-docs) (required only when cutting minor/major versions)
 
@@ -97,7 +98,7 @@ This part of the release is also automated via a GitHub Actions workflow, that n
 - Use workflow from: Branch: main
   This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.25`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
 - Submit PR against the following rancher/rancher branch (e.g. release/v2.12): release/v2.12
-  This must be set to the `rancher/rancher` branch that needs to be updated, with the new Turtles release. `release/v2.12` is used for Rancher 2.12.x, `release/v2.13` (which is not yet present) will be used for Rancher 2.13.x and so on.
+  This must be set to the `rancher/rancher` branch that needs to be updated, with the new Turtles release. `release/v2.12` is used for Rancher 2.12.x, `release/v2.13` is used for Rancher 2.13.x and so on.
 - Previous Turtles version (e.g. v0.23.0-rc.0)
   This is self explanatory, the value must be set to the previous Turtles version, for example `v0.25.1-rc.0`.
 - New Turtles version (e.g. v0.23.0)
@@ -106,6 +107,19 @@ This part of the release is also automated via a GitHub Actions workflow, that n
   This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`. 
 
 Once this workflow has finished, a new PR should have been created in the `rancher/rancher` repository that updates the selected branch with the new Turtles version. You need to review and merge this PR. When this PR gets merged, you will have completed the process of releasing a new version of Turtles and including it in an upcoming version of Rancher.
+
+### Release providers chart
+
+The providers chart should also be released whenever there is a new version of Turtles. To release the providers chart:
+
+1. Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release. The version should match the Turtles version.
+
+2. Invoke the 'Manual Trigger for Auto Bump' CI workflow from the Prime charts repository and pass the following parameters:
+- Use workflow from: Branch: dev-v2.13 (replace `v2.13` with the desired Rancher minor version)
+- Chart name: rancher-turtles-providers
+- Version override: auto
+
+Once this workflow finishes, a new PR should have been created in the Prime charts repository that updates the selected branch with the new version of the chart. You need to review and merge this PR.
 
 ### Rancher Turtles Community Documentation
 

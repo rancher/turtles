@@ -17,6 +17,7 @@ limitations under the License.
 package testenv
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -30,12 +31,13 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var DefaultDeployments = []NamespaceName{
+var DefaultDeployments = []types.NamespacedName{
 	{
 		Name:      "capi-controller-manager",
 		Namespace: "cattle-capi-system",
@@ -99,7 +101,7 @@ type DeployRancherTurtlesInput struct {
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// WaitForDeployments is the list of deployments to wait for.
-	WaitForDeployments []NamespaceName
+	WaitForDeployments []types.NamespacedName
 
 	// AdditionalValues are the additional values for Rancher Turtles.
 	AdditionalValues map[string]string
@@ -127,6 +129,8 @@ type UninstallRancherTurtlesInput struct {
 // If the image and tag are specified, it sets the corresponding values in the chart. If only the version is specified, it adds the version flag to the chart's additional flags.
 // The function then adds the CAPI infrastructure providers and waits for the CAPI deployments to be available. It waits for the capi-controller-manager, capi-kubeadm-bootstrap-controller-manager,
 // capi-kubeadm-control-plane-controller-manager, capd-controller-manager, rke2-bootstrap-controller-manager, and rke2-control-plane-controller-manager deployments to be available.
+//
+// Deprecated: Use UpgradeInstallRancherWithGitea instead to bootstrap Rancher using a custom Turtles system chart.
 func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 	PreRancherTurtlesInstallHook(&input)
@@ -209,7 +213,8 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	}
 
 	By("Applying test ClusterctlConfig")
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
+	clusterctlConfigYAML := bytes.Replace(e2e.ClusterctlConfig, []byte("cattle-turtles-system"), []byte("rancher-turtles-system"), 1)
+	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, clusterctlConfigYAML)).To(Succeed())
 
 	if input.CAPIProvidersYAML != nil {
 		By("Adding CAPI infrastructure providers")

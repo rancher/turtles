@@ -47,6 +47,45 @@ func Apply(ctx context.Context, p framework.ClusterProxy, resources []byte, args
 	return nil
 }
 
+// Delete wraps `kubectl delete ...` and prints the output so we can see what gets deleted from the cluster.
+func Delete(ctx context.Context, p framework.ClusterProxy, resources []byte, args ...string) error {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for Delete")
+	Expect(resources).NotTo(BeNil(), "resources is required for Delete")
+
+	if err := KubectlDelete(ctx, p.GetKubeconfigPath(), resources, args...); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("%s: stderr: %s", err.Error(), exitErr.Stderr)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func KubectlDelete(ctx context.Context, kubeconfigPath string, resources []byte, args ...string) error {
+	log := log.FromContext(ctx)
+	aargs := append([]string{"delete", "--kubeconfig", kubeconfigPath, "-f", "-"}, args...)
+	rbytes := bytes.NewReader(resources)
+	deleteCmd := capiexec.NewCommand(
+		capiexec.WithCommand(kubectlPath()),
+		capiexec.WithArgs(aargs...),
+		capiexec.WithStdin(rbytes),
+	)
+
+	log.Info("Running kubectl", "command", strings.Join(aargs, " "))
+	stdout, stderr, err := deleteCmd.Run(ctx)
+	if len(stderr) > 0 {
+		log.Info("Stderr:", "stderr", string(stderr))
+	}
+	if len(stdout) > 0 {
+		log.Info("Stdout:", "stdout", string(stdout))
+	}
+
+	return err
+
+}
+
 // KubectlApply shells out to kubectl apply.
 //
 // TODO: Remove this usage of kubectl and replace with a function from apply.go using the controller-runtime client.

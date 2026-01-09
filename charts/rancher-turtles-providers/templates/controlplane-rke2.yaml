@@ -35,11 +35,6 @@ spec:
   manager:
 {{ toYaml (index .Values "providers" "controlplaneRKE2" "manager") | nindent 4 }}
 {{- end }}
-{{- if or (index .Values "providers" "controlplaneRKE2" "credentials") }}
-  credentials:
-    name: {{ index .Values "providers" "controlplaneRKE2" "credentials" "name" }}
-    namespace: {{ index .Values "providers" "controlplaneRKE2" "credentials" "namespace" }}
-{{- end }}
 {{- if or (index .Values "providers" "controlplaneRKE2" "configSecret") }}
   configSecret:
     name: {{ index .Values "providers" "controlplaneRKE2" "configSecret" "name" }}

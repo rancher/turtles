@@ -2,7 +2,7 @@
 // +build e2e
 
 /*
-Copyright © 2023 - 2024 SUSE LLC
+Copyright © 2023 - 2025 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package import_gitops
+package turtles_switch
 
 import (
 	"context"
@@ -26,15 +26,16 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/rancher/turtles/test/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
 
@@ -42,6 +43,9 @@ import (
 var (
 	// hostName is the host name for the Rancher Manager server.
 	hostName string
+
+	// e2eConfig to be used for this test, read from configPath.
+	e2eConfig *clusterctl.E2EConfig
 
 	ctx = context.Background()
 
@@ -54,13 +58,13 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	RunSpecs(t, "rancher-turtles-e2e-import-gitops")
+	RunSpecs(t, "rancher-turtles-e2e-switch")
 }
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		e2eConfig := e2e.LoadE2EConfig()
-		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-import-gitops"
+		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-switch"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
@@ -129,6 +133,7 @@ var _ = SynchronizedBeforeSuite(
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			UseLegacyCAPINamespace:  false,
 			RancherTurtlesNamespace: e2e.NewRancherTurtlesNamespace,
+			ProviderList:            "docker,rke2",
 		})
 
 		data, err := json.Marshal(e2e.Setup{

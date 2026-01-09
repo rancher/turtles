@@ -30,6 +30,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,7 +61,7 @@ type CAPIOperatorDeployProviderInput struct {
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
 	// WaitForDeployments is the list of deployments to wait for.
-	WaitForDeployments []NamespaceName
+	WaitForDeployments []types.NamespacedName
 
 	// CustomWaiter is a slice of functions for custom waiting logic.
 	CustomWaiter []func(ctx context.Context)
@@ -70,11 +71,6 @@ type CAPIOperatorDeployProviderInput struct {
 type ProviderTemplateData struct {
 	// ProviderVersion is the version of the provider
 	ProviderVersion string
-}
-
-type NamespaceName struct {
-	Name      string
-	Namespace string
 }
 
 type OCIProvider struct {

@@ -122,9 +122,6 @@ var (
 
 	// CAPIProvider test data
 
-	//go:embed data/test-providers/namespace.yaml
-	CAPVProviderNamespace []byte
-
 	//go:embed data/test-providers/capv-provider-no-ver.yaml
 	CAPVProviderNoVersion []byte
 
@@ -137,11 +134,19 @@ var (
 	//go:embed data/test-providers/clusterctlconfig-updated.yaml
 	ClusterctlConfigUpdated []byte
 
+	//go:embed data/test-providers/dummy-vsphere-template.yaml
+	CAPVDummyMachineTemplate []byte
+
+	// Extra Environment
+
 	//go:embed data/gitea/ingress.yaml
 	GiteaIngress []byte
 
 	//go:embed data/gitea/values.yaml
 	GiteaValues []byte
+
+	//go:embed data/test-switch/turtles-embedded-cluster-api-feature.yaml
+	TurtlesEmbeddedCAPIFeature []byte
 )
 
 const (
@@ -212,7 +217,8 @@ const (
 )
 
 const (
-	CAPIVersion = "v1.10.6"
+	CAPIVersion     = "v1.10.6"
+	CAPIVersionBump = "CAPI_VERSION_TEST_BUMP"
 )
 
 const (
