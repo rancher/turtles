@@ -45,11 +45,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
-	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/util"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
-	turtlesnaming "github.com/rancher/turtles/util/naming"
 	turtlespredicates "github.com/rancher/turtles/util/predicates"
 )
 
@@ -99,14 +97,6 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	if err := c.Watch(
 		source.Kind[client.Object](mgr.GetCache(), &managementv3.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(r.rancherV3ClusterToCapiCluster(ctx, capiPredicates)),
-		)); err != nil {
-		return fmt.Errorf("adding watch for Rancher cluster: %w", err)
-	}
-
-	// Watch Rancher provisioningv1 clusters that don't have the migrated annotation and are related to a CAPI cluster
-	if err := c.Watch(
-		source.Kind[client.Object](mgr.GetCache(), &provisioningv1.Cluster{},
-			handler.EnqueueRequestsFromMapFunc(r.rancherV1ClusterToCapiCluster(ctx, capiPredicates)),
 		)); err != nil {
 		return fmt.Errorf("adding watch for Rancher cluster: %w", err)
 	}
@@ -199,11 +189,6 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clusterv1.Cluster) (res ctrl.Result, reterr error) {
 	log := log.FromContext(ctx)
-
-	migrated, err := r.verifyV1ClusterMigration(ctx, capiCluster)
-	if err != nil || !migrated {
-		return ctrl.Result{Requeue: true}, err
-	}
 
 	labels := map[string]string{
 		capiClusterOwner:          capiCluster.Name,
@@ -453,43 +438,6 @@ func (r *CAPIImportReconciler) rancherV3ClusterToCapiCluster(ctx context.Context
 	}
 }
 
-func (r *CAPIImportReconciler) rancherV1ClusterToCapiCluster(ctx context.Context, clusterPredicate predicate.Funcs) handler.MapFunc {
-	log := log.FromContext(ctx)
-
-	return func(_ context.Context, cluster client.Object) []ctrl.Request {
-		labels := cluster.GetLabels()
-		if _, ok := labels[ownedLabelName]; !ok { // Ignore clusters that are not owned by turtles
-			log.V(5).Info(missingLabelMsg+ownedLabelName, "cluster", cluster.GetName())
-			return nil
-		}
-
-		annotations := cluster.GetAnnotations()
-		if _, ok := annotations[v1ClusterMigrated]; ok { // Ignore watching clusters that are already migrated
-			log.V(5).Info("migrated annotation is present"+v1ClusterMigrated, "cluster", cluster.GetName())
-			return nil
-		}
-
-		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Name:      turtlesnaming.Name(cluster.GetName()).ToCapiName(),
-			Namespace: cluster.GetNamespace(),
-		}}
-
-		if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
-			if !apierrors.IsNotFound(err) {
-				log.Error(err, "getting capi cluster")
-			}
-
-			return nil
-		}
-
-		if !clusterPredicate.Generic(event.GenericEvent{Object: capiCluster}) {
-			return nil
-		}
-
-		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: capiCluster.Namespace, Name: capiCluster.Name}}}
-	}
-}
-
 func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling rancher cluster deletion")
@@ -530,40 +478,6 @@ func (r *CAPIImportReconciler) deleteDependentRancherCluster(ctx context.Context
 	}
 
 	return client.IgnoreNotFound(r.Client.DeleteAllOf(ctx, &managementv3.Cluster{}, selectors...))
-}
-
-// verifyV1ClusterMigration verifies if a v1 cluster has been successfully migrated.
-// It checks if the v1 cluster exists for a v3 cluster and if it has the "cluster-api.cattle.io/migrated" annotation.
-// If the cluster is not migrated yet, it returns false and requeues the reconciliation.
-func (r *CAPIImportReconciler) verifyV1ClusterMigration(ctx context.Context, capiCluster *clusterv1.Cluster) (bool, error) {
-	log := log.FromContext(ctx)
-
-	v1rancherCluster := &provisioningv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: capiCluster.Namespace,
-			Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
-		},
-	}
-
-	err := r.Client.Get(ctx, client.ObjectKeyFromObject(v1rancherCluster), v1rancherCluster)
-	if client.IgnoreNotFound(err) != nil {
-		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(v1rancherCluster)))
-		return false, err
-	}
-
-	if apierrors.IsNotFound(err) {
-		log.V(5).Info("V1 Cluster is migrated or doesn't exist, continuing with v3 reconciliation")
-
-		return true, nil
-	}
-
-	if _, present := v1rancherCluster.Annotations[v1ClusterMigrated]; !present {
-		log.Info("Cluster is not migrated yet, requeue, name", "name", v1rancherCluster.Name)
-
-		return false, nil
-	}
-
-	return true, nil
 }
 
 // optOutOfClusterOwner annotates the cluster with the opt-out annotation.
