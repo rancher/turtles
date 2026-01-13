@@ -11,7 +11,7 @@ data:
     providers:
     # Cluster API core provider
     - name:         "cluster-api"
-      url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.10.6/core-components.yaml"
+      url:          "https://github.com/kubernetes-sigs/cluster-api/releases/v1.11.4/core-components.yaml"
       type:         "CoreProvider"
     images:
       cluster-api:
