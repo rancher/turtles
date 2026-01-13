@@ -18,7 +18,6 @@ env:
   VSPHERE_PASSWORD: ${{ secrets.VSPHERE_PASSWORD }}
   VSPHERE_KUBE_VIP_IP_KUBEADM: ${{ secrets.VSPHERE_KUBE_VIP_IP_KUBEADM }}
   VSPHERE_KUBE_VIP_IP_RKE2: ${{ secrets.VSPHERE_KUBE_VIP_IP_RKE2 }}
-  RANCHER_HOSTNAME: ${{ secrets.INTERNAL_DOMAIN }}
   MANAGEMENT_CLUSTER_ENVIRONMENT: "internal-kind"
   GINKGO_LABEL_FILTER: "vsphere"
   TAG: v0.0.1
@@ -45,7 +44,10 @@ jobs:
       - name: Display docker version
         run: docker version
       - name: Run e2e tests
-        run: make test-e2e
+        run: |
+          export RANCHER_HOSTNAME="$(ip route get 8.8.8.8 | awk '{print $7}').sslip.io"
+          echo "RANCHER_HOSTNAME is set to $RANCHER_HOSTNAME"
+          make test-e2e
       - name: Collect run artifacts
         if: always()
         uses: actions/upload-artifact@v6
