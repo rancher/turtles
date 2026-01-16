@@ -23,12 +23,12 @@ import (
 	"maps"
 	"strconv"
 
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/controllers/clusterctl"
@@ -112,29 +112,44 @@ func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1
 
 	switch {
 	case !knownProvider:
-		conditions.MarkUnknown(provider, turtlesv1.CheckLatestVersionTime, turtlesv1.CheckLatestProviderUnknownReason, "Provider is unknown")
+		conditions.Set(provider, metav1.Condition{
+			Type:               string(turtlesv1.CheckLatestVersionTime),
+			Status:             metav1.ConditionUnknown,
+			Reason:             turtlesv1.CheckLatestProviderUnknownReason,
+			Message:            "Provider is unknown",
+			LastTransitionTime: metav1.Now(),
+		})
 	case latest:
-		conditions.MarkTrue(provider, turtlesv1.CheckLatestVersionTime)
+		conditions.Set(provider, metav1.Condition{
+			Type:               string(turtlesv1.CheckLatestVersionTime),
+			Status:             metav1.ConditionTrue,
+			Reason:             "LatestVersionSet",
+			Message:            "Latest version is set",
+			LastTransitionTime: metav1.Now(),
+		})
 		provider.Spec.Version = providerVersion
 	case !latest && !provider.Spec.EnableAutomaticUpdate:
-		conditions.MarkFalse(
-			provider,
-			turtlesv1.CheckLatestVersionTime,
-			turtlesv1.CheckLatestUpdateAvailableReason,
-			clusterv1.ConditionSeverityInfo,
-			"Provider version update available. Current latest is %s", providerVersion,
-		)
+		conditions.Set(provider, metav1.Condition{
+			Type:               string(turtlesv1.CheckLatestVersionTime),
+			Status:             metav1.ConditionFalse,
+			Reason:             turtlesv1.CheckLatestUpdateAvailableReason,
+			Message:            fmt.Sprintf("Provider version update available. Current latest is %s", providerVersion),
+			LastTransitionTime: metav1.Now(),
+		})
 	case !latest && provider.Spec.EnableAutomaticUpdate:
-		lastCheck := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+		lastCheck := conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 		updatedMessage := fmt.Sprintf("Updated to latest %s version", providerVersion)
 
 		if lastCheck == nil || lastCheck.Message != updatedMessage {
 			log.Info(fmt.Sprintf("Version %s is beyond current latest, updated to %s", cmp.Or(provider.Spec.Version, "latest"), providerVersion))
 
-			lastCheck = conditions.TrueCondition(turtlesv1.CheckLatestVersionTime)
-			lastCheck.Message = updatedMessage
-
-			conditions.Set(provider, lastCheck)
+			conditions.Set(provider, metav1.Condition{
+				Type:               string(turtlesv1.CheckLatestVersionTime),
+				Status:             metav1.ConditionTrue,
+				Reason:             "VersionUpdated",
+				Message:            updatedMessage,
+				LastTransitionTime: metav1.Now(),
+			})
 		}
 
 		provider.Spec.Version = providerVersion

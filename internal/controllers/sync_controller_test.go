@@ -170,7 +170,7 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 
 		Eventually(func(g Gomega) {
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(provider), provider)).ToNot(HaveOccurred())
-			g.Expect(conditions.IsTrue(provider, turtlesv1.RancherCredentialsSecretCondition))
+			g.Expect(conditions.IsTrue(provider, string(turtlesv1.RancherCredentialsSecretCondition)))
 		}).Should(Succeed())
 
 		resourceVersion := ""
@@ -205,8 +205,8 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 
 		Eventually(func(g Gomega) {
 			g.Expect(testEnv.Get(ctx, client.ObjectKeyFromObject(provider), provider)).ToNot(HaveOccurred())
-			g.Expect(conditions.IsFalse(provider, turtlesv1.RancherCredentialsSecretCondition))
-			g.Expect(conditions.GetMessage(provider, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Credential keys missing: key not found: digitaloceancredentialConfig-accessToken"))
+			g.Expect(conditions.IsFalse(provider, string(turtlesv1.RancherCredentialsSecretCondition)))
+			g.Expect(conditions.GetMessage(provider, string(turtlesv1.RancherCredentialsSecretCondition))).To(Equal("Credential keys missing: key not found: digitaloceancredentialConfig-accessToken"))
 		}).Should(Succeed())
 	})
 })

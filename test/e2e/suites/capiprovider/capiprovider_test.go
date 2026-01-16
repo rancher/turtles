@@ -39,7 +39,7 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 const (
@@ -99,7 +99,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			checkLastVersionCondition = conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 			if checkLastVersionCondition == nil {
 				return false
 			}
@@ -134,7 +134,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			checkLastVersionCondition := conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 			if checkLastVersionCondition == nil {
 				return false
 			}
@@ -161,7 +161,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: vclusterNamespace, Name: vclusterProviderName}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			checkLastVersionCondition = conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 			if checkLastVersionCondition == nil {
 				return false
 			}
