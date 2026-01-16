@@ -35,11 +35,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-	appsv1 "k8s.io/api/apps/v1"
-
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 const (
@@ -94,12 +91,12 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 	It("Should notify of available update when bumping ClusterctlConfig", func() {
 		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.ClusterctlConfigUpdated)).Should(Succeed())
 		provider := &turtlesv1.CAPIProvider{}
-		checkLastVersionCondition := &clusterv1.Condition{}
+		checkLastVersionCondition := &metav1.Condition{}
 		Eventually(func() bool {
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			checkLastVersionCondition = conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 			if checkLastVersionCondition == nil {
 				return false
 			}
@@ -108,8 +105,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			}
 			return true
 		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition with UpdateAvailable reason")
-		Expect(checkLastVersionCondition.Severity).Should(Equal(clusterv1.ConditionSeverityInfo), "UpdateAvailable severity must be Info")
-		Expect(checkLastVersionCondition.Status).Should(Equal(corev1.ConditionFalse), "UpdateAvailable status must be False")
+		Expect(checkLastVersionCondition.Status).Should(Equal(metav1.ConditionFalse), "UpdateAvailable status must be False")
 		Expect(checkLastVersionCondition.Message).Should(Equal("Provider version update available. Current latest is v1.13.0"))
 	})
 
@@ -134,11 +130,11 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition := conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			checkLastVersionCondition := conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 			if checkLastVersionCondition == nil {
 				return false
 			}
-			if checkLastVersionCondition.Status != corev1.ConditionTrue {
+			if checkLastVersionCondition.Status != metav1.ConditionTrue {
 				return false
 			}
 			return true
@@ -156,19 +152,19 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 	It("Should install but not automatically update Unknown provider", func() {
 		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.UnknownProvider)).Should(Succeed())
 		provider := &turtlesv1.CAPIProvider{}
-		checkLastVersionCondition := &clusterv1.Condition{}
+		checkLastVersionCondition := &metav1.Condition{}
 		Eventually(func() bool {
 			Expect(bootstrapClusterProxy.GetClient().
 				Get(ctx, types.NamespacedName{Namespace: vclusterNamespace, Name: vclusterProviderName}, provider)).
 				Should(Succeed())
-			checkLastVersionCondition = conditions.Get(provider, turtlesv1.CheckLatestVersionTime)
+			checkLastVersionCondition = conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
 			if checkLastVersionCondition == nil {
 				return false
 			}
 			return true
 		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).
 			Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition")
-		Expect(checkLastVersionCondition.Status).Should(Equal(corev1.ConditionUnknown), "UpdateAvailable status must be Unknown")
+		Expect(checkLastVersionCondition.Status).Should(Equal(metav1.ConditionUnknown), "UpdateAvailable status must be Unknown")
 		Expect(checkLastVersionCondition.Message).Should(Equal("Provider is unknown"))
 		Expect(checkLastVersionCondition.Reason).Should(Equal(turtlesv1.CheckLatestProviderUnknownReason))
 
@@ -222,7 +218,7 @@ var _ = Describe("no-cert-manager feature verification", Ordered, Label(e2e.Shor
 					Name:      capvProviderName,
 				}, capiProvider)).Should(Succeed())
 			condition := conditions.Get(capiProvider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
-			if condition == nil || condition.Status != corev1.ConditionTrue {
+			if condition == nil || condition.Status != metav1.ConditionTrue {
 				return false
 			}
 			return true

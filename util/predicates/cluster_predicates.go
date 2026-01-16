@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/rancher/turtles/util"
@@ -96,12 +96,7 @@ func processIfClusterReadyControlPlane(logger logr.Logger, obj client.Object) bo
 		return false
 	}
 
-	if cluster.Status.ControlPlaneReady {
-		log.V(6).Info("Cluster has a ready control plane, will attempt to map resource")
-		return true
-	}
-
-	if conditions.IsTrue(cluster, clusterv1.ControlPlaneReadyCondition) {
+	if conditions.IsTrue(cluster, clusterv1.ClusterControlPlaneAvailableCondition) {
 		log.V(6).Info("Cluster has a ready control plane condition, will attempt to map resource")
 		return true
 	}

@@ -37,7 +37,7 @@ GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 
 CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
-CAPI_VERSION_TEST_BUMP ?= v1.10.7
+CAPI_VERSION_TEST_BUMP ?= v1.11.4 # update this when a new CAPI patch version is out
 CAPI_VERSION_TEST_BUMP_SUFFIX ?= capi
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
@@ -117,22 +117,22 @@ get_go_version = $(shell go list -m $1 | awk '{print $$2}')
 GO_INSTALL := ./scripts/go-install.sh
 
 # Binaries
-KUSTOMIZE_VER := v5.6.0
+KUSTOMIZE_VER := v5.7.0
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER))
 KUSTOMIZE_PKG := sigs.k8s.io/kustomize/kustomize/v5
 
-SETUP_ENVTEST_VER := release-0.20
+SETUP_ENVTEST_VER := release-0.21
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
 
-CONTROLLER_GEN_VER := v0.16.1
+CONTROLLER_GEN_VER := v0.18.0
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(abspath $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER))
 CONTROLLER_GEN_PKG := sigs.k8s.io/controller-tools/cmd/controller-gen
 
-CONVERSION_GEN_VER := v0.31.0
+CONVERSION_GEN_VER := v0.33.0
 CONVERSION_GEN_BIN := conversion-gen
 # We are intentionally using the binary without version suffix, to avoid the version
 # in generated files.
@@ -144,7 +144,7 @@ ENVSUBST_BIN := envsubst
 ENVSUBST := $(abspath $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER))
 ENVSUBST_PKG := github.com/drone/envsubst/v2/cmd/envsubst
 
-GO_APIDIFF_VER := v0.8.2
+GO_APIDIFF_VER := v0.8.3
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(abspath $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER))
 GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
@@ -162,7 +162,7 @@ HELM_VER := v3.18.4
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-CLUSTERCTL_VER := v1.10.6
+CLUSTERCTL_VER := v1.11.4
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 

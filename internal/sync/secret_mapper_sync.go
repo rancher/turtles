@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -269,14 +268,15 @@ func (s *SecretMapperSync) Get(ctx context.Context) error {
 		return s.SecretSync.Get(ctx)
 	}
 
-	conditions.Set(s.Source, conditions.FalseCondition(
-		turtlesv1.RancherCredentialsSecretCondition,
-		turtlesv1.RancherCredentialSourceMissing,
-		clusterv1.ConditionSeverityError,
-		"%s", fmt.Sprintf(missingSource, cmp.Or(
+	conditions.Set(s.Source, metav1.Condition{
+		Type:   string(turtlesv1.RancherCredentialsSecretCondition),
+		Status: metav1.ConditionFalse,
+		Reason: turtlesv1.RancherCredentialSourceMissing,
+		Message: fmt.Sprintf(missingSource, cmp.Or(
 			s.Source.Spec.Credentials.RancherCloudCredential,
 			s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName)),
-	))
+		LastTransitionTime: metav1.Now(),
+	})
 
 	return fmt.Errorf("unable to locate rancher secret with name %s for provider %s", s.RancherSecret.GetName(), s.Source.ProviderName())
 }
@@ -289,12 +289,13 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 	if err := Into(s.Source.ProviderName(), s.RancherSecret.Data, s.Destination.StringData); err != nil {
 		log.Error(err, "failed to map credential keys")
 
-		conditions.Set(s.Source, conditions.FalseCondition(
-			turtlesv1.RancherCredentialsSecretCondition,
-			turtlesv1.RancherCredentialKeyMissing,
-			clusterv1.ConditionSeverityError,
-			"%s", fmt.Sprintf(missingKey, err.Error()),
-		))
+		conditions.Set(s.Source, metav1.Condition{
+			Type:               string(turtlesv1.RancherCredentialsSecretCondition),
+			Status:             metav1.ConditionFalse,
+			Reason:             turtlesv1.RancherCredentialKeyMissing,
+			Message:            fmt.Sprintf(missingKey, err.Error()),
+			LastTransitionTime: metav1.Now(),
+		})
 
 		return nil
 	}
@@ -304,9 +305,13 @@ func (s *SecretMapperSync) Sync(ctx context.Context) error {
 		cmp.Or(s.Source.Spec.Credentials.RancherCloudCredential, s.Source.Spec.Credentials.RancherCloudCredentialNamespaceName),
 		client.ObjectKeyFromObject(s.SecretSync.Destination).String()))
 
-	conditions.Set(s.Source, conditions.TrueCondition(
-		turtlesv1.RancherCredentialsSecretCondition,
-	))
+	conditions.Set(s.Source, metav1.Condition{
+		Type:               string(turtlesv1.RancherCredentialsSecretCondition),
+		Status:             metav1.ConditionTrue,
+		Reason:             "CredentialsMapped",
+		Message:            "Credentials successfully mapped",
+		LastTransitionTime: metav1.Now(),
+	})
 
 	return nil
 }
