@@ -15142,7 +15142,7 @@ data:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            image: registry.rancher.com/rancher/cluster-api-controller:v1.10.6
+            image: registry.rancher.com/rancher/cluster-api-controller:v1.11.4
             imagePullPolicy: IfNotPresent
             livenessProbe:
               httpGet:
@@ -15777,7 +15777,7 @@ metadata:
     managed-by.operator.cluster.x-k8s.io: "true"
     provider.cluster.x-k8s.io/name: cluster-api
     provider.cluster.x-k8s.io/type: core
-    provider.cluster.x-k8s.io/version: v1.10.6
+    provider.cluster.x-k8s.io/version: v1.11.4
     managed-by.turtles.cattle.io: "true"
-  name: core-cluster-api-v1.10.6
+  name: core-cluster-api-v1.11.4
   namespace: cattle-capi-system
