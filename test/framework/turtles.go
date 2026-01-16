@@ -31,9 +31,9 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -148,18 +148,19 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 		if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, cluster); err != nil {
 			return fmt.Errorf("failed to get cluster %s: %w", key.String(), err)
 		}
-		if cluster.Status.ControlPlaneReady == false {
-			return fmt.Errorf("cluster %s does not have a ControlPlaneReady status", key.String())
+		// Check conditions instead of deprecated status fields
+		if !conditions.IsTrue(cluster, clusterv1.ClusterControlPlaneAvailableCondition) {
+			return fmt.Errorf("cluster %s does not have ControlPlane available", key.String())
 		}
-		if cluster.Status.InfrastructureReady == false {
-			return fmt.Errorf("cluster %s does not have an InfrastructureReady status", key.String())
+		if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {
+			return fmt.Errorf("cluster %s does not have Infrastructure ready", key.String())
 		}
 
 		readyCondition := conditions.Get(cluster, clusterv1.ReadyCondition)
 		if readyCondition == nil {
 			return fmt.Errorf("cluster %s does not have a Ready condition", key.String())
 		}
-		if readyCondition.Status != corev1.ConditionTrue {
+		if readyCondition.Status != metav1.ConditionTrue {
 			return fmt.Errorf("cluster %s Ready condition is not true: %s", key.String(), readyCondition.Message)
 		}
 
@@ -179,7 +180,7 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 			for _, condition := range machine.Status.Conditions {
 				if condition.Type == clusterv1.ReadyCondition {
 					readyConditionFound = true
-					if condition.Status != corev1.ConditionTrue {
+					if condition.Status != metav1.ConditionTrue {
 						return fmt.Errorf("machine %s Ready condition is not true: %s", machine.Name, condition.Message)
 					}
 					if condition.Message != "" {

@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -137,10 +137,10 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	capiCluster := &clusterv1.Cluster{}
 	if err := r.Client.Get(ctx, req.NamespacedName, capiCluster); err != nil {
 		if apierrors.IsNotFound(err) {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 		}
 
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, err
 	}
 
 	log = log.WithValues("cluster", capiCluster.Name)
@@ -156,7 +156,7 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Wait for controlplane to be ready. This should never be false as the predicates
 	// do the filtering.
-	if !capiCluster.Status.ControlPlaneReady && !conditions.IsTrue(capiCluster, clusterv1.ControlPlaneReadyCondition) {
+	if !conditions.IsTrue(capiCluster, clusterv1.ClusterControlPlaneAvailableCondition) {
 		log.Info("clusters control plane is not ready, requeue")
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
@@ -205,7 +205,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 
 	if err := r.Client.List(ctx, rancherClusterList, selectors...); client.IgnoreNotFound(err) != nil {
 		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, err
 	}
 
 	if len(rancherClusterList.Items) != 0 {
@@ -309,7 +309,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
 	fleetMigrated := false
@@ -334,7 +334,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 		if requeue, err := removeFleetNamespace(ctx, remoteClient, rancherCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("cleaning up fleet namespace: %w", err)
 		} else if requeue {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 		}
 
 		return ctrl.Result{}, nil
@@ -354,7 +354,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 	if manifest == "" {
 		log.Info("Import manifest URL not set yet, requeue")
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
 	log.Info("Creating import manifest")

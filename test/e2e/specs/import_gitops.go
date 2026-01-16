@@ -36,7 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -358,10 +358,10 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			}
 
 			switch readyCondition.Status {
-			case corev1.ConditionTrue:
+			case metav1.ConditionTrue:
 				// Cluster is ready
 				return nil
-			case corev1.ConditionFalse:
+			case metav1.ConditionFalse:
 				return fmt.Errorf("Cluster is not Ready")
 			default:
 				return fmt.Errorf("Cluster Ready condition is unknown")
@@ -451,15 +451,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				//
 				// This is to bypass a race condition where the InfraCluster is deleted,
 				// before some other resources (ex. InfraMachinePool) are deleted.
-				if cluster.Spec.InfrastructureRef != nil &&
+				if cluster.Spec.InfrastructureRef.IsDefined() &&
 					(cluster.Spec.InfrastructureRef.Kind == "AWSCluster" ||
 						cluster.Spec.InfrastructureRef.Kind == "GCPManagedCluster") {
 
 					infraCluster := &unstructured.Unstructured{}
 					infraCluster.SetGroupVersionKind(schema.GroupVersionKind{
-						Group:   cluster.Spec.InfrastructureRef.GroupVersionKind().Group,
-						Kind:    cluster.Spec.InfrastructureRef.GroupVersionKind().Kind,
-						Version: cluster.Spec.InfrastructureRef.GroupVersionKind().Version,
+						Group:   cluster.Spec.InfrastructureRef.APIGroup,
+						Kind:    cluster.Spec.InfrastructureRef.Kind,
+						Version: "v1beta1", // Default version, should be looked up from contract labels
 					})
 					infraClusterKey := types.NamespacedName{
 						Namespace: cluster.Namespace,

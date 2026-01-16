@@ -33,7 +33,7 @@ import (
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-operator/controller"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	configclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
@@ -229,7 +229,7 @@ func newCoreProviderToProviderFuncMapForProviderList(cl client.Client) handler.M
 		}
 
 		// We don't want to raise events if CoreProvider is not ready yet.
-		if !conditions.IsTrue(coreProvider, clusterv1.ReadyCondition) {
+		if !conditions.IsTrue(coreProvider, string(clusterv1.ReadyCondition)) {
 			return nil
 		}
 

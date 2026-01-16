@@ -335,7 +335,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 					Name:      capvProviderName,
 				}, capiProvider)).Should(Succeed())
 			condition := conditions.Get(capiProvider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
-			if condition == nil || condition.Status != corev1.ConditionTrue {
+			if condition == nil || condition.Status != metav1.ConditionTrue {
 				return false
 			}
 			return true
