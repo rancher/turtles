@@ -33,7 +33,7 @@ jobs:
           version: v3.14.3
 
       - name: setupGo
-        uses: actions/setup-go@v6.1.0
+        uses: actions/setup-go@v6.2.0
         with:
           go-version-file: go.mod
 
@@ -122,7 +122,7 @@ jobs:
           version: v3.14.3
 
       - name: setupGo
-        uses: actions/setup-go@v6.1.0
+        uses: actions/setup-go@v6.2.0
         with:
           go-version-file: go.mod
 
