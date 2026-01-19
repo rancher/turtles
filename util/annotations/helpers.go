@@ -39,6 +39,8 @@ const (
 	LocalSystemAgentAnnotation = "cluster-api.cattle.io/local-system-agent"
 	// ClusterDescriptionAnnotation is a cluster annotation, allowing user to provide a custom cluster description.
 	ClusterDescriptionAnnotation = "cluster-api.cattle.io/cluster-description"
+	// ImportedClusterVersionManagementAnnotation is a Rancher management Cluster annotation that enables or disables version management for the Cluster.
+	ImportedClusterVersionManagementAnnotation = "rancher.io/imported-cluster-version-management"
 )
 
 // HasClusterImportAnnotation returns true if the object has the `imported` annotation.

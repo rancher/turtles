@@ -100,6 +100,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 				},
 				Annotations: map[string]string{
 					fleetNamespaceMigrated: "cattle-fleet-system",
+					turtlesannotations.ImportedClusterVersionManagementAnnotation: "false",
 				},
 			},
 		}
@@ -210,6 +211,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
+			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.ImportedClusterVersionManagementAnnotation))
+			value := rancherClusters.Items[0].Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
+			g.Expect(value).To(Equal("false"), "imported-cluster-version-management must be disabled")
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
 		}).Should(Succeed())
 

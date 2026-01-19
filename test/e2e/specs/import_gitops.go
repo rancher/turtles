@@ -94,6 +94,10 @@ type CreateUsingGitOpsSpecInput struct {
 	// AdditionalFleetGitRepos specifies additional FleetGitRepos to be created before the main GitRepo.
 	// This is useful for setting up resources like cluster classes/cni/cpi that some tests require.
 	AdditionalFleetGitRepos []turtlesframework.FleetCreateGitRepoInput
+
+	// SkipLatestFeatureChecks can be used to skip tests that have not been released yet and can not be tested
+	// with stable versions of Turtles, for example during the chart upgrade test.
+	SkipLatestFeatureChecks bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -169,6 +173,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
 			return found
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+
+		if !input.SkipLatestFeatureChecks { // Can be removed after Turtles v0.26 is used a starter for the chart upgrade test.
+			By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")
+			Eventually(func() bool {
+				Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				value, found := rancherCluster.Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
+				return found && value == "false"
+			}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
+		}
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
 		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{

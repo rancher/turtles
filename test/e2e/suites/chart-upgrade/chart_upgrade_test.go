@@ -150,6 +150,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			TopologyNamespace:              topologyNamespace,
 			SkipCleanup:                    true, // Keep cluster running during upgrade
 			SkipDeletionTest:               true,
+			SkipLatestFeatureChecks:        true,
 			AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
