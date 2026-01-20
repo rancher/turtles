@@ -100,7 +100,7 @@ spec:
                 template: |
                   kindest/node:{{ .builtin.machineDeployment.version | replace "+" "_" }}
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -113,7 +113,7 @@ spec:
                 template: |
                   kindest/node:{{ .builtin.controlPlane.version | replace "+" "_" }}
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             matchResources:
               controlPlane: true
@@ -225,7 +225,7 @@ spec:
               type: string
           type: object
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
 metadata:
   name: docker-kubeadm-clustertemplate
@@ -256,7 +256,7 @@ spec:
         joinConfiguration:
           nodeRegistration: {}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-kubeadm-control-plane
@@ -267,7 +267,7 @@ spec:
         - containerPath: /var/run/docker.sock
           hostPath: /var/run/docker.sock
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-kubeadm-default-worker-machinetemplate
