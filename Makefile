@@ -37,7 +37,7 @@ GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 
 CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
-CAPI_VERSION_TEST_BUMP ?= v1.11.4 # update this when a new CAPI patch version is out
+CAPI_VERSION_TEST_BUMP ?= v1.11.4
 CAPI_VERSION_TEST_BUMP_SUFFIX ?= capi
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
