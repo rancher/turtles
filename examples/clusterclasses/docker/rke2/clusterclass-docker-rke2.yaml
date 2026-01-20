@@ -65,7 +65,7 @@ spec:
     - name: dockerImage
       definitions:
         - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             matchResources:
               controlPlane: true
@@ -115,7 +115,7 @@ spec:
                   {{- end }}
 
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
 metadata:
   name: docker-rke2-clustertemplate
@@ -156,7 +156,7 @@ spec:
           test: "true"
       nodeDrainTimeout: 30s
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-rke2-control-plane
@@ -165,7 +165,7 @@ spec:
     spec:
       bootstrapTimeout: 15m  
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-rke2-worker-machinetemplate

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	errorutils "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -149,7 +150,13 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
 		log.Info("CAPI cluster is marked for import, adding finalizer")
 
-		if err := r.Client.Update(ctx, capiCluster); err != nil {
+		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
+				return err
+			}
+			controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
+			return r.Client.Update(ctx, capiCluster)
+		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error adding finalizer: %w", err)
 		}
 	}
