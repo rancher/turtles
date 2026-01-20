@@ -455,11 +455,17 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 					(cluster.Spec.InfrastructureRef.Kind == "AWSCluster" ||
 						cluster.Spec.InfrastructureRef.Kind == "GCPManagedCluster") {
 
+					// Use appropriate API version based on provider support:
+					// AWS supports v1beta2, GCP only supports v1beta1
 					infraCluster := &unstructured.Unstructured{}
+					apiVersion := "v1beta2" // Default for AWS
+					if cluster.Spec.InfrastructureRef.Kind == "GCPManagedCluster" {
+						apiVersion = "v1beta1" // GCP only supports v1beta1
+					}
 					infraCluster.SetGroupVersionKind(schema.GroupVersionKind{
 						Group:   cluster.Spec.InfrastructureRef.APIGroup,
 						Kind:    cluster.Spec.InfrastructureRef.Kind,
-						Version: "v1beta1", // Default version, should be looked up from contract labels
+						Version: apiVersion,
 					})
 					infraClusterKey := types.NamespacedName{
 						Namespace: cluster.Namespace,
