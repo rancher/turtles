@@ -35,7 +35,7 @@ kubectl krew install operator/clusterctl-operator
 kubectl operator version
 
 # use CAPI Operator plugin to generate ConfigMap with core CAPI components
-kubectl operator preload --core cluster-api:${CORE_CAPI_NAMESPACE} -u ${CAPI_RELEASE_URL} >>${OUTPUT_DIR}/${OUTPUT_FILE}
+kubectl operator preload --core cluster-api:${CORE_CAPI_NAMESPACE} -u https://github.com/rancher-sandbox/cluster-api/releases/${CAPI_VERSION}/core-components.yaml >>${OUTPUT_DIR}/${OUTPUT_FILE}
 # this is needed to remove comments in the yaml manifest that contain '{{' which breaks Helm parsing
 sed -i '/{{[^-]/d' ${OUTPUT_DIR}/${OUTPUT_FILE}
 # label as managed by turtles for easier filtering
