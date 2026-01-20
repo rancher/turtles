@@ -1,16 +1,16 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: azure-aks-example
 spec:
   controlPlane:
     ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiGroup: infrastructure.cluster.x-k8s.io
       kind: AzureManagedControlPlaneTemplate
       name: aks-control-plane
   infrastructure:
     ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiGroup: infrastructure.cluster.x-k8s.io
       kind: AzureManagedClusterTemplate
       name: aks-cluster
   workers:
@@ -19,24 +19,24 @@ spec:
       template:
         bootstrap:
           ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiGroup: bootstrap.cluster.x-k8s.io
             kind: RKE2ConfigTemplate
             name: aks-dummy-system
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiGroup: infrastructure.cluster.x-k8s.io
             kind: AzureManagedMachinePoolTemplate
             name: aks-default-system
     - class: default-worker
       template:
         bootstrap:
           ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiGroup: bootstrap.cluster.x-k8s.io
             kind: RKE2ConfigTemplate
             name: aks-dummy-worker
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiGroup: infrastructure.cluster.x-k8s.io
             kind: AzureManagedMachinePoolTemplate
             name: aks-default-worker
   variables:
@@ -159,7 +159,7 @@ spec:
   template:
     spec:
       identityRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: AzureClusterIdentity
         name: cluster-identity
       version: "v0.0.0" #To be replaced by patch
@@ -197,7 +197,7 @@ spec:
 # These RKE2ConfigTemplates are only referenced to fulfill the CAPI contract.
 # This requires however the cluster-api-provider-rke2 to be installed.
 # It can be replaced by KubeadmConfigTemplates.
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: aks-dummy-worker
@@ -205,7 +205,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: aks-dummy-system
