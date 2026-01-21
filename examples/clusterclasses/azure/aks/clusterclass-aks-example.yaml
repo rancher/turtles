@@ -4,41 +4,39 @@ metadata:
   name: azure-aks-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: AzureManagedControlPlaneTemplate
       name: aks-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: AzureManagedClusterTemplate
       name: aks-cluster
   workers:
     machinePools:
     - class: default-system
-      template:
-        bootstrap:
-          ref:
-            apiGroup: bootstrap.cluster.x-k8s.io
-            kind: RKE2ConfigTemplate
-            name: aks-dummy-system
-        infrastructure:
-          ref:
-            apiGroup: infrastructure.cluster.x-k8s.io
-            kind: AzureManagedMachinePoolTemplate
-            name: aks-default-system
+      bootstrap:
+        templateRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: RKE2ConfigTemplate
+          name: aks-dummy-system
+      infrastructure:
+        templateRef:
+          apiGroup: infrastructure.cluster.x-k8s.io
+          kind: AzureManagedMachinePoolTemplate
+          name: aks-default-system
     - class: default-worker
-      template:
-        bootstrap:
-          ref:
-            apiGroup: bootstrap.cluster.x-k8s.io
-            kind: RKE2ConfigTemplate
-            name: aks-dummy-worker
-        infrastructure:
-          ref:
-            apiGroup: infrastructure.cluster.x-k8s.io
-            kind: AzureManagedMachinePoolTemplate
-            name: aks-default-worker
+      bootstrap:
+        templateRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: RKE2ConfigTemplate
+          name: aks-dummy-worker
+      infrastructure:
+        templateRef:
+          apiGroup: infrastructure.cluster.x-k8s.io
+          kind: AzureManagedMachinePoolTemplate
+          name: aks-default-worker
   variables:
     - name: subscriptionID
       required: true
