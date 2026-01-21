@@ -4,34 +4,33 @@ metadata:
   name: vsphere-rke2-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: RKE2ControlPlaneTemplate
       name: vsphere-rke2-example-controlplane
     machineInfrastructure:
-      ref:
+      templateRef:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: VSphereMachineTemplate
         name: vsphere-rke2-example-controlplane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: VSphereClusterTemplate
       name: vsphere-rke2-example
   workers:
     machineDeployments:
     - class: vsphere-rke2-example-worker
-      template:
-        bootstrap:
-          ref:
-            apiGroup: bootstrap.cluster.x-k8s.io
-            kind: RKE2ConfigTemplate
-            name: vsphere-rke2-example-worker
-        infrastructure:
-          ref:
-            apiGroup: infrastructure.cluster.x-k8s.io
-            kind: VSphereMachineTemplate
-            name: vsphere-rke2-example-worker
+      bootstrap:
+        templateRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: RKE2ConfigTemplate
+          name: vsphere-rke2-example-worker
+      infrastructure:
+        templateRef:
+          apiGroup: infrastructure.cluster.x-k8s.io
+          kind: VSphereMachineTemplate
+          name: vsphere-rke2-example-worker
   variables:
   - name: sshKey
     required: false

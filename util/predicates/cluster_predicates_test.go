@@ -94,7 +94,7 @@ var _ = Describe("ClusterWithReadyControlPlane", func() {
 		conditions.Set(capiCluster, metav1.Condition{
 			Type:   clusterv1.ClusterControlPlaneAvailableCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Ready",
+			Reason: clusterv1.ReadyReason,
 		})
 		result := ClusterWithReadyControlPlane(logger).UpdateFunc(event.UpdateEvent{ObjectNew: capiCluster})
 		Expect(result).To(BeTrue())

@@ -37,6 +37,7 @@ GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 
 CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
+# NOTE: Pinned to latest; bump when newer CAPI version available.
 CAPI_VERSION_TEST_BUMP ?= v1.11.4
 CAPI_VERSION_TEST_BUMP_SUFFIX ?= capi
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
@@ -608,7 +609,7 @@ build-chart-bump-capi: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) 
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 	# Fetch updated core CAPI manifest file and embed it into the packaged chart
-	CAPI_VERSION=$(CAPI_VERSION_TEST_BUMP) CAPI_RELEASE_URL="$(CAPI_UPSTREAM_RELEASES)/download/$(CAPI_VERSION_TEST_BUMP)/core-components.yaml" CHART_DIR=$(CHART_RELEASE_DIR) $(CORE_CAPI_FETCH_SCRIPT)
+	CAPI_VERSION=$(CAPI_VERSION_TEST_BUMP) CAPI_RELEASE_URL="$(CAPI_UPSTREAM_RELEASES)/$(CAPI_VERSION_TEST_BUMP)/core-components.yaml" CHART_DIR=$(CHART_RELEASE_DIR) $(CORE_CAPI_FETCH_SCRIPT)
 
 .PHONY: build-providers-chart
 build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR)

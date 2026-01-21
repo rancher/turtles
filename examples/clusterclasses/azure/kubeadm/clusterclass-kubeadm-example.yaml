@@ -5,33 +5,32 @@ metadata:
 spec:
   controlPlane:
     machineInfrastructure:
-      ref:
+      templateRef:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: AzureMachineTemplate
         name: azure-machine-control-plane
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: KubeadmControlPlaneTemplate
       name: kubeadm-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: AzureClusterTemplate
       name: azure-kubeadm-cluster
   workers:
     machineDeployments:
       - class: kubeadm-default-worker
-        template:
-          bootstrap:
-            ref:
-              apiGroup: bootstrap.cluster.x-k8s.io
-              kind: KubeadmConfigTemplate
-              name: kubeadm-default-worker-bootstrap
-          infrastructure:
-            ref:
-              apiGroup: infrastructure.cluster.x-k8s.io
-              kind: AzureMachineTemplate
-              name: kubeadm-default-worker
+        bootstrap:
+          templateRef:
+            apiGroup: bootstrap.cluster.x-k8s.io
+            kind: KubeadmConfigTemplate
+            name: kubeadm-default-worker-bootstrap
+        infrastructure:
+          templateRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: AzureMachineTemplate
+            name: kubeadm-default-worker
   variables:
     - name: subscriptionID
       required: true

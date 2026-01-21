@@ -13,16 +13,16 @@ spec:
           timeout: 300s
           type: Ready
     machineInfrastructure:
-      ref:
+      templateRef:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerMachineTemplate
         name: docker-kubeadm-control-plane
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: KubeadmControlPlaneTemplate
       name: docker-kubeadm-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: DockerClusterTemplate
       name: docker-kubeadm-clustertemplate
@@ -37,17 +37,16 @@ spec:
             - status: "False"
               timeout: 300s
               type: Ready
-        template:
-          bootstrap:
-            ref:
-              apiGroup: bootstrap.cluster.x-k8s.io
-              kind: KubeadmConfigTemplate
-              name: docker-kubeadm-default-worker-bootstraptemplate
-          infrastructure:
-            ref:
-              apiGroup: infrastructure.cluster.x-k8s.io
-              kind: DockerMachineTemplate
-              name: docker-kubeadm-default-worker-machinetemplate
+        bootstrap:
+          templateRef:
+            apiGroup: bootstrap.cluster.x-k8s.io
+            kind: KubeadmConfigTemplate
+            name: docker-kubeadm-default-worker-bootstraptemplate
+        infrastructure:
+          templateRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: DockerMachineTemplate
+            name: docker-kubeadm-default-worker-machinetemplate
   patches:
     - definitions:
         - jsonPatches:
