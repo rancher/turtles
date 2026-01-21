@@ -4,34 +4,33 @@ metadata:
   name: gcp-kubeadm-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: KubeadmControlPlaneTemplate
       name: gcp-kubeadm-example-control-plane
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: GCPMachineTemplate
         apiGroup: infrastructure.cluster.x-k8s.io
         name: gcp-machine-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: GCPClusterTemplate
       name: gcp-kubeadm-example
   workers:
     machineDeployments:
       - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              apiGroup: bootstrap.cluster.x-k8s.io
-              kind: KubeadmConfigTemplate
-              name: gcp-kubeadm-example-worker-bootstraptemplate
-          infrastructure:
-            ref:
-              apiGroup: infrastructure.cluster.x-k8s.io
-              kind: GCPMachineTemplate
-              name: gcp-kubeadm-example-worker-machinetemplate
+        bootstrap:
+          templateRef:
+            apiGroup: bootstrap.cluster.x-k8s.io
+            kind: KubeadmConfigTemplate
+            name: gcp-kubeadm-example-worker-bootstraptemplate
+        infrastructure:
+          templateRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: GCPMachineTemplate
+            name: gcp-kubeadm-example-worker-machinetemplate
   variables:
     - name: gcpProject
       required: true

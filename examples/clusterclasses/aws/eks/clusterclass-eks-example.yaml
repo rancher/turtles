@@ -4,12 +4,12 @@ metadata:
   name: aws-eks-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: AWSManagedControlPlaneTemplate
       name: "eks-control-plane"
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: AWSManagedClusterTemplate
       name: "eks-cluster"
@@ -18,12 +18,12 @@ spec:
       - class: default-worker
         template:
           bootstrap:
-            ref:
+            templateRef:
               name: "eks-md-0"
               apiGroup: bootstrap.cluster.x-k8s.io
               kind: EKSConfigTemplate
           infrastructure:
-            ref:
+            templateRef:
               name: "eks-md-0"
               apiGroup: infrastructure.cluster.x-k8s.io
               kind: AWSMachineTemplate

@@ -4,34 +4,33 @@ metadata:
   name: azure-rke2-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: RKE2ControlPlaneTemplate
       name: rke2-control-plane
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: AzureMachineTemplate
         apiGroup: infrastructure.cluster.x-k8s.io
         name: rke2-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: AzureClusterTemplate
       name: azure-cluster
   workers:
     machineDeployments:
       - class: rke2-default-worker
-        template:
-          bootstrap:
-            ref:
-              apiGroup: bootstrap.cluster.x-k8s.io
-              kind: RKE2ConfigTemplate
-              name: rke2-default-worker-bootstrap
-          infrastructure:
-            ref:
-              apiGroup: infrastructure.cluster.x-k8s.io
-              kind: AzureMachineTemplate
-              name: rke2-default-worker
+        bootstrap:
+          templateRef:
+            apiGroup: bootstrap.cluster.x-k8s.io
+            kind: RKE2ConfigTemplate
+            name: rke2-default-worker-bootstrap
+        infrastructure:
+          templateRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: AzureMachineTemplate
+            name: rke2-default-worker
   variables:
     - name: subscriptionID
       required: true

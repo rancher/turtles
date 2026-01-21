@@ -186,7 +186,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		conditions.Set(cluster, metav1.Condition{
 			Type:   clusterv1.ClusterControlPlaneAvailableCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Ready",
+			Reason: clusterv1.ReadyReason,
 		})
 	}
 
@@ -471,7 +471,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 				Type:               managementv3.ClusterConditionReady,
 				Status:             metav1.ConditionTrue,
 				LastTransitionTime: metav1.Now(),
-				Reason:             "Ready",
+				Reason:             clusterv1.ReadyReason,
 				Message:            "Cluster is ready",
 			},
 		}

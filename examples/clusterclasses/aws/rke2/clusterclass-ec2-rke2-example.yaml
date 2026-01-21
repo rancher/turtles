@@ -4,31 +4,31 @@ metadata:
   name: aws-rke2-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiGroup: controlplane.cluster.x-k8s.io
       kind: RKE2ControlPlaneTemplate
       name: rke2-control-plane
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: AWSMachineTemplate
         apiGroup: infrastructure.cluster.x-k8s.io
         name: rke2-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiGroup: infrastructure.cluster.x-k8s.io
       kind: AWSClusterTemplate
       name: rke2-cluster
   workers:
     machineDeployments:
     - class: default-worker
-      template:
+
         bootstrap:
-          ref:
+          templateRef:
             apiGroup: bootstrap.cluster.x-k8s.io
             kind: RKE2ConfigTemplate
             name: rke2-worker-bootstraptemplate
         infrastructure:
-          ref:
+          templateRef:
             apiGroup: infrastructure.cluster.x-k8s.io
             kind: AWSMachineTemplate
             name: rke2-worker-machinetemplate
