@@ -1,36 +1,37 @@
-apiVersion: cluster.x-k8s.io/v1beta2
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: vsphere-kubeadm-example
 spec:
   controlPlane:
-    templateRef:
-      apiGroup: controlplane.cluster.x-k8s.io
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: KubeadmControlPlaneTemplate
       name: vsphere-kubeadm-example-controlplane
     machineInfrastructure:
-      templateRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereMachineTemplate
         name: vsphere-kubeadm-example-controlplane
   infrastructure:
-    templateRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: VSphereClusterTemplate
       name: vsphere-kubeadm-example
   workers:
     machineDeployments:
     - class: vsphere-kubeadm-example-worker
-      bootstrap:
-        templateRef:
-          apiGroup: bootstrap.cluster.x-k8s.io
-          kind: KubeadmConfigTemplate
-          name: vsphere-kubeadm-example-worker
-      infrastructure:
-        templateRef:
-          apiGroup: infrastructure.cluster.x-k8s.io
-          kind: VSphereMachineTemplate
-          name: vsphere-kubeadm-example-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: vsphere-kubeadm-example-worker
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: VSphereMachineTemplate
+            name: vsphere-kubeadm-example-worker
   variables:
   - name: sshKey
     required: false
@@ -141,7 +142,7 @@ spec:
         valueFrom:
           variable: vSphereTLSThumbprint
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereClusterTemplate
         matchResources:
           infrastructureCluster: true
@@ -170,7 +171,7 @@ spec:
             storagePolicyName: ''
             template: '{{ .vSphereTemplate }}'
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereMachineTemplate
         matchResources:
           controlPlane: true
@@ -197,7 +198,7 @@ spec:
             storagePolicyName: ''
             template: '{{ .vSphereTemplate }}'
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereMachineTemplate
         matchResources:
           machineDeploymentClass:
@@ -357,7 +358,7 @@ spec:
               - '{{ .sshKey }}'
               sudo: ALL=(ALL) NOPASSWD:ALL
       selector:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: KubeadmControlPlaneTemplate
         matchResources:
           controlPlane: true
@@ -373,14 +374,14 @@ spec:
               - '{{ .sshKey }}'
               sudo: ALL=(ALL) NOPASSWD:ALL
       selector:
-        apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
         kind: KubeadmConfigTemplate
         matchResources:
           machineDeploymentClass:
             names:
             - vsphere-kubeadm-example-worker
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: VSphereClusterTemplate
 metadata:
   name: vsphere-kubeadm-example
@@ -391,7 +392,7 @@ spec:
         kind: VSphereClusterIdentity
         name: cluster-identity
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
   name: vsphere-kubeadm-example-controlplane
@@ -422,7 +423,7 @@ spec:
         - mkdir -p /etc/pre-kubeadm-commands
         - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort); do echo "Running script $script"; "$script"; done
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: vsphere-kubeadm-example-worker
@@ -442,7 +443,7 @@ spec:
       - mkdir -p /etc/pre-kubeadm-commands
       - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort); do echo "Running script $script"; "$script"; done
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-kubeadm-example-controlplane
@@ -455,7 +456,7 @@ spec:
       network:
        devices: []
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-kubeadm-example-worker

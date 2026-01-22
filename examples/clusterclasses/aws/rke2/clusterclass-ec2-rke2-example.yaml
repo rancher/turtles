@@ -1,35 +1,35 @@
-apiVersion: cluster.x-k8s.io/v1beta2
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: aws-rke2-example
 spec:
   controlPlane:
-    templateRef:
-      apiGroup: controlplane.cluster.x-k8s.io
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: RKE2ControlPlaneTemplate
       name: rke2-control-plane
     machineInfrastructure:
-      templateRef:
+      ref:
         kind: AWSMachineTemplate
-        apiGroup: infrastructure.cluster.x-k8s.io
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: rke2-control-plane
   infrastructure:
-    templateRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSClusterTemplate
       name: rke2-cluster
   workers:
     machineDeployments:
     - class: default-worker
-
+      template:
         bootstrap:
-          templateRef:
-            apiGroup: bootstrap.cluster.x-k8s.io
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: RKE2ConfigTemplate
             name: rke2-worker-bootstraptemplate
         infrastructure:
-          templateRef:
-            apiGroup: infrastructure.cluster.x-k8s.io
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AWSMachineTemplate
             name: rke2-worker-machinetemplate
   variables:
@@ -148,7 +148,7 @@ spec:
   - name: rke2ControlPlaneTemplate
     definitions:
     - selector:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: RKE2ControlPlaneTemplate
         matchResources:
           controlPlane: true
@@ -250,7 +250,7 @@ spec:
         vpc:
           availabilityZoneUsageLimit: 1
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: RKE2ControlPlaneTemplate
 metadata:
   name: rke2-control-plane
@@ -302,7 +302,7 @@ spec:
       rootVolume:
         size: 50
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: rke2-worker-bootstraptemplate
