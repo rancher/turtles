@@ -1,36 +1,37 @@
-apiVersion: cluster.x-k8s.io/v1beta2
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: vsphere-rke2-example
 spec:
   controlPlane:
-    templateRef:
-      apiGroup: controlplane.cluster.x-k8s.io
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: RKE2ControlPlaneTemplate
       name: vsphere-rke2-example-controlplane
     machineInfrastructure:
-      templateRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereMachineTemplate
         name: vsphere-rke2-example-controlplane
   infrastructure:
-    templateRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: VSphereClusterTemplate
       name: vsphere-rke2-example
   workers:
     machineDeployments:
     - class: vsphere-rke2-example-worker
-      bootstrap:
-        templateRef:
-          apiGroup: bootstrap.cluster.x-k8s.io
-          kind: RKE2ConfigTemplate
-          name: vsphere-rke2-example-worker
-      infrastructure:
-        templateRef:
-          apiGroup: infrastructure.cluster.x-k8s.io
-          kind: VSphereMachineTemplate
-          name: vsphere-rke2-example-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: RKE2ConfigTemplate
+            name: vsphere-rke2-example-worker
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: VSphereMachineTemplate
+            name: vsphere-rke2-example-worker
   variables:
   - name: sshKey
     required: false
@@ -147,7 +148,7 @@ spec:
         valueFrom:
           variable: vSphereTLSThumbprint
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereClusterTemplate
         matchResources:
           infrastructureCluster: true
@@ -176,7 +177,7 @@ spec:
             storagePolicyName: ''
             template: '{{ .vSphereTemplate }}'
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereMachineTemplate
         matchResources:
           controlPlane: true
@@ -203,7 +204,7 @@ spec:
             storagePolicyName: ''
             template: '{{ .vSphereTemplate }}'
       selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: VSphereMachineTemplate
         matchResources:
           machineDeploymentClass:
@@ -328,7 +329,7 @@ spec:
                 namespace: {{ .builtin.cluster.namespace }}
             {{- end }}
       selector:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: RKE2ControlPlaneTemplate
         matchResources:
           controlPlane: true
@@ -365,14 +366,14 @@ spec:
                 namespace: {{ .builtin.cluster.namespace }}
             {{- end }}
       selector:
-        apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
         kind: RKE2ConfigTemplate
         matchResources:
           machineDeploymentClass:
             names:
             - vsphere-rke2-example-worker
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: VSphereClusterTemplate
 metadata:
   name: vsphere-rke2-example
@@ -383,7 +384,7 @@ spec:
         kind: VSphereClusterIdentity
         name: cluster-identity
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: RKE2ControlPlaneTemplate
 metadata:
   name: vsphere-rke2-example-controlplane
@@ -402,7 +403,7 @@ spec:
         rollingUpdate:
           maxSurge: 1
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: vsphere-rke2-example-worker
@@ -414,7 +415,7 @@ spec:
           extraArgs:
             - "--cloud-provider=external"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-rke2-example-controlplane
@@ -427,7 +428,7 @@ spec:
       network:
        devices: []
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-rke2-example-worker
