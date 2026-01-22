@@ -1,36 +1,37 @@
-apiVersion: cluster.x-k8s.io/v1beta2
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: gcp-kubeadm-example
 spec:
   controlPlane:
-    templateRef:
-      apiGroup: controlplane.cluster.x-k8s.io
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: KubeadmControlPlaneTemplate
       name: gcp-kubeadm-example-control-plane
     machineInfrastructure:
-      templateRef:
+      ref:
         kind: GCPMachineTemplate
-        apiGroup: infrastructure.cluster.x-k8s.io
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: gcp-machine-control-plane
   infrastructure:
-    templateRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: GCPClusterTemplate
       name: gcp-kubeadm-example
   workers:
     machineDeployments:
       - class: default-worker
-        bootstrap:
-          templateRef:
-            apiGroup: bootstrap.cluster.x-k8s.io
-            kind: KubeadmConfigTemplate
-            name: gcp-kubeadm-example-worker-bootstraptemplate
-        infrastructure:
-          templateRef:
-            apiGroup: infrastructure.cluster.x-k8s.io
-            kind: GCPMachineTemplate
-            name: gcp-kubeadm-example-worker-machinetemplate
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: gcp-kubeadm-example-worker-bootstraptemplate
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: GCPMachineTemplate
+              name: gcp-kubeadm-example-worker-machinetemplate
   variables:
     - name: gcpProject
       required: true
@@ -182,7 +183,7 @@ spec:
       failureDomains:
       - REPLACEME # this value is replaced by a patch
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
   name: gcp-kubeadm-example-control-plane
@@ -227,7 +228,7 @@ spec:
       instanceType: REPLACEME
       image: REPLACEME
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: gcp-kubeadm-example-worker-bootstraptemplate
