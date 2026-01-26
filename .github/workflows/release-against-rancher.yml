@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: sudo snap install yq --channel=v4/stable
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
         with:
           ref: "${{ env.TURTLES_REF }}"
           path: turtles
@@ -51,7 +51,7 @@ jobs:
             github/token/rancher--rancher--pull_requests--write token | GH_TOKEN
 
       - name: Checkout rancher/rancher
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
         with:
           repository: ${{ github.repository_owner }}/rancher
           ref: "${{ env.RANCHER_REF }}"
@@ -69,7 +69,7 @@ jobs:
           charts_branch=$(grep '"chart-default-branch"' pkg/settings/setting.go | cut -d'"' -f4)
           echo "charts_branch=$charts_branch" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
         with:
           repository: ${{ github.repository_owner }}/charts
           ref: "${{ steps.find_charts_branch.outputs.charts_branch }}"

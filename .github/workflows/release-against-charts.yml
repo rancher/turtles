@@ -37,7 +37,7 @@ jobs:
       # Required for vault
       id-token: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
         with:
           ref: "${{ env.TURTLES_REF }}"
           path: turtles
@@ -48,7 +48,7 @@ jobs:
             github/token/rancher--charts--pull_requests--write token | GH_TOKEN
 
       - name: Checkout rancher/charts repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
         with:
           repository: ${{ github.repository_owner }}/charts
           ref: "${{ env.CHARTS_REF }}"
