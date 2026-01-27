@@ -20,7 +20,6 @@ limitations under the License.
 package turtles_switch
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/drone/envsubst/v2"
@@ -29,6 +28,7 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
 	turtlesframework "github.com/rancher/turtles/test/framework"
+	"github.com/rancher/turtles/test/testenv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -170,6 +170,26 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 			})
 		})
 
+		By("Uninstalling providers chart using helm", func() {
+			testenv.UninstallRancherTurtlesProviders(ctx, e2e.NewRancherTurtlesNamespace, bootstrapClusterProxy)
+		})
+
+		By("Verifying provider namespaces are deleted", func() {
+			for _, ns := range []string{"capd-system", "rke2-bootstrap-system", "rke2-control-plane-system"} {
+				turtlesframework.WaitForNamespaceToBeDeleted(ctx, turtlesframework.WaitNamespaceInput{
+					Name:      ns,
+					GetLister: bootstrapClusterProxy.GetClient(),
+				})
+			}
+		})
+
+		By("Verifying core CAPI namespace is deleted", func() {
+			turtlesframework.WaitForNamespaceToBeDeleted(ctx, turtlesframework.WaitNamespaceInput{
+				Name:      "cattle-capi-system",
+				GetLister: bootstrapClusterProxy.GetClient(),
+			})
+		})
+
 		By("Verifying the cluster still exists", func() {
 			turtlesframework.VerifyCluster(ctx, turtlesframework.VerifyClusterInput{
 				BootstrapClusterProxy:   bootstrapClusterProxy,
@@ -229,16 +249,14 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 			Expect(turtlesframework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
 		})
 
-		By("Verifying providers deployments are active", func() {
-			for _, provider := range []string{"capd", "rke2-bootstrap", "rke2-control-plane"} {
-				capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-					Getter: bootstrapClusterProxy.GetClient(),
-					Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("%s-controller-manager", provider),
-						Namespace: fmt.Sprintf("%s-system", provider),
-					}},
-				}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
-			}
+		By("Re-installing providers chart", func() {
+			testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
+				BootstrapClusterProxy:        bootstrapClusterProxy,
+				UseLegacyCAPINamespace:       false,
+				RancherTurtlesNamespace:      e2e.NewRancherTurtlesNamespace,
+				ProviderList:                 "docker,rke2",
+				WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
+			})
 		})
 
 		By("Verifying workload cluster survived the switch(zero-downtime validated)", func() {
