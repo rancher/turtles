@@ -14,16 +14,16 @@ spec:
           type: Ready
     machineInfrastructure:
       templateRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: DockerMachineTemplate
         name: docker-kubeadm-control-plane
     templateRef:
-      apiGroup: controlplane.cluster.x-k8s.io
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: KubeadmControlPlaneTemplate
       name: docker-kubeadm-control-plane
   infrastructure:
     templateRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-kubeadm-clustertemplate
   workers:
@@ -39,12 +39,12 @@ spec:
               type: Ready
         bootstrap:
           templateRef:
-            apiGroup: bootstrap.cluster.x-k8s.io
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: KubeadmConfigTemplate
             name: docker-kubeadm-default-worker-bootstraptemplate
         infrastructure:
           templateRef:
-            apiGroup: infrastructure.cluster.x-k8s.io
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             name: docker-kubeadm-default-worker-machinetemplate
   patches:

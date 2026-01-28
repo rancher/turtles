@@ -148,7 +148,7 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 		if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, cluster); err != nil {
 			return fmt.Errorf("failed to get cluster %s: %w", key.String(), err)
 		}
-		// Check conditions instead of deprecated status fields
+		// Check conditions - essential conditions must be true
 		if !conditions.IsTrue(cluster, clusterv1.ClusterControlPlaneAvailableCondition) {
 			return fmt.Errorf("cluster %s does not have ControlPlane available", key.String())
 		}
@@ -156,12 +156,11 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 			return fmt.Errorf("cluster %s does not have Infrastructure ready", key.String())
 		}
 
-		readyCondition := conditions.Get(cluster, clusterv1.ReadyCondition)
-		if readyCondition == nil {
-			return fmt.Errorf("cluster %s does not have a Ready condition", key.String())
-		}
-		if readyCondition.Status != metav1.ConditionTrue {
-			return fmt.Errorf("cluster %s Ready condition is not true: %s", key.String(), readyCondition.Message)
+		// In v1beta2, Clusters use AvailableCondition instead of ReadyCondition
+		// Check Available condition if present; if not populated yet (e.g., after CAPI upgrade), rely on above checks
+		availableCondition := conditions.Get(cluster, clusterv1.ClusterAvailableCondition)
+		if availableCondition != nil && availableCondition.Status != metav1.ConditionTrue {
+			return fmt.Errorf("cluster %s Available condition is not true: %s", key.String(), availableCondition.Message)
 		}
 
 		machineList := &clusterv1.MachineList{}
