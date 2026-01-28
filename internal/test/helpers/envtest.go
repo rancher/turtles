@@ -45,7 +45,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
