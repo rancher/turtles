@@ -30,6 +30,13 @@ rules:
   - deployments
   verbs:
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - list
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -136,6 +143,42 @@ spec:
         - deployments.apps/capi-controller-manager
         - -n
         - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+        - --ignore-not-found=true
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-operator-configmap-cleanup
+  namespace: '{{ .Values.namespace }}'
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "2"
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: post-delete-job
+      restartPolicy: Never
+      containers:
+      - name: delete-capi-configmaps
+        image: {{ .Values.shellImage }}
+        command: ["kubectl"]
+        args:
+        - delete
+        - configmaps
+        - -n
+        - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
+        - -l
+        - managed-by.turtles.cattle.io=true
         - --ignore-not-found=true
         securityContext:
           seccompProfile:
