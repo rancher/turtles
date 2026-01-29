@@ -18,7 +18,7 @@ stringData:
   username: "${DOCKER_REGISTRY_USERNAME}"
   password: "${DOCKER_REGISTRY_TOKEN}"
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: '${CLUSTER_NAME}'
@@ -33,8 +33,9 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   topology:
-    class: vsphere-rke2-example
-    classNamespace: ${TOPOLOGY_NAMESPACE}
+    classRef:
+      name: vsphere-rke2-example
+      namespace: ${TOPOLOGY_NAMESPACE}
     version: ${RKE2_VERSION}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}

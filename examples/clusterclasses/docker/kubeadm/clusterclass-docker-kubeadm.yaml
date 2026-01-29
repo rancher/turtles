@@ -4,14 +4,15 @@ metadata:
   name: docker-kubeadm-example
 spec:
   controlPlane:
-    machineHealthCheck:
-      unhealthyConditions:
-        - status: Unknown
-          timeout: 300s
-          type: Ready
-        - status: "False"
-          timeout: 300s
-          type: Ready
+    healthCheck:
+      checks:
+        unhealthyNodeConditions:
+          - status: Unknown
+            timeoutSeconds: 300
+            type: Ready
+          - status: "False"
+            timeoutSeconds: 300
+            type: Ready
     machineInfrastructure:
       templateRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
@@ -29,14 +30,15 @@ spec:
   workers:
     machineDeployments:
       - class: default-worker
-        machineHealthCheck:
-          unhealthyConditions:
-            - status: Unknown
-              timeout: 300s
-              type: Ready
-            - status: "False"
-              timeout: 300s
-              type: Ready
+        healthCheck:
+          checks:
+            unhealthyNodeConditions:
+              - status: Unknown
+                timeoutSeconds: 300
+                type: Ready
+              - status: "False"
+                timeoutSeconds: 300
+                type: Ready
         bootstrap:
           templateRef:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -76,6 +78,7 @@ spec:
             matchResources:
               controlPlane: true
       description: Sets tag to use for the etcd image in the KubeadmControlPlane.
+      enabledIf: '{{ ne .etcdImageTag "" }}'
       name: etcdImageTag
     - definitions:
         - jsonPatches:
@@ -90,6 +93,7 @@ spec:
             matchResources:
               controlPlane: true
       description: Sets tag to use for the etcd image in the KubeadmControlPlane.
+      enabledIf: '{{ ne .coreDNSImageTag "" }}'
       name: coreDNSImageTag
     - definitions:
         - jsonPatches:
@@ -116,7 +120,8 @@ spec:
             kind: DockerMachineTemplate
             matchResources:
               controlPlane: true
-      description: Sets the container image that is used for running dockerMachines
+      description:
+        Sets the container image that is used for running dockerMachines
         for the controlPlane and default-worker machineDeployments.
       name: customImage
     - definitions:
@@ -163,7 +168,7 @@ spec:
             matchResources:
               controlPlane: true
       description: Adds an admission configuration for PodSecurity to the kube-apiserver.
-      enabledIf: '{{ .podSecurityStandard.enabled }}'
+      enabledIf: "{{ .podSecurityStandard.enabled }}"
       name: podSecurityStandard
   variables:
     - name: imagePullSecret
@@ -177,7 +182,8 @@ spec:
       schema:
         openAPIV3Schema:
           default: ""
-          description: imageRepository sets the container registry to pull images from.
+          description:
+            imageRepository sets the container registry to pull images from.
             If empty, nothing will be set and the from of kubeadm will be used.
           example: registry.k8s.io
           type: string
@@ -204,22 +210,26 @@ spec:
           properties:
             audit:
               default: restricted
-              description: audit sets the level for the audit PodSecurityConfiguration
+              description:
+                audit sets the level for the audit PodSecurityConfiguration
                 mode. One of privileged, baseline, restricted.
               type: string
             enabled:
               default: true
-              description: enabled enables the patches to enable Pod Security Standard
+              description:
+                enabled enables the patches to enable Pod Security Standard
                 via AdmissionConfiguration.
               type: boolean
             enforce:
               default: baseline
-              description: enforce sets the level for the enforce PodSecurityConfiguration
+              description:
+                enforce sets the level for the enforce PodSecurityConfiguration
                 mode. One of privileged, baseline, restricted.
               type: string
             warn:
               default: restricted
-              description: warn sets the level for the warn PodSecurityConfiguration
+              description:
+                warn sets the level for the warn PodSecurityConfiguration
                 mode. One of privileged, baseline, restricted.
               type: string
           type: object
@@ -249,11 +259,12 @@ spec:
               - host.docker.internal
           controllerManager:
             extraArgs:
-              enable-hostpath-provisioner: "true"
-        initConfiguration:
-          nodeRegistration: {}
-        joinConfiguration:
-          nodeRegistration: {}
+              - name: enable-hostpath-provisioner
+                value: "true"
+        # initConfiguration:
+        #   nodeRegistration: {}
+        # joinConfiguration:
+        #   nodeRegistration: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
@@ -285,4 +296,7 @@ spec:
   template:
     spec:
       joinConfiguration:
-        nodeRegistration: {}
+        nodeRegistration:
+          kubeletExtraArgs: # having a not empty kubeletExtraArgs is required
+            - name: eviction-hard
+              value: "nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%"

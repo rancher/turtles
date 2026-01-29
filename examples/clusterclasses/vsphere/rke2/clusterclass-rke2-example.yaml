@@ -1,11 +1,11 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: vsphere-rke2-example
 spec:
   controlPlane:
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: RKE2ControlPlaneTemplate
       name: vsphere-rke2-example-controlplane
     machineInfrastructure:
@@ -24,7 +24,7 @@ spec:
       template:
         bootstrap:
           ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
             name: vsphere-rke2-example-worker
         infrastructure:
@@ -329,7 +329,7 @@ spec:
                 namespace: {{ .builtin.cluster.namespace }}
             {{- end }}
       selector:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta2
         kind: RKE2ControlPlaneTemplate
         matchResources:
           controlPlane: true
@@ -366,7 +366,7 @@ spec:
                 namespace: {{ .builtin.cluster.namespace }}
             {{- end }}
       selector:
-        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
         kind: RKE2ConfigTemplate
         matchResources:
           machineDeploymentClass:
@@ -384,7 +384,7 @@ spec:
         kind: VSphereClusterIdentity
         name: cluster-identity
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: RKE2ControlPlaneTemplate
 metadata:
   name: vsphere-rke2-example-controlplane
@@ -403,7 +403,7 @@ spec:
         rollingUpdate:
           maxSurge: 1
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: vsphere-rke2-example-worker
