@@ -31,11 +31,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -50,61 +47,6 @@ import (
 	"github.com/rancher/turtles/test/testenv"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 )
-
-// clusterGVK returns the appropriate GroupVersionKind for CAPI Cluster based on available API.
-// Tries v1beta2 first (CAPI v1.11+), falls back to v1beta1 (CAPI v1.10).
-func getClusterGVK(ctx context.Context, cl client.Client) schema.GroupVersionKind {
-	// Try v1beta2 first by attempting a list
-	testList := &unstructured.UnstructuredList{}
-	testList.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "cluster.x-k8s.io",
-		Version: "v1beta2",
-		Kind:    "ClusterList",
-	})
-	if err := cl.List(ctx, testList, client.Limit(1)); err == nil {
-		return schema.GroupVersionKind{Group: "cluster.x-k8s.io", Version: "v1beta2", Kind: "Cluster"}
-	}
-	// Fallback to v1beta1
-	return schema.GroupVersionKind{Group: "cluster.x-k8s.io", Version: "v1beta1", Kind: "Cluster"}
-}
-
-// newUnstructuredCluster creates an unstructured Cluster object with the given GVK.
-func newUnstructuredCluster(gvk schema.GroupVersionKind, namespace, name string) *unstructured.Unstructured {
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(gvk)
-	u.SetNamespace(namespace)
-	u.SetName(name)
-	return u
-}
-
-// getClusterControlPlaneReady extracts Status.ControlPlaneReady from unstructured cluster.
-func getClusterControlPlaneReady(cluster *unstructured.Unstructured) bool {
-	ready, _, _ := unstructured.NestedBool(cluster.Object, "status", "controlPlaneReady")
-	return ready
-}
-
-// getClusterReadyCondition checks if the cluster has Ready condition set to True.
-func getClusterReadyCondition(cluster *unstructured.Unstructured) (bool, error) {
-	conditionsRaw, found, err := unstructured.NestedSlice(cluster.Object, "status", "conditions")
-	if err != nil || !found {
-		return false, fmt.Errorf("conditions not found")
-	}
-	for _, c := range conditionsRaw {
-		cond, ok := c.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		condType, _, _ := unstructured.NestedString(cond, "type")
-		if condType == "Ready" {
-			status, _, _ := unstructured.NestedString(cond, "status")
-			if status == string(metav1.ConditionTrue) {
-				return true, nil
-			}
-			return false, fmt.Errorf("Cluster is not Ready")
-		}
-	}
-	return false, fmt.Errorf("Ready condition not found")
-}
 
 type CreateUsingGitOpsSpecInput struct {
 	E2EConfig             *clusterctl.E2EConfig
@@ -171,7 +113,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		deleteClusterWait     []interface{}
 	)
 
-	validateRancherCluster := func(clusterGVK schema.GroupVersionKind) {
+	validateRancherCluster := func() {
 		By("Waiting for the rancher cluster record to appear")
 		rancherClusters := &managementv3.ClusterList{}
 		selectors := []client.ListOption{
@@ -189,10 +131,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
 		By("Rancher cluster should have the custom description if it is provided")
-		capiClusterObject := newUnstructuredCluster(clusterGVK, namespace.Name, input.ClusterName)
-		Eventually(func() error {
-			return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObject), capiClusterObject)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		capiClusterObject := framework.GetClusterByName(
+			ctx,
+			framework.GetClusterByNameInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Name:      input.ClusterName,
+				Namespace: namespace.Name,
+			},
+		)
 		annotations := capiClusterObject.GetAnnotations()
 		description := annotations[turtlesannotations.ClusterDescriptionAnnotation]
 		if description == "" {
@@ -202,7 +148,9 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		By("Waiting for the rancher cluster to have a deployed agent")
 		Eventually(func() bool {
+			fmt.Println("#### Getting Rancher cluster:", rancherCluster.Name)
 			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			fmt.Println("##### Rancher cluster status:", rancherCluster.Status)
 			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
@@ -270,7 +218,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
+		Expect(os.MkdirAll(input.ArtifactFolder, 0o750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
 		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
@@ -357,18 +305,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		}
 
 		By("Waiting for the CAPI cluster to appear")
-		// Detect which API version is available (v1beta2 for CAPI v1.11+, v1beta1 for CAPI v1.10)
-		var clusterGVK schema.GroupVersionKind
-		var capiClusterObj *unstructured.Unstructured
 
-		Eventually(func() error {
-			clusterGVK = getClusterGVK(ctx, input.BootstrapClusterProxy.GetClient())
-			capiClusterObj = newUnstructuredCluster(clusterGVK, namespace.Name, input.ClusterName)
-			return input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObj), capiClusterObj)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
-			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
-
-		turtlesframework.Byf("Using CAPI Cluster API version: %s", clusterGVK.Version)
+		capiCluster := framework.GetClusterByName(
+			ctx,
+			framework.GetClusterByNameInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Name:      input.ClusterName,
+				Namespace: namespace.Name,
+			},
+		)
 
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
@@ -382,23 +327,10 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				return err
 			}
 
-			// Only use GetWorkloadCluster for v1beta2, as it internally uses typed v1beta2 objects
-			// For v1beta1, just verify the kubeconfig secret exists (we already got it above)
-			if clusterGVK.Version == "v1beta2" {
-				remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
-				namespaces := &corev1.NamespaceList{}
-				return remoteClient.List(ctx, namespaces)
-			}
+			remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
+			namespaces := &corev1.NamespaceList{}
 
-			// For v1beta1, we just verify the kubeconfig secret exists
-			// We cannot create a direct client because Docker cluster kubeconfigs have internal IPs
-			// that aren't reachable from macOS. The GetWorkloadCluster() has fixConfig() logic
-			// to handle this, but it uses typed v1beta2 objects internally.
-			// The secret existence is sufficient - the cluster will be validated later via Rancher.
-			if _, ok := secret.Data["value"]; !ok {
-				return fmt.Errorf("kubeconfig secret does not contain 'value' key")
-			}
-			return nil
+			return remoteClient.List(ctx, namespaces)
 		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 		By("Storing the original CAPI cluster kubeconfig")
@@ -412,29 +344,29 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		By("Waiting for cluster control plane to be Ready")
 		Eventually(func() bool {
-			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObj), capiClusterObj); err != nil {
-				return false
-			}
-			return getClusterControlPlaneReady(capiClusterObj)
+			capiCluster := framework.GetClusterByName(
+				ctx,
+				framework.GetClusterByNameInput{
+					Getter:    input.BootstrapClusterProxy.GetClient(),
+					Name:      input.ClusterName,
+					Namespace: namespace.Name,
+				},
+			)
+
+			return ptr.Deref(capiCluster.Status.Initialization.ControlPlaneInitialized, false)
 		}, capiClusterCreateWait...).Should(BeTrue())
 
 		By("Running checks on Rancher cluster")
-		validateRancherCluster(clusterGVK)
+		validateRancherCluster()
 
-		By("Waiting for the CAPI Cluster to be Ready")
-		Eventually(func() error {
-			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObj), capiClusterObj); err != nil {
-				return fmt.Errorf("getting Cluster: %w", err)
-			}
-			ready, err := getClusterReadyCondition(capiClusterObj)
-			if err != nil {
-				return err
-			}
-			if !ready {
-				return fmt.Errorf("Cluster is not Ready")
-			}
-			return nil
-		}, capiClusterCreateWait...).Should(Succeed(), "CAPI Cluster should be Ready")
+		By("Waiting for the CAPI Cluster to be Available")
+		framework.VerifyClusterAvailable(
+			ctx,
+			framework.VerifyClusterAvailableInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Namespace: capiCluster.Namespace,
+				Name:      capiCluster.Name,
+			})
 
 		if input.TestClusterReimport {
 			By("Deleting Rancher cluster record to simulate unimporting the cluster")
@@ -443,10 +375,16 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 			By("CAPI cluster should have the 'imported' annotation")
 			Eventually(func() bool {
-				if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObj), capiClusterObj); err != nil {
-					return false
-				}
-				annotations := capiClusterObj.GetAnnotations()
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
+				annotations := capiCluster.GetAnnotations()
+
 				return annotations["imported"] == "true"
 			}, capiClusterCreateWait...).Should(BeTrue(), "Failed to detect 'imported' annotation on CAPI cluster")
 
@@ -455,26 +393,37 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 			By("Removing 'imported' annotation from CAPI cluster")
 			Eventually(func() error {
-				if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObj), capiClusterObj); err != nil {
-					return err
-				}
-				annotations := capiClusterObj.GetAnnotations()
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
+				annotations := capiCluster.GetAnnotations()
 				delete(annotations, "imported")
-				capiClusterObj.SetAnnotations(annotations)
-				return input.BootstrapClusterProxy.GetClient().Update(ctx, capiClusterObj)
+				capiCluster.SetAnnotations(annotations)
+
+				return input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
 			}).ShouldNot(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
 
 			By("Validating annotation is removed from CAPI cluster")
 			Eventually(func() bool {
-				if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiClusterObj), capiClusterObj); err != nil {
-					return false
-				}
-				annotations := capiClusterObj.GetAnnotations()
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
+				annotations := capiCluster.GetAnnotations()
 				return annotations["imported"] != "true"
 			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
 
 			By("Rancher should be available after removing 'imported' annotation")
-			validateRancherCluster(clusterGVK)
+			validateRancherCluster()
 		}
 	})
 
@@ -497,66 +446,19 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		if input.SkipCleanup && input.SkipDeletionTest {
 			log.FromContext(ctx).Info("Skipping Cluster deletion from Rancher")
 		} else {
-			By("Deleting Cluster")
-			// Detect which API version to use for deletion
-			deleteGVK := getClusterGVK(ctx, input.BootstrapClusterProxy.GetClient())
-			clusterToDelete := newUnstructuredCluster(deleteGVK, capiCluster.Namespace, capiCluster.Name)
-			Expect(input.BootstrapClusterProxy.GetClient().Delete(ctx, clusterToDelete)).To(Succeed())
-
-			By("Waiting for the CAPI cluster to be deleted")
-			Eventually(func() error {
-				cl := input.BootstrapClusterProxy.GetClient()
-
-				cluster := newUnstructuredCluster(deleteGVK, capiCluster.Namespace, capiCluster.Name)
-				err := cl.Get(ctx, *capiCluster, cluster)
-				if err != nil {
-					if apierrors.IsNotFound(err) {
-						return nil
-					}
-					return fmt.Errorf("getting CAPI Cluster: %w", err)
-				}
-
-				// (FIXME upstream)
-				// Check if InfraCluster is deleted
-				//
-				// This is to bypass a race condition where the InfraCluster is deleted,
-				// before some other resources (ex. InfraMachinePool) are deleted.
-				infraRef, found, _ := unstructured.NestedMap(cluster.Object, "spec", "infrastructureRef")
-				if found {
-					infraKind, _, _ := unstructured.NestedString(infraRef, "kind")
-					infraAPIGroup, _, _ := unstructured.NestedString(infraRef, "apiGroup")
-					infraName, _, _ := unstructured.NestedString(infraRef, "name")
-
-					if infraKind == "AWSCluster" || infraKind == "GCPManagedCluster" {
-						// Use appropriate API version based on provider support:
-						// AWS supports v1beta2, GCP only supports v1beta1
-						infraCluster := &unstructured.Unstructured{}
-						apiVersion := "v1beta2" // Default for AWS
-						if infraKind == "GCPManagedCluster" {
-							apiVersion = "v1beta1" // GCP only supports v1beta1
-						}
-						infraCluster.SetGroupVersionKind(schema.GroupVersionKind{
-							Group:   infraAPIGroup,
-							Kind:    infraKind,
-							Version: apiVersion,
-						})
-						infraClusterKey := types.NamespacedName{
-							Namespace: capiCluster.Namespace,
-							Name:      infraName,
-						}
-						if err := cl.Get(ctx, infraClusterKey, infraCluster); err != nil {
-							if apierrors.IsNotFound(err) {
-								// If the InfraCluster is deleted, ignore Cluster deletion (may hang indefinitely)
-								return nil
-							}
-							return fmt.Errorf("getting %s %s/%s: %w", infraKind, infraClusterKey.Namespace, infraClusterKey.Name, err)
-						}
-						return fmt.Errorf("%s %s/%s is still present", infraKind, infraClusterKey.Namespace, infraClusterKey.Name)
-					}
-				}
-
-				return fmt.Errorf("CAPI Cluster %s/%s is still present", capiCluster.Namespace, capiCluster.Name)
-			}, deleteClusterWait...).Should(Succeed(), "CAPI cluster deletion should complete")
+			By("Deleting CAPI Cluster")
+			capiClusterObj := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+				Getter: input.BootstrapClusterProxy.GetClient(), Name: input.ClusterName, Namespace: namespace.Name,
+			})
+			framework.DeleteCluster(ctx, framework.DeleteClusterInput{
+				Deleter: input.BootstrapClusterProxy.GetClient(),
+				Cluster: capiClusterObj,
+			})
+			framework.WaitForClusterDeleted(ctx, framework.WaitForClusterDeletedInput{
+				ClusterProxy:         input.BootstrapClusterProxy,
+				Cluster:              capiClusterObj,
+				ClusterctlConfigPath: input.ClusterctlBinaryPath,
+			}, deleteClusterWait...)
 
 			By("Waiting for the rancher cluster record to be removed")
 			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
