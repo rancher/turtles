@@ -297,6 +297,20 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	}
 }
 
+// UninstallRancherTurtlesProviders uninstalls the rancher-turtles-providers chart.
+func UninstallRancherTurtlesProviders(ctx context.Context, namespace string, clusterProxy framework.ClusterProxy) {
+	var cmd turtlesframework.RunCommandResult
+	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "helm",
+		Args: []string{
+			"uninstall", e2e.ProvidersChartName,
+			"-n", namespace,
+			"--kubeconfig", clusterProxy.GetKubeconfigPath(),
+			"--wait",
+		},
+	}, &cmd)
+}
+
 func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath, turtlesNamespace string, extraArgs ...string) {
 	if _, err := os.Stat(scriptPath); err != nil {
 		Expect(fmt.Errorf("migration script not found: %s", scriptPath)).ToNot(HaveOccurred())
