@@ -29,7 +29,20 @@
       "items": { "type": "string" }
     },
     "shellImage": {
-      "type": "string"
+      "type": "object",
+      "properties": {
+        "image": { 
+        "type": "object",
+        "properties": {
+            "repository": {
+              "type": "string"
+            },
+            "tag": {
+              "type": "string"
+            }
+          }
+        }
+      }
     },
     "features": {
       "type": "object",
