@@ -165,9 +165,9 @@ var _ = Describe("SecretMapperSync get", func() {
 			err = syncer.Get(context.Background())
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
 		}).Should(Succeed())
 	})
 
@@ -207,9 +207,9 @@ var _ = Describe("SecretMapperSync get", func() {
 			err = syncer.Get(context.Background())
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal(fmt.Sprintf("Rancher Credentials secret named %s:secret-name was not located", ns.Name)))
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(Equal(fmt.Sprintf("Rancher Credentials secret named %s:secret-name was not located", ns.Name)))
 		}).Should(Succeed())
 	})
 
@@ -229,9 +229,9 @@ var _ = Describe("SecretMapperSync get", func() {
 			err = syncer.Get(context.Background())
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("unable to locate rancher secret with name"))
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(Equal("Rancher Credentials secret named test-rancher-secret was not located"))
 		}).Should(Succeed())
 	})
 
@@ -286,9 +286,9 @@ var _ = Describe("SecretMapperSync get", func() {
 
 		Eventually(func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(
 				ContainSubstring("key not found: azurecredentialConfig-subscriptionId, key not found: azurecredentialConfig-clientId, key not found: azurecredentialConfig-clientSecret, key not found: azurecredentialConfig-tenantId"))
 
 			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
@@ -312,9 +312,9 @@ var _ = Describe("SecretMapperSync get", func() {
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(
 				ContainSubstring("key not found: amazonec2credentialConfig-accessKey, key not found: amazonec2credentialConfig-secretKey, key not found: amazonec2credentialConfig-defaultRegion"))
 
 			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
@@ -334,9 +334,9 @@ var _ = Describe("SecretMapperSync get", func() {
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(
 				ContainSubstring("googlecredentialConfig-authEncodedJson"))
 
 			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
@@ -357,8 +357,8 @@ var _ = Describe("SecretMapperSync get", func() {
 			syncer := sync.NewSecretMapperSync(ctx, testEnv, capiProvider).(*sync.SecretMapperSync)
 			g.Expect(syncer.Get(ctx)).ToNot(HaveOccurred())
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsTrue(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsTrue(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
 
 			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"GCP_B64ENCODED_CREDENTIALS": "dGVzdA==",
@@ -374,9 +374,9 @@ var _ = Describe("SecretMapperSync get", func() {
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(
 				ContainSubstring("key not found: digitaloceancredentialConfig-accessToken"))
 
 			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
@@ -393,9 +393,9 @@ var _ = Describe("SecretMapperSync get", func() {
 
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(syncer.Sync(context.Background())).ToNot(HaveOccurred())
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsFalse(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
-			g.Expect(conditions.GetMessage(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsFalse(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
+			g.Expect(conditions.GetMessage(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(
 				ContainSubstring("key not found: vmwarevspherecredentialConfig-password, key not found: vmwarevspherecredentialConfig-username"))
 			g.Expect(syncer.Destination.StringData).To(Equal(map[string]string{
 				"VSPHERE_PASSWORD": "",
@@ -427,8 +427,8 @@ var _ = Describe("SecretMapperSync get", func() {
 				"AWS_SECRET_ACCESS_KEY":      "test",
 			}))
 
-			g.Expect(conditions.Get(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).ToNot(BeNil())
-			g.Expect(conditions.IsTrue(syncer.Source, turtlesv1.RancherCredentialsSecretCondition)).To(BeTrue())
+			g.Expect(conditions.Get(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).ToNot(BeNil())
+			g.Expect(conditions.IsTrue(syncer.Source, string(turtlesv1.RancherCredentialsSecretCondition))).To(BeTrue())
 		}).Should(Succeed())
 	})
 })

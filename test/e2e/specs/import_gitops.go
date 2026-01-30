@@ -31,12 +31,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -135,11 +131,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
 
 		By("Rancher cluster should have the custom description if it is provided")
-		capiClusterObject := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace.Name,
-			Name:      input.ClusterName,
-		}}
-		Eventually(komega.Get(capiClusterObject), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+		capiClusterObject := framework.GetClusterByName(
+			ctx,
+			framework.GetClusterByNameInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Name:      input.ClusterName,
+				Namespace: namespace.Name,
+			},
+		)
 		annotations := capiClusterObject.GetAnnotations()
 		description := annotations[turtlesannotations.ClusterDescriptionAnnotation]
 		if description == "" {
@@ -149,7 +148,9 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		By("Waiting for the rancher cluster to have a deployed agent")
 		Eventually(func() bool {
+			fmt.Println("#### Getting Rancher cluster:", rancherCluster.Name)
 			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+			fmt.Println("##### Rancher cluster status:", rancherCluster.Status)
 			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
 		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
 
@@ -217,7 +218,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		Expect(input.E2EConfig).ToNot(BeNil(), "Invalid argument. input.E2EConfig can't be nil when calling %s spec", specName)
 		Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-		Expect(os.MkdirAll(input.ArtifactFolder, 0750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
+		Expect(os.MkdirAll(input.ArtifactFolder, 0o750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
 		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
@@ -304,14 +305,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		}
 
 		By("Waiting for the CAPI cluster to appear")
-		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace.Name,
-			Name:      input.ClusterName,
-		}}
-		Eventually(
-			komega.Get(capiCluster),
-			input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).
-			Should(Succeed(), "Failed to apply CAPI cluster definition to cluster via Fleet")
+
+		capiCluster := framework.GetClusterByName(
+			ctx,
+			framework.GetClusterByNameInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Name:      input.ClusterName,
+				Namespace: namespace.Name,
+			},
+		)
 
 		By("Waiting for the CAPI cluster to be connectable")
 		Eventually(func() error {
@@ -341,32 +343,30 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		}, originalKubeconfig)
 
 		By("Waiting for cluster control plane to be Ready")
-		Eventually(komega.Object(capiCluster), capiClusterCreateWait...).Should(HaveField("Status.ControlPlaneReady", BeTrue()))
+		Eventually(func() bool {
+			capiCluster := framework.GetClusterByName(
+				ctx,
+				framework.GetClusterByNameInput{
+					Getter:    input.BootstrapClusterProxy.GetClient(),
+					Name:      input.ClusterName,
+					Namespace: namespace.Name,
+				},
+			)
+
+			return ptr.Deref(capiCluster.Status.Initialization.ControlPlaneInitialized, false)
+		}, capiClusterCreateWait...).Should(BeTrue())
 
 		By("Running checks on Rancher cluster")
 		validateRancherCluster()
 
-		By("Waiting for the CAPI Cluster to be Ready")
-		Eventually(func() error {
-			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
-				return fmt.Errorf("getting Cluster: %w", err)
-			}
-
-			readyCondition := conditions.Get(capiCluster, clusterv1.ReadyCondition)
-			if readyCondition == nil {
-				return fmt.Errorf("Cluster Ready condition is not found")
-			}
-
-			switch readyCondition.Status {
-			case corev1.ConditionTrue:
-				// Cluster is ready
-				return nil
-			case corev1.ConditionFalse:
-				return fmt.Errorf("Cluster is not Ready")
-			default:
-				return fmt.Errorf("Cluster Ready condition is unknown")
-			}
-		}, capiClusterCreateWait...).Should(Succeed(), "CAPI Cluster should be Ready")
+		By("Waiting for the CAPI Cluster to be Available")
+		framework.VerifyClusterAvailable(
+			ctx,
+			framework.VerifyClusterAvailableInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Namespace: capiCluster.Namespace,
+				Name:      capiCluster.Name,
+			})
 
 		if input.TestClusterReimport {
 			By("Deleting Rancher cluster record to simulate unimporting the cluster")
@@ -375,7 +375,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 			By("CAPI cluster should have the 'imported' annotation")
 			Eventually(func() bool {
-				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
 				annotations := capiCluster.GetAnnotations()
 
 				return annotations["imported"] == "true"
@@ -386,18 +393,32 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 			By("Removing 'imported' annotation from CAPI cluster")
 			Eventually(func() error {
-				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
 				annotations := capiCluster.GetAnnotations()
 				delete(annotations, "imported")
 				capiCluster.SetAnnotations(annotations)
+
 				return input.BootstrapClusterProxy.GetClient().Update(ctx, capiCluster)
 			}).ShouldNot(HaveOccurred(), "Failed to remove 'imported' annotation from CAPI cluster")
 
 			By("Validating annotation is removed from CAPI cluster")
 			Eventually(func() bool {
-				Eventually(komega.Get(capiCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
 				annotations := capiCluster.GetAnnotations()
-
 				return annotations["imported"] != "true"
 			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
 
@@ -425,58 +446,19 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		if input.SkipCleanup && input.SkipDeletionTest {
 			log.FromContext(ctx).Info("Skipping Cluster deletion from Rancher")
 		} else {
-			By("Deleting Cluster")
-			Expect(input.BootstrapClusterProxy.GetClient().Delete(ctx, &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      capiCluster.Name,
-					Namespace: capiCluster.Namespace,
-				},
-			})).To(Succeed())
-
-			By("Waiting for the CAPI cluster to be deleted")
-			Eventually(func() error {
-				cl := input.BootstrapClusterProxy.GetClient()
-
-				cluster := &clusterv1.Cluster{}
-				err := cl.Get(ctx, *capiCluster, cluster)
-				if err != nil {
-					if apierrors.IsNotFound(err) {
-						return nil
-					}
-					return fmt.Errorf("getting CAPI Cluster: %w", err)
-				}
-
-				// (FIXME upstream)
-				// Check if InfaCluster is deleted
-				//
-				// This is to bypass a race condition where the InfraCluster is deleted,
-				// before some other resources (ex. InfraMachinePool) are deleted.
-				if cluster.Spec.InfrastructureRef != nil &&
-					(cluster.Spec.InfrastructureRef.Kind == "AWSCluster" ||
-						cluster.Spec.InfrastructureRef.Kind == "GCPManagedCluster") {
-
-					infraCluster := &unstructured.Unstructured{}
-					infraCluster.SetGroupVersionKind(schema.GroupVersionKind{
-						Group:   cluster.Spec.InfrastructureRef.GroupVersionKind().Group,
-						Kind:    cluster.Spec.InfrastructureRef.GroupVersionKind().Kind,
-						Version: cluster.Spec.InfrastructureRef.GroupVersionKind().Version,
-					})
-					infraClusterKey := types.NamespacedName{
-						Namespace: cluster.Namespace,
-						Name:      cluster.Spec.InfrastructureRef.Name,
-					}
-					if err := cl.Get(ctx, infraClusterKey, infraCluster); err != nil {
-						if apierrors.IsNotFound(err) {
-							// If the InfraCluster is deleted, ignore Cluster deletion (may hang indefinitely)
-							return nil
-						}
-						return fmt.Errorf("getting %s %s/%s: %w", cluster.Spec.InfrastructureRef.Kind, infraClusterKey.Namespace, infraClusterKey.Name, err)
-					}
-					return fmt.Errorf("%s %s/%s is still present", cluster.Spec.InfrastructureRef.Kind, infraClusterKey.Namespace, infraClusterKey.Name)
-				}
-
-				return fmt.Errorf("CAPI Cluster %s/%s is still present", cluster.Namespace, cluster.Name)
-			}, deleteClusterWait...).Should(Succeed(), "CAPI cluster deletion should complete")
+			By("Deleting CAPI Cluster")
+			capiClusterObj := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+				Getter: input.BootstrapClusterProxy.GetClient(), Name: input.ClusterName, Namespace: namespace.Name,
+			})
+			framework.DeleteCluster(ctx, framework.DeleteClusterInput{
+				Deleter: input.BootstrapClusterProxy.GetClient(),
+				Cluster: capiClusterObj,
+			})
+			framework.WaitForClusterDeleted(ctx, framework.WaitForClusterDeletedInput{
+				ClusterProxy:         input.BootstrapClusterProxy,
+				Cluster:              capiClusterObj,
+				ClusterctlConfigPath: input.ClusterctlBinaryPath,
+			}, deleteClusterWait...)
 
 			By("Waiting for the rancher cluster record to be removed")
 			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")

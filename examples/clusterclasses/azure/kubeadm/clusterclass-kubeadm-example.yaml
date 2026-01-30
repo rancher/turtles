@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: azure-kubeadm-example
@@ -10,7 +10,7 @@ spec:
         kind: AzureMachineTemplate
         name: azure-machine-control-plane
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: KubeadmControlPlaneTemplate
       name: kubeadm-control-plane
   infrastructure:
@@ -24,7 +24,7 @@ spec:
         template:
           bootstrap:
             ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
               kind: KubeadmConfigTemplate
               name: kubeadm-default-worker-bootstrap
           infrastructure:
@@ -145,7 +145,7 @@ spec:
                     path: /etc/kubernetes/azure.json
                     permissions: "0644"
           selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
             kind: KubeadmControlPlaneTemplate
             matchResources:
               controlPlane: true
@@ -189,7 +189,7 @@ spec:
                     path: /etc/kubernetes/azure.json
                     permissions: "0644"
           selector:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: KubeadmConfigTemplate
             matchResources:
               machineDeploymentClass:
@@ -255,7 +255,7 @@ spec:
         osType: Linux
       vmSize: "TO_BE_REPLACED_BY_PATCH"
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
 metadata:
   name: kubeadm-control-plane
@@ -317,7 +317,7 @@ spec:
         preKubeadmCommands: []
         verbosity: 10
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: kubeadm-default-worker-bootstrap

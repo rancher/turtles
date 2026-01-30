@@ -8,7 +8,7 @@ spec:
     selector:
       matchLabels: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: '${CLUSTER_NAME}'
@@ -23,8 +23,9 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   topology:
-    class: vsphere-kubeadm-example
-    classNamespace: ${TOPOLOGY_NAMESPACE}
+    classRef:
+      name: vsphere-kubeadm-example
+      namespace: ${TOPOLOGY_NAMESPACE}
     version: ${KUBERNETES_VERSION}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}

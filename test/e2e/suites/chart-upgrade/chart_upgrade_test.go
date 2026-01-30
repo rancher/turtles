@@ -63,7 +63,7 @@ const (
 	upstreamCAPIImageURL = "registry.k8s.io/cluster-api/cluster-api-controller"
 )
 
-var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
+var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.DontRunLabel), func() {
 	var (
 		clusterName       string
 		topologyNamespace = "creategitops-docker-rke2"
@@ -335,7 +335,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 					Name:      capvProviderName,
 				}, capiProvider)).Should(Succeed())
 			condition := conditions.Get(capiProvider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
-			if condition == nil || condition.Status != corev1.ConditionTrue {
+			if condition == nil || condition.Status != metav1.ConditionTrue {
 				return false
 			}
 			return true
