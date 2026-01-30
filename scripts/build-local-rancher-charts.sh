@@ -30,7 +30,9 @@ if [ "$CLEANUP" = "true" ]; then
     rm -rf $RANCHER_CHARTS_REPO_DIR
     mkdir -p $RANCHER_CHARTS_REPO_DIR
     # Build and copy Turtles chart into Rancher Charts local repo
-    git clone -b $RANCHER_CHARTS_BASE_BRANCH https://github.com/rancher/charts.git $RANCHER_CHARTS_REPO_DIR
+    git clone --depth 1 -b $RANCHER_CHARTS_BASE_BRANCH https://github.com/rancher/charts.git $RANCHER_CHARTS_REPO_DIR
+    rm -rf $RANCHER_CHARTS_REPO_DIR/.git
+    git -C $RANCHER_CHARTS_REPO_DIR init --initial-branch=$RANCHER_CHARTS_BASE_BRANCH
 fi
 
 mkdir -p $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV_VERSION

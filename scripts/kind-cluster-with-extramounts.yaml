@@ -7,3 +7,12 @@ nodes:
   extraMounts:
     - hostPath: /var/run/docker.sock
       containerPath: /var/run/docker.sock
+  extraPortMappings:
+  # Gitea test Nodeport
+  - containerPort: 30001
+    hostPort: 30001
+    protocol: TCP
+  # Rancher test Nodeport
+  - containerPort: 30002
+    hostPort: 30002
+    protocol: TCP
