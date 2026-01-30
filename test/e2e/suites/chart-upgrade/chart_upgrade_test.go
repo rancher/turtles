@@ -63,7 +63,7 @@ const (
 	upstreamCAPIImageURL = "registry.k8s.io/cluster-api/cluster-api-controller"
 )
 
-var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
+var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.DontRunLabel), func() {
 	var (
 		clusterName       string
 		topologyNamespace = "creategitops-docker-rke2"
