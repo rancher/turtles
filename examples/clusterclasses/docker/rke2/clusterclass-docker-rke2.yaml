@@ -77,23 +77,8 @@ spec:
               valueFrom: 
                 variable: dockerImage
     - name: dockerAuthSecret
+      enabledIf: '{{ ne .dockerAuthSecret "" }}'
       definitions:
-        - selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
-            kind: RKE2ControlPlaneTemplate
-            matchResources:
-              controlPlane: true
-          jsonPatches:
-            - op: add
-              path: /spec/template/spec/privateRegistriesConfig/configs
-              valueFrom:
-                template: |-
-                   {{- if .dockerAuthSecret }}
-                    "registry-1.docker.io":
-                      authSecret:
-                        name: {{ .dockerAuthSecret }}
-                        namespace: {{ .builtin.cluster.namespace }}
-                    {{- end }}
         - selector:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
@@ -105,14 +90,13 @@ spec:
             - op: add
               path: /spec/template/spec/privateRegistriesConfig/configs
               valueFrom:
-                template: |-
+                template: |
                   {{- if .dockerAuthSecret }}
                   "registry-1.docker.io":
                     authSecret:
                       name: {{ .dockerAuthSecret }}
                       namespace: {{ .builtin.cluster.namespace }}
                   {{- end }}
-
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
@@ -177,4 +161,10 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: docker-rke2-worker-bootstraptemplate
-spec: {}
+spec:
+  template:
+    spec:
+      privateRegistriesConfig: # this must be non-empty for the patch to work
+        configs:
+          tls:
+            insecureSkipVerify: false
