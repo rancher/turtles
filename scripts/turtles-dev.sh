@@ -65,13 +65,13 @@ helm install cert-manager jetstack/cert-manager \
 helm install gitea gitea-charts/gitea \
     -f test/e2e/data/gitea/values.yaml \
     --set gitea.admin.password=$GITEA_PASSWORD \
+    --namespace gitea \
+    --create-namespace \
     --wait
 
 cleanup() {
     echo "Cleaning up background processes..."
     [ -n "$NGROK_PID" ] && kill $NGROK_PID 2>/dev/null && echo "Stopped ngrok (PID: $NGROK_PID)"
-    [ -n "$RANCHER_PORT_FORWARD_PID" ] && kill $RANCHER_PORT_FORWARD_PID 2>/dev/null && echo "Stopped Rancher port-forward (PID: $RANCHER_PORT_FORWARD_PID)"
-    [ -n "$GITEA_PORT_FORWARD_PID" ] && kill $GITEA_PORT_FORWARD_PID 2>/dev/null && echo "Stopped Gitea port-forward (PID: $GITEA_PORT_FORWARD_PID)"
     [ -f "$NGROK_CONFIG_FILE" ] && rm -f "$NGROK_CONFIG_FILE" && echo "Removed ngrok config file"
 }
 trap cleanup EXIT INT TERM
@@ -80,18 +80,28 @@ trap cleanup EXIT INT TERM
 make docker-build-prime
 kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
 
-# Start port-forwarding for Gitea
-echo "Starting port-forward for Gitea..."
-kubectl port-forward --namespace default svc/gitea-http 10001:3000 > /tmp/gitea-port-forward.log 2>&1 &
-GITEA_PORT_FORWARD_PID=$!
+# Deploy Gitea test Nodeport
+echo "Deploying Gitea test Nodeport..."
+kubectl apply -f test/e2e/data/gitea/test-nodeport.yaml
 
 # Wait for Gitea to be accessible locally
-echo "Waiting for Gitea to be accessible on localhost:10001..."
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:10001 | grep -q "200\|302\|301"; do 
-    echo "Waiting for local gitea port-forward..."
+echo "Waiting for Gitea to be accessible on localhost:30001..."
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:30001 | grep -q "200\|302\|301"; do 
+    echo "Waiting for test Gitea Nodeport..."
     sleep 2
 done
 echo "Gitea is accessible locally!"
+
+# Now setup Gitea repo and push charts
+echo "Creating new Gitea repository..."
+curl -X POST "http://gitea:$GITEA_PASSWORD@localhost:30001/api/v1/user/repos" \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"charts"}'
+
+echo "Pushing charts repository to Gitea..."
+git -C $RANCHER_CHARTS_REPO_DIR remote add fork http://gitea:$GITEA_PASSWORD@localhost:30001/gitea/charts.git
+git -C $RANCHER_CHARTS_REPO_DIR push --set-upstream fork $RANCHER_CHARTS_BASE_BRANCH
 
 helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --namespace cattle-system \
@@ -104,16 +114,14 @@ helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --version="$RANCHER_VERSION" \
     --wait
 
-# Start port-forwarding for Rancher
-echo "Starting port-forward for Rancher..."
-kubectl port-forward --namespace cattle-system svc/rancher 10000:80 > /tmp/rancher-port-forward.log 2>&1 &
-RANCHER_PORT_FORWARD_PID=$!
-echo "Rancher port-forward started with PID: $RANCHER_PORT_FORWARD_PID"
+# Deploy Rancher test Nodeport
+echo "Deploying Rancher test Nodeport..."
+kubectl apply -f test/e2e/data/rancher/test-nodeport.yaml
 
 # Wait for Rancher to be accessible locally
-echo "Waiting for Rancher to be accessible on localhost:10000..."
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:10000 | grep -q "200\|302\|301"; do 
-    echo "Waiting for local rancher port-forward..."
+echo "Waiting for Rancher to be accessible on localhost:30002..."
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:30002 | grep -q "200\|302\|301"; do 
+    echo "Waiting for test Rancher Nodeport..."
     sleep 2
 done
 echo "Rancher is accessible locally!"
@@ -126,11 +134,11 @@ authtoken: $NGROK_AUTHTOKEN
 tunnels:
   rancher:
     proto: http
-    addr: http://localhost:10000
+    addr: http://localhost:30002
     hostname: $RANCHER_HOSTNAME
   gitea:
     proto: http
-    addr: http://localhost:10001
+    addr: http://localhost:30001
     hostname: gitea.$RANCHER_HOSTNAME
 EOF
 
@@ -177,44 +185,6 @@ until [ "$(curl -s -o /dev/null -w "%{http_code}" https://$RANCHER_HOSTNAME)" = 
     sleep 2
 done
 echo "Rancher is accessible via ngrok!"
-
-# Now setup Gitea repo and push charts
-curl -X POST "https://gitea:$GITEA_PASSWORD@gitea.$RANCHER_HOSTNAME/api/v1/user/repos" \
-    -H 'Accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d '{"name":"charts"}'
-
-git -C $RANCHER_CHARTS_REPO_DIR remote add fork https://gitea:$GITEA_PASSWORD@gitea.$RANCHER_HOSTNAME/gitea/charts.git
-
-# These git config are needed to make the push work fine through ngrok tunnel
-git -C $RANCHER_CHARTS_REPO_DIR config http.postBuffer 1048576000  # 1 GB
-git -C $RANCHER_CHARTS_REPO_DIR config http.lowSpeedLimit 0
-git -C $RANCHER_CHARTS_REPO_DIR config http.lowSpeedTime 999999
-git -C $RANCHER_CHARTS_REPO_DIR config http.version HTTP/1.1
-git -C $RANCHER_CHARTS_REPO_DIR config pack.windowMemory 256m
-git -C $RANCHER_CHARTS_REPO_DIR config pack.packSizeLimit 256m
-git -C $RANCHER_CHARTS_REPO_DIR config pack.threads 1
-
-echo "Pushing charts repository to Gitea (this may take several minutes)..."
-PUSH_RETRIES=3
-PUSH_COUNT=0
-while [ $PUSH_COUNT -lt $PUSH_RETRIES ]; do
-    PUSH_COUNT=$((PUSH_COUNT+1))
-    echo "Push attempt $PUSH_COUNT/$PUSH_RETRIES..."
-    
-    if git -C $RANCHER_CHARTS_REPO_DIR push fork --force 2>&1 | tee /tmp/git-push.log; then
-        echo "Successfully pushed charts repository!"
-        break
-    else
-        if [ $PUSH_COUNT -lt $PUSH_RETRIES ]; then
-            echo "Push failed, waiting 10 seconds before retry..."
-            sleep 10
-        else
-            echo "ERROR: Failed to push charts repository after $PUSH_RETRIES attempts."
-            exit 1
-        fi
-    fi
-done
 
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
