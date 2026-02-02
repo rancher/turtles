@@ -174,6 +174,9 @@ GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 NOTES_BIN := notes
 NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 
+CRUST_GATHER_BIN := crust-gather
+CRUST_GATHER := $(abspath $(TOOLS_BIN_DIR)/$(CRUST_GATHER_BIN))
+
 CHART_TESTING_VER := v3.14.0
 
 # Registry / images
@@ -500,6 +503,9 @@ $(CONVERSION_GEN): # Build conversion-gen from tools folder.
 .PHONY: $(GINKGO_BIN)
 $(GINKGO_BIN): $(GINKGO) ## Build a local copy of ginkgo.
 
+.PHONY: $(CRUST_GATHER_BIN)
+$(CRUST_GATHER_BIN): $(CRUST_GATHER) ## Download crust-gather.
+
 $(GO_APIDIFF): # Build go-apidiff from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
@@ -531,6 +537,9 @@ $(GH): # Download GitHub cli into the tools bin folder
 	hack/ensure-gh.sh \
 		-b $(TOOLS_BIN_DIR) \
 		$(GH_VERSION)
+
+$(CRUST_GATHER): # Downloads and install crust-gather
+	curl -sSfL https://github.com/crust-gather/crust-gather/raw/main/install.sh | sh -s - -f -b $(TOOLS_BIN_DIR)
 
 kubectl: # Download kubectl cli into tools bin folder
 	hack/ensure-kubectl.sh \
@@ -577,9 +586,9 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 
-	sed -i -e 's/tag:.*/tag: '${RELEASE_TAG}'/' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e 's/imagePullPolicy:.*/imagePullPolicy: '$(PULL_POLICY)'/' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e 's|repository:.*|repository: '${CONTROLLER_IMG}'|' $(CHART_RELEASE_DIR)/values.yaml
+	yq -i '.image.tag="${RELEASE_TAG}"' $(CHART_RELEASE_DIR)/values.yaml
+	yq -i '.image.imagePullPolicy="${PULL_POLICY}"' $(CHART_RELEASE_DIR)/values.yaml
+	yq -i '.image.repository="${CONTROLLER_IMG}"' $(CHART_RELEASE_DIR)/values.yaml
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
@@ -591,9 +600,9 @@ build-chart-bump-capi: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) 
 
 	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
 
-	sed -i -e 's/tag:.*/tag: '${RELEASE_TAG}'/' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e 's/imagePullPolicy:.*/imagePullPolicy: '$(PULL_POLICY)'/' $(CHART_RELEASE_DIR)/values.yaml
-	sed -i -e 's|repository:.*|repository: '${CONTROLLER_IMG}'|' $(CHART_RELEASE_DIR)/values.yaml
+	yq -i '.image.tag="${RELEASE_TAG}"' $(CHART_RELEASE_DIR)/values.yaml
+	yq -i '.image.imagePullPolicy="${PULL_POLICY}"' $(CHART_RELEASE_DIR)/values.yaml
+	yq -i '.image.repository="${CONTROLLER_IMG}"' $(CHART_RELEASE_DIR)/values.yaml
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
@@ -756,3 +765,11 @@ clean-dev-env: ## Remove the dev env
 .PHOHY: clean-rancher-charts
 clean-rancher-charts: ## Remove the local rancher charts folder
 	rm -rf $(RANCHER_CHARTS_REPO_DIR)
+
+## --------------------------------------
+## Collect artifacts
+## --------------------------------------
+
+.PHONY: collect-artifacts
+collect-artifacts: $(CRUST_GATHER_BIN)
+	$(CRUST_GATHER) collect -f $(ARTIFACTS_FOLDER)/gather
