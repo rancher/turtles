@@ -19,7 +19,10 @@ managerArguments: []
 # imagePullSecrets: Secrets for private registries.
 imagePullSecrets: []
 # shellImage: Image for shell tasks.
-shellImage: rancher/kuberlr-kubectl:v5.0.0
+shellImage:
+  image:
+    repository: rancher/kuberlr-kubectl
+    tag: v5.0.0
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
