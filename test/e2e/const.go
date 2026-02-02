@@ -87,6 +87,9 @@ var (
 	//go:embed data/cluster-templates/docker-rke2-topology.yaml
 	CAPIDockerRKE2Topology []byte
 
+	//go:embed data/cluster-templates/docker-rke2-v1beta1-topology.yaml
+	CAPIDockerRKE2V1Beta1Topology []byte
+
 	//go:embed data/cluster-templates/aws-eks-topology.yaml
 	CAPIAwsEKSTopology []byte
 
@@ -119,6 +122,9 @@ var (
 
 	//go:embed data/capi-operator/clusterctlconfig.yaml
 	ClusterctlConfig []byte
+
+	//go:embed data/capi-operator/clusterctlconfig-chart-upgrade.yaml
+	ClusterctlConfigChartUpgrade []byte
 
 	// CAPIProvider test data
 

@@ -210,7 +210,7 @@ PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 # Rancher charts testing
 export RANCHER_CHARTS_REPO_DIR ?=  $(abspath $(RELEASE_DIR)/rancher-charts)
 export RANCHER_CHART_DEV_VERSION ?= 108.0.0+up99.99.99
-export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.13
+export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.14
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= IfNotPresent

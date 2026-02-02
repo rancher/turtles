@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -93,6 +94,7 @@ func InitScheme() *runtime.Scheme {
 	Expect(turtlesv1.AddToScheme(scheme)).To(Succeed())
 	Expect(operatorv1.AddToScheme(scheme)).To(Succeed())
 	Expect(clusterv1.AddToScheme(scheme)).To(Succeed())
+	Expect(clusterv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
 	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 	Expect(networkingv1.AddToScheme(scheme)).To(Succeed())

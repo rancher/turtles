@@ -3,7 +3,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-    helm.sh/resource-policy: keep
   name: capiproviders.turtles-capi.cattle.io
 spec:
   group: turtles-capi.cattle.io
@@ -3316,7 +3315,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-    helm.sh/resource-policy: keep
   name: clusterctlconfigs.turtles-capi.cattle.io
 spec:
   group: turtles-capi.cattle.io

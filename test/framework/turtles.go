@@ -31,9 +31,12 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -200,4 +203,40 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 		By("Deleting Cluster")
 		Expect(input.BootstrapClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
 	}
+}
+
+// WaitForV1Beta1ClusterReadyInput is the input type for WaitForClusterReady.
+type WaitForV1Beta1ClusterReadyInput struct {
+	Getter    framework.Getter
+	Name      string
+	Namespace string
+}
+
+// WaitForV1Beta1ClusterReady will wait for a `v1beta1` Cluster to be Ready.
+func WaitForV1Beta1ClusterReady(ctx context.Context, input WaitForV1Beta1ClusterReadyInput, intervals ...interface{}) {
+	Byf("Waiting for v1beta1 Cluster %s/%s to be Ready", input.Namespace, input.Name)
+
+	Eventually(func() error {
+		cluster := &clusterv1beta1.Cluster{}
+		key := types.NamespacedName{Name: input.Name, Namespace: input.Namespace}
+
+		if err := input.Getter.Get(ctx, key, cluster); err != nil {
+			return fmt.Errorf("getting Cluster %s/%s: %w", input.Namespace, input.Name, err)
+		}
+
+		for _, condition := range cluster.Status.Conditions {
+			if condition.Type == clusterv1beta1.ConditionType("Ready") {
+				switch condition.Status {
+				case corev1.ConditionTrue:
+					// Cluster is ready
+					return nil
+				case corev1.ConditionFalse:
+					return fmt.Errorf("Cluster is not Ready")
+				default:
+					return fmt.Errorf("Cluster Ready condition is unknown")
+				}
+			}
+		}
+		return fmt.Errorf("Cluster Ready condition is not found")
+	}, intervals...).Should(Succeed())
 }

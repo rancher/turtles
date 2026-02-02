@@ -1,0 +1,14 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: ClusterctlConfig
+metadata:
+  name: clusterctl-config
+  namespace: cattle-turtles-system
+spec:
+  providers:
+    - name: "docker"
+      url: "https://github.com/kubernetes-sigs/cluster-api/releases/v1.10.6/infrastructure-components-development.yaml"
+      type: "InfrastructureProvider"
+
+  images:
+    - name: infrastructure-docker
+      repository: "gcr.io/k8s-staging-cluster-api"
