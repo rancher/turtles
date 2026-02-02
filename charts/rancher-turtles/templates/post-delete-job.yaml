@@ -69,7 +69,7 @@ spec:
       serviceAccountName: post-delete-job
       containers:
       - name: cluster-api-operator-mutatingwebhook-cleanup
-        image: {{ .Values.shellImage }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.shellImage.image.repository }}:{{ .Values.shellImage.image.tag }}'
         command: ["kubectl"]
         args:
         - delete
@@ -102,7 +102,7 @@ spec:
       serviceAccountName: post-delete-job
       containers:
       - name: cluster-api-operator-validatingwebhook-cleanup
-        image: {{ .Values.shellImage }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.shellImage.image.repository }}:{{ .Values.shellImage.image.tag }}'
         command: ["kubectl"]
         args:
         - delete
@@ -136,7 +136,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: delete-capi-controller-manager
-        image: {{ .Values.shellImage }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.shellImage.image.repository }}:{{ .Values.shellImage.image.tag }}'
         command: ["kubectl"]
         args:
         - delete
@@ -170,7 +170,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: delete-capi-configmaps
-        image: {{ .Values.shellImage }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.shellImage.image.repository }}:{{ .Values.shellImage.image.tag }}'
         command: ["kubectl"]
         args:
         - delete
