@@ -38,7 +38,7 @@ REPO ?= rancher/turtles
 
 CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
 # NOTE: Pinned to latest; bump when newer CAPI version available.
-CAPI_VERSION_TEST_BUMP ?= v1.11.4
+CAPI_VERSION_TEST_BUMP ?= v1.11.5
 CAPI_VERSION_TEST_BUMP_SUFFIX ?= capi
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
@@ -163,7 +163,7 @@ HELM_VER := v3.18.4
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-CLUSTERCTL_VER := v1.11.4
+CLUSTERCTL_VER := v1.11.5
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 

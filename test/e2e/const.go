@@ -223,7 +223,7 @@ const (
 )
 
 const (
-	CAPIVersion     = "v1.11.4"
+	CAPIVersion     = "v1.11.5"
 	CAPIVersionBump = "CAPI_VERSION_TEST_BUMP"
 )
 
