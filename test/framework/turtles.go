@@ -32,10 +32,12 @@ import (
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -144,24 +146,18 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 			Namespace: cluster.Namespace,
 		}
 
-		Byf("Verifying cluster %s is ready", key.String())
+		Byf("Verifying cluster %s is available", key.String())
 		if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, cluster); err != nil {
 			return fmt.Errorf("failed to get cluster %s: %w", key.String(), err)
 		}
-		if cluster.Status.ControlPlaneReady == false {
-			return fmt.Errorf("cluster %s does not have a ControlPlaneReady status", key.String())
-		}
-		if cluster.Status.InfrastructureReady == false {
-			return fmt.Errorf("cluster %s does not have an InfrastructureReady status", key.String())
-		}
 
-		readyCondition := conditions.Get(cluster, clusterv1.ReadyCondition)
-		if readyCondition == nil {
-			return fmt.Errorf("cluster %s does not have a Ready condition", key.String())
-		}
-		if readyCondition.Status != corev1.ConditionTrue {
-			return fmt.Errorf("cluster %s Ready condition is not true: %s", key.String(), readyCondition.Message)
-		}
+		framework.VerifyClusterAvailable(ctx,
+			framework.VerifyClusterAvailableInput{
+				Getter:    input.BootstrapClusterProxy.GetClient(),
+				Name:      cluster.Name,
+				Namespace: cluster.Namespace,
+			},
+		)
 
 		machineList := &clusterv1.MachineList{}
 		if err := input.BootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(cluster.Namespace),
@@ -179,7 +175,7 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 			for _, condition := range machine.Status.Conditions {
 				if condition.Type == clusterv1.ReadyCondition {
 					readyConditionFound = true
-					if condition.Status != corev1.ConditionTrue {
+					if condition.Status != metav1.ConditionTrue {
 						return fmt.Errorf("machine %s Ready condition is not true: %s", machine.Name, condition.Message)
 					}
 					if condition.Message != "" {
@@ -199,5 +195,47 @@ func VerifyCluster(ctx context.Context, input VerifyClusterInput) {
 	if input.DeleteAfterVerification {
 		By("Deleting Cluster")
 		Expect(input.BootstrapClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
+
+		By("Waiting for CAPI cluster to be deleted")
+		Eventually(func(g Gomega) {
+			err := input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(cluster), cluster)
+			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		}, "5m", "10s").Should(Succeed(), "Failed to verify cluster deletion")
 	}
+}
+
+// WaitForV1Beta1ClusterReadyInput is the input type for WaitForClusterReady.
+type WaitForV1Beta1ClusterReadyInput struct {
+	Getter    framework.Getter
+	Name      string
+	Namespace string
+}
+
+// WaitForV1Beta1ClusterReady will wait for a `v1beta1` Cluster to be Ready.
+func WaitForV1Beta1ClusterReady(ctx context.Context, input WaitForV1Beta1ClusterReadyInput, intervals ...interface{}) {
+	Byf("Waiting for v1beta1 Cluster %s/%s to be Ready", input.Namespace, input.Name)
+
+	Eventually(func() error {
+		cluster := &clusterv1beta1.Cluster{}
+		key := types.NamespacedName{Name: input.Name, Namespace: input.Namespace}
+
+		if err := input.Getter.Get(ctx, key, cluster); err != nil {
+			return fmt.Errorf("getting Cluster %s/%s: %w", input.Namespace, input.Name, err)
+		}
+
+		for _, condition := range cluster.Status.Conditions {
+			if condition.Type == clusterv1beta1.ConditionType("Ready") {
+				switch condition.Status {
+				case corev1.ConditionTrue:
+					// Cluster is ready
+					return nil
+				case corev1.ConditionFalse:
+					return fmt.Errorf("Cluster is not Ready")
+				default:
+					return fmt.Errorf("Cluster Ready condition is unknown")
+				}
+			}
+		}
+		return fmt.Errorf("Cluster Ready condition is not found")
+	}, intervals...).Should(Succeed())
 }

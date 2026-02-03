@@ -20,19 +20,20 @@ import (
 	"cmp"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 var _ operatorv1.GenericProvider = &CAPIProvider{}
 
 // GetConditions returns the Conditions field from the CAPIProvider status.
-func (b *CAPIProvider) GetConditions() clusterv1.Conditions {
+func (b *CAPIProvider) GetConditions() []metav1.Condition {
 	return b.Status.Conditions
 }
 
 // SetConditions updates the Conditions field in the CAPIProvider status.
-func (b *CAPIProvider) SetConditions(conditions clusterv1.Conditions) {
+func (b *CAPIProvider) SetConditions(conditions []metav1.Condition) {
 	b.Status.Conditions = conditions
 }
 

@@ -1,11 +1,11 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: aws-kubeadm-example
 spec:
   controlPlane:
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: KubeadmControlPlaneTemplate
       name: aws-kubeadm-example-control-plane
     machineInfrastructure:
@@ -24,7 +24,7 @@ spec:
         template:
           bootstrap:
             ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
               kind: KubeadmConfigTemplate
               name: aws-kubeadm-example-worker-bootstraptemplate
           infrastructure:
@@ -200,7 +200,7 @@ spec:
         loadBalancerType: nlb
         healthCheckProtocol: HTTPS
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
 metadata:
   name: aws-kubeadm-example-control-plane
@@ -247,7 +247,7 @@ spec:
         size: 50
       ami: {}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: "aws-kubeadm-example-worker-bootstraptemplate"
