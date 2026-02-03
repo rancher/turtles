@@ -26,6 +26,7 @@ import (
 	admissionv1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -245,7 +246,7 @@ func addValidatingWebhookServices(object unstructured.Unstructured, services map
 func CleanupCertManagerResources(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) (*controller.Result, error) {
 	log := log.FromContext(ctx)
 
-	if conditions.IsTrue(provider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition) {
+	if conditions.IsTrue(provider, string(turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)) {
 		// Provider already converted to Wrangler. Nothing to do.
 		return &controller.Result{}, nil
 	}
@@ -364,9 +365,13 @@ func CleanupCertManagerResources(ctx context.Context, cl client.Client, provider
 		return &controller.Result{}, fmt.Errorf("restarting Deployment: %w", err)
 	}
 
-	conditions.Set(provider, conditions.TrueCondition(
-		turtlesv1.CAPIProviderWranglerManagedCertificatesCondition,
-	))
+	conditions.Set(provider, metav1.Condition{
+		Type:               string(turtlesv1.CAPIProviderWranglerManagedCertificatesCondition),
+		Status:             metav1.ConditionTrue,
+		Reason:             "CertificatesManaged",
+		Message:            "Certificates are now managed by wrangler",
+		LastTransitionTime: metav1.Now(),
+	})
 
 	return &controller.Result{}, nil
 }
@@ -374,7 +379,7 @@ func CleanupCertManagerResources(ctx context.Context, cl client.Client, provider
 // CleanupWranglerResources removes the `need-a-cert.cattle.io/secret-name` from all provider Services.
 // Finally, provider pods are restarted to ensure loading of new certificates.
 func CleanupWranglerResources(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) (*controller.Result, error) {
-	if conditions.IsFalse(provider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition) {
+	if conditions.IsFalse(provider, string(turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)) {
 		// Provider not converted to Wrangler. Nothing to do.
 		return &controller.Result{}, nil
 	}
@@ -417,7 +422,7 @@ func CleanupWranglerResources(ctx context.Context, cl client.Client, provider *t
 		return &controller.Result{}, fmt.Errorf("restarting Deployment: %w", err)
 	}
 
-	conditions.Delete(provider, turtlesv1.CAPIProviderWranglerManagedCertificatesCondition)
+	conditions.Delete(provider, string(turtlesv1.CAPIProviderWranglerManagedCertificatesCondition))
 
 	return &controller.Result{}, nil
 }

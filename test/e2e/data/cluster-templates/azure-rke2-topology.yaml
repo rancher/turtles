@@ -16,7 +16,7 @@ spec:
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   labels:
@@ -31,8 +31,9 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   topology:
-    class: azure-rke2-example
-    classNamespace: ${TOPOLOGY_NAMESPACE}
+    classRef:
+      name: azure-rke2-example
+      namespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
       replicas: 3
     variables:

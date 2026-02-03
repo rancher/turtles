@@ -12,31 +12,4 @@ metadata:
 spec:
   name: docker
   type: infrastructure
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: capi-kubeadm-bootstrap-system
----
-apiVersion: turtles-capi.cattle.io/v1alpha1
-kind: CAPIProvider
-metadata:
-  name: kubeadm-bootstrap
-  namespace: capi-kubeadm-bootstrap-system
-spec:
-  name: kubeadm
-  type: bootstrap
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: capi-kubeadm-control-plane-system
----
-apiVersion: turtles-capi.cattle.io/v1alpha1
-kind: CAPIProvider
-metadata:
-  name: kubeadm-control-plane
-  namespace: capi-kubeadm-control-plane-system
-spec:
-  name: kubeadm
-  type: controlPlane
+  version: CAPD_VERSION

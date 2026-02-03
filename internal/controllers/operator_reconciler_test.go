@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	CAPIVersion = "v1.10.6"
+	CAPIVersion = "v1.11.5"
 )
 
 var _ = Describe("Provider sync", func() {
@@ -163,7 +163,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(err).To(Succeed())
 			g.Expect(res.IsZero()).To(BeTrue())
 
-			g.Expect(conditions.IsUnknown(origin, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(conditions.IsUnknown(origin, string(turtlesv1.CheckLatestVersionTime))).To(BeTrue())
 			g.Expect(origin.Spec.Version).To(BeEmpty())
 		}).Should(Succeed())
 	})
@@ -191,7 +191,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(err).To(Succeed())
 			g.Expect(res.IsZero()).To(BeTrue())
 
-			g.Expect(conditions.IsUnknown(origin, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(conditions.IsUnknown(origin, string(turtlesv1.CheckLatestVersionTime))).To(BeTrue())
 			g.Expect(origin.Spec.Version).To(Equal("v1.0.0"))
 		}).Should(Succeed())
 	})
@@ -219,7 +219,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(err).To(Succeed())
 			g.Expect(res.IsZero()).To(BeTrue())
 
-			g.Expect(conditions.IsTrue(origin, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(conditions.IsTrue(origin, string(turtlesv1.CheckLatestVersionTime))).To(BeTrue())
 			g.Expect(origin.Spec.Version).To(Equal("v1.2.3"))
 		}).Should(Succeed())
 	})
@@ -245,7 +245,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(err).To(Succeed())
 			g.Expect(res.IsZero()).To(BeTrue())
 
-			g.Expect(conditions.IsFalse(origin, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(conditions.IsFalse(origin, string(turtlesv1.CheckLatestVersionTime))).To(BeTrue())
 			g.Expect(origin.Spec.Version).To(Equal("v1.0.0"))
 		}).Should(Succeed())
 	})
@@ -307,7 +307,7 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(err).To(Succeed())
 			g.Expect(res.IsZero()).To(BeTrue())
 
-			g.Expect(conditions.IsTrue(origin, turtlesv1.CheckLatestVersionTime)).To(BeTrue())
+			g.Expect(conditions.IsTrue(origin, string(turtlesv1.CheckLatestVersionTime))).To(BeTrue())
 			g.Expect(origin.Status.Conditions).To(HaveLen(1))
 			g.Expect(origin).To(HaveField("Status.Phase", Equal(turtlesv1.Provisioning)))
 		}).Should(Succeed())
