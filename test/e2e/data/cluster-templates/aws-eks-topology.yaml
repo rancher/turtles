@@ -26,8 +26,6 @@ spec:
     variables:
       - name: region
         value: ${AWS_REGION}
-      - name: sshKeyName
-        value: ${AWS_SSH_KEY_NAME}
       - name: instanceType
         value: t3.xlarge
       - name: awsClusterIdentityName
