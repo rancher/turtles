@@ -162,6 +162,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 
 	flags := opframework.Flags(
 		"--version", input.ChartVersion,
+		"--namespace", "gitea",
 		"--create-namespace",
 		"--wait",
 	)
@@ -189,13 +190,13 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	By("Waiting for gitea rollout")
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
 		Getter:     input.BootstrapClusterProxy.GetClient(),
-		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gitea", Namespace: "default"}},
+		Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gitea", Namespace: "gitea"}},
 	}, input.RolloutWaitInterval...)
 
 	port := turtlesframework.GetServicePortByName(ctx, turtlesframework.GetServicePortByNameInput{
 		GetLister:        input.BootstrapClusterProxy.GetClient(),
 		ServiceName:      "gitea-http",
-		ServiceNamespace: "default",
+		ServiceNamespace: "gitea",
 		PortName:         "http",
 	}, input.ServiceWaitInterval...)
 	Expect(port.NodePort).ToNot(Equal(0), "Node port for Gitea service is not set")
@@ -216,7 +217,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		WaitForServiceIngressHostname(ctx, WaitForServiceIngressHostnameInput{
 			BootstrapClusterProxy: input.BootstrapClusterProxy,
 			ServiceName:           "gitea-http",
-			ServiceNamespace:      "default",
+			ServiceNamespace:      "gitea",
 			IngressWaitInterval:   input.ServiceWaitInterval,
 		}, svcRes)
 		result.GitAddress = fmt.Sprintf("http://%s:%d", svcRes.Hostname, port.Port)
@@ -243,7 +244,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 			GetLister:        input.BootstrapClusterProxy.GetClient(),
 			IngressRuleIndex: 0,
 			IngressName:      "gitea-http",
-			IngressNamespace: "default",
+			IngressNamespace: "gitea",
 		})
 
 		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
