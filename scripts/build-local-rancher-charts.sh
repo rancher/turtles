@@ -51,4 +51,4 @@ $HELM package $RANCHER_CHARTS_REPO_DIR/charts/rancher-turtles/$RANCHER_CHART_DEV
 git -C $RANCHER_CHARTS_REPO_DIR config user.email "ci@rancher-turtles.local"
 git -C $RANCHER_CHARTS_REPO_DIR config user.name "Rancher Turtles CI"
 git -C $RANCHER_CHARTS_REPO_DIR add .
-git -C $RANCHER_CHARTS_REPO_DIR commit -m "Added test chart $RANCHER_CHART_DEV_VERSION"
+git -C $RANCHER_CHARTS_REPO_DIR commit --quiet -m "Added test chart $RANCHER_CHART_DEV_VERSION"
