@@ -4,34 +4,33 @@ metadata:
   name: aws-kubeadm-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: KubeadmControlPlaneTemplate
       name: aws-kubeadm-example-control-plane
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: AWSMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: aws-kubeadm-example-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSClusterTemplate
       name: aws-kubeadm-example
   workers:
     machineDeployments:
       - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
-              kind: KubeadmConfigTemplate
-              name: aws-kubeadm-example-worker-bootstraptemplate
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-              kind: AWSMachineTemplate
-              name: aws-kubeadm-example-worker-machinetemplate
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: KubeadmConfigTemplate
+            name: aws-kubeadm-example-worker-bootstraptemplate
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSMachineTemplate
+            name: aws-kubeadm-example-worker-machinetemplate
   variables:
     - name: region
       required: true
@@ -40,7 +39,7 @@ spec:
           type: string
           default: us-east-1
     - name: sshKeyName
-      required: true
+      required: false
       schema:
         openAPIV3Schema:
           type: string
@@ -146,7 +145,7 @@ spec:
               valueFrom:
                 variable: workerMachineType
     - name: amiID
-      enabledIf: '{{ if .amiID }}true{{end}}'
+      enabledIf: "{{ if .amiID }}true{{end}}"
       definitions:
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
@@ -157,7 +156,7 @@ spec:
             - op: add
               path: /spec/template/spec/ami/id
               valueFrom:
-                variable: amiID      
+                variable: amiID
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: AWSMachineTemplate
@@ -182,20 +181,20 @@ spec:
         kind: AWSClusterStaticIdentity
         name: cluster-identity
       network:
-          cni:
-            cniIngressRules:
-              - description: BGP
-                fromPort: 179
-                protocol: tcp
-                toPort: 179
-              - description: IP-in-IP
-                fromPort: -1
-                protocol: "4"
-                toPort: 65535
-              - description: Calico Typha
-                fromPort: 5473
-                protocol: tcp
-                toPort: 5473
+        cni:
+          cniIngressRules:
+            - description: BGP
+              fromPort: 179
+              protocol: tcp
+              toPort: 179
+            - description: IP-in-IP
+              fromPort: -1
+              protocol: "4"
+              toPort: 65535
+            - description: Calico Typha
+              fromPort: 5473
+              protocol: tcp
+              toPort: 5473
       controlPlaneLoadBalancer:
         loadBalancerType: nlb
         healthCheckProtocol: HTTPS
@@ -211,13 +210,15 @@ spec:
         initConfiguration:
           nodeRegistration:
             kubeletExtraArgs:
-              cloud-provider: external
-            name: '{{ ds.meta_data.local_hostname }}'
+              - name: cloud-provider
+                value: external
+            name: "{{ ds.meta_data.local_hostname }}"
         joinConfiguration:
           nodeRegistration:
             kubeletExtraArgs:
-              cloud-provider: external
-            name: '{{ ds.meta_data.local_hostname }}'
+              - name: cloud-provider
+                value: external
+            name: "{{ ds.meta_data.local_hostname }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
@@ -256,6 +257,7 @@ spec:
     spec:
       joinConfiguration:
         nodeRegistration:
+          name: "{{ ds.meta_data.local_hostname }}"
           kubeletExtraArgs:
-            cloud-provider: external
-          name: '{{ ds.meta_data.local_hostname }}'
+            - name: cloud-provider
+              value: external

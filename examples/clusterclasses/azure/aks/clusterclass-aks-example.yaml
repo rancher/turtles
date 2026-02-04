@@ -4,38 +4,36 @@ metadata:
   name: azure-aks-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureManagedControlPlaneTemplate
       name: aks-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureManagedClusterTemplate
       name: aks-cluster
   workers:
     machinePools:
-    - class: default-system
-      template:
+      - class: default-system
         bootstrap:
-          ref:
+          templateRef:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
             name: aks-dummy-system
         infrastructure:
-          ref:
+          templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureManagedMachinePoolTemplate
             name: aks-default-system
-    - class: default-worker
-      template:
+      - class: default-worker
         bootstrap:
-          ref:
+          templateRef:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
             name: aks-dummy-worker
         infrastructure:
-          ref:
+          templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureManagedMachinePoolTemplate
             name: aks-default-worker
@@ -193,7 +191,7 @@ spec:
     spec:
       mode: User
       name: "worker" #To be replaced by patch
---- 
+---
 # These RKE2ConfigTemplates are only referenced to fulfill the CAPI contract.
 # This requires however the cluster-api-provider-rke2 to be installed.
 # It can be replaced by KubeadmConfigTemplates.

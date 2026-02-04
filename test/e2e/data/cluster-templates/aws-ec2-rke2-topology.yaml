@@ -19,7 +19,7 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+        - 192.168.0.0/16
   topology:
     classRef:
       name: aws-rke2-example
@@ -27,23 +27,21 @@ spec:
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
-    - name: region
-      value: ${AWS_REGION}
-    - name: sshKeyName
-      value: ${AWS_SSH_KEY_NAME}
-    - name: controlPlaneMachineType
-      value: ${AWS_RKE2_CONTROL_PLANE_MACHINE_TYPE}
-    - name: workerMachineType
-      value: ${AWS_RKE2_NODE_MACHINE_TYPE}
-    - name: amiID
-      value: ${AWS_AMI_ID}
-    - name: cni
-      value: none
-    - name: awsClusterIdentityName
-      value: cluster-identity
+      - name: region
+        value: ${AWS_REGION}
+      - name: controlPlaneMachineType
+        value: ${AWS_RKE2_CONTROL_PLANE_MACHINE_TYPE}
+      - name: workerMachineType
+        value: ${AWS_RKE2_NODE_MACHINE_TYPE}
+      - name: amiID
+        value: ${AWS_AMI_ID}
+      - name: cni
+        value: none
+      - name: awsClusterIdentityName
+        value: cluster-identity
     version: ${RKE2_VERSION}
     workers:
       machineDeployments:
-      - class: default-worker
-        name: md-0
-        replicas: ${WORKER_MACHINE_COUNT}
+        - class: default-worker
+          name: md-0
+          replicas: ${WORKER_MACHINE_COUNT}

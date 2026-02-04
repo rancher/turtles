@@ -4,34 +4,33 @@ metadata:
   name: gcp-kubeadm-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: KubeadmControlPlaneTemplate
       name: gcp-kubeadm-example-control-plane
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: GCPMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: gcp-machine-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: GCPClusterTemplate
       name: gcp-kubeadm-example
   workers:
     machineDeployments:
       - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
-              kind: KubeadmConfigTemplate
-              name: gcp-kubeadm-example-worker-bootstraptemplate
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-              kind: GCPMachineTemplate
-              name: gcp-kubeadm-example-worker-machinetemplate
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: KubeadmConfigTemplate
+            name: gcp-kubeadm-example-worker-bootstraptemplate
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPMachineTemplate
+            name: gcp-kubeadm-example-worker-machinetemplate
   variables:
     - name: gcpProject
       required: true
@@ -176,12 +175,12 @@ metadata:
 spec:
   template:
     spec:
-      project: REPLACEME  # this value is replaced by a patch
-      region: REPLACEME   # this value is replaced by a patch
+      project: REPLACEME # this value is replaced by a patch
+      region: REPLACEME # this value is replaced by a patch
       network:
-        name: REPLACEME   # this value is replaced by a patch
+        name: REPLACEME # this value is replaced by a patch
       failureDomains:
-      - REPLACEME # this value is replaced by a patch
+        - REPLACEME # this value is replaced by a patch
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
@@ -192,21 +191,26 @@ spec:
     spec:
       kubeadmConfigSpec:
         clusterConfiguration:
-          apiServer:
-            timeoutForControlPlane: 20m
           controllerManager:
             extraArgs:
-              allocate-node-cidrs: "false"
+              - name: allocate-node-cidrs
+                value: "false"
         initConfiguration:
           nodeRegistration:
             name: '{{ ds.meta_data.local_hostname.split(".")[0] }}'
             kubeletExtraArgs:
-              cloud-provider: external
+              - name: cloud-provider
+                value: external
+          timeouts:
+            controlPlaneComponentHealthCheckSeconds: 1200
         joinConfiguration:
           nodeRegistration:
             name: '{{ ds.meta_data.local_hostname.split(".")[0] }}'
             kubeletExtraArgs:
-              cloud-provider: external
+              - name: cloud-provider
+                value: external
+          timeouts:
+            controlPlaneComponentHealthCheckSeconds: 1200
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPMachineTemplate
@@ -239,4 +243,5 @@ spec:
         nodeRegistration:
           name: '{{ ds.meta_data.local_hostname.split(".")[0] }}'
           kubeletExtraArgs:
-            cloud-provider: external
+            - name: cloud-provider
+              value: external
