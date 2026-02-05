@@ -80,6 +80,23 @@ spec:
       enabledIf: '{{ ne .dockerAuthSecret "" }}'
       definitions:
         - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/privateRegistriesConfig
+              valueFrom:
+                template: |-
+                  {{- if .dockerAuthSecret }}
+                  configs:
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
+                   {{- end }}
+        - selector:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: RKE2ConfigTemplate
             matchResources:
