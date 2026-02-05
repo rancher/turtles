@@ -269,42 +269,22 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
-		// First reconcile to trigger rancher cluster creation
-		res, err := r.Reconcile(ctx, reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: capiCluster.Namespace,
-				Name:      capiCluster.Name,
-			},
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
-
-		// Wait for rancher cluster to be created and create namespace immediately
+		// Reconcile and wait for rancher cluster to be created
 		Eventually(func(g Gomega) {
-			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
-			g.Expect(rancherClusters.Items).To(HaveLen(1))
-		}).Should(Succeed())
-
-		cluster := rancherClusters.Items[0]
-		Expect(cluster.Name).To(ContainSubstring("c-"))
-
-		// Create namespace for the cluster immediately
-		_, err = testEnv.CreateNamespaceWithName(ctx, cluster.Name)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Continue with further reconciliation
-		Eventually(func(g Gomega) {
-			// Refresh the cluster object to avoid conflicts
-			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).To(Succeed())
-
-			_, err := r.Reconcile(ctx, reconcile.Request{
+			res, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: capiCluster.Namespace,
 					Name:      capiCluster.Name,
 				},
 			})
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
+
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
 		}).Should(Succeed())
+
+		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 	})
 
 	It("should set fleet annotation on a freshly imported rancher cluster", func() {

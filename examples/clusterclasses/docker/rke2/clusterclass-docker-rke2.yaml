@@ -74,7 +74,7 @@ spec:
           jsonPatches:
             - op: add
               path: /spec/template/spec/customImage
-              valueFrom: 
+              valueFrom:
                 variable: dockerImage
     - name: dockerAuthSecret
       enabledIf: '{{ ne .dockerAuthSecret "" }}'
@@ -85,7 +85,7 @@ spec:
             matchResources:
               machineDeploymentClass:
                 names:
-                - default-worker
+                  - default-worker
           jsonPatches:
             - op: add
               path: /spec/template/spec/privateRegistriesConfig/configs
@@ -124,15 +124,15 @@ spec:
         cloudProviderName: external
         kubeAPIServer:
           extraArgs:
-          - --anonymous-auth=true
+            - --anonymous-auth=true
         disableComponents:
           pluginComponents:
-          - rke2-ingress-nginx
+            - rke2-ingress-nginx
           kubernetesComponents:
-          - cloudController
+            - cloudController
         etcd:
           backupConfig:
-            scheduleCron: '*/30 * * * *'
+            scheduleCron: "*/30 * * * *"
             retention: "1"
       agentConfig:
         nodeAnnotations:
@@ -145,7 +145,7 @@ metadata:
 spec:
   template:
     spec:
-      bootstrapTimeout: 15m  
+      bootstrapTimeout: 15m
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate

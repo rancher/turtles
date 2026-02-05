@@ -261,10 +261,6 @@ spec:
             extraArgs:
               - name: enable-hostpath-provisioner
                 value: "true"
-        # initConfiguration:
-        #   nodeRegistration: {}
-        # joinConfiguration:
-        #   nodeRegistration: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate

@@ -20,11 +20,12 @@ limitations under the License.
 package chart_upgrade
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -122,11 +123,18 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 
 		// NOTE: we install CAPD using `CAPIProvider` to make it simple to update the version later.
 		By("Installing CAPD v1.10.6 for provisioning a v1beta1 cluster")
-		capdProviderYaml := bytes.Replace(e2e.CapiProviders, []byte("CAPD_VERSION"), []byte("v1.10.6"), 1)
+		capdProviderYaml, err := envsubst.Eval(string(e2e.CapiProviders), func(s string) string {
+			if s == "CAPD_VERSION" {
+				return "v1.10.6"
+			}
+
+			return os.Getenv(s)
+		})
+		Expect(err).ToNot(HaveOccurred(), "Failed to substitute CAPD version in provider YAML")
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersYAML: [][]byte{
-				capdProviderYaml,
+				[]byte(capdProviderYaml),
 			},
 			WaitForDeployments: []types.NamespacedName{
 				{
@@ -257,11 +265,18 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Updating CAPD to v1.11.5 for reconciling v1beta2 clusters")
-		capdProviderYaml := bytes.Replace(e2e.CapiProviders, []byte("CAPD_VERSION"), []byte("v1.11.5"), 1)
+		capdProviderYaml, err := envsubst.Eval(string(e2e.CapiProviders), func(s string) string {
+			if s == "CAPD_VERSION" {
+				return "v1.11.5"
+			}
+
+			return os.Getenv(s)
+		})
+		Expect(err).ToNot(HaveOccurred(), "Failed to substitute CAPD version in provider YAML")
 		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			CAPIProvidersYAML: [][]byte{
-				capdProviderYaml,
+				[]byte(capdProviderYaml),
 			},
 			WaitForDeployments: []types.NamespacedName{
 				{
