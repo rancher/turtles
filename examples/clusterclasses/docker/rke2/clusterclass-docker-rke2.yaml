@@ -88,14 +88,15 @@ spec:
                   - default-worker
           jsonPatches:
             - op: add
-              path: /spec/template/spec/privateRegistriesConfig/configs
+              path: /spec/template/spec/privateRegistriesConfig
               valueFrom:
                 template: |
                   {{- if .dockerAuthSecret }}
-                  "registry-1.docker.io":
-                    authSecret:
-                      name: {{ .dockerAuthSecret }}
-                      namespace: {{ .builtin.cluster.namespace }}
+                  configs:
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
                   {{- end }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
@@ -163,8 +164,4 @@ metadata:
   name: docker-rke2-worker-bootstraptemplate
 spec:
   template:
-    spec:
-      privateRegistriesConfig: # this must not be empty for the patch to work
-        configs:
-          tls:
-            insecureSkipVerify: false
+    spec: {}

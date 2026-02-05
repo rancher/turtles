@@ -318,14 +318,15 @@ spec:
                   - transactional-update register -p SL-Micro-Extras/6.1/x86_64
                   {{- end }}
             - op: add
-              path: /spec/template/spec/privateRegistriesConfig/configs
+              path: /spec/template/spec/privateRegistriesConfig
               valueFrom:
                 template: |-
                   {{- if .dockerAuthSecret }}
-                  "registry-1.docker.io":
-                    authSecret:
-                      name: {{ .dockerAuthSecret }}
-                      namespace: {{ .builtin.cluster.namespace }}
+                  configs:
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
                   {{- end }}
           selector:
             apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -355,14 +356,15 @@ spec:
                   - transactional-update register -p SL-Micro-Extras/6.1/x86_64
                   {{- end }}
             - op: add
-              path: /spec/template/spec/privateRegistriesConfig/configs
+              path: /spec/template/spec/privateRegistriesConfig
               valueFrom:
                 template: |-
                   {{- if .dockerAuthSecret }}
-                  "registry-1.docker.io":
-                    authSecret:
-                      name: {{ .dockerAuthSecret }}
-                      namespace: {{ .builtin.cluster.namespace }}
+                  configs:
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
                   {{- end }}
           selector:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -390,7 +392,8 @@ metadata:
 spec:
   template:
     spec:
-      agentConfig: {}
+      agentConfig:
+        format: cloud-config
       serverConfig:
         cni: none
         cloudProviderName: external
