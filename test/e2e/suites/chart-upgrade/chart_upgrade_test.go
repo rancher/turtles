@@ -41,7 +41,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	apimachineryversion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/utils/ptr"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -241,19 +240,9 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 				return false
 			}
 
-			semVer, err := apimachineryversion.ParseSemantic(capiProvider.GetSpec().Version)
-			if err != nil {
-				return false
-			}
-
-			refSemVer, err := apimachineryversion.ParseSemantic("v1.11.0")
-			if err != nil {
-				return false
-			}
-
-			return semVer.AtLeast(refSemVer)
+			return capiProvider.GetSpec().Version == e2e.CAPIVersion
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
-			Should(BeTrue(), "Core CAPIProvider must be updated to at least v1.11.0")
+			Should(BeTrue(), "Core CAPIProvider must be updated to new CAPI version "+e2e.CAPIVersion)
 
 		By("Waiting for core provider controller to be ready")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
@@ -264,10 +253,10 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		By("Updating CAPD to v1.11.5 for reconciling v1beta2 clusters")
+		By("Updating CAPD for reconciling v1beta2 clusters")
 		capdProviderYaml, err := envsubst.Eval(string(e2e.CapiProviders), func(s string) string {
 			if s == "CAPD_VERSION" {
-				return "v1.11.5"
+				return e2e.CAPIVersion
 			}
 
 			return os.Getenv(s)

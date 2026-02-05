@@ -95,7 +95,7 @@ spec:
                       authSecret:
                         name: {{ .dockerAuthSecret }}
                         namespace: {{ .builtin.cluster.namespace }}
-                  {{- end }}
+                   {{- end }}
         - selector:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: RKE2ConfigTemplate
