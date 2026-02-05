@@ -12,4 +12,4 @@ metadata:
 spec:
   name: docker
   type: infrastructure
-  version: CAPD_VERSION
+  version: ${CAPD_VERSION}

@@ -4,7 +4,7 @@ metadata:
   name: calico-cni-aws
 spec:
   helm:
-    version: v3.29.3
+    version: v3.31.3
     releaseName: projectcalico
     repo: https://docs.tigera.io/calico/charts
     chart: tigera-operator
@@ -21,19 +21,19 @@ spec:
             ${- end}
   diff:
     comparePatches:
-    - apiVersion: operator.tigera.io/v1
-      kind: Installation
-      name: default
-      operations:
-      - {"op":"remove", "path":"/spec/kubernetesProvider"}
+      - apiVersion: operator.tigera.io/v1
+        kind: Installation
+        name: default
+        operations:
+          - { "op": "remove", "path": "/spec/kubernetesProvider" }
   insecureSkipTLSVerify: true
   targets:
-  - clusterSelector:
-      matchLabels:
-        cni: calico
-      matchExpressions:
-      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
-        operator: In
-        values:
-          - aws-kubeadm-example
-          - aws-rke2-example
+    - clusterSelector:
+        matchLabels:
+          cni: calico
+        matchExpressions:
+          - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+            operator: In
+            values:
+              - aws-kubeadm-example
+              - aws-rke2-example
