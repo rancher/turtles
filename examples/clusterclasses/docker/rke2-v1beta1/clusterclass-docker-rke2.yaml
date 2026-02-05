@@ -86,15 +86,16 @@ spec:
               controlPlane: true
           jsonPatches:
             - op: add
-              path: /spec/template/spec/privateRegistriesConfig/configs
+              path: /spec/template/spec/privateRegistriesConfig
               valueFrom:
                 template: |-
                   {{- if .dockerAuthSecret }}
-                   "registry-1.docker.io":
-                     authSecret:
-                       name: {{ .dockerAuthSecret }}
-                       namespace: {{ .builtin.cluster.namespace }}
-                   {{- end }}
+                  configs:
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
+                  {{- end }}
         - selector:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: RKE2ConfigTemplate
@@ -104,14 +105,15 @@ spec:
                   - default-worker
           jsonPatches:
             - op: add
-              path: /spec/template/spec/privateRegistriesConfig/configs
+              path: /spec/template/spec/privateRegistriesConfig
               valueFrom:
                 template: |-
                   {{- if .dockerAuthSecret }}
-                  "registry-1.docker.io":
-                    authSecret:
-                      name: {{ .dockerAuthSecret }}
-                      namespace: {{ .builtin.cluster.namespace }}
+                  configs:
+                    "registry-1.docker.io":
+                      authSecret:
+                        name: {{ .dockerAuthSecret }}
+                        namespace: {{ .builtin.cluster.namespace }}
                   {{- end }}
 
 ---
@@ -179,4 +181,6 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: docker-rke2-worker-bootstraptemplate
-spec: {}
+spec:
+  template:
+    spec: {}
