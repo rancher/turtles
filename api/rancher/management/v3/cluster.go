@@ -18,15 +18,13 @@ package v3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const (
 	// ClusterConditionAgentDeployed is the condition type for the agent deployed condition.
-	ClusterConditionAgentDeployed clusterv1.ConditionType = "AgentDeployed"
+	ClusterConditionAgentDeployed = "AgentDeployed"
 	// ClusterConditionReady is the condition type for the ready condition.
-	ClusterConditionReady clusterv1.ConditionType = "Ready"
+	ClusterConditionReady = "Ready"
 	// CapiClusterFinalizer is the finalizer applied to capi clusters.
 	CapiClusterFinalizer = "capicluster.turtles.cattle.io"
 )
@@ -51,7 +49,7 @@ type ClusterSpec struct {
 
 // ClusterStatus is the struct representing the status of a Rancher Cluster.
 type ClusterStatus struct {
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // ClusterList contains a list of ClusterList.
@@ -63,12 +61,12 @@ type ClusterList struct {
 }
 
 // GetConditions method to implement capi conditions getter interface.
-func (c *Cluster) GetConditions() clusterv1.Conditions {
+func (c *Cluster) GetConditions() []metav1.Condition {
 	return c.Status.Conditions
 }
 
 // SetConditions method to implement capi conditions setter interface.
-func (c *Cluster) SetConditions(conditions clusterv1.Conditions) {
+func (c *Cluster) SetConditions(conditions []metav1.Condition) {
 	c.Status.Conditions = conditions
 }
 

@@ -87,6 +87,9 @@ var (
 	//go:embed data/cluster-templates/docker-rke2-topology.yaml
 	CAPIDockerRKE2Topology []byte
 
+	//go:embed data/cluster-templates/docker-rke2-v1beta1-topology.yaml
+	CAPIDockerRKE2V1Beta1Topology []byte
+
 	//go:embed data/cluster-templates/aws-eks-topology.yaml
 	CAPIAwsEKSTopology []byte
 
@@ -217,7 +220,7 @@ const (
 )
 
 const (
-	CAPIVersion     = "v1.10.6"
+	CAPIVersion     = "v1.11.5"
 	CAPIVersionBump = "CAPI_VERSION_TEST_BUMP"
 )
 

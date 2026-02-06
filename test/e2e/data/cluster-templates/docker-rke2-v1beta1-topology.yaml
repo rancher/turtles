@@ -1,5 +1,5 @@
-apiVersion: cluster.x-k8s.io/v1beta2
-kind: Cluster 
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
@@ -11,36 +11,35 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+        - 192.168.0.0/16
     services:
       cidrBlocks:
-      - 10.96.0.0/24
+        - 10.96.0.0/24
     serviceDomain: cluster.local
   topology:
-    classRef:
-      name: docker-rke2-example
-      namespace: ${TOPOLOGY_NAMESPACE}
+    class: docker-rke2-v1beta1-example
+    classNamespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
-    - name: rke2CNI
-      value: ${RKE2_CNI}
-    - name: dockerImage
-      value: kindest/node:${KUBERNETES_VERSION}
-    - name: dockerAuthSecret
-      value: '${CLUSTER_NAME}-docker-token'
+      - name: rke2CNI
+        value: ${RKE2_CNI}
+      - name: dockerImage
+        value: kindest/node:${KUBERNETES_VERSION}
+      - name: dockerAuthSecret
+        value: "${CLUSTER_NAME}-docker-token"
     version: ${RKE2_VERSION}
     workers:
       machineDeployments:
-      - class: default-worker
-        name: md-0
-        replicas: ${WORKER_MACHINE_COUNT}
+        - class: default-worker
+          name: md-0
+          replicas: ${WORKER_MACHINE_COUNT}
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: '${CLUSTER_NAME}-docker-token'
-  namespace: '${NAMESPACE}'
+  name: "${CLUSTER_NAME}-docker-token"
+  namespace: "${NAMESPACE}"
 type: Opaque
 stringData:
   username: "${DOCKER_REGISTRY_USERNAME}"

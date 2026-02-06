@@ -1,37 +1,36 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: azure-kubeadm-example
 spec:
   controlPlane:
     machineInfrastructure:
-      ref:
+      templateRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachineTemplate
         name: azure-machine-control-plane
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: KubeadmControlPlaneTemplate
       name: kubeadm-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureClusterTemplate
       name: azure-kubeadm-cluster
   workers:
     machineDeployments:
       - class: kubeadm-default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-              kind: KubeadmConfigTemplate
-              name: kubeadm-default-worker-bootstrap
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-              kind: AzureMachineTemplate
-              name: kubeadm-default-worker
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: KubeadmConfigTemplate
+            name: kubeadm-default-worker-bootstrap
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            name: kubeadm-default-worker
   variables:
     - name: subscriptionID
       required: true
@@ -130,9 +129,13 @@ spec:
     - definitions:
         - jsonPatches:
             - op: add
-              path: /spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/cluster-name
+              path: /spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs
               valueFrom:
-                variable: builtin.cluster.name
+                template: |
+                  - name: allocate-node-cidrs
+                    value: "false"
+                  - name: cluster-name
+                    value: {{ .builtin.cluster.name }}
             - op: replace
               path: /spec/template/spec/kubeadmConfigSpec/files
               valueFrom:
@@ -145,7 +148,7 @@ spec:
                     path: /etc/kubernetes/azure.json
                     permissions: "0644"
           selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
             kind: KubeadmControlPlaneTemplate
             matchResources:
               controlPlane: true
@@ -189,7 +192,7 @@ spec:
                     path: /etc/kubernetes/azure.json
                     permissions: "0644"
           selector:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: KubeadmConfigTemplate
             matchResources:
               machineDeploymentClass:
@@ -211,10 +214,10 @@ spec:
       location: "TO_BE_REPLACED_BY_PATCH"
       networkSpec:
         subnets:
-        - name: control-plane-subnet
-          role: control-plane
-        - name: node-subnet
-          role: node
+          - name: control-plane-subnet
+            role: control-plane
+          - name: node-subnet
+            role: node
       subscriptionID: "TO_BE_REPLACED_BY_PATCH"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -255,7 +258,7 @@ spec:
         osType: Linux
       vmSize: "TO_BE_REPLACED_BY_PATCH"
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
 metadata:
   name: kubeadm-control-plane
@@ -264,17 +267,18 @@ spec:
     spec:
       kubeadmConfigSpec:
         clusterConfiguration:
-          apiServer:
-            timeoutForControlPlane: 20m
           controllerManager:
-            extraArgs:
-              allocate-node-cidrs: "false"
-              cluster-name: "TO_BE_REPLACED_BY_PATCH"
+            extraArgs: # this will be replace by patch
+              - name: allocate-node-cidrs
+                value: "false"
+              - name: cluster-name
+                value: "TO_BE_REPLACED_BY_PATCH"
           etcd:
             local:
               dataDir: /var/lib/etcddisk/etcd
               extraArgs:
-                quota-backend-bytes: "8589934592"
+                - name: quota-backend-bytes
+                  value: "8589934592"
         diskSetup:
           filesystems:
             - device: /dev/disk/azure/scsi1/lun0
@@ -303,21 +307,25 @@ spec:
         initConfiguration:
           nodeRegistration:
             kubeletExtraArgs:
-              cloud-provider: external
+              - name: cloud-provider
+                value: external
             name: '{{ ds.meta_data["local_hostname"] }}'
+          timeouts:
+            controlPlaneComponentHealthCheckSeconds: 1200
         joinConfiguration:
           nodeRegistration:
             kubeletExtraArgs:
-              cloud-provider: external
+              - name: cloud-provider
+                value: external
             name: '{{ ds.meta_data["local_hostname"] }}'
+          timeouts:
+            controlPlaneComponentHealthCheckSeconds: 1200
         mounts:
           - - LABEL=etcd_disk
             - /var/lib/etcddisk
-        postKubeadmCommands: []
-        preKubeadmCommands: []
         verbosity: 10
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: kubeadm-default-worker-bootstrap
@@ -335,6 +343,6 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            cloud-provider: external
+            - name: cloud-provider
+              value: external
           name: '{{ ds.meta_data["local_hostname"] }}'
-      preKubeadmCommands: []

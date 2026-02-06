@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
-var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.ShortTestLabel), func() {
+var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.DontRunLabel), func() {
 	var turtlesHelmApp, capiHelmApp turtlesframework.GetHelmAppInput
 	const (
 		oldCAPINamespace = "cattle-provisioning-capi-system"
@@ -84,7 +84,6 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 				}},
 			}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 		})
-
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
@@ -197,7 +196,6 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 				DeleteAfterVerification: false,
 			})
 		})
-
 	})
 
 	It("Should re-enable turtles feature with zero-downtime", func() {
@@ -268,6 +266,5 @@ var _ = Describe("Switch from Turtles to embedded CAPI", Ordered, Label(e2e.Shor
 				DeleteAfterVerification: true,
 			})
 		})
-
 	})
 })

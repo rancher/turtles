@@ -1,32 +1,31 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: aws-eks-example
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: AWSManagedControlPlaneTemplate
       name: "eks-control-plane"
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSManagedClusterTemplate
       name: "eks-cluster"
   workers:
     machineDeployments:
       - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              name: "eks-md-0"
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
-              kind: EKSConfigTemplate
-          infrastructure:
-            ref:
-              name: "eks-md-0"
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-              kind: AWSMachineTemplate
+        bootstrap:
+          templateRef:
+            name: "eks-md-0"
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: EKSConfigTemplate
+        infrastructure:
+          templateRef:
+            name: "eks-md-0"
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSMachineTemplate
   variables:
     - name: region
       required: true
@@ -40,7 +39,7 @@ spec:
         openAPIV3Schema:
           description: "AWS SSH key name to use"
           type: string
-          default: ''
+          default: ""
     - name: instanceType
       required: false
       schema:
@@ -54,7 +53,7 @@ spec:
         openAPIV3Schema:
           description: "EKS cluster name"
           type: string
-          default: ''
+          default: ""
     - name: awsClusterIdentityName
       required: true
       schema:
@@ -65,51 +64,51 @@ spec:
   patches:
     - name: awsManagedControlPlaneTemplate
       definitions:
-      - selector:
-          apiVersion: controlplane.cluster.x-k8s.io/v1beta2
-          kind: AWSManagedControlPlaneTemplate
-          matchResources:
-            controlPlane: true
-        jsonPatches:
-          - op: add
-            path: /spec/template/spec/eksClusterName
-            valueFrom:
-              variable: eksClusterName
-          - op: add
-            path: /spec/template/spec/region
-            valueFrom:
-              variable: region
-          - op: add
-            path: /spec/template/spec/sshKeyName
-            valueFrom:
-              variable: sshKeyName
-          - op: add
-            path: /spec/template/spec/identityRef/name
-            valueFrom:
-              variable: awsClusterIdentityName
-          # Builtins
-          - op: add
-            path: "/spec/template/spec/version"
-            valueFrom:
-              variable: builtin.cluster.topology.version
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+            kind: AWSManagedControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/eksClusterName
+              valueFrom:
+                variable: eksClusterName
+            - op: add
+              path: /spec/template/spec/region
+              valueFrom:
+                variable: region
+            - op: add
+              path: /spec/template/spec/sshKeyName
+              valueFrom:
+                variable: sshKeyName
+            - op: add
+              path: /spec/template/spec/identityRef/name
+              valueFrom:
+                variable: awsClusterIdentityName
+            # Builtins
+            - op: add
+              path: "/spec/template/spec/version"
+              valueFrom:
+                variable: builtin.cluster.topology.version
     - name: awsMachineTemplate
       definitions:
-      - selector:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-          kind: AWSMachineTemplate
-          matchResources:
-            machineDeploymentClass:
-              names:
-              - default-worker
-        jsonPatches:
-          - op: add
-            path: /spec/template/spec/sshKeyName
-            valueFrom:
-              variable: sshKeyName
-          - op: add
-            path: /spec/template/spec/instanceType
-            valueFrom:
-              variable: instanceType
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: AWSMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/sshKeyName
+              valueFrom:
+                variable: sshKeyName
+            - op: add
+              path: /spec/template/spec/instanceType
+              valueFrom:
+                variable: instanceType
 ---
 kind: AWSManagedClusterTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2

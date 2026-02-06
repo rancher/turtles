@@ -6,7 +6,7 @@ spec:
   secretRef: cluster-identity
   allowedNamespaces: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   labels:
@@ -19,28 +19,27 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+        - 192.168.0.0/16
   topology:
-    class: aws-kubeadm-example
-    classNamespace: ${TOPOLOGY_NAMESPACE}
+    classRef:
+      name: aws-kubeadm-example
+      namespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
-    - name: region
-      value: ${AWS_REGION}
-    - name: sshKeyName
-      value: ${AWS_SSH_KEY_NAME}
-    - name: controlPlaneMachineType
-      value: ${AWS_CONTROL_PLANE_MACHINE_TYPE}
-    - name: workerMachineType
-      value: ${AWS_NODE_MACHINE_TYPE}
-    - name: awsClusterIdentityName
-      value: cluster-identity
-    - name: amiID
-      value: ${AWS_AMI_ID}
+      - name: region
+        value: ${AWS_REGION}
+      - name: controlPlaneMachineType
+        value: ${AWS_CONTROL_PLANE_MACHINE_TYPE}
+      - name: workerMachineType
+        value: ${AWS_NODE_MACHINE_TYPE}
+      - name: awsClusterIdentityName
+        value: cluster-identity
+      - name: amiID
+        value: ${AWS_AMI_ID}
     version: ${AWS_KUBERNETES_VERSION}
     workers:
       machineDeployments:
-      - class: default-worker
-        name: md-0
-        replicas: ${WORKER_MACHINE_COUNT}
+        - class: default-worker
+          name: md-0
+          replicas: ${WORKER_MACHINE_COUNT}

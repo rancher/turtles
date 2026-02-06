@@ -16,11 +16,9 @@ limitations under the License.
 
 package v1alpha1
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 const (
 	// RancherCredentialsSecretCondition provides information on Rancher credentials secret mapping result.
-	RancherCredentialsSecretCondition clusterv1.ConditionType = "RancherCredentialsSecretMapped"
+	RancherCredentialsSecretCondition = "RancherCredentialsSecretMapped"
 
 	// RancherCredentialKeyMissing notifies about missing credential secret key required for provider during credentials mapping.
 	RancherCredentialKeyMissing = "RancherCredentialKeyMissing"
@@ -35,7 +33,7 @@ const (
 	CheckLatestVersionTime = "CheckLatestVersionTime"
 
 	// CAPIProviderWranglerManagedCertificatesCondition is the condittion used when provider certificates managed by wrangler.
-	CAPIProviderWranglerManagedCertificatesCondition clusterv1.ConditionType = "WranglerManagedCertificates"
+	CAPIProviderWranglerManagedCertificatesCondition = "WranglerManagedCertificates"
 )
 
 const (
