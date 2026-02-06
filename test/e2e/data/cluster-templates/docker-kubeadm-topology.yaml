@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -17,10 +17,10 @@ spec:
       cidrBlocks:
         - 10.96.0.0/24
   topology:
-    class: docker-kubeadm-example
-    classNamespace: ${TOPOLOGY_NAMESPACE}
+    classRef:
+      name: docker-kubeadm-example
+      namespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
-      metadata: {}
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     version: ${KUBERNETES_VERSION}
     workers:

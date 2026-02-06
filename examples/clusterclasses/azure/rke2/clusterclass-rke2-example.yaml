@@ -1,37 +1,36 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: azure-rke2-example
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: RKE2ControlPlaneTemplate
       name: rke2-control-plane
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: AzureMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: rke2-control-plane
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureClusterTemplate
       name: azure-cluster
   workers:
     machineDeployments:
       - class: rke2-default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-              kind: RKE2ConfigTemplate
-              name: rke2-default-worker-bootstrap
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-              kind: AzureMachineTemplate
-              name: rke2-default-worker
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: RKE2ConfigTemplate
+            name: rke2-default-worker-bootstrap
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureMachineTemplate
+            name: rke2-default-worker
   variables:
     - name: subscriptionID
       required: true
@@ -81,7 +80,7 @@ spec:
         openAPIV3Schema:
           description: "The image name"
           type: string
-          default: "capi-ubun2-2404"          
+          default: "capi-ubun2-2404"
     - name: vmSize
       required: true
       schema:
@@ -145,7 +144,7 @@ spec:
     - name: azureMachineTemplate
       definitions:
         - selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
             kind: RKE2ControlPlaneTemplate
             matchResources:
               controlPlane: true
@@ -154,13 +153,13 @@ spec:
               path: /spec/template/spec/files/-
               valueFrom:
                 template: |
-                    contentFrom:
-                      secret:
-                        key: control-plane-azure.json
-                        name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
-                    owner: root:root
-                    path: /etc/kubernetes/azure.json
-                    permissions: "0644"
+                  contentFrom:
+                    secret:
+                      key: control-plane-azure.json
+                      name: "{{ .builtin.controlPlane.machineTemplate.infrastructureRef.name }}-azure-json"
+                  owner: root:root
+                  path: /etc/kubernetes/azure.json
+                  permissions: "0644"
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: AzureMachineTemplate
@@ -187,7 +186,7 @@ spec:
               valueFrom:
                 variable: vmSize
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
 metadata:
   name: rke2-default-worker-bootstrap
@@ -208,12 +207,12 @@ spec:
         name: cluster-identity
       networkSpec:
         subnets:
-        - name: control-plane-subnet
-          role: control-plane
-        - name: node-subnet
-          role: node
+          - name: control-plane-subnet
+            role: control-plane
+          - name: node-subnet
+            role: node
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: RKE2ControlPlaneTemplate
 metadata:
   name: rke2-control-plane
@@ -230,10 +229,10 @@ spec:
         cloudProviderName: external
         disableComponents:
           kubernetesComponents:
-          - cloudController
+            - cloudController
         kubeAPIServer:
           extraArgs:
-          - --anonymous-auth=true
+            - --anonymous-auth=true
       files:
         - owner: root:root
           path: /etc/kubernetes/azure.json
@@ -247,7 +246,7 @@ spec:
   template:
     spec:
       image:
-        computeGallery: 
+        computeGallery:
           gallery: "TO_BE_REPLACED_BY_PATCH"
           name: "TO_BE_REPLACED_BY_PATCH"
           version: "TO_BE_REPLACED_BY_PATCH"
@@ -263,7 +262,7 @@ spec:
   template:
     spec:
       image:
-        computeGallery: 
+        computeGallery:
           gallery: "TO_BE_REPLACED_BY_PATCH"
           name: "TO_BE_REPLACED_BY_PATCH"
           version: "TO_BE_REPLACED_BY_PATCH"
