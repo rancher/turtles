@@ -90,8 +90,8 @@ var _ = SynchronizedBeforeSuite(
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
-			// Use v1.32.0 for Rancher 2.12.3 compatibility (requires < v1.34.0) and v1.33 causes issues with CAAPF
-			KubernetesVersion: "v1.32.0",
+			// Use v1.34.0 for Rancher 2.13.2 compatibility (requires <= v1.34.0)
+			KubernetesVersion: "v1.34.0",
 		})
 
 		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{
