@@ -1,9 +1,9 @@
 managementClusterName: rancher-turtles-e2e
 
 images:
-# Use local dev images built source tree;
-- name: "{TURTLES_IMAGE}:{TURTLES_VERSION}"
-  loadBehavior: tryLoad
+  # Use local dev images built source tree;
+  - name: "{TURTLES_IMAGE}:{TURTLES_VERSION}"
+    loadBehavior: tryLoad
 
 intervals:
   default/wait-controllers: ["15m", "10s"]
@@ -38,9 +38,9 @@ variables:
   SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,GCP_IMAGE_ID,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2,DOCKER_REGISTRY_TOKEN,DOCKER_REGISTRY_USERNAME,DOCKER_REGISTRY_CONFIG"
 
   # Kubernetes Configuration
-  KUBERNETES_VERSION: "v1.34.0" # Depends on kindest/node
-  KUBERNETES_MANAGEMENT_VERSION: "v1.34.0" # Depends on kindest/node for kind environments.
-  RKE2_VERSION: "v1.34.1+rke2r1"
+  KUBERNETES_VERSION: "v1.35.0" # Depends on kindest/node
+  KUBERNETES_MANAGEMENT_VERSION: "v1.35.0" # Depends on kindest/node for kind environments.
+  RKE2_VERSION: "v1.35.0+rke2r1"
   RKE2_CNI: "none"
 
   # Azure Configuration
@@ -76,7 +76,7 @@ variables:
   GCP_REGION: "europe-west2"
   GCP_IMAGE_ID: "cluster-api-ubuntu-2404-v1-34-1-1762253907" # Private image. See docs/image-builder
   GCP_IMAGE_ID_FORMATTED: "" #Calculated at runtime: https://www.googleapis.com/compute/v1/projects/${GCP_PROJECT_ID}/global/images/${GCP_IMAGE_ID}"
-  
+
   # CLI Tool Paths
   CLUSTERCTL_BINARY_PATH: ""
   HELM_BINARY_PATH: "helm"
@@ -128,7 +128,7 @@ variables:
   GITEA_CHART_VERSION: "12.4.0"
   GITEA_USER_NAME: "gitea_admin"
   GITEA_USER_PWD: "password"
-  
+
   # Credentials used to pull images from docker.io
   DOCKER_REGISTRY_TOKEN: ""
   DOCKER_REGISTRY_USERNAME: ""
