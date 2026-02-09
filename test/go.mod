@@ -19,8 +19,8 @@ require (
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/cluster-api v1.12.2
-	sigs.k8s.io/cluster-api-operator v0.24.1
-	sigs.k8s.io/cluster-api-operator/test v0.24.1
+	sigs.k8s.io/cluster-api-operator v0.25.0
+	sigs.k8s.io/cluster-api-operator/test v0.25.0
 	sigs.k8s.io/cluster-api/test v1.12.2
 	sigs.k8s.io/controller-runtime v0.22.5
 	sigs.k8s.io/kind v0.31.0
@@ -137,7 +137,7 @@ require (
 	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/oauth2 v0.33.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
