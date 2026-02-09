@@ -377,8 +377,8 @@ golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v
 golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.49.0 h1:eeHFmOGUTtaaPSGNmjBKpbng9MulQsJURQUAfUwY++o=
 golang.org/x/net v0.49.0/go.mod h1:/ysNB2EvaqvesRkuLAyjI1ycPZlQHM3q01F02UY/MV8=
-golang.org/x/oauth2 v0.33.0 h1:4Q+qn+E5z8gPRJfmRy7C2gGG3T4jIprK6aSYgTXGRpo=
-golang.org/x/oauth2 v0.33.0/go.mod h1:lzm5WQJQwKZ3nwavOZ3IS5Aulzxi68dUSgRHujetwEA=
+golang.org/x/oauth2 v0.34.0 h1:hqK/t4AKgbqWkdkcAeI8XLmbK+4m4G5YeQRrmiotGlw=
+golang.org/x/oauth2 v0.34.0/go.mod h1:lzm5WQJQwKZ3nwavOZ3IS5Aulzxi68dUSgRHujetwEA=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
@@ -467,10 +467,10 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 h1:jpcvIRr3GLoUo
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2/go.mod h1:Ve9uj1L+deCXFrPOk1LpFXqTg7LCFzFso6PA48q/XZw=
 sigs.k8s.io/cluster-api v1.12.2 h1:+b+M2IygfvFZJq7bsaloNakimMEVNf81zkGR1IiuxXs=
 sigs.k8s.io/cluster-api v1.12.2/go.mod h1:2XuF/dmN3c/1VITb6DB44N5+Ecvsvd5KOWqrY9Q53nU=
-sigs.k8s.io/cluster-api-operator v0.24.1 h1:hL0sICIsyuN3paKdzLtxDELpGjICV6ahjR3R+xB9u8U=
-sigs.k8s.io/cluster-api-operator v0.24.1/go.mod h1:+JbgzewMKcBNlvpjK+zM9qD/5yA9rvhiVWGmZ++of+0=
-sigs.k8s.io/cluster-api-operator/test v0.24.1 h1:Xi06DEYHz/d7EpA0JFVjwJTinum1QTy38tS06xAwP1s=
-sigs.k8s.io/cluster-api-operator/test v0.24.1/go.mod h1:shWVEdszeK2ZJql6jy4gXQnTG2Wbrab/4H8bbBjADVA=
+sigs.k8s.io/cluster-api-operator v0.25.0 h1:npR+kMq/XDYJLSG9Ntn266wgFXZGDTHY5UwDeYhVTzE=
+sigs.k8s.io/cluster-api-operator v0.25.0/go.mod h1:9shvSEmof0wkmY87RGEmfYuq27CL2fLki9ALOFg+qgY=
+sigs.k8s.io/cluster-api-operator/test v0.25.0 h1:plSxEIY+IZ3o91jiuH+/CbmIAYJXnxk6+GoD2jCvmxA=
+sigs.k8s.io/cluster-api-operator/test v0.25.0/go.mod h1:mYEvg+6+xVtQsqkpbtJVqBDskJvvO4t/Alt2nPKNIe0=
 sigs.k8s.io/cluster-api/test v1.12.2 h1:gYApF1BJRt0fCxmgaTeqm+rreNhLHcwQw7Z6pFCtr60=
 sigs.k8s.io/cluster-api/test v1.12.2/go.mod h1:E6ID6xgLy6rkpm09yQW2DT8Cf2/7nLX1o3sDHv4pFsY=
 sigs.k8s.io/controller-runtime v0.22.5 h1:v3nfSUMowX/2WMp27J9slwGFyAt7IV0YwBxAkrUr0GE=
