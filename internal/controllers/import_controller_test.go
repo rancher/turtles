@@ -203,9 +203,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			})
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res.Requeue).To(BeTrue())
-		}).Should(Succeed())
 
-		Eventually(func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
@@ -332,7 +330,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 			g.Expect(rancherClusters.Items[0].Finalizers).To(ContainElement(managementv3.CapiClusterFinalizer))
-		}, 10*time.Second).Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists but cluster name not set", func() {

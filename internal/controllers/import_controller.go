@@ -147,7 +147,10 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	capiCluster := &clusterv1.Cluster{}
 	if err := r.Client.Get(ctx, req.NamespacedName, capiCluster); err != nil {
 		if apierrors.IsNotFound(err) {
-			return ctrl.Result{Requeue: true}, nil
+			// These may be requests enqueued from ManagementV3 Cluster deletion,
+			// for a no longer existing CAPI Cluster.
+			// Safe to ignore.
+			return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 		}
 
 		return ctrl.Result{Requeue: true}, err
@@ -155,8 +158,9 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	log = log.WithValues("cluster", capiCluster.Name)
 
-	if capiCluster.DeletionTimestamp.IsZero() && !turtlesannotations.HasClusterImportAnnotation(capiCluster) &&
-		controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
+	if capiCluster.DeletionTimestamp.IsZero() &&
+		!turtlesannotations.HasClusterImportAnnotation(capiCluster) &&
+		!controllerutil.ContainsFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
 		log.Info("CAPI cluster is marked for import, adding finalizer")
 
 		if err := r.Client.Update(ctx, capiCluster); err != nil {
@@ -231,7 +235,11 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 		rancherCluster = &rancherClusterList.Items[0]
 	}
 
+	// Reconcile ManagementV3 Cluster deletion.
 	if rancherCluster != nil && !rancherCluster.DeletionTimestamp.IsZero() {
+		// Patch CAPI Cluster with:
+		// 1. `imported=true` annotation to prevent further-reimports.
+		// 2. Removed capicluster.turtles.cattle.io finalizer to allow deletion.
 		if err := r.reconcileDelete(ctx, capiCluster); err != nil {
 			log.Error(err, "Removing CAPI Cluster failed, retrying")
 			return ctrl.Result{}, err
@@ -242,12 +250,23 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 				return ctrl.Result{}, fmt.Errorf("error removing rancher cluster finalizer: %w", err)
 			}
 		}
+
+		return ctrl.Result{}, nil
 	}
 
+	// Reconcile CAPI Cluster deletion.
 	if !capiCluster.DeletionTimestamp.IsZero() {
 		if err := r.deleteDependentRancherCluster(ctx, capiCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error deleting associated managementv3.Cluster resources: %w", err)
 		}
+
+		if controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
+			if err := r.Client.Update(ctx, capiCluster); err != nil {
+				return ctrl.Result{}, fmt.Errorf("error removing finalizer from CAPI Cluster: %w", err)
+			}
+		}
+
+		return ctrl.Result{}, nil
 	}
 
 	patchBase := client.MergeFromWithOptions(rancherCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
