@@ -21,7 +21,6 @@ package chart_upgrade
 
 import (
 	_ "embed"
-	"fmt"
 	"os"
 	"strings"
 
@@ -39,7 +38,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 
@@ -59,9 +57,6 @@ const (
 
 	capdNamespace    = "capd-system"
 	capdProviderName = "capd-controller-manager"
-
-	// Upstream CAPI image URL is used for verifying controller image after update
-	upstreamCAPIImageURL = "registry.k8s.io/cluster-api/cluster-api-controller"
 )
 
 // This is the updated version of the chart-upgrade test for verifying updating from a Rancher version that
@@ -283,66 +278,5 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Name:                    clusterName,
 			DeleteAfterVerification: true,
 		})
-	})
-
-	// NOTE: this test is temporarily disabled as Turtles stays on the latest CAPI patch version.
-	XIt("Should bump core CAPI when a new version of Turtles ships with a newer version of CAPI", func() {
-		By("Upgrading Turtles to 2.13.x from Gitea with newer core CAPI version")
-		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
-			ChartRepoBranch:       chartsResult.Branch,
-			ChartVersion:          fmt.Sprintf("%s.1", chartsResult.ChartVersion),
-			TurtlesImageRepo:      "ghcr.io/rancher/turtles-e2e",
-			TurtlesImageTag:       "v0.0.1-capi",
-			RancherHostname:       hostName,
-			RancherWaitInterval:   e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
-		})
-
-		By("Waiting for core CAPI Provider to be updated")
-		Eventually(func() bool {
-			capiProvider := &turtlesv1.CAPIProvider{}
-			err := bootstrapClusterProxy.GetClient().Get(ctx,
-				types.NamespacedName{
-					Namespace: capiNamespace,
-					Name:      capiProviderName,
-				}, capiProvider)
-			if err != nil {
-				return false
-			}
-
-			version := capiProvider.GetSpec().Version
-			expected := e2eConfig.GetVariableOrEmpty(e2e.CAPIVersionBump)
-
-			return version == expected
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
-			Should(BeTrue(), "Failed to verify CAPIProvider version after upgrade")
-
-		By("Verifying core CAPI controller pod runs the expected version after upgrade")
-		Eventually(func() bool {
-			podList := corev1.PodList{}
-			podLabels := map[string]string{
-				"cluster.x-k8s.io/provider": capiProviderName,
-				"control-plane":             "controller-manager",
-			}
-			err := bootstrapClusterProxy.GetClient().List(ctx, &podList,
-				&client.ListOptions{
-					Namespace:     capiNamespace,
-					LabelSelector: labels.SelectorFromSet(podLabels),
-				})
-			if err != nil {
-				return false
-			}
-
-			if len(podList.Items) == 0 {
-				return false
-			}
-
-			image := podList.Items[0].Spec.Containers[0].Image
-			expected := fmt.Sprintf("%s:%s", upstreamCAPIImageURL, e2eConfig.GetVariableOrEmpty(e2e.CAPIVersionBump))
-
-			return image == expected
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
-			Should(BeTrue(), "Failed to verify CAPI controller pod image after upgrade")
 	})
 })
