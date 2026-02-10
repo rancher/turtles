@@ -326,7 +326,7 @@ providers:
 images:
   addonFleet:
     repository: rancher/cluster-api-addon-provider-fleet
-    tag: v0.13.0
+    tag: v0.14.0
   bootstrapKubeadm:
     repository: rancher/kubeadm-bootstrap-controller
     tag: v1.12.2
