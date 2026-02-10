@@ -31,13 +31,10 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -235,7 +232,6 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 
 	providerWaiters := []func(ctx context.Context){}
 	configureProviderDefaults(ctx, input, values, enabledProviders)
-	configureProviderWaiters(input, enabledProviders, &providerWaiters)
 	adoptArgs := getAdoptArgsForEnabledProviders(enabledProviders, values)
 	log.FromContext(ctx).Info("Providers adoption args prepared", "args", adoptArgs, "enabled", enabledProviders)
 	runProviderMigration(ctx, input.MigrationScriptPath, input.BootstrapClusterProxy.GetKubeconfigPath(), input.RancherTurtlesNamespace, adoptArgs...)
@@ -465,15 +461,6 @@ func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesPr
 	}
 }
 
-func configureProviderWaiters(input DeployRancherTurtlesProvidersInput, enabled []string, customWaiters *[]func(ctx context.Context)) {
-	for _, name := range enabled {
-		switch name {
-		case providerAzure:
-			*customWaiters = append(*customWaiters, azureServiceOperatorWaiter(input.BootstrapClusterProxy))
-		}
-	}
-}
-
 func applyProviderSecrets(ctx context.Context, input DeployRancherTurtlesProvidersInput, enabled []string) {
 	for _, name := range enabled {
 		switch name {
@@ -502,81 +489,5 @@ func applyProviderSecrets(ctx context.Context, input DeployRancherTurtlesProvide
 				Template: e2e.VSphereProviderSecret,
 			})).To(Succeed(), "Failed to apply vSphere provider secret")
 		}
-	}
-}
-
-// azureServiceOperatorWaiter returns a custom waiter function for Azure service operator
-// Workaround for https://github.com/rancher/turtles/issues/1584 - should be removed when fixed
-func azureServiceOperatorWaiter(bootstrapClusterProxy framework.ClusterProxy) func(ctx context.Context) {
-	return func(ctx context.Context) {
-		overallTimeout := 10 * time.Minute
-		pollInterval := 5 * time.Second
-		overallDeadline := time.Now().Add(overallTimeout)
-		podLabels := map[string]string{
-			"app.kubernetes.io/name": "azure-service-operator",
-			"control-plane":          "controller-manager",
-		}
-		lastPod := &corev1.Pod{}
-
-		for time.Now().Before(overallDeadline) {
-			var podList corev1.PodList
-			err := bootstrapClusterProxy.GetClient().List(ctx, &podList, &crclient.ListOptions{
-				Namespace:     namespaceCAPZSystem,
-				LabelSelector: labels.SelectorFromSet(podLabels),
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list azure-service-operator pods")
-
-			if len(podList.Items) == 0 {
-				By("Waiting for azure-service-operator pod to be created")
-				time.Sleep(pollInterval)
-				continue
-			}
-
-			pod := &podList.Items[0]
-			lastPod = pod
-
-			crashloop := false
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.State.Waiting != nil && cs.State.Waiting.Reason == "CrashLoopBackOff" {
-					crashloop = true
-					break
-				}
-			}
-			if crashloop {
-				By("Restarting azure-service-operator pod due to CrashLoopBackOff")
-				err := bootstrapClusterProxy.GetClient().Delete(ctx, pod)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete azure-service-operator pod for restart")
-				time.Sleep(pollInterval)
-				continue
-			}
-
-			ready := false
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.Ready {
-					ready = true
-					break
-				}
-			}
-			if ready && pod.Status.Phase == corev1.PodRunning {
-				By("azure-service-operator pod is running and ready, continuing to monitor...")
-			}
-
-			time.Sleep(pollInterval)
-		}
-
-		Expect(lastPod).ToNot(BeNil(), "azure-service-operator pod should exist after 10 minutes of monitoring")
-
-		By("Performing final azure-service-operator pod status check")
-		Expect(lastPod.Status.Phase).To(Equal(corev1.PodRunning), "azure-service-operator pod should be in Running phase after 10 minutes")
-
-		finalReady := false
-		for _, cs := range lastPod.Status.ContainerStatuses {
-			if cs.Ready {
-				finalReady = true
-				break
-			}
-		}
-		Expect(lastPod.Status.Phase == corev1.PodRunning && finalReady).To(BeTrue(), "azure-service-operator pod should be both running and ready after 10 minutes")
-		By("azure-service-operator pod monitoring completed successfully - pod is running and ready")
 	}
 }
