@@ -25,26 +25,26 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+        - 192.168.0.0/16
   topology:
     classRef:
       name: azure-aks-example
       namespace: ${TOPOLOGY_NAMESPACE}
     variables:
-    - name: subscriptionID
-      value: ${AZURE_SUBSCRIPTION_ID}
-    - name: location
-      value: germanywestcentral
-    - name: resourceGroup
-      value: highlander-e2e-azure-aks
-    - name: azureClusterIdentityName
-      value: cluster-identity
-    version: ${KUBERNETES_VERSION}
+      - name: subscriptionID
+        value: ${AZURE_SUBSCRIPTION_ID}
+      - name: location
+        value: germanywestcentral
+      - name: resourceGroup
+        value: highlander-e2e-azure-aks
+      - name: azureClusterIdentityName
+        value: cluster-identity
+    version: ${AZURE_AKS_KUBERNETES_VERSION}
     workers:
       machinePools:
-      - class: default-system
-        name: system-1
-        replicas: 1
-      - class: default-worker
-        name: worker-1
-        replicas: 1
+        - class: default-system
+          name: system-1
+          replicas: 1
+        - class: default-worker
+          name: worker-1
+          replicas: 1

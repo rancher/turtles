@@ -7,6 +7,7 @@ spec:
     releaseName: cloud-provider-azure
     repo: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
     chart: cloud-provider-azure
+    version: v1.34.5
     templateValues:
       infra: |-
         clusterName: ${ .ClusterValues.Cluster.metadata.name }
@@ -22,10 +23,10 @@ spec:
           ${- end }
   insecureSkipTLSVerify: true
   targets:
-  - clusterSelector:
-      matchLabels:
-        cloud-provider: azure
-      matchExpressions:
-      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
-        operator: In
-        values: [azure-rke2-example, azure-kubeadm-example]
+    - clusterSelector:
+        matchLabels:
+          cloud-provider: azure
+        matchExpressions:
+          - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+            operator: In
+            values: [azure-rke2-example, azure-kubeadm-example]

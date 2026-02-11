@@ -61,7 +61,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		azClientSecret := e2eConfig.GetVariableOrEmpty(e2e.AzureClientSecretVar)
 		Expect(azSubId).ToNot(BeEmpty(), "Azure Client Secret is required")
 
-		rke2Version := e2eConfig.GetVariableOrEmpty(e2e.RKE2VersionVar)
+		rke2Version := e2eConfig.GetVariableOrEmpty(e2e.RKE2V2ProvVersionVar)
 		Expect(rke2Version).ToNot(BeEmpty(), "RKE2 version is required")
 
 		credsSecretName := "cc-test99"

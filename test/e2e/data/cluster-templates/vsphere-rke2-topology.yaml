@@ -36,7 +36,7 @@ spec:
     classRef:
       name: vsphere-rke2-example
       namespace: ${TOPOLOGY_NAMESPACE}
-    version: ${RKE2_VERSION}
+    version: ${RKE2_KUBERNETES_VERSION}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     workers:

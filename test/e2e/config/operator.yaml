@@ -40,13 +40,15 @@ variables:
   # Kubernetes Configuration
   KUBERNETES_VERSION: "v1.35.0" # Depends on kindest/node
   # Kubernetes version used for the Rancher/CAPI management cluster
-  #   - Use v1.34.0 for Rancher 2.13.2 compatibility (requires < v1.35.0)
   KUBERNETES_MANAGEMENT_VERSION: "v1.34.0"
   # The cluster used in chart_upgrade must run a Kubernetes version compatible with an older version of Rancher
+  #   - Use v1.34.0 for Rancher 2.13.2 compatibility (requires < v1.35.0)
   KUBERNETES_MANAGEMENT_VERSION_CHART_UPGRADE: "v1.34.0"
 
   # RKE2 specifics
   RKE2_KUBERNETES_VERSION: "v1.35.0+rke2r1"
+  # Kubernetes version used for v2prov until Rancher v2.14 officially supports v1.35
+  V2PROV_RKE2_KUBERNETES_VERSION: "v1.34.1+rke2r1"
   RKE2_CNI: "none"
 
   # These two values are used for provisioning a CAPI v1.10 cluster (`v1beta1`) in the chart_upgrade test -> Kubernetes <=v1.33
@@ -59,7 +61,12 @@ variables:
   # This is due to the limited availability of published AMIs.
   # For example: https://portal.azure.com/#view/Microsoft_Azure_ComputeHub/ComputeHubMenuBlade/~/communityImagesBrowse
   #              Filter `capi-ubun2-2404` images. Beware: not all versions are published on all regions.
-  AZURE_KUBERNETES_VERSION: "v1.35.0"
+  # Azure CCM fails to install when using v1.35: the latest available version is v1.34.5
+  #   - https://github.com/kubernetes-sigs/cloud-provider-azure/releases
+  # Use v1.34.3 for now as it is the latest Azure community image available
+  AZURE_KUBERNETES_VERSION: "v1.34.3"
+  # Use v1.34.3 for RKE2 clusters to align with Kubeadm
+  AZURE_RKE2_KUBERNETES_VERSION: "v1.34.3+rke2r1"
   # For AKS available versions, run: az aks get-versions --location westeurope
   AZURE_AKS_KUBERNETES_VERSION: "v1.34.2"
 
@@ -71,21 +78,23 @@ variables:
   # EKS also needs versioned images, that may not be available for recent versions of k8s.
   # To verify availability, you can run: aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.34/amazon-linux-2023/x86_64/standard/recommended/image_id
   # Recent versions will return a 'ParameterNotFound' error, preventing EKS from deploying.
-  AWS_EKS_VERSION: "v1.35.0" #See: https://github.com/kubernetes-sigs/cluster-api-provider-aws/blob/main/docs/proposal/20250922-nodeadm-bootstrap.md
+  # NOTE: EKS does not support versions >v1.32 because there's a bug when using Amazon Linux 2023, see https://github.com/kubernetes-sigs/cluster-api-provider-aws/pull/5700
+  AWS_EKS_KUBERNETES_VERSION: "v1.32.0" #See: https://github.com/kubernetes-sigs/cluster-api-provider-aws/blob/main/docs/proposal/20250922-nodeadm-bootstrap.md
   AWS_REGION: "eu-west-2"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   AWS_CONTROL_PLANE_MACHINE_TYPE: "t3.large"
   AWS_NODE_MACHINE_TYPE: "t3.large"
   AWS_RKE2_CONTROL_PLANE_MACHINE_TYPE: "t3.xlarge"
   AWS_RKE2_NODE_MACHINE_TYPE: "t3.xlarge"
-  AWS_AMI_ID: "ami-0f19b6377d50fa855" # Private image. See docs/image-builder
+  AWS_AMI_ID: "ami-0bb0dc2c3c4dbf68f" # Private image. See docs/image-builder
 
   # GCP Configuration
   # Images are self-built and need versioned kubernetes components. See docs/image-builder
-  GCP_KUBERNETES_VERSION: "v1.35.0"
+  GCP_KUBERNETES_VERSION: "v1.34.1"
+  GCP_GKE_KUBERNETES_VERSION: "v1.35.0"
   GCP_MACHINE_TYPE: "n1-standard-2"
   GCP_REGION: "europe-west2"
-  GCP_IMAGE_ID: "cluster-api-ubuntu-2404-v1-35-0-1770652401" # Private image. See docs/image-builder
+  GCP_IMAGE_ID: "cluster-api-ubuntu-2404-v1-34-1-1762253907" # Private image. See docs/image-builder
   GCP_IMAGE_ID_FORMATTED: "" #Calculated at runtime: https://www.googleapis.com/compute/v1/projects/${GCP_PROJECT_ID}/global/images/${GCP_IMAGE_ID}"
 
   # CLI Tool Paths
