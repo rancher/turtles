@@ -174,23 +174,17 @@ const (
 
 	BootstrapClusterNameVar = "BOOTSTRAP_CLUSTER_NAME"
 
-	KubernetesVersionVar      = "KUBERNETES_VERSION"
-	AWSKubernetesVersionVar   = "AWS_KUBERNETES_VERSION"
-	AzureKubernetesVersionVar = "AZURE_KUBERNETES_VERSION"
-	RancherHostnameVar        = "RANCHER_HOSTNAME"
+	RancherHostnameVar = "RANCHER_HOSTNAME"
 
 	ArtifactsFolderVar     = "ARTIFACTS_FOLDER"
 	UseExistingClusterVar  = "USE_EXISTING_CLUSTER"
 	HelmBinaryPathVar      = "HELM_BINARY_PATH"
-	TurtlesPathVar         = "TURTLES_PATH"
 	SkipResourceCleanupVar = "SKIP_RESOURCE_CLEANUP"
 	SkipDeletionTestVar    = "SKIP_DELETION_TEST"
 
-	TurtlesProvidersRepoNameVar = "TURTLES_PROVIDERS_REPO_NAME"
-	TurtlesProvidersUrlVar      = "TURTLES_PROVIDERS_URL"
-	TurtlesProvidersPathVar     = "TURTLES_PROVIDERS_PATH"
+	KubernetesVersionChartUpgradeVar = "KUBERNETES_MANAGEMENT_VERSION_CHART_UPGRADE"
 
-	RKE2VersionVar = "RKE2_VERSION"
+	RKE2VersionVar = "RKE2_KUBERNETES_VERSION"
 
 	AzureSubIDVar        = "AZURE_SUBSCRIPTION_ID"
 	AzureClientIDVar     = "AZURE_CLIENT_ID"
@@ -206,13 +200,6 @@ const (
 	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
 	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
 	OwnedLabelName                 = "cluster-api.cattle.io/owned"
-
-	GiteaRepoNameVar     = "GITEA_REPO_NAME"
-	GiteaRepoURLVar      = "GITEA_REPO_URL"
-	GiteaChartNameVar    = "GITEA_CHART_NAME"
-	GiteaChartVersionVar = "GITEA_CHART_VERSION"
-	GiteaUserNameVar     = "GITEA_USER_NAME"
-	GiteaUserPasswordVar = "GITEA_USER_PWD"
 
 	GCPImageIDVar          = "GCP_IMAGE_ID"
 	GCPImageIDFormattedVar = "GCP_IMAGE_ID_FORMATTED"
