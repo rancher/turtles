@@ -1,20 +1,20 @@
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureClusterIdentity
-metadata:
-  annotations:
-    "helm.sh/resource-policy": keep
-  labels:
-    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
-  name: cluster-identity
-  namespace: ${NAMESPACE}
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID}
-  clientSecret:
-    name: cluster-identity-secret
-    namespace: capz-system
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
+# apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+# kind: AzureClusterIdentity
+# metadata:
+#   annotations:
+#     "helm.sh/resource-policy": keep
+#   labels:
+#     clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+#   name: cluster-identity
+#   namespace: ${NAMESPACE}
+# spec:
+#   allowedNamespaces: {}
+#   clientID: ${AZURE_CLIENT_ID}
+#   clientSecret:
+#     name: cluster-identity-secret
+#     namespace: capz-system
+#   tenantID: ${AZURE_TENANT_ID}
+#   type: ServicePrincipal
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
@@ -29,7 +29,7 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+        - 192.168.0.0/16
   topology:
     classRef:
       name: azure-rke2-example
@@ -37,18 +37,17 @@ spec:
     controlPlane:
       replicas: 3
     variables:
-    - name: subscriptionID
-      value: ${AZURE_SUBSCRIPTION_ID}
-    - name: location
-      value: germanywestcentral
-    - name: resourceGroup
-      value: highlander-e2e-azure-rke2
-    - name: azureClusterIdentityName
-      value: cluster-identity
-    version: ${RKE2_VERSION}
+      - name: subscriptionID
+        value: ${AZURE_SUBSCRIPTION_ID}
+      - name: location
+        value: germanywestcentral
+      - name: resourceGroup
+        value: highlander-e2e-azure-rke2
+      - name: azureClusterIdentityName
+        value: cluster-identity
+    version: ${RKE2_KUBERNETES_VERSION}
     workers:
       machineDeployments:
-      - class: rke2-default-worker
-        name: md-0
-        replicas: 3
-
+        - class: rke2-default-worker
+          name: md-0
+          replicas: 3
