@@ -39,7 +39,7 @@ spec:
         value: none
       - name: awsClusterIdentityName
         value: cluster-identity
-    version: ${RKE2_VERSION}
+    version: ${RKE2_KUBERNETES_VERSION}
     workers:
       machineDeployments:
         - class: default-worker

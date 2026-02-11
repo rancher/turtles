@@ -25,10 +25,10 @@ spec:
       - name: rke2CNI
         value: ${RKE2_CNI}
       - name: dockerImage
-        value: kindest/node:${KUBERNETES_VERSION}
+        value: kindest/node:${KUBERNETES_V1BETA1_VERSION}
       - name: dockerAuthSecret
         value: "${CLUSTER_NAME}-docker-token"
-    version: ${RKE2_VERSION}
+    version: ${RKE2_V1BETA1_KUBERNETES_VERSION}
     workers:
       machineDeployments:
         - class: default-worker

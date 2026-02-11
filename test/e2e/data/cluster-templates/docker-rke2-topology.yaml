@@ -29,7 +29,7 @@ spec:
       value: kindest/node:${KUBERNETES_VERSION}
     - name: dockerAuthSecret
       value: '${CLUSTER_NAME}-docker-token'
-    version: ${RKE2_VERSION}
+    version: ${RKE2_KUBERNETES_VERSION}
     workers:
       machineDeployments:
       - class: default-worker
