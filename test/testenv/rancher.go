@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	turtlesframework "github.com/rancher/turtles/test/framework"
+	"golang.org/x/mod/semver"
 
 	"github.com/rancher/turtles/test/e2e"
 	"gopkg.in/yaml.v3"
@@ -214,6 +215,11 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	if input.RancherImageTag != "" {
 		values["rancherImageTag"] = input.RancherImageTag
 	}
+
+	if semver.Compare(input.RancherVersion, "v2.14.0") >= 0 {
+		values["networkExposure.type"] = "ingress"
+	}
+
 	if rancherHookResult.IngressClassName != "" {
 		values["ingress.ingressClassName"] = rancherHookResult.IngressClassName
 	}
