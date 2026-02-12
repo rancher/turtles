@@ -17,8 +17,8 @@
 # Exit if a command fails
 set -e
 
-RANCHER_CHANNEL=${RANCHER_CHANNEL:-latest}
-RANCHER_VERSION=${RANCHER_VERSION:-v2.13.0-rc1}
+RANCHER_CHANNEL=${RANCHER_CHANNEL:-alpha}
+RANCHER_VERSION=${RANCHER_VERSION:-v2.14.0-alpha3}
 RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_VERSION}
 RANCHER_CLUSTER_NAME=${RANCHER_CLUSTER_NAME:-rancher-cluster}
 RANCHER_TURTLES_VERSION=${RANCHER_TURTLES_VERSION:-v0.24.1}
@@ -252,6 +252,7 @@ EOF
         --set bootstrapPassword="$RANCHER_PASSWORD" \
         --set replicas=1 \
         --set hostname="$RANCHER_HOSTNAME" \
+        --set networkExposure.type="ingress" \
         --set ingress.ingressClassName="$INGRESS_CLASS" \
         --version="$RANCHER_VERSION" \
         --wait

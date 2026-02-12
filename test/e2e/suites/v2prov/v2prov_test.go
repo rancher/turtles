@@ -37,8 +37,7 @@ import (
 	"github.com/rancher/turtles/test/testenv"
 )
 
-// NOTE: disabling this test temporarily while migrating to CAPI v1.11
-var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work", Label(e2e.DontRunLabel), func() {
+var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work", Label(e2e.FullTestLabel), func() {
 	var (
 		specName          = "v2prov"
 		rancherKubeconfig *turtlesframework.RancherGetClusterKubeconfigResult
