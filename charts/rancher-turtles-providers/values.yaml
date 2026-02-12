@@ -326,19 +326,19 @@ providers:
 images:
   addonFleet:
     repository: rancher/cluster-api-addon-provider-fleet
-    tag: v0.13.0
+    tag: v0.14.0
   bootstrapKubeadm:
     repository: rancher/kubeadm-bootstrap-controller
-    tag: v1.11.5
+    tag: v1.12.2
   bootstrapRKE2:
     repository: rancher/cluster-api-provider-rke2-bootstrap
-    tag: v0.22.0
+    tag: v0.23.0
   controlplaneKubeadm:
     repository: rancher/kubeadm-control-plane-controller
-    tag: v1.11.5
+    tag: v1.12.2
   controlplaneRKE2:
     repository: rancher/cluster-api-provider-rke2-controlplane
-    tag: v0.22.0
+    tag: v0.23.0
   infrastructureAWS:
     repository: rancher/cluster-api-aws-controller
     tag: v2.10.0
@@ -353,4 +353,4 @@ images:
     tag: v1.11.0  
   infrastructureVSphere:
     repository: rancher/cluster-api-vsphere-controller
-    tag: v1.14.0
+    tag: v1.15.2
