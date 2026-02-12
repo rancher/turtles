@@ -69,7 +69,7 @@ data:
         url: https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/v1.11.0/infrastructure-components.yaml
       - name: rke2
         type: ControlPlaneProvider
-        url: https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.0/control-plane-components.yaml
+        url: https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.1/control-plane-components.yaml
     images:
       image1:
         repository: repo1
@@ -98,7 +98,7 @@ data:
 							{
 								Name: "rke2",
 								Type: "BootstrapProvider",
-								URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.0/bootstrap-components.yaml",
+								URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.1/bootstrap-components.yaml",
 							},
 							{
 								Name: "fleet",
@@ -149,14 +149,14 @@ data:
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "rke2",
 			Type: "ControlPlaneProvider",
-			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.0/control-plane-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.1/control-plane-components.yaml",
 		}))
 
 		// Ensure a new rke2 bootstrap provider is added
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "rke2",
 			Type: "BootstrapProvider",
-			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.0/bootstrap-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.23.1/bootstrap-components.yaml",
 		}))
 
 		// Ensure a new fleet addon provider is added
