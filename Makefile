@@ -37,12 +37,8 @@ GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 
 CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
-# NOTE: Pinned to latest; bump when newer CAPI version available.
-CAPI_VERSION_TEST_BUMP ?= v1.12.2
-CAPI_VERSION_TEST_BUMP_SUFFIX ?= capi
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
-CORE_CAPI_FETCH_SCRIPT = .github/scripts/fetch-core-capi.sh
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -99,8 +95,6 @@ GINKGO_LABEL_FILTER ?= short
 TURTLES_PROVIDERS ?= ALL
 GINKGO_TESTS ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/suites/...
 TURTLES_MIGRATION_SCRIPT_PATH ?= $(ROOT_DIR)/scripts/migrate-providers-ownership.sh
-CLUSTERCTL_CONFIG_PATH ?= $(ROOT_DIR)/internal/controllers/clusterctl
-CLUSTERCTL_CONFIG_PRIME_NAME ?= config-prime.yaml
 
 MANAGEMENT_CLUSTER_ENVIRONMENT ?= eks
 
@@ -182,7 +176,6 @@ CHART_TESTING_VER := v3.14.0
 
 # Registry / images
 TAG ?= dev
-TAG_CAPI_BUMP_TEST ?= $(TAG)-$(CAPI_VERSION_TEST_BUMP_SUFFIX)
 ARCH ?= linux/$(shell go env GOARCH)
 TARGET_BUILD ?= prime
 TARGET_PLATFORMS := linux/amd64,linux/arm64
@@ -204,7 +197,6 @@ PROVIDERS_CHART_DIR := charts/rancher-turtles-providers
 RELEASE_DIR ?= out
 CHART_PACKAGE_DIR ?= $(RELEASE_DIR)/package
 CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(CHART_DIR)
-CHART_RELEASE_DIR_CAPI_BUMP_TEST ?= $(RELEASE_DIR)/$(CHART_DIR)-$(CAPI_VERSION_TEST_BUMP_SUFFIX)
 PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 
 # Rancher charts testing
@@ -594,23 +586,6 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
-.PHONY: build-chart-bump-capi
-build-chart-bump-capi: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart with an updated version of core CAPI
-	$(KUSTOMIZE) build ./config/chart > $(CHART_DIR)/templates/rancher-turtles-components.yaml
-	$(KUSTOMIZE) build ./config/operatorchart > $(CHART_DIR)/templates/operator-crds.yaml
-
-	cp -rf $(CHART_DIR)/* $(CHART_RELEASE_DIR)
-
-	yq -i '.image.tag="${RELEASE_TAG}"' $(CHART_RELEASE_DIR)/values.yaml
-	yq -i '.image.imagePullPolicy="${PULL_POLICY}"' $(CHART_RELEASE_DIR)/values.yaml
-	yq -i '.image.repository="${CONTROLLER_IMG}"' $(CHART_RELEASE_DIR)/values.yaml
-
-	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
-	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
-
-	# Fetch updated core CAPI manifest file and embed it into the packaged chart
-	CAPI_VERSION=$(CAPI_VERSION_TEST_BUMP) CAPI_RELEASE_URL="$(CAPI_UPSTREAM_RELEASES)/$(CAPI_VERSION_TEST_BUMP)/core-components.yaml" CHART_DIR=$(CHART_RELEASE_DIR) $(CORE_CAPI_FETCH_SCRIPT)
-
 .PHONY: build-providers-chart
 build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR)
 	cp -rf $(PROVIDERS_CHART_DIR)/* $(PROVIDERS_CHART_RELEASE_DIR)
@@ -638,15 +613,9 @@ test-providers-chart: build-providers-chart
 build-local-rancher-charts:
 	$(MAKE) clean-rancher-charts
 	mkdir -p $(RANCHER_CHARTS_REPO_DIR)
-	# First build the regular Turtles chart
+	# First build the Turtles chart
 	RELEASE_TAG=$(TAG) HELM_CHART_TAG=$(RANCHER_CHART_DEV_VERSION) $(MAKE) build-chart
 	CHART_RELEASE_DIR=$(CHART_RELEASE_DIR) HELM=$(HELM) ./scripts/build-local-rancher-charts.sh
-	# Then build a modified Turtles chart for testing core CAPI bumps
-	RELEASE_TAG=$(TAG_CAPI_BUMP_TEST) HELM_CHART_TAG=$(RANCHER_CHART_DEV_VERSION).1 CHART_RELEASE_DIR=$(CHART_RELEASE_DIR_CAPI_BUMP_TEST) $(MAKE) build-chart-bump-capi
-	CHART_RELEASE_DIR=$(CHART_RELEASE_DIR_CAPI_BUMP_TEST) \
-					  RANCHER_CHART_DEV_VERSION=$(RANCHER_CHART_DEV_VERSION).1 \
-					  CLEANUP=false \
-					  HELM=$(HELM) ./scripts/build-local-rancher-charts.sh # make it update the existing local Rancher Charts repo
 	# Finally build the providers chart
 	RELEASE_TAG=$(TAG) HELM_CHART_TAG=$(RANCHER_CHART_DEV_VERSION) $(MAKE) build-providers-chart
 
@@ -660,7 +629,6 @@ $(CACHE_DIR):
 E2ECONFIG_VARS ?= MANAGEMENT_CLUSTER_ENVIRONMENT=$(MANAGEMENT_CLUSTER_ENVIRONMENT) \
 ROOT_DIR=$(ROOT_DIR) \
 TURTLES_VERSION=$(TAG) \
-CAPI_VERSION_TEST_BUMP=$(CAPI_VERSION_TEST_BUMP) \
 E2E_CONFIG=$(E2E_CONFIG) \
 TURTLES_IMAGE=$(REGISTRY)/$(ORG)/turtles-e2e \
 ARTIFACTS=$(ARTIFACTS) \
@@ -702,22 +670,11 @@ test-e2e-remote: $(GINKGO) $(HELM) $(CLUSTERCTL) kubectl build-local-rancher-cha
 e2e-image: ## Build the image for e2e tests
 	# First build the regular Turtles image
 	CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-build
-	# Then build a modified version of Turtles for testing core CAPI bumps
-	$(MAKE) e2e-image-capi-bump
-
-.PHONY: e2e-image-capi-bump
-e2e-image-capi-bump: ## Build the image for e2e tests with an updated version of core CAPI
-	@bash -c 'cp $(CLUSTERCTL_CONFIG_PATH)/$(CLUSTERCTL_CONFIG_PRIME_NAME) $(CLUSTERCTL_CONFIG_PATH)/$(CLUSTERCTL_CONFIG_PRIME_NAME).bak; \
-		trap "mv $(CLUSTERCTL_CONFIG_PATH)/$(CLUSTERCTL_CONFIG_PRIME_NAME).bak $(CLUSTERCTL_CONFIG_PATH)/$(CLUSTERCTL_CONFIG_PRIME_NAME)" EXIT; \
-		CAPI_VERSION_TEST_BUMP=$(CAPI_VERSION_TEST_BUMP) $(ENVSUBST) < ./test/e2e/data/config-prime-bump.yaml > $(CLUSTERCTL_CONFIG_PATH)/$(CLUSTERCTL_CONFIG_PRIME_NAME); \
-		TAG=$(TAG_CAPI_BUMP_TEST) CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-build'
 
 .PHONY: e2e-image-build-and-push
 e2e-image-build-and-push: e2e-image
 	# First push the regular Turtles image
 	CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-push
-	# Then push a modified version of Turtles for testing core CAPI bumps
-	TAG=$(TAG_CAPI_BUMP_TEST) CONTROLLER_IMG=$(REGISTRY)/$(ORG)/turtles-e2e $(MAKE) e2e-image-push
 
 .PHONY: e2e-image-build
 e2e-image-build: ## Build the image for e2e tests
