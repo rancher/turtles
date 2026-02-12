@@ -230,6 +230,7 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--set", fmt.Sprintf("extraEnv[1].value=%s", input.ChartRepoBranch),
 		"--set", "extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION",
 		"--set", fmt.Sprintf("extraEnv[2].value=%s", input.ChartVersion),
+		"--set", "networkExposure.type=ingress",
 		"--wait",
 	}
 
