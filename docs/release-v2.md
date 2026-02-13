@@ -9,6 +9,7 @@ This document describes the new release process for Turtles.
 ## Release Process
 
 We maintain 3 release branches for Turtles, one for each of the minor versions of Rancher that is under active maintenance, at any given point. This allows us to create new Turtles releases for each of the release branches as required for bug fixes and security patches. The process of cutting a new release is essentially the following:
+
 - [Create a new tag for the release](#create-a-new-tag-for-the-release)
 - [Write release description for non-developers](#write-release-description-for-non-developers)
 - [Update `rancher/charts` repository](#update-ranchercharts-repository)
@@ -21,15 +22,15 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 
 Creating a new tag on `rancher/turtles` triggers a GitHub Actions [workflow](https://github.com/rancher/turtles/actions/workflows/release-v2.yaml) that builds the container images for the given tag and pushes them to their respective registries.
 
-1. Clone the repository locally: 
+1. Clone the repository locally:
 
 ```bash
 git clone git@github.com:rancher/turtles.git
 ```
 
-2. Depending on whether you are cutting a release candidate for a minor/major or patch version, the process varies:
+1. Depending on whether you are cutting a release candidate for a minor/major or patch version, the process varies:
   
-  - If you are cutting a release candidate for a new minor/major:
+- If you are cutting a release candidate for a new minor/major:
 
       Create a new release branch (i.e. `release/v0.26`) and push it to the upstream repository:
 
@@ -41,7 +42,7 @@ git clone git@github.com:rancher/turtles.git
         export RELEASE_TAG='v0.26.0-rc.0'
       ```
 
-  - If you are cutting a release candidate for a new patch:
+- If you are cutting a release candidate for a new patch:
 
       Use existing release branch:
 
@@ -52,7 +53,7 @@ git clone git@github.com:rancher/turtles.git
         export RELEASE_TAG='v0.26.1-rc.0'
       ```
 
-3. Create a signed/annotated tag for the new release from the release branch and push it:
+1. Create a signed/annotated tag for the new release from the release branch and push it:
 
   ```bash
   # Create tags locally
@@ -77,6 +78,7 @@ These commit messages are usually hard to understand for those that are not very
 **Warning**: Before updating `rancher/charts` repository, ensure that the previous [step](#create-a-new-tag-for-the-release) has created a new GitHub release for the tag. This release must include the Helm chart archive file in its assets (typically named `rancher-turtles-${RELEASE_TAG}.tgz`).
 
 This part of the release is automated via a GitHub Actions workflow that needs to be invoked manually from GitHub. To invoke it, navigate to the [workflow](https://github.com/rancher/turtles/actions/workflows/release-against-charts.yml), select the option `Run workflow` from the UI and pass the following parameters:
+
 - Use workflow from: Branch: main
   This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.25`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
 - Submit PR against the following rancher/charts branch (e.g. dev-v2.12): dev-v2.12
@@ -86,15 +88,16 @@ This part of the release is automated via a GitHub Actions workflow that needs t
 - New Turtles version (e.g. v0.23.0)
   This is self explanatory, the value must be set to the new Turtles version, for example `v0.25.1-rc.1`
 - Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.20.0 -> v0.21.0-rc.0). Default: false
-  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`. 
+  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`.
 
-Once this workflow has finished, a new PR should have been created in the `rancher/charts` repository that updates the selected branch with the new Turtles version. Here's an example (PR)[https://github.com/rancher/charts/pull/6294] from a previous run against the `dev-v2.13` branch. You need to review and merge this PR before proceeding to the next step.
+Once this workflow has finished, a new PR should have been created in the `rancher/charts` repository that updates the selected branch with the new Turtles version. Here's an example [PR](https://github.com/rancher/charts/pull/6294) from a previous run against the `dev-v2.13` branch. You need to review and merge this PR before proceeding to the next step.
 
 ### Update `rancher/rancher` repository
 
 **Warning**: Before updating `rancher/rancher` repository, ensure that the PR generated from the previous [step](#update-ranchercharts-repository) has been merged.
 
 This part of the release is also automated via a GitHub Actions workflow, that needs to be invoked manually from GitHub. To invoke it, navigate to the [workflow](https://github.com/rancher/turtles/actions/workflows/release-against-rancher.yml), select the option `Run workflow` from the UI and pass the following parameters:
+
 - Use workflow from: Branch: main
   This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.25`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
 - Submit PR against the following rancher/rancher branch (e.g. release/v2.12): release/v2.12
@@ -104,17 +107,26 @@ This part of the release is also automated via a GitHub Actions workflow, that n
 - New Turtles version (e.g. v0.23.0)
   This is self explanatory, the value must be set to the new Turtles version, for example `v0.25.1-rc.1`
 - Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.23.0 -> v0.24.0-rc.0). Default: false
-  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`. 
+  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`.
 
 Once this workflow has finished, a new PR should have been created in the `rancher/rancher` repository that updates the selected branch with the new Turtles version. You need to review and merge this PR. When this PR gets merged, you will have completed the process of releasing a new version of Turtles and including it in an upcoming version of Rancher.
 
 ### Release providers chart
+
+**Note**: Before creating a new release, if you are cutting a new minor/major version:
+
+1. Update the `rancher-turtles-providers` `package.yaml` in the `rancher/prime-charts` repository.
+
+- Set the value of `chartRepoBranch` to the release branch used for the new minor/major version of Turtles, e.g. `release/v0.26`.
+
+This value will be used by the release automation for fetching the `rancher-turtles-providers` chart files.
 
 The providers chart should also be released whenever there is a new version of Turtles. To release the providers chart:
 
 1. Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release. The version should match the Turtles version.
 
 2. Invoke the 'Manual Trigger for Auto Bump' CI workflow from the Prime charts repository and pass the following parameters:
+
 - Use workflow from: Branch: dev-v2.13 (replace `v2.13` with the desired Rancher minor version)
 - Chart name: rancher-turtles-providers
 - Version override: auto
@@ -141,7 +153,7 @@ Before publishing a new version of the documentation, a new [Changelog](https://
 git clone git@github.com:rancher/turtles-docs.git
 ```
 
-2. Export the tag of the minor/major release, create a signed/annotated tag and push it:
+1. Export the tag of the minor/major release, create a signed/annotated tag and push it:
 
 ```bash
 # Export the tag of the minor/major release in a format of v0.Y.Z/v1.Y.Z, e.g.:
@@ -155,7 +167,7 @@ git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
 git push upstream ${RELEASE_TAG}
 ```
 
-3. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/160). Merging it would result in automatic documentation being published using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
+1. Wait for the [version publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/version-publish.yaml) to create a pull request. The PR format is similar to [reference](https://github.com/rancher/turtles-docs/pull/160). Merging it would result in automatic documentation being published using the [publish workflow](https://github.com/rancher/turtles-docs/actions/workflows/publish.yaml).
 
 The resulting state after the version publish workflow for the released tag is also stored under the `release-${RELEASE_TAG}` branch in the origin repository, which is consistent with the [branching strategy](#branches) for turtles.
 
@@ -176,6 +188,7 @@ In the ticket description, make sure to include the reference to latest publishe
 Rancher Turtles follows [semantic versioning](https://semver.org/) specification.
 
 Example versions:
+
 - Pre-release: `v0.4.0-rc.1`
 - Minor release: `v0.4.0`
 - Patch release: `v0.4.1`
