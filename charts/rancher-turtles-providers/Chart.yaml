@@ -6,15 +6,15 @@ icon: https://raw.githubusercontent.com/rancher/turtles/main/logos/capi.svg
 version: 0.0.0
 appVersion: "0.0.0"
 keywords:
-- rancher
-- cluster-api
-- capi
-- provisioning
-- provider
+  - rancher
+  - cluster-api
+  - capi
+  - provisioning
+  - provider
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Rancher Turtles Certified Providers
-  catalog.cattle.io/kube-version: ">= 1.31.4-0 < 1.35.0-0"
+  catalog.cattle.io/kube-version: ">= 1.33.0-0 < 1.36.0-0"
   catalog.cattle.io/namespace: cattle-turtles-system
   catalog.cattle.io/os: linux
   catalog.cattle.io/permits-os: linux
