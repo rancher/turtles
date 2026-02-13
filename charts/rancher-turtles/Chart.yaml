@@ -7,14 +7,14 @@ description: Rancher Turtles - Cluster API integration in Rancher.
 home: https://github.com/rancher/turtles/
 icon: https://raw.githubusercontent.com/rancher/turtles/main/logos/capi.svg
 keywords:
-- rancher
-- cluster-api
-- capi
-- provisioning
+  - rancher
+  - cluster-api
+  - capi
+  - provisioning
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Rancher Turtles
-  catalog.cattle.io/kube-version: ">= 1.31.4-0 < 1.35.0-0"
+  catalog.cattle.io/kube-version: ">= 1.33.0-0 < 1.36.0-0"
   catalog.cattle.io/namespace: cattle-turtles-system
   catalog.cattle.io/os: linux
   catalog.cattle.io/permits-os: linux
