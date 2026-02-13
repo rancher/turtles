@@ -37,6 +37,7 @@ metadata:
   namespace: "${NAMESPACE}"
 spec:
   clusterName: "${CLUSTER_NAME}"
+  version: "${GCP_GKE_KUBERNETES_VERSION}"
   project: "${GCP_PROJECT}"
   location: "${GCP_REGION}"
 ---

@@ -81,10 +81,9 @@ var _ = SynchronizedBeforeSuite(
 
 		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-chart-upgrade"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-			E2EConfig: e2eConfig,
-			Scheme:    e2e.InitScheme(),
-			// Use v1.32.0 for Rancher 2.12.3 compatibility (requires < v1.34.0) and v1.33 causes issues with CAAPF
-			KubernetesVersion: "v1.32.0",
+			E2EConfig:         e2eConfig,
+			Scheme:            e2e.InitScheme(),
+			KubernetesVersion: e2eConfig.GetVariableOrEmpty(e2e.KubernetesVersionChartUpgradeVar),
 		})
 
 		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{

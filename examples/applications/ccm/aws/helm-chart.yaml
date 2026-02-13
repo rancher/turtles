@@ -15,7 +15,7 @@ spec:
         - --use-service-account-credentials=true
         - --configure-cloud-routes=false
       image: |-
-        tag: v1.32.1
+        tag: v1.34.0
       nodeSelector: |-
         ${- if contains "RKE2ControlPlane" ( .ClusterValues | quote ) }
         node-role.kubernetes.io/control-plane: "true"
@@ -24,39 +24,39 @@ spec:
         ${- end }
     values:
       clusterRoleRules:
-      - apiGroups:
-        - ""
-        resources:
-        - events
-        - nodes
-        - nodes/status
-        - services
-        - services/status
-        - serviceaccounts
-        - persistentvolumes
-        - configmaps
-        - serviceaccounts/token
-        - endpoints
-        verbs:
-        - '*'
-      - apiGroups:
-        - coordination.k8s.io
-        resources:
-        - leases
-        verbs:
-        - create
-        - get
-        - list
-        - watch
-        - update
+        - apiGroups:
+            - ""
+          resources:
+            - events
+            - nodes
+            - nodes/status
+            - services
+            - services/status
+            - serviceaccounts
+            - persistentvolumes
+            - configmaps
+            - serviceaccounts/token
+            - endpoints
+          verbs:
+            - "*"
+        - apiGroups:
+            - coordination.k8s.io
+          resources:
+            - leases
+          verbs:
+            - create
+            - get
+            - list
+            - watch
+            - update
   insecureSkipTLSVerify: true
   targets:
-  - clusterSelector:
-      matchLabels:
-        cloud-provider: aws
-      matchExpressions:
-      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
-        operator: In
-        values: 
-        - aws-rke2-example
-        - aws-kubeadm-example
+    - clusterSelector:
+        matchLabels:
+          cloud-provider: aws
+        matchExpressions:
+          - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+            operator: In
+            values:
+              - aws-rke2-example
+              - aws-kubeadm-example
