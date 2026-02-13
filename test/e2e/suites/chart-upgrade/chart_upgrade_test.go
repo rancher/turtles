@@ -95,6 +95,9 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			RancherVersion:        "2.13.2",
+			RancherChartRepoName:  "rancher-latest",
+			RancherChartPath:      "rancher-latest/rancher",
+			RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 		hostName = rancherHookResult.Hostname
