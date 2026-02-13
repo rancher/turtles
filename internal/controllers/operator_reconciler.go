@@ -142,6 +142,15 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		r.waitForClusterctlConfigUpdate,
 		r.setProviderSpec,
 		r.syncSecrets,
+	}
+
+	if feature.Gates.Enabled(feature.NoCertManager) {
+		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupCertManagerResources)
+	} else {
+		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupWranglerResources)
+	}
+
+	r.ReconcilePhases = append(r.ReconcilePhases, []controller.PhaseFn{
 		rec.ApplyFromCache,
 		rec.PreflightChecks,
 		rec.InitializePhaseReconciler,
@@ -154,15 +163,7 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		rec.ReportStatus,
 		r.setConditions,
 		rec.Finalize,
-	}
-
-	if feature.Gates.Enabled(feature.NoCertManager) {
-		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupCertManagerResources)
-	}
-
-	if !feature.Gates.Enabled(feature.NoCertManager) {
-		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupWranglerResources)
-	}
+	}...)
 
 	r.DeletePhases = []controller.PhaseFn{
 		r.waitForClusterctlConfigUpdate,
