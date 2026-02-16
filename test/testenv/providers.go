@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -125,9 +124,6 @@ type DeployRancherTurtlesProvidersInput struct {
 	// ProviderList is an optional comma-separated list of providers to enable on first install.
 	// Examples: "all", "azure,aws".
 	ProviderList string `env:"TURTLES_PROVIDERS" envDefault:"all"`
-
-	// MigrationScriptPath is the path to the providers ownership migration script.
-	MigrationScriptPath string `env:"TURTLES_MIGRATION_SCRIPT_PATH"`
 
 	// UseLegacyCAPINamespace indicates whether to use legacy namespace (capi-system) for core CAPI provider.
 	// Set to true when installing/upgrading from old Turtles versions (v0.24.x and earlier).
@@ -235,10 +231,6 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 
 	providerWaiters := []func(ctx context.Context){}
 	configureProviderDefaults(ctx, input, values, enabledProviders)
-	configureProviderWaiters(input, enabledProviders, &providerWaiters)
-	adoptArgs := getAdoptArgsForEnabledProviders(enabledProviders, values)
-	log.FromContext(ctx).Info("Providers adoption args prepared", "args", adoptArgs, "enabled", enabledProviders)
-	runProviderMigration(ctx, input.MigrationScriptPath, input.BootstrapClusterProxy.GetKubeconfigPath(), input.RancherTurtlesNamespace, adoptArgs...)
 
 	command := []string{
 		"upgrade", e2e.ProvidersChartName, chartPath,
@@ -311,30 +303,6 @@ func UninstallRancherTurtlesProviders(ctx context.Context, namespace string, clu
 	}, &cmd)
 }
 
-func runProviderMigration(ctx context.Context, scriptPath, kubeconfigPath, turtlesNamespace string, extraArgs ...string) {
-	if _, err := os.Stat(scriptPath); err != nil {
-		Expect(fmt.Errorf("migration script not found: %s", scriptPath)).ToNot(HaveOccurred())
-	}
-
-	By("Running providers ownership migration script")
-	args := []string{"--kubeconfig", kubeconfigPath}
-	if len(extraArgs) > 0 {
-		args = append(args, extraArgs...)
-	}
-	cmd := exec.Command(scriptPath, args...)
-	cmd.Env = append(os.Environ(),
-		"RELEASE_NAME="+e2e.ProvidersChartName,
-		"RELEASE_NAMESPACE="+turtlesNamespace,
-		"TURTLES_CHART_NAMESPACE="+e2e.RancherTurtlesNamespace,
-	)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		Expect(fmt.Errorf("migration script failed: %w\nOutput: %s", err, out)).ToNot(HaveOccurred())
-	}
-
-	log.FromContext(ctx).Info("migration completed", "output", string(out))
-}
-
 func enableAllProviders(values map[string]string) {
 	values[bootstrapRKE2Path+providerVerbosityKey] = debugVerbosityValue
 	values[controlplaneRKE2Path+providerVerbosityKey] = debugVerbosityValue
@@ -352,35 +320,6 @@ func enableAllProviders(values map[string]string) {
 	values[gcpPath+providerVerbosityKey] = debugVerbosityValue
 	values[vspherePath+providerEnabledKey] = "true"
 	values[vspherePath+providerVerbosityKey] = debugVerbosityValue
-}
-
-func getAdoptArgsForEnabledProviders(enabled []string, values map[string]string) []string {
-	adopt := []string{}
-
-	getNamespaceWithDefault := func(key, defaultNamespace string) string { // Try to get namespace from values or use default
-		if namespace, ok := values[key]; ok && strings.TrimSpace(namespace) != "" {
-			return strings.TrimSpace(namespace)
-		}
-		return defaultNamespace
-	}
-
-	namespaces := map[string]string{
-		providerKubeadmBootstrap:    getNamespaceWithDefault("providers.bootstrapKubeadm.namespace", namespaceKubeadmBootstrapSystem),
-		providerKubeadmControlPlane: getNamespaceWithDefault("providers.controlplaneKubeadm.namespace", namespaceKubeadmControlPlaneSystem),
-		providerDocker:              getNamespaceWithDefault("providers.infrastructureDocker.namespace", namespaceCAPDSystem),
-		providerAWS:                 getNamespaceWithDefault("providers.infrastructureAWS.namespace", namespaceCAPASystem),
-		providerAzure:               getNamespaceWithDefault("providers.infrastructureAzure.namespace", namespaceCAPZSystem),
-		providerGCP:                 getNamespaceWithDefault("providers.infrastructureGCP.namespace", namespaceCAPGSystem),
-		providerVSphere:             getNamespaceWithDefault("providers.infrastructureVSphere.namespace", namespaceCAPVSystem),
-	}
-
-	for _, name := range enabled {
-		if namespace, ok := namespaces[name]; ok && namespace != "" {
-			adopt = append(adopt, "--adopt", fmt.Sprintf("%s:%s", name, namespace))
-		}
-	}
-
-	return adopt
 }
 
 func getEnabledCAPIProviders(values map[string]string) []string {

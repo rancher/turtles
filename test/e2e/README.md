@@ -76,12 +76,12 @@ Note that `SOURCE_REPO` needs to point to your forked repository, and `GITHUB_HE
 The E2E suite installs the `rancher-turtles-providers` Helm chart via `test/testenv/providers.go`.
 
 Inputs:
+
 - HELM_BINARY_PATH: Path to the Helm binary used by the installer.
 - TURTLES_PROVIDERS_URL: Helm repo URL for the providers chart.
 - TURTLES_PROVIDERS_PATH: Local path to the `rancher-turtles-providers` chart.
 - TURTLES_PROVIDERS_REPO_NAME: Helm repo name to register.
 - TURTLES_PROVIDERS: Comma separated providers to enable on first install (note: this is only specific to e2e and not a helm chart option). Default "all".
-- TURTLES_MIGRATION_SCRIPT_PATH: Path to the providers ownership migration script.
 
 Enable providers:
 
