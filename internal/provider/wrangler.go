@@ -26,6 +26,7 @@ import (
 	admissionv1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -266,7 +267,7 @@ func CleanupCertManagerResources(ctx context.Context, cl client.Client, provider
 	certList := &unstructured.UnstructuredList{}
 	certList.SetGroupVersionKind(certs)
 
-	if err := cl.List(ctx, certList, listOpts...); err != nil {
+	if err := cl.List(ctx, certList, listOpts...); err != nil && !apimeta.IsNoMatchError(err) {
 		return &controller.Result{}, fmt.Errorf("listing Certificates: %w", err)
 	}
 
@@ -289,7 +290,7 @@ func CleanupCertManagerResources(ctx context.Context, cl client.Client, provider
 	issuerList := &unstructured.UnstructuredList{}
 	issuerList.SetGroupVersionKind(issuers)
 
-	if err := cl.List(ctx, issuerList, listOpts...); err != nil {
+	if err := cl.List(ctx, issuerList, listOpts...); err != nil && !apimeta.IsNoMatchError(err) {
 		return &controller.Result{}, fmt.Errorf("listing Issuers: %w", err)
 	}
 
