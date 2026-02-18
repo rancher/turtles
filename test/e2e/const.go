@@ -69,11 +69,11 @@ var (
 	//go:embed data/rancher/rancher-setting-patch.yaml
 	RancherSettingPatch []byte
 
-	//go:embed data/rancher/nginx-ingress.yaml
-	NginxIngress []byte
+	//go:embed data/rancher/traefik-ingress.yaml
+	TraefikIngress []byte
 
-	//go:embed data/rancher/ingress-nginx-lb.yaml
-	NginxIngressLoadBalancer []byte
+	//go:embed data/rancher/traefik-ingress-lb.yaml
+	TraefikIngressLoadBalancer []byte
 
 	//go:embed data/rancher/azure-rke-config.yaml
 	V2ProvAzureRkeConfig []byte
@@ -153,8 +153,8 @@ const (
 	RancherTurtlesNamespace    = "rancher-turtles-system"
 	NewRancherTurtlesNamespace = "cattle-turtles-system"
 	RancherNamespace           = "cattle-system"
-	NginxIngressNamespace      = "ingress-nginx"
-	NginxIngressDeployment     = "ingress-nginx-controller"
+	TraefikIngressNamespace    = "traefik"
+	TraefikIngressDeployment   = "traefik"
 )
 
 type ManagementClusterEnvironmentType string

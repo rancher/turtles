@@ -72,8 +72,8 @@ var _ = SynchronizedBeforeSuite(
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
-			CustomIngress:             e2e.NginxIngress,
-			CustomIngressLoadBalancer: e2e.NginxIngressLoadBalancer,
+			CustomIngress:             e2e.TraefikIngress,
+			CustomIngressLoadBalancer: e2e.TraefikIngressLoadBalancer,
 			DefaultIngressClassPatch:  e2e.IngressClassPatch,
 		})
 

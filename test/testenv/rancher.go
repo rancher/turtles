@@ -307,10 +307,10 @@ type RancherDeployIngressInput struct {
 	CustomIngressLoadBalancer []byte
 
 	// CustomIngressNamespace is the namespace for the custom ingress.
-	CustomIngressNamespace string `envDefault:"ingress-nginx"`
+	CustomIngressNamespace string `envDefault:"traefik"`
 
 	// CustomIngressDeployment is the deployment name for the custom ingress.
-	CustomIngressDeployment string `envDefault:"ingress-nginx-controller"`
+	CustomIngressDeployment string `envDefault:"traefik"`
 
 	// IngressWaitInterval is the wait interval for the ingress deployment.
 	IngressWaitInterval []interface{} `envDefault:"15m,30s"`
@@ -375,7 +375,7 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 		deployEKSIngress(input)
 	case e2e.ManagementClusterEnvironmentInternalKind:
 		Expect(input.CustomIngressLoadBalancer).ToNot(BeEmpty(), "CustomIngressLoadBalancer is required when using custom ingress with a load balancer")
-		deployNginxIngressLoadBalancer(ctx, input)
+		deployTraefikIngressLoadBalancer(ctx, input)
 	}
 }
 
@@ -395,33 +395,33 @@ func deployIsolatedModeIngress(ctx context.Context, input RancherDeployIngressIn
 }
 
 func deployEKSIngress(input RancherDeployIngressInput) {
-	By("Add nginx ingress chart repo")
-	certChart := &opframework.HelmChart{
+	By("Adding Traefik chart repo")
+	repoChart := &opframework.HelmChart{
 		BinaryPath:      input.HelmBinaryPath,
-		Name:            "ingress-nginx",
-		Path:            "https://kubernetes.github.io/ingress-nginx",
+		Name:            "traefik",
+		Path:            "https://traefik.github.io/charts",
 		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
 		AdditionalFlags: opframework.Flags("--force-update"),
 		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 	}
-	_, err := certChart.Run(nil)
+	_, err := repoChart.Run(nil)
 	Expect(err).ToNot(HaveOccurred())
 
-	By("Installing nginx ingress")
-	certManagerChart := &opframework.HelmChart{
+	By("Installing Traefik ingress")
+	traefikChart := &opframework.HelmChart{
 		BinaryPath: input.HelmBinaryPath,
-		Path:       "ingress-nginx/ingress-nginx",
-		Name:       "ingress-nginx",
+		Path:       "traefik/traefik",
+		Name:       "traefik",
 		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
 		AdditionalFlags: opframework.Flags(
-			"--namespace", "ingress-nginx",
-			"--version", "v4.12.0",
+			"--namespace", "traefik",
+			"--version", "v39.0.1",
 			"--create-namespace",
 		),
 		Wait: true,
 	}
-	_, err = certManagerChart.Run(map[string]string{
-		"controller.service.type": "LoadBalancer",
+	_, err = traefikChart.Run(map[string]string{
+		"service.type": "LoadBalancer",
 	})
 	Expect(err).ToNot(HaveOccurred())
 }
@@ -477,7 +477,7 @@ func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
 	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.DefaultIngressClassPatch)).To(Succeed())
 }
 
-func deployNginxIngressLoadBalancer(ctx context.Context, input RancherDeployIngressInput) {
+func deployTraefikIngressLoadBalancer(ctx context.Context, input RancherDeployIngressInput) {
 	By("Deploying custom ingress controller of type LoadBalancer")
 	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, []byte(input.CustomIngressLoadBalancer))).To(Succeed())
 
@@ -538,8 +538,8 @@ func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHo
 		svcRes := &WaitForServiceIngressHostnameResult{}
 		WaitForServiceIngressHostname(input.Ctx, WaitForServiceIngressHostnameInput{
 			BootstrapClusterProxy: input.BootstrapClusterProxy,
-			ServiceName:           "ingress-nginx-controller",
-			ServiceNamespace:      "ingress-nginx",
+			ServiceName:           "traefik",
+			ServiceNamespace:      "traefik",
 			IngressWaitInterval:   input.IngressWaitInterval,
 		}, svcRes)
 
@@ -550,7 +550,7 @@ func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHo
 
 		return PreRancherInstallHookResult{
 			Hostname:         svcRes.Hostname,
-			IngressClassName: "nginx",
+			IngressClassName: "traefik",
 		}
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		By("Getting internal cluster hostname")
