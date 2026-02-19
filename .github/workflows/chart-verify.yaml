@@ -4,11 +4,6 @@ on:
   push:
     tags:
       - "v*-test"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Tag to use (must already exist)
-        required: true
 
 jobs:
   test:
@@ -17,25 +12,24 @@ jobs:
       GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       RELEASE_DIR: .cr-release-packages
-      TAG: ${{ github.ref_name || inputs.tag }}
+      TAG: ${{ github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: setupGo
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Package operator chart
-        run: RELEASE_TAG=${{ env.TAG }} CHART_PACKAGE_DIR=${{ env.RELEASE_DIR }} CONTROLLER_IMG="rancher/turtles" ORG=rancher make release
+      - name: Create dummy chart package (test only)
+        run: |
+          mkdir -p ${{ env.RELEASE_DIR }}
+          echo "dummy chart content" > /tmp/chart-dummy
+          tar -czf ${{ env.RELEASE_DIR }}/rancher-turtles-0.25.99-test.tgz -C /tmp chart-dummy
+          echo "Created dummy chart: $(ls ${{ env.RELEASE_DIR }})"
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
@@ -52,8 +46,7 @@ jobs:
       - name: Run chart-releaser upload
         run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ env.TAG }}" --make-release-latest=false
 
-      # Remove this step after testing
-      - name: Simulate broken release - delete asset
+      - name: "[TEST ONLY] Simulate broken release - delete asset"
         run: |
           CHART_FILE=$(ls ${{ env.RELEASE_DIR }}/*.tgz 2>/dev/null | head -1)
           ASSET_NAME=$(basename "${CHART_FILE}")
@@ -85,6 +78,3 @@ jobs:
           else
             echo "Chart asset '${ASSET_NAME}' confirmed present."
           fi
-
-      - name: Run chart-releaser index
-        run: cr index --push --release-name-template "${{ env.TAG }}"
