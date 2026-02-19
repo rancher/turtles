@@ -18,6 +18,11 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 - [Rancher Turtles Community Documentation](#rancher-turtles-community-documentation) (required only when cutting minor/major versions)
 - [Create a JIRA ticket for syncing Turtles Community Docs with Product Docs](#create-a-jira-ticket-for-syncing-turtles-community-docs-with-product-docs) (required only when cutting minor/major versions)
 
+### Prerequisites
+The providers chart should also be released whenever there is a new version of Turtles. In order to properly release the providers chart later in the release process:
+
+* Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release before creating a new tag for the release. The version should match the Turtles version.
+
 ### Create a new tag for the release
 
 Creating a new tag on `rancher/turtles` triggers a GitHub Actions [workflow](https://github.com/rancher/turtles/actions/workflows/release-v2.yaml) that builds the container images for the given tag and pushes them to their respective registries.
@@ -115,19 +120,15 @@ Once this workflow has finished, a new PR should have been created in the `ranch
 
 **Note**: Before creating a new release, if you are cutting a new minor/major version:
 
-1. Update the `rancher-turtles-providers` `package.yaml` in the `rancher/prime-charts` repository.
+1. Update the `rancher-turtles-providers` `package.yaml` [file](https://github.com/rancher/prime-charts/blob/dev-v2.14/packages/rancher-turtles-providers/package.yaml) in the `rancher/prime-charts` repository.
 
 - Set the value of `chartRepoBranch` to the release branch used for the new minor/major version of Turtles, e.g. `release/v0.26`.
 
 This value will be used by the release automation for fetching the `rancher-turtles-providers` chart files.
 
-The providers chart should also be released whenever there is a new version of Turtles. To release the providers chart:
+2. Invoke the 'Manual Trigger for Auto Bump' [CI workflow](https://github.com/rancher/prime-charts/actions/workflows/auto-bump-manual-trigger.yaml) from the Prime charts repository and pass the following parameters:
 
-1. Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release. The version should match the Turtles version.
-
-2. Invoke the 'Manual Trigger for Auto Bump' CI workflow from the Prime charts repository and pass the following parameters:
-
-- Use workflow from: Branch: dev-v2.13 (replace `v2.13` with the desired Rancher minor version)
+- Use workflow from: Branch: dev-v2.14 (replace `v2.14` with the desired Rancher minor version)
 - Chart name: rancher-turtles-providers
 - Version override: auto
 
