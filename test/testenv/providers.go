@@ -227,8 +227,6 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 
 	enabledProviders := getEnabledCAPIProviders(values)
 
-	applyProviderSecrets(ctx, input, enabledProviders)
-
 	providerWaiters := []func(ctx context.Context){}
 	configureProviderDefaults(ctx, input, values, enabledProviders)
 
@@ -266,6 +264,9 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	if err != nil {
 		Expect(fmt.Errorf("Unable to install providers chart: %w\nOutput: %s, Command: %s", err, out, strings.Join(fullCommand, " "))).ToNot(HaveOccurred())
 	}
+
+	// Applying provider secrets assumes that the namespaces used for the secrets have been created beforehand by the providers chart.
+	applyProviderSecrets(ctx, input, enabledProviders)
 
 	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders, input.UseLegacyCAPINamespace)
 	if len(deploymentsToWait) > 0 {
