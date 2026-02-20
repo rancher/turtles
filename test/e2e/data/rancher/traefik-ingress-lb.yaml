@@ -221,9 +221,11 @@ spec:
           name: traefik
           protocol: TCP
         - containerPort: 8000
+          hostPort: 80
           name: web
           protocol: TCP
         - containerPort: 8443
+          hostPort: 443
           name: websecure
           protocol: TCP
         readinessProbe:

@@ -228,7 +228,7 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		if input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
 			ingress, err = envsubst.Eval(string(input.CustomIngressConfig), func(s string) string {
 				if s == "GITEA_INGRESS_CLASS_NAME" {
-					return "nginx"
+					return "traefik"
 				}
 				return os.Getenv(s)
 			})
