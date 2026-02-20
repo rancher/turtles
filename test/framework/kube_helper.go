@@ -18,12 +18,9 @@ package framework
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	. "github.com/onsi/gomega"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -346,51 +343,4 @@ func GetClusterctl(ctx context.Context, input GetClusterctlInput) string {
 	Expect(config.Data["clusterctl.yaml"]).NotTo(BeEmpty(), "Expected ConfigMap to have clusterctl.yaml data")
 
 	return config.Data["clusterctl.yaml"]
-}
-
-type GetHelmAppInput struct {
-	GetLister        framework.GetLister
-	HelmAppName      string
-	HelmAppNamespace string
-}
-
-// GetHelmApp fetches `catalog.cattle.io/v1 app`
-func GetHelmApp(ctx context.Context, input GetHelmAppInput) (*metav1.PartialObjectMetadata, error) {
-	Expect(ctx).NotTo(BeNil(), "ctx is required for GetHelmApp")
-	Expect(input.GetLister).ToNot(BeNil(), "Invalid argument. input.GetLister can't be nil when calling GetHelmApp")
-
-	app := &metav1.PartialObjectMetadata{}
-	app.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "catalog.cattle.io",
-		Version: "v1",
-		Kind:    "App",
-	})
-
-	return app, input.GetLister.Get(ctx, client.ObjectKey{Namespace: input.HelmAppNamespace, Name: input.HelmAppName}, app)
-
-}
-
-type WaitNamespaceInput struct {
-	Name      string
-	GetLister framework.GetLister
-}
-
-func WaitForNamespaceToBeDeleted(ctx context.Context, input WaitNamespaceInput) {
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: input.Name,
-		},
-	}
-	Eventually(func() error {
-
-		err := input.GetLister.Get(ctx, client.ObjectKeyFromObject(ns), ns)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return nil
-			}
-			return fmt.Errorf("getting Namespace: %w", err)
-		}
-
-		return fmt.Errorf("namespace %s is still present", ns.Name)
-	}).Should(Succeed(), "Namespace deletion should complete")
 }
