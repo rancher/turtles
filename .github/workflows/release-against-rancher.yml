@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       rancher_ref:
-        description: "Submit PR against the following rancher/rancher branch (e.g. release/v2.12)"
+        description: "Submit PR against the following rancher/rancher branch (e.g. release/v2.14). Use 'auto' to derive from the current turtles branch."
         required: true
-        default: "release/v2.12"
+        default: "auto"
       prev_turtles:
         description: "Previous Turtles version (eg: v0.23.0-rc.0)"
         required: true
@@ -24,7 +24,6 @@ on:
           - "false"
 
 env:
-  RANCHER_REF: ${{ github.event.inputs.rancher_ref }}
   TURTLES_REF: "${{ github.ref_name }}"
   PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
   NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
@@ -37,6 +36,26 @@ jobs:
       # Required for vault
       id-token: write
     steps:
+      - name: Resolve rancher_ref
+        run: |
+          INPUT="${{ github.event.inputs.rancher_ref }}"
+          if [ "${INPUT}" != "auto" ]; then
+            echo "RANCHER_REF=${INPUT}" >> $GITHUB_ENV
+          else
+            # Derive from turtles branch: release/v0.25 → release/v2.13
+            # Formula: rancher_minor = turtles_minor - 12
+            TURTLES_BRANCH="${{ github.ref_name }}"
+            if [[ "$TURTLES_BRANCH" =~ ^release/v0\.([0-9]+)$ ]]; then
+              TURTLES_MINOR="${BASH_REMATCH[1]}"
+              RANCHER_MINOR=$(( TURTLES_MINOR - 12 ))
+              echo "RANCHER_REF=release/v2.${RANCHER_MINOR}" >> $GITHUB_ENV
+              echo "Derived rancher_ref: release/v2.${RANCHER_MINOR} from ${TURTLES_BRANCH}"
+            else
+              echo "ERROR: Cannot derive rancher_ref from branch '${TURTLES_BRANCH}'. Please trigger again with an explicit rancher_ref value."
+              exit 1
+            fi
+          fi
+
       - name: Install dependencies
         run: sudo snap install yq --channel=v4/stable
 

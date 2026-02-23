@@ -3,19 +3,19 @@ on:
   workflow_dispatch:
     inputs:
       charts_ref:
-        description: "Submit PR against the following rancher/charts branch (e.g. dev-v2.12)"
+        description: "Submit PR against the following rancher/charts branch (e.g. dev-v2.14). Use 'auto' to derive from the current turtles branch."
         required: true
-        default: "dev-v2.12"
+        default: "auto"
       prev_turtles:
-        description: "Previous Turtles version (e.g. v0.23.0-rc.0)"
+        description: "Previous Turtles version (e.g. v0.26.0-rc.0)"
         required: true
         default: ""
       new_turtles:
-        description: "New Turtles version (e.g. v0.23.0)"
+        description: "New Turtles version (e.g. v0.26.0)"
         required: true
         default: ""
       bump_major:
-        description: "Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.20.0 → v0.21.0-rc.0). Default: false"
+        description: "Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.25.0 → v0.26.0-rc.0). Default: false"
         required: false
         default: "false"
         type: choice
@@ -25,7 +25,6 @@ on:
 
 env:
   TURTLES_REF: "${{ github.ref_name }}"
-  CHARTS_REF: ${{ github.event.inputs.charts_ref }}
   PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
   NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
 
@@ -37,6 +36,24 @@ jobs:
       # Required for vault
       id-token: write
     steps:
+      - name: Resolve charts_ref
+        run: |
+          INPUT="${{ github.event.inputs.charts_ref }}"
+          if [ "${INPUT}" != "auto" ]; then
+            echo "CHARTS_REF=${INPUT}" >> $GITHUB_ENV
+          else
+            TURTLES_BRANCH="${{ github.ref_name }}"
+            if [[ "$TURTLES_BRANCH" =~ ^release/v0\.([0-9]+)$ ]]; then
+              TURTLES_MINOR="${BASH_REMATCH[1]}"
+              RANCHER_MINOR=$(( TURTLES_MINOR - 12 ))
+              echo "CHARTS_REF=dev-v2.${RANCHER_MINOR}" >> $GITHUB_ENV
+              echo "Derived charts_ref: dev-v2.${RANCHER_MINOR} from ${TURTLES_BRANCH}"
+            else
+              echo "ERROR: Cannot derive charts_ref from branch '${TURTLES_BRANCH}'. Please trigger again with an explicit charts_ref value."
+              exit 1
+            fi
+          fi
+
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
         with:
           ref: "${{ env.TURTLES_REF }}"

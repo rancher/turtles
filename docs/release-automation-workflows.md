@@ -22,47 +22,51 @@ Both workflows are **manual** and run from the [Actions tab](https://github.com/
 
 ### Release Rancher Turtles against `rancher/charts`
 
-This workflow creates a pull request  in [rancher/charts](https://github.com/rancher/charts) repository to bump the Rancher Turtles version.
+This workflow creates a pull request in [rancher/charts](https://github.com/rancher/charts) repository to bump the Rancher Turtles version.
 
 > **Note:** Once the GitHub workflow completes successfully, it automatically opens a pull request in the `rancher/charts` repository.
 
 ```yaml
 Inputs:
-charts_ref – Target branch in rancher/charts (e.g. dev-v2.12).
-prev_turtles – Previous Rancher Turtles version (e.g. v0.23.0-rc.0).
-new_turtles – New Rancher Turtles version (e.g. v0.23.0).
-bump_major – Whether to bump the chart’s major version when Turtles’ minor version increases (true/false).
+charts_ref – Target branch in rancher/charts (e.g. dev-v2.14). Defaults to 'auto', which derives the correct branch from the current turtles release branch (e.g. release/v0.26 → dev-v2.14). Must be triggered from a release branch when using 'auto'.
+prev_turtles – Previous Rancher Turtles version (e.g. v0.26.0-rc.0).
+new_turtles – New Rancher Turtles version (e.g. v0.26.0).
+bump_major – Whether to bump the chart's major version when Turtles' minor version increases (true/false).
 ```
 
-**Example:** To release `v0.24.0` after `v0.24.0-rc.0` into the `dev-v2.12` branch of `rancher/charts`, run the workflow with the following inputs:
+> **Tip:** When triggering from a `release/v0.x` branch, leave `charts_ref` as `auto` and the correct `rancher/charts` branch will be derived automatically. Provide an explicit value only if you need to override this behaviour.
+
+**Example:** To release `v0.26.0` after `v0.26.0-rc.0` into the `dev-v2.14` branch of `rancher/charts`, run the workflow with the following inputs:
 
 ```yaml
-charts_ref: dev-v2.12
-prev_turtles: v0.24.0-rc.0
-new_turtles: v0.24.0
+charts_ref: dev-v2.14
+prev_turtles: v0.26.0-rc.0
+new_turtles: v0.26.0
 bump_major: false
 ```
 
 ### Release Rancher Turtles against `rancher/rancher`
 
-This workflow creates a pull request  in [rancher/rancher](https://github.com/rancher/rancher) repository to bump the Rancher Turtles version.
+This workflow creates a pull request in [rancher/rancher](https://github.com/rancher/rancher) repository to bump the Rancher Turtles version.
 
 > **Note:** Once the GitHub workflow completes successfully, it automatically opens a pull request in the `rancher/rancher` repository.
 
 ```yaml
 Inputs:
-rancher_ref – Target branch in rancher/rancher (e.g. release/v2.12).
+rancher_ref – Target branch in rancher/rancher (e.g. release/v2.14). Defaults to 'auto', which derives the correct branch from the current turtles release branch (e.g. release/v0.26 → release/v2.14). Must be triggered from a release branch when using 'auto'.
 prev_turtles – Previous Rancher Turtles version.
 new_turtles – New Rancher Turtles version.
-bump_major – Whether to bump the chart’s major version when Turtles’ minor version increases (true/false).
+bump_major – Whether to bump the chart's major version when Turtles' minor version increases (true/false).
 ```
 
-**Example:** To update Rancher Turtles from `v0.23.0` to `v0.24.0` in the `release/v2.12` branch of `rancher/rancher`, run the workflow with the following inputs:
+> **Tip:** When triggering from a `release/v0.x` branch, leave `rancher_ref` as `auto` and the correct `rancher/rancher` branch will be derived automatically. Provide an explicit value only if you need to override this behaviour.
+
+**Example:** To update Rancher Turtles from `v0.25.0` to `v0.26.0` in the `release/v2.14` branch of `rancher/rancher`, run the workflow with the following inputs:
 
 ```yaml
-rancher_ref: release/v2.12
-prev_turtles: v0.23.0
-new_turtles: v0.24.0
+rancher_ref: release/v2.14
+prev_turtles: v0.25.0
+new_turtles: v0.26.0
 bump_major: true
 ```
 
@@ -90,20 +94,20 @@ This repository provides a [GitHub Actions workflow](https://github.com/rancher/
 /backport <milestone> <target-branch> [<issue-number>]
 ```
 
-- `<milestone>` – Optional milestone or version tag (e.g., `v2.13.0`).  
-- `<target-branch>` – Branch you want the PR backported to (e.g., `release/v0.25`).  
+- `<milestone>` – Optional milestone or version tag (e.g., `v2.14.0`).  
+- `<target-branch>` – Branch you want the PR backported to (e.g., `release/v0.26`).  
 - `<issue-number>` – Optional issue number that this PR should close.
 
 **Example:**
 
 ```
-/backport v2.13.0 release/v0.25
+/backport v2.14.0 release/v0.26
 ```
 
 This will create a backport PR with the title:
 
 ```
-[backport-release/v0.25] Original PR title
+[backport-release/v0.26] Original PR title
 ```
 
 The workflow automatically:
