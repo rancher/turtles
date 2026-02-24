@@ -61,6 +61,8 @@ bump_major – Whether to bump the chart's major version when Turtles' minor ver
 
 > **Tip:** When triggering from a `release/v0.x` branch, leave `rancher_ref` as `auto` and the correct `rancher/rancher` branch will be derived automatically. Provide an explicit value only if you need to override this behaviour.
 
+> **Note:** Before a minor release branch is created in `rancher/rancher` (e.g. `release/v2.14` does not exist yet while `v2.14.0` is still in development), set `rancher_ref` to `main` explicitly instead of using `auto`.
+
 **Example:** To update Rancher Turtles from `v0.25.0` to `v0.26.0` in the `release/v2.14` branch of `rancher/rancher`, run the workflow with the following inputs:
 
 ```yaml
