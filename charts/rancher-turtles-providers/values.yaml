@@ -341,7 +341,7 @@ images:
     tag: v0.23.1
   infrastructureAWS:
     repository: rancher/cluster-api-aws-controller
-    tag: v2.10.0
+    tag: v2.10.1
   infrastructureAzure:
     repository: rancher/cluster-api-azure-controller
     tag: v1.22.0
