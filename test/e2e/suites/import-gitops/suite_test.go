@@ -125,10 +125,21 @@ var _ = SynchronizedBeforeSuite(
 		By("Applying test ClusterctlConfig")
 		Expect(framework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
 
+		var providerList string
+		cfg, _ := GinkgoConfiguration()
+		if cfg.LabelFilter == e2e.ShortTestLabel {
+			providerList = "docker,rke2,kubeadm"
+		} else if cfg.LabelFilter == e2e.FullTestLabel {
+			providerList = "azure,aws,gcp,rke2,kubeadm"
+		} else if cfg.LabelFilter == e2e.VsphereTestLabel {
+			providerList = "vsphere,rke2,kubeadm"
+		}
+
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			UseLegacyCAPINamespace:  false,
 			RancherTurtlesNamespace: e2e.NewRancherTurtlesNamespace,
+			ProviderList:            providerList,
 		})
 
 		data, err := json.Marshal(e2e.Setup{
