@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
+	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/controllers/testdata"
 	"github.com/rancher/turtles/internal/test"
 
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -287,7 +289,54 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
 	})
 
-	It("should set fleet annotation on a freshly imported rancher cluster", func() {
+	It("should not set the external fleet annotation by default", func() {
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		setControlPlaneReady(capiCluster)
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		// First reconcile to trigger rancher cluster creation
+		res, err := r.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: capiCluster.Namespace,
+				Name:      capiCluster.Name,
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.RequeueAfter).To(Equal(defaultRequeueDuration))
+
+		// Wait for rancher cluster to be created and create namespace immediately
+		Eventually(func(g Gomega) {
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+
+		cluster := rancherClusters.Items[0]
+		Expect(cluster.Name).To(ContainSubstring("c-"))
+
+		// Create namespace for the cluster immediately
+		_, err = testEnv.CreateNamespaceWithName(ctx, cluster.Name)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Continue with further reconciliation to check fleet annotation
+		Eventually(func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+			g.Expect(rancherClusters.Items[0].Annotations).ToNot(HaveKey(turtlesannotations.ExternalFleetAnnotation))
+		}).Should(Succeed())
+	})
+
+	It("should set the external fleet annotation when feature gate is set", func() {
+		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
+
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
@@ -509,7 +558,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
-	It("should set the fleet annotation on an already imported cluster", func() {
+	It("should set the external fleet annotation when feature gate is set on an already imported cluster", func() {
+		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
+
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(sampleTemplate))
@@ -550,6 +601,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 			rancherCluster := cluster.DeepCopy()
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), rancherCluster)).To(Succeed())
+			g.Expect(rancherCluster.Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
 		}, 5*time.Second).Should(Succeed())
 	})
 

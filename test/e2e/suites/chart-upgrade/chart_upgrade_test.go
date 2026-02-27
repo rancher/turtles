@@ -147,7 +147,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
 			UseLegacyCAPINamespace:       false, // >=v0.25.0 uses `cattle-capi-system`
 			RancherTurtlesNamespace:      e2e.NewRancherTurtlesNamespace,
-			ProviderList:                 "rke2",
+			ProviderList:                 "rke2,fleet",
 		})
 	})
 

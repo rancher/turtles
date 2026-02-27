@@ -2,7 +2,7 @@
 // +build e2e
 
 /*
-Copyright © 2023 - 2024 SUSE LLC
+Copyright © 2023 - 2026 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package import_gitops
+package no_caapf
 
 import (
 	"context"
@@ -54,13 +54,13 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	RunSpecs(t, "rancher-turtles-e2e-import-gitops")
+	RunSpecs(t, "rancher-turtles-e2e-no-caapf")
 }
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		e2eConfig := e2e.LoadE2EConfig()
-		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-import-gitops"
+		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-no-caapf"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
@@ -104,9 +104,6 @@ var _ = SynchronizedBeforeSuite(
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
-		By("Enable CAAPF")
-		testenv.EnableCAAPF(ctx, testenv.EnableCAAPFInput{BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy})
-
 		By("Waiting for Rancher to be ready")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
@@ -128,21 +125,12 @@ var _ = SynchronizedBeforeSuite(
 		By("Applying test ClusterctlConfig")
 		Expect(framework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
 
-		var providerList string
-		cfg, _ := GinkgoConfiguration()
-		if cfg.LabelFilter == e2e.ShortTestLabel {
-			providerList = "docker,rke2,kubeadm,fleet"
-		} else if cfg.LabelFilter == e2e.FullTestLabel {
-			providerList = "azure,aws,gcp,rke2,kubeadm,fleet"
-		} else if cfg.LabelFilter == e2e.VsphereTestLabel {
-			providerList = "vsphere,rke2,kubeadm,fleet"
-		}
-
+		// Currently only CAPD and CARKE2 are needed for this suite
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			UseLegacyCAPINamespace:  false,
 			RancherTurtlesNamespace: e2e.NewRancherTurtlesNamespace,
-			ProviderList:            providerList,
+			ProviderList:            "docker,rke2",
 		})
 
 		data, err := json.Marshal(e2e.Setup{
