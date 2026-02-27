@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
+	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/controllers/testdata"
 	"github.com/rancher/turtles/internal/test"
 
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -288,6 +290,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	})
 
 	It("should set fleet annotation on a freshly imported rancher cluster", func() {
+		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
+
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())

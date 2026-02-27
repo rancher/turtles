@@ -104,6 +104,9 @@ var _ = SynchronizedBeforeSuite(
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
+		By("Enable CAAPF")
+		testenv.EnableCAAPF(ctx, testenv.EnableCAAPFInput{BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy})
+
 		By("Waiting for Rancher to be ready")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
@@ -128,11 +131,11 @@ var _ = SynchronizedBeforeSuite(
 		var providerList string
 		cfg, _ := GinkgoConfiguration()
 		if cfg.LabelFilter == e2e.ShortTestLabel {
-			providerList = "docker,rke2,kubeadm"
+			providerList = "docker,rke2,kubeadm,fleet"
 		} else if cfg.LabelFilter == e2e.FullTestLabel {
-			providerList = "azure,aws,gcp,rke2,kubeadm"
+			providerList = "azure,aws,gcp,rke2,kubeadm,fleet"
 		} else if cfg.LabelFilter == e2e.VsphereTestLabel {
-			providerList = "vsphere,rke2,kubeadm"
+			providerList = "vsphere,rke2,kubeadm,fleet"
 		}
 
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
