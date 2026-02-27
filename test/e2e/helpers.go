@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	fleetv1 "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -98,6 +99,7 @@ func InitScheme() *runtime.Scheme {
 	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
 	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 	Expect(networkingv1.AddToScheme(scheme)).To(Succeed())
+	Expect(fleetv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 

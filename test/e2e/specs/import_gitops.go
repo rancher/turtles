@@ -96,6 +96,12 @@ type CreateUsingGitOpsSpecInput struct {
 	// enum (rapid|regular|stable|extended) does not support disabling auto-upgrades, this skip
 	// is necessary for GKE clusters.
 	SkipClusterAvailableWait bool
+
+	// TestFleetIntegration can be used to include additional Fleet tests.
+	// These verify that the Cluster API Addon Provider Fleet (CAAPF)
+	// is correctly mapping the CAPI Cluster to a Fleet Cluster,
+	// and the Fleet Cluster has a ready status.
+	TestFleetIntegration bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -173,7 +179,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				additionalRepo.TargetNamespace = namespace.Name
 			}
 
-			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+			gitRepo := turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+
+			turtlesframework.FleetWaitForGitRepo(ctx, turtlesframework.FleetWaitForGitRepoInput{
+				Name:         gitRepo.Name,
+				Namespace:    gitRepo.Namespace,
+				ClusterProxy: input.BootstrapClusterProxy,
+				WaitInterval: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			})
+
 		}
 
 		additionalVars := map[string]string{
@@ -255,6 +269,18 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 			return ptr.Deref(capiCluster.Status.Initialization.ControlPlaneInitialized, false)
 		}, capiClusterCreateWait...).Should(BeTrue())
+
+		// Fleet import tests.
+		if input.TestFleetIntegration {
+			turtlesframework.VerifyFleetCluster(ctx, turtlesframework.VerifyFleetClusterInput{
+				Getter: input.BootstrapClusterProxy.GetClient(),
+				CAPIClusterKey: types.NamespacedName{
+					Name:      input.ClusterName,
+					Namespace: namespace.Name,
+				},
+				WaitInterval: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			})
+		}
 
 		// Validate Rancher importing
 		rancherCluster = turtlesframework.ValidateRancherCluster(ctx, turtlesframework.ValidateRancherClusterInput{
@@ -468,7 +494,15 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 				additionalRepo.TargetNamespace = namespace.Name
 			}
 
-			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+			gitRepo := turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+
+			turtlesframework.FleetWaitForGitRepo(ctx, turtlesframework.FleetWaitForGitRepoInput{
+				Name:         gitRepo.Name,
+				Namespace:    gitRepo.Namespace,
+				ClusterProxy: input.BootstrapClusterProxy,
+				WaitInterval: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			})
+
 		}
 
 		additionalVars := map[string]string{
