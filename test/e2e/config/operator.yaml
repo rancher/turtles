@@ -26,6 +26,7 @@ intervals:
   default/wait-vsphere-delete: ["20m", "30s"]
   default/wait-turtles-uninstall: ["10m", "30s"]
   default/wait-capiprovider-update: ["5m", "10s"]
+  default/wait-kubeconfig: ["5m", "30s"]
 
 variables:
   # General Configuration
