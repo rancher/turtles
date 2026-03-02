@@ -4,6 +4,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ index .Values "providers" "addonFleet" "namespace" }}
+{{- if index .Values "extras" "addonFleet" "config" "enabled" }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -31,6 +32,11 @@ data:
         patchResource: true
         setOwnerReferences: true
       cluster:
+        agentEnvVars:
+          - name: FLEET_AGENT_METRICS_BIND_ADDRESS
+            value: "{{ index .Values "extras" "addonFleet" "config" "fleetAgentMetricsAddress" }}"
+          - name: FLEET_AGENT_PROBE_BIND_ADDRESS
+            value: "{{ index .Values "extras" "addonFleet" "config" "fleetAgentHealthProbeAddress" }}"
         agentNamespace: cattle-fleet-system
         applyClassGroup: true
         patchResource: true
@@ -61,6 +67,7 @@ data:
     - kind: ServiceAccount
       name: caapf-controller-manager
       namespace: {{ .Values.providers.addonFleet.namespace }}
+{{- end }}
 ---
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
@@ -106,7 +113,9 @@ spec:
     oci: {{ index .Values "providers" "addonFleet" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "extras" "addonFleet" "config" "enabled" }}
   additionalManifests:
     name: fleet-addon-config
     namespace: {{ index .Values "providers" "addonFleet" "namespace" }}
+{{- end }}
 {{- end }}
