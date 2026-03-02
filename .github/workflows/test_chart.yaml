@@ -114,7 +114,7 @@ jobs:
 
       - name: Collect run artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: artifacts-prime
           path: _artifacts
@@ -194,7 +194,7 @@ jobs:
 
       - name: Collect run artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: artifacts-community
           path: _artifacts
