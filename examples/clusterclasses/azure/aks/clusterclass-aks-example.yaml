@@ -6,12 +6,12 @@ spec:
   controlPlane:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: AzureManagedControlPlaneTemplate
+      kind: AzureASOManagedControlPlaneTemplate
       name: aks-control-plane
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: AzureManagedClusterTemplate
+      kind: AzureASOManagedClusterTemplate
       name: aks-cluster
   workers:
     machinePools:
@@ -24,7 +24,7 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: AzureManagedMachinePoolTemplate
+            kind: AzureASOManagedMachinePoolTemplate
             name: aks-default-system
       - class: default-worker
         bootstrap:
@@ -35,15 +35,9 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: AzureManagedMachinePoolTemplate
+            kind: AzureASOManagedMachinePoolTemplate
             name: aks-default-worker
   variables:
-    - name: subscriptionID
-      required: true
-      schema:
-        openAPIV3Schema:
-          description: "The Azure Subscription ID where the Cluster will be created."
-          type: string
     - name: location
       required: true
       schema:
@@ -68,13 +62,13 @@ spec:
         openAPIV3Schema:
           description: "The Azure Resource Group where the Cluster will be created."
           type: string
-    - name: azureClusterIdentityName
+    - name: asoCredentialSecretName
       required: true
       schema:
         openAPIV3Schema:
-          description: "The AzureClusterIdentity resource name referencing the credentials to create the Cluster."
+          description: "The ASO credential secret name used to authenticate with Azure."
           type: string
-          default: "cluster-identity"
+          default: "aso-credential"
     - name: autoUpgradeChannel
       required: true
       schema:
@@ -95,77 +89,127 @@ spec:
           type: string
           default: Standard_D2s_v3
   patches:
-    - name: azureManagedControlPlaneTemplate
+    - name: azureASOManagedClusterTemplate
       definitions:
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: AzureManagedControlPlaneTemplate
+            kind: AzureASOManagedClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: replace
+              path: "/spec/template/spec"
+              valueFrom:
+                template: |
+                  resources:
+                  - apiVersion: resources.azure.com/v1api20200601
+                    kind: ResourceGroup
+                    metadata:
+                      name: "{{ .resourceGroup }}"
+                      annotations:
+                        serviceoperator.azure.com/credential-from: "{{ .asoCredentialSecretName }}"
+                    spec:
+                      location: "{{ .location }}"
+    - name: azureASOManagedControlPlaneTemplate
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureASOManagedControlPlaneTemplate
             matchResources:
               controlPlane: true
           jsonPatches:
-            - op: add
-              path: "/spec/template/spec/subscriptionID"
-              valueFrom:
-                variable: subscriptionID
-            - op: add
-              path: "/spec/template/spec/location"
-              valueFrom:
-                variable: location
-            - op: add
-              path: "/spec/template/spec/resourceGroupName"
-              valueFrom:
-                variable: resourceGroup
-            - op: add
-              path: "/spec/template/spec/nodeResourceGroupName"
+            - op: replace
+              path: "/spec/template/spec"
               valueFrom:
                 template: |
-                  {{ .resourceGroup }}-nodes
-            - op: add
-              path: "/spec/template/spec/identityRef/name"
-              valueFrom:
-                variable: azureClusterIdentityName
-            - op: add
-              path: "/spec/template/spec/autoUpgradeProfile/upgradeChannel"
-              valueFrom:
-                variable: autoUpgradeChannel
-            # Builtins
-            - op: add
-              path: "/spec/template/spec/version"
-              valueFrom:
-                variable: builtin.cluster.topology.version
-    - name: azureManagedMachinePoolTemplate
+                  version: "{{ .builtin.cluster.topology.version }}"
+                  resources:
+                  - apiVersion: containerservice.azure.com/v1api20240901
+                    kind: ManagedCluster
+                    metadata:
+                      name: "{{ .builtin.cluster.name }}"
+                      annotations:
+                        serviceoperator.azure.com/credential-from: "{{ .asoCredentialSecretName }}"
+                    spec:
+                      owner:
+                        name: "{{ .resourceGroup }}"
+                      dnsPrefix: "{{ .builtin.cluster.name }}"
+                      location: "{{ .location }}"
+                      identity:
+                        type: SystemAssigned
+                      servicePrincipalProfile:
+                        clientId: msi
+                      networkProfile:
+                        networkPlugin: azure
+                      autoUpgradeProfile:
+                        upgradeChannel: "{{ .autoUpgradeChannel }}"
+    - name: azureASOManagedMachinePoolTemplate-system
       definitions:
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: AzureManagedMachinePoolTemplate
+            kind: AzureASOManagedMachinePoolTemplate
             matchResources:
               machinePoolClass:
                 names:
                   - default-system
+          jsonPatches:
+            - op: replace
+              path: "/spec/template/spec"
+              valueFrom:
+                template: |
+                  resources:
+                  - apiVersion: containerservice.azure.com/v1api20240901
+                    kind: ManagedClustersAgentPool
+                    metadata:
+                      name: "{{ .builtin.cluster.name }}-system"
+                      annotations:
+                        serviceoperator.azure.com/credential-from: "{{ .asoCredentialSecretName }}"
+                    spec:
+                      azureName: "system"
+                      owner:
+                        name: "{{ .builtin.cluster.name }}"
+                      mode: System
+                      type: VirtualMachineScaleSets
+                      vmSize: "{{ .sku }}"
+    - name: azureASOManagedMachinePoolTemplate-worker
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: AzureASOManagedMachinePoolTemplate
+            matchResources:
+              machinePoolClass:
+                names:
                   - default-worker
           jsonPatches:
-            - op: add
-              path: "/spec/template/spec/sku"
+            - op: replace
+              path: "/spec/template/spec"
               valueFrom:
-                variable: sku
+                template: |
+                  resources:
+                  - apiVersion: containerservice.azure.com/v1api20240901
+                    kind: ManagedClustersAgentPool
+                    metadata:
+                      name: "{{ .builtin.cluster.name }}-worker"
+                      annotations:
+                        serviceoperator.azure.com/credential-from: "{{ .asoCredentialSecretName }}"
+                    spec:
+                      azureName: "worker"
+                      owner:
+                        name: "{{ .builtin.cluster.name }}"
+                      mode: User
+                      type: VirtualMachineScaleSets
+                      vmSize: "{{ .sku }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureManagedControlPlaneTemplate
+kind: AzureASOManagedControlPlaneTemplate
 metadata:
   name: aks-control-plane
 spec:
   template:
-    spec:
-      identityRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: AzureClusterIdentity
-        name: cluster-identity
-      version: "v0.0.0" #To be replaced by patch
-      autoUpgradeProfile:
-        upgradeChannel: none
+    spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureManagedClusterTemplate
+kind: AzureASOManagedClusterTemplate
 metadata:
   name: aks-cluster
 spec:
@@ -173,24 +217,20 @@ spec:
     spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureManagedMachinePoolTemplate
+kind: AzureASOManagedMachinePoolTemplate
 metadata:
   name: aks-default-system
 spec:
   template:
-    spec:
-      mode: System
-      name: "system" #To be replaced by patch
+    spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: AzureManagedMachinePoolTemplate
+kind: AzureASOManagedMachinePoolTemplate
 metadata:
   name: aks-default-worker
 spec:
   template:
-    spec:
-      mode: User
-      name: "worker" #To be replaced by patch
+    spec: {}
 ---
 # These RKE2ConfigTemplates are only referenced to fulfill the CAPI contract.
 # This requires however the cluster-api-provider-rke2 to be installed.

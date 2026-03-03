@@ -26,6 +26,7 @@ intervals:
   default/wait-vsphere-delete: ["20m", "30s"]
   default/wait-turtles-uninstall: ["10m", "30s"]
   default/wait-capiprovider-update: ["5m", "10s"]
+  default/wait-kubeconfig: ["5m", "30s"]
 
 variables:
   # General Configuration
@@ -69,6 +70,8 @@ variables:
   AZURE_RKE2_KUBERNETES_VERSION: "v1.34.3+rke2r1"
   # For AKS available versions, run: az aks get-versions --location westeurope
   AZURE_AKS_KUBERNETES_VERSION: "v1.34.2"
+  # Name of the Kubernetes Secret used by ASO to authenticate with Azure (defaults to ASO's own default name)
+  AZURE_ASO_CREDENTIAL_SECRET_NAME: "aso-credential-secret"
 
   # AWS Configuration
   #
