@@ -322,6 +322,19 @@ providers:
   #   syncPeriod: "5m"
   #   verbosity: 5
 
+# extras: extra providers configuration
+extras:
+  # addonFleet: extra configuration for CAAPF 
+  addonFleet:
+    # config: configure the embedded FleetAddonConfig
+    config:
+      # enabled: enable the embedded FleetAddonConfig
+      enabled: true
+      # fleetAgentMetricsAddress: sets the default fleet-agent metrics bind address
+      fleetAgentMetricsAddress: ":18080"
+      # fleetAgentHealthProbeAddress: sets the default fleet-agent health probe bind address
+      fleetAgentHealthProbeAddress: ":18081"
+
 # These images are for documentation purposes only and are *not* used directly in the chart. They are used as input during a release for the purpose of creating a list of images necessary for airgapped installations.
 images:
   addonFleet:

@@ -172,6 +172,36 @@
           "$ref": "#/$defs/providerSchema"
         }
       }
+    },
+    "extras": {
+      "type": "object",
+      "description": "Extra configuration for providers.",
+      "properties": {
+        "addonFleet": {
+          "type": "object",
+          "description": "Extra configuration for CAAPF",
+          "properties": {
+            "config": {
+              "type": "object",
+              "descrpiton": "Configure the embedded FleetAddonConfig.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable the embedded FleetAddonConfig."
+                },
+                "fleetAgentMetricsAddress": {
+                  "type": "string",
+                  "description": "Sets the default fleet-agent metrics bind address."
+                },
+                "fleetAgentHealthProbeAddress": {
+                  "type": "string",
+                  "description": "Sets the default fleet-agent health probe bind address."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
