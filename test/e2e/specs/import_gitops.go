@@ -37,7 +37,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -46,7 +45,6 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
-	turtlesannotations "github.com/rancher/turtles/util/annotations"
 )
 
 type CreateUsingGitOpsSpecInput struct {
@@ -80,11 +78,6 @@ type CreateUsingGitOpsSpecInput struct {
 	// TestClusterReimport defines whether to test un-importing and re-importing the cluster after initial test.
 	TestClusterReimport bool
 
-	// management.cattle.io specifc
-	CapiClusterOwnerLabel          string
-	CapiClusterOwnerNamespaceLabel string
-	OwnedLabelName                 string
-
 	// TopologyNamespace is the namespace to use for topology-related resources (e.g., cluster classes).
 	TopologyNamespace string
 
@@ -113,118 +106,12 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		input                 CreateUsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		cancelWatches         context.CancelFunc
-		capiCluster           *types.NamespacedName
-		rancherKubeconfig     *turtlesframework.RancherGetClusterKubeconfigResult
-		originalKubeconfig    *turtlesframework.RancherGetClusterKubeconfigResult
-		rancherConnectRes     *turtlesframework.RunCommandResult
+		capiClusterKey        types.NamespacedName
 		rancherCluster        *managementv3.Cluster
+		originalKubeconfig    *turtlesframework.RancherGetClusterKubeconfigResult
 		capiClusterCreateWait []interface{}
 		deleteClusterWait     []interface{}
 	)
-
-	validateRancherCluster := func() {
-		By("Waiting for the rancher cluster record to appear")
-		rancherClusters := &managementv3.ClusterList{}
-		selectors := []client.ListOption{
-			client.MatchingLabels{
-				input.CapiClusterOwnerLabel:          capiCluster.Name,
-				input.CapiClusterOwnerNamespaceLabel: capiCluster.Namespace,
-				input.OwnedLabelName:                 "",
-			},
-		}
-		Eventually(func() bool {
-			Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
-			return len(rancherClusters.Items) == 1
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		rancherCluster = &rancherClusters.Items[0]
-		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-
-		By("Rancher cluster should have the custom description if it is provided")
-		capiClusterObject := framework.GetClusterByName(
-			ctx,
-			framework.GetClusterByNameInput{
-				Getter:    input.BootstrapClusterProxy.GetClient(),
-				Name:      input.ClusterName,
-				Namespace: namespace.Name,
-			},
-		)
-		annotations := capiClusterObject.GetAnnotations()
-		description := annotations[turtlesannotations.ClusterDescriptionAnnotation]
-		if description == "" {
-			description = "CAPI cluster imported to Rancher"
-		}
-		Expect(rancherCluster.Spec.Description).To(Equal(description))
-
-		By("Waiting for the rancher cluster to have a deployed agent")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		By("Waiting for the rancher cluster to be ready")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		By("Waiting for the rancher cluster to be ready")
-
-		By("Rancher cluster should have the 'NoCreatorRBAC' annotation")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			_, found := rancherCluster.Annotations[turtlesannotations.NoCreatorRBACAnnotation]
-			return found
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		By("Rancher cluster should have the 'provisioning.cattle.io/externally-managed' annotation")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
-			return found
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		if !input.SkipLatestFeatureChecks { // Can be removed after Turtles v0.26 is used a starter for the chart upgrade test.
-			By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")
-			Eventually(func() bool {
-				Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-				value, found := rancherCluster.Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
-				return found && value == "false"
-			}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		}
-
-		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
-		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			ClusterProxy:     input.BootstrapClusterProxy,
-			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
-			Namespace:        rancherCluster.Spec.FleetWorkspaceName,
-			RancherServerURL: input.RancherServerURL,
-			WriteToTempFile:  true,
-			WaitInterval:     input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		}, rancherKubeconfig)
-
-		Eventually(func() bool {
-			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-				Command: "kubectl",
-				Args: []string{
-					"--kubeconfig",
-					rancherKubeconfig.TempFilePath,
-					"get",
-					"nodes",
-					"--insecure-skip-tls-verify",
-				},
-			}, rancherConnectRes)
-
-			log.FromContext(ctx).Info("kubectl stdout", "output", string(rancherConnectRes.Stdout))
-
-			if rancherConnectRes.Error != nil || rancherConnectRes.ExitCode != 0 {
-				log.FromContext(ctx).Info("kubectl error", "error", rancherConnectRes.Error, "exitCode", rancherConnectRes.ExitCode)
-				log.FromContext(ctx).Info("Failed to connect to cluster using Rancher kubeconfig, retrying...")
-
-				return false
-			}
-
-			return true
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig")...).Should(BeTrue())
-	}
 
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
@@ -247,14 +134,10 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		deleteClusterWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.DeleteClusterWaitName)
 		Expect(deleteClusterWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.DeleteClusterWaitName)
 
-		capiCluster = &types.NamespacedName{
+		capiClusterKey = types.NamespacedName{
 			Namespace: namespace.Name,
 			Name:      input.ClusterName,
 		}
-
-		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
-		originalKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
-		rancherConnectRes = new(turtlesframework.RunCommandResult)
 
 		komega.SetClient(input.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -323,7 +206,6 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		}
 
 		By("Waiting for the CAPI cluster to appear")
-
 		capiCluster := framework.GetClusterByName(
 			ctx,
 			framework.GetClusterByNameInput{
@@ -352,13 +234,13 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 		By("Storing the original CAPI cluster kubeconfig")
-		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
+		originalKubeconfig = turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			ClusterProxy:    input.BootstrapClusterProxy,
 			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
-			ClusterName:     capiCluster.Name,
-			Namespace:       capiCluster.Namespace,
+			ClusterName:     capiClusterKey.Name,
+			Namespace:       capiClusterKey.Namespace,
 			WriteToTempFile: true,
-		}, originalKubeconfig)
+		})
 
 		By("Waiting for cluster control plane to be Ready")
 		Eventually(func() bool {
@@ -374,8 +256,16 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			return ptr.Deref(capiCluster.Status.Initialization.ControlPlaneInitialized, false)
 		}, capiClusterCreateWait...).Should(BeTrue())
 
-		By("Running checks on Rancher cluster")
-		validateRancherCluster()
+		// Validate Rancher importing
+		rancherCluster = turtlesframework.ValidateRancherCluster(ctx, turtlesframework.ValidateRancherClusterInput{
+			BootstrapClusterProxy:   input.BootstrapClusterProxy,
+			CAPIClusterKey:          capiClusterKey,
+			CAPIClusterAnnotations:  capiCluster.Annotations,
+			RancherServerURL:        input.RancherServerURL,
+			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
+			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+		})
 
 		if !input.SkipClusterAvailableWait {
 			By("Waiting for the CAPI Cluster to be Available")
@@ -443,22 +333,33 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			}, capiClusterCreateWait...).Should(BeTrue(), "CAPI cluster still contains the 'imported' annotation")
 
 			By("Rancher should be available after removing 'imported' annotation")
-			validateRancherCluster()
+			rancherCluster = turtlesframework.ValidateRancherCluster(ctx, turtlesframework.ValidateRancherClusterInput{
+				BootstrapClusterProxy:   input.BootstrapClusterProxy,
+				CAPIClusterKey:          capiClusterKey,
+				CAPIClusterAnnotations:  capiCluster.Annotations,
+				RancherServerURL:        input.RancherServerURL,
+				WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
+				SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+			})
 		}
 	})
 
 	AfterEach(func() {
 		By(fmt.Sprintf("Collecting artifacts for %s/%s", input.ClusterName, specName))
-
 		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			Path:                    input.ClusterName + "-bootstrap-" + specName,
 			BootstrapKubeconfigPath: input.BootstrapClusterProxy.GetKubeconfigPath(),
 		})
 
-		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			KubeconfigPath: originalKubeconfig.TempFilePath,
-			Path:           input.ClusterName + "-workload-" + specName,
-		})
+		if originalKubeconfig != nil {
+			By("Collecting workload Cluster artifacts")
+			testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
+				KubeconfigPath: originalKubeconfig.TempFilePath,
+				Path:           input.ClusterName + "-workload-" + specName,
+			})
+		} else {
+			By("Skipping workload Cluster artifacts collection. No workload Cluster found.")
+		}
 
 		// If SKIP_RESOURCE_CLEANUP=true & if the SkipDeletionTest is true, all the resources should stay as they are,
 		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
@@ -480,10 +381,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				ClusterctlConfigPath: input.ClusterctlBinaryPath,
 			}, deleteClusterWait...)
 
-			By("Waiting for the rancher cluster record to be removed")
-			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+			if rancherCluster != nil {
+				By("Waiting for the Rancher Cluster record to be removed")
+				Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+			} else {
+				By("Skipping Rancher Cluster deletion check. No Rancher Cluster found.")
+			}
 		}
-		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiClusterKey, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }
 
@@ -496,95 +401,12 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 		input                 CreateUsingGitOpsSpecInput
 		namespace             *corev1.Namespace
 		cancelWatches         context.CancelFunc
-		capiCluster           *types.NamespacedName
-		rancherKubeconfig     *turtlesframework.RancherGetClusterKubeconfigResult
-		originalKubeconfig    *turtlesframework.RancherGetClusterKubeconfigResult
-		rancherConnectRes     *turtlesframework.RunCommandResult
+		capiClusterKey        types.NamespacedName
 		rancherCluster        *managementv3.Cluster
+		originalKubeconfig    *turtlesframework.RancherGetClusterKubeconfigResult
 		capiClusterCreateWait []interface{}
 		deleteClusterWait     []interface{}
 	)
-
-	validateRancherCluster := func() {
-		By("Waiting for the rancher cluster record to appear")
-		rancherClusters := &managementv3.ClusterList{}
-		selectors := []client.ListOption{
-			client.MatchingLabels{
-				input.CapiClusterOwnerLabel:          capiCluster.Name,
-				input.CapiClusterOwnerNamespaceLabel: capiCluster.Namespace,
-				input.OwnedLabelName:                 "",
-			},
-		}
-		Eventually(func() bool {
-			Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
-			return len(rancherClusters.Items) == 1
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		rancherCluster = &rancherClusters.Items[0]
-		Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-
-		By("Waiting for the rancher cluster to have a deployed agent")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		By("Waiting for the rancher cluster to be ready")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		By("Waiting for the rancher cluster to be ready")
-
-		By("Rancher cluster should have the 'provisioning.cattle.io/externally-managed' annotation")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-			_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
-			return found
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-
-		if !input.SkipLatestFeatureChecks { // Can be removed after Turtles v0.26 is used a starter for the chart upgrade test.
-			By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")
-			Eventually(func() bool {
-				Eventually(komega.Get(rancherCluster), input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(Succeed())
-				value, found := rancherCluster.Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
-				return found && value == "false"
-			}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher")...).Should(BeTrue())
-		}
-
-		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
-		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			ClusterProxy:     input.BootstrapClusterProxy,
-			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
-			Namespace:        rancherCluster.Spec.FleetWorkspaceName,
-			RancherServerURL: input.RancherServerURL,
-			WriteToTempFile:  true,
-			WaitInterval:     input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
-		}, rancherKubeconfig)
-
-		Eventually(func() bool {
-			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-				Command: "kubectl",
-				Args: []string{
-					"--kubeconfig",
-					rancherKubeconfig.TempFilePath,
-					"get",
-					"nodes",
-					"--insecure-skip-tls-verify",
-				},
-			}, rancherConnectRes)
-
-			log.FromContext(ctx).Info("kubectl stdout", "output", string(rancherConnectRes.Stdout))
-
-			if rancherConnectRes.Error != nil || rancherConnectRes.ExitCode != 0 {
-				log.FromContext(ctx).Info("kubectl error", "error", rancherConnectRes.Error, "exitCode", rancherConnectRes.ExitCode)
-				log.FromContext(ctx).Info("Failed to connect to cluster using Rancher kubeconfig, retrying...")
-
-				return false
-			}
-
-			return true
-		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig")...).Should(BeTrue())
-	}
 
 	BeforeEach(func() {
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
@@ -607,14 +429,10 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 		deleteClusterWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.DeleteClusterWaitName)
 		Expect(deleteClusterWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.DeleteClusterWaitName)
 
-		capiCluster = &types.NamespacedName{
+		capiClusterKey = types.NamespacedName{
 			Namespace: namespace.Name,
 			Name:      input.ClusterName,
 		}
-
-		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
-		originalKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
-		rancherConnectRes = new(turtlesframework.RunCommandResult)
 
 		komega.SetClient(input.BootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
@@ -694,43 +512,48 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 		Eventually(func() error {
 			secret := &corev1.Secret{}
 			key := client.ObjectKey{
-				Name:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
-				Namespace: capiCluster.Namespace,
+				Name:      fmt.Sprintf("%s-kubeconfig", capiClusterKey.Name),
+				Namespace: capiClusterKey.Namespace,
 			}
 
 			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, secret); err != nil {
 				return err
 			}
 
-			remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient()
+			remoteClient := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiClusterKey.Namespace, capiClusterKey.Name).GetClient()
 			namespaces := &corev1.NamespaceList{}
 
 			return remoteClient.List(ctx, namespaces)
 		}, capiClusterCreateWait...).Should(Succeed(), "Failed to connect to workload cluster using CAPI kubeconfig")
 
 		By("Storing the original CAPI cluster kubeconfig")
-		turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
+		originalKubeconfig = turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			ClusterProxy:    input.BootstrapClusterProxy,
-			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
-			ClusterName:     capiCluster.Name,
-			Namespace:       capiCluster.Namespace,
+			SecretName:      fmt.Sprintf("%s-kubeconfig", capiClusterKey.Name),
+			ClusterName:     capiClusterKey.Name,
+			Namespace:       capiClusterKey.Namespace,
 			WriteToTempFile: true,
-		}, originalKubeconfig)
+		})
 
 		By("Waiting for cluster control plane to be Ready")
+		cluster := &clusterv1beta1.Cluster{}
 		Eventually(func() bool {
-			cluster := &clusterv1beta1.Cluster{}
-			key := client.ObjectKey{Name: input.ClusterName, Namespace: namespace.Name}
-
-			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, key, cluster); err != nil {
+			if err := input.BootstrapClusterProxy.GetClient().Get(ctx, capiClusterKey, cluster); err != nil {
 				return false
 			}
 
 			return cluster.Status.ControlPlaneReady
 		}, capiClusterCreateWait...).Should(BeTrue(), "Control plane did not become ready")
 
-		By("Running checks on Rancher cluster")
-		validateRancherCluster()
+		turtlesframework.ValidateRancherCluster(ctx, turtlesframework.ValidateRancherClusterInput{
+			BootstrapClusterProxy:   input.BootstrapClusterProxy,
+			CAPIClusterKey:          capiClusterKey,
+			CAPIClusterAnnotations:  cluster.Annotations,
+			RancherServerURL:        input.RancherServerURL,
+			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
+			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
+			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+		})
 
 		By("Waiting for the CAPI Cluster to be Available")
 		turtlesframework.WaitForV1Beta1ClusterReady(ctx, turtlesframework.WaitForV1Beta1ClusterReadyInput{
@@ -742,16 +565,20 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 
 	AfterEach(func() {
 		By(fmt.Sprintf("Collecting artifacts for %s/%s", input.ClusterName, specName))
-
 		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
 			Path:                    input.ClusterName + "-bootstrap-" + specName,
 			BootstrapKubeconfigPath: input.BootstrapClusterProxy.GetKubeconfigPath(),
 		})
 
-		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			KubeconfigPath: originalKubeconfig.TempFilePath,
-			Path:           input.ClusterName + "-workload-" + specName,
-		})
+		if originalKubeconfig != nil {
+			By("Collecting workload Cluster artifacts")
+			testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
+				KubeconfigPath: originalKubeconfig.TempFilePath,
+				Path:           input.ClusterName + "-workload-" + specName,
+			})
+		} else {
+			By("Skipping workload Cluster artifacts collection. No workload Cluster found.")
+		}
 
 		// If SKIP_RESOURCE_CLEANUP=true & if the SkipDeletionTest is true, all the resources should stay as they are,
 		// nothing should be deleted. If SkipDeletionTest is true, deleting the git repo will delete the clusters too.
@@ -773,9 +600,13 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 				ClusterctlConfigPath: input.ClusterctlBinaryPath,
 			}, deleteClusterWait...)
 
-			By("Waiting for the rancher cluster record to be removed")
-			Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+			if rancherCluster != nil {
+				By("Waiting for the Rancher Cluster record to be removed")
+				Eventually(komega.Get(rancherCluster), deleteClusterWait...).Should(MatchError(ContainSubstring("not found")), "Rancher cluster should be deleted")
+			} else {
+				By("Skipping Rancher Cluster deletion check. No Rancher Cluster found.")
+			}
 		}
-		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiCluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		e2e.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, namespace, cancelWatches, capiClusterKey, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }
