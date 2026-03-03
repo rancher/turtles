@@ -223,6 +223,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	maps.Copy(values, input.AdditionalValues) // Merge additional values into the values map
 
 	enabledProviders := getEnabledCAPIProviders(values)
+	By(fmt.Sprintf("Enabled CAPI providers: %s", enabledProviders))
 
 	providerWaiters := []func(ctx context.Context){}
 	configureProviderDefaults(ctx, input, values, enabledProviders)

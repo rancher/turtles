@@ -25,7 +25,6 @@ env:
   DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
   DOCKER_REGISTRY_CONFIG: ${{ secrets.DOCKER_REGISTRY_CONFIG }}
   GINKGO_NODES: 2
-  TURTLES_PROVIDERS: "vsphere,kubeadm"
 
 jobs:
   run_vsphere_e2e:
