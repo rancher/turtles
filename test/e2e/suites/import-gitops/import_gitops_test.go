@@ -440,23 +440,37 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 })
 
 var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-gcp-gke"
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
 			E2EConfig:                 e2e.LoadE2EConfig(),
 			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterTemplate:           e2e.CAPIGCPGKE,
+			ClusterTemplate:           e2e.CAPIGCPGKETopology,
 			ClusterName:               "cluster-gke",
 			ControlPlaneMachineCount:  ptr.To(1),
-			WorkerMachineCount:        ptr.To(1),
+			WorkerMachineCount:        ptr.To(3),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
 			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
 			DeleteClusterWaitName:     "wait-gke-delete",
+			TopologyNamespace:         topologyNamespace,
+			SkipClusterAvailableWait:  true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "gcp-cluster-classes-gke",
+					Paths:           []string{"examples/clusterclasses/gcp/gke"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
 		}
 	})
 })
