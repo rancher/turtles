@@ -195,10 +195,6 @@ const (
 	KubeadmTestLabel = "kubeadm"
 	Rke2TestLabel    = "rke2"
 
-	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
-	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
-	OwnedLabelName                 = "cluster-api.cattle.io/owned"
-
 	GCPImageIDVar          = "GCP_IMAGE_ID"
 	GCPImageIDFormattedVar = "GCP_IMAGE_ID_FORMATTED"
 	GCPProjectIDVar        = "GCP_PROJECT"

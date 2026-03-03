@@ -40,16 +40,15 @@ import (
 var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still work", Label(e2e.FullTestLabel), func() {
 	var (
 		specName          = "v2prov"
-		rancherKubeconfig *turtlesframework.RancherGetClusterKubeconfigResult
 		clusterName       string
 		rancherCluster    *provisioningv1.Cluster
+		rancherKubeconfig *turtlesframework.RancherGetClusterKubeconfigResult
 	)
 
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
 
-		rancherKubeconfig = new(turtlesframework.RancherGetClusterKubeconfigResult)
 		clusterName = "az-cluster1-v2prov"
 	})
 
@@ -142,14 +141,14 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		Eventually(komega.Object(rancherCluster), e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...).Should(HaveField("Status.Ready", BeTrue()))
 
 		By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
-		turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
+		rancherKubeconfig = turtlesframework.RancherGetClusterKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
 			ClusterProxy:     bootstrapClusterProxy,
 			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
 			Namespace:        rancherCluster.Namespace,
 			RancherServerURL: hostName,
 			WriteToTempFile:  true,
 			WaitInterval:     e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
-		}, rancherKubeconfig)
+		})
 
 		rancherConnectRes := &turtlesframework.RunCommandResult{}
 		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
@@ -174,10 +173,15 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			BootstrapKubeconfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
 		})
 
-		testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
-			KubeconfigPath: rancherKubeconfig.TempFilePath,
-			Path:           clusterName + "-workload-" + specName,
-		})
+		if rancherKubeconfig != nil {
+			By("Collecting workload Cluster artifacts")
+			testenv.TryCollectArtifacts(ctx, testenv.CollectArtifactsInput{
+				KubeconfigPath: rancherKubeconfig.TempFilePath,
+				Path:           clusterName + "-workload-" + specName,
+			})
+		} else {
+			By("Skipping workload Cluster artifacts collection. No workload Cluster found.")
+		}
 
 		By("Deleting cluster from Rancher")
 		err := bootstrapClusterProxy.GetClient().Delete(ctx, rancherCluster)
