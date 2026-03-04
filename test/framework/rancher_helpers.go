@@ -18,6 +18,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"runtime"
@@ -27,6 +28,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,6 +38,17 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/infrastructure/container"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
+)
+
+const (
+	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
+	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
+	OwnedLabelName                 = "cluster-api.cattle.io/owned"
 )
 
 // RancherGetClusterKubeconfigInput represents the input parameters for getting the kubeconfig of a cluster in Rancher.
@@ -72,7 +85,7 @@ type RancherGetClusterKubeconfigResult struct {
 }
 
 // RancherGetClusterKubeconfig will get the Kubeconfig for a cluster from Rancher.
-func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput, result *RancherGetClusterKubeconfigResult) {
+func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput) *RancherGetClusterKubeconfigResult {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherGetClusterKubeconfig")
 	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling RancherGetClusterKubeconfig")
 	Expect(input.SecretName).ToNot(BeEmpty(), "Invalid argument. input.SecretName can't be nil when calling RancherGetClusterKubeconfig")
@@ -82,6 +95,8 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	if input.Namespace == "" {
 		input.Namespace = DefaultNamespace
 	}
+
+	result := &RancherGetClusterKubeconfigResult{}
 
 	Byf("Getting Rancher kubeconfig secret: %s/%s", input.Namespace, input.SecretName)
 	Byf("Using Cluster %s with kubeconfig path: %s", input.ClusterProxy.GetName(), input.ClusterProxy.GetKubeconfigPath())
@@ -113,7 +128,7 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	result.KubeconfigData = content
 
 	if !input.WriteToTempFile {
-		return
+		return result
 	}
 
 	tempFile, err := os.CreateTemp("", "kubeconfig")
@@ -125,10 +140,11 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to write kubeconfig to file %s", tempFile.Name())
 
 	result.TempFilePath = tempFile.Name()
+	return result
 }
 
 // RancherGetOriginalKubeconfig will get the unmodified Kubeconfig for a cluster from Rancher.
-func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput, result *RancherGetClusterKubeconfigResult) {
+func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKubeconfigInput) *RancherGetClusterKubeconfigResult {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherGetOriginalKubeconfig")
 	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling RancherGetOriginalKubeconfig")
 	Expect(input.SecretName).ToNot(BeEmpty(), "Invalid argument. input.SecretName can't be nil when calling RancherGetOriginalKubeconfig")
@@ -136,6 +152,8 @@ func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKu
 	if input.Namespace == "" {
 		input.Namespace = DefaultNamespace
 	}
+
+	result := &RancherGetClusterKubeconfigResult{}
 
 	Byf("Getting Original Rancher kubeconfig secret: %s/%s", input.Namespace, input.SecretName)
 	secret := &corev1.Secret{}
@@ -163,7 +181,7 @@ func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKu
 	result.KubeconfigData = content
 
 	if !input.WriteToTempFile {
-		return
+		return result
 	}
 
 	tempFile, err := os.CreateTemp("", "kubeconfig-original")
@@ -175,6 +193,7 @@ func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKu
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to write kubeconfig to file %s", tempFile.Name())
 
 	result.TempFilePath = tempFile.Name()
+	return result
 }
 
 func (i *RancherGetClusterKubeconfigInput) isDockerCluster(ctx context.Context) bool {
@@ -276,4 +295,127 @@ func RancherLookupUser(ctx context.Context, input RancherLookupUserInput, result
 	Expect(foundUser).ToNot(BeEmpty(), "Failed to find user for %s", input.Username)
 
 	result.User = foundUser
+}
+
+// ValidateRancherClusterInput is the input for ValidateRancherCluster.
+type ValidateRancherClusterInput struct {
+	// BootstrapClusterProxy is the management cluster proxy.
+	BootstrapClusterProxy framework.ClusterProxy
+
+	// CAPIClusterKey is the key of the CAPI Cluster to be validated.
+	CAPIClusterKey types.NamespacedName
+
+	// CAPIClusterAnnotations are the annotations belonging to the CAPI Cluster.
+	CAPIClusterAnnotations map[string]string
+
+	// WaitRancherIntervals defines the interval used to wait on Rancher checks.
+	WaitRancherIntervals []any
+
+	// WaitKubeconfigIntervals defines the interval used to wait for the Rancher kubeconfig to be ready.
+	WaitKubeconfigIntervals []any
+
+	// RancherServerURL is the Rancher server-url setting.
+	RancherServerURL string
+
+	// SkipLatestFeatureChecks can be used to skip tests that have not been released yet and can not be tested
+	// with stable versions of Turtles, for example during the chart upgrade test.
+	SkipLatestFeatureChecks bool
+}
+
+// ValidateRancherCluster performs all checks to validate the CAPI Cluster import into Rancher.
+func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInput) *managementv3.Cluster {
+	By("Waiting for the rancher cluster record to appear")
+	rancherClusters := &managementv3.ClusterList{}
+	selectors := []client.ListOption{
+		client.MatchingLabels{
+			CapiClusterOwnerLabel:          input.CAPIClusterKey.Name,
+			CapiClusterOwnerNamespaceLabel: input.CAPIClusterKey.Namespace,
+			OwnedLabelName:                 "",
+		},
+	}
+	Eventually(func() bool {
+		Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
+		return len(rancherClusters.Items) == 1
+	}, input.WaitRancherIntervals...).Should(BeTrue(), "No more than 1 Rancher Cluster should be found")
+	rancherCluster := &rancherClusters.Items[0]
+	Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+
+	By("Rancher cluster should have the custom description if it is provided")
+	description := input.CAPIClusterAnnotations[turtlesannotations.ClusterDescriptionAnnotation]
+	if description == "" {
+		description = "CAPI cluster imported to Rancher"
+	}
+	Expect(rancherCluster.Spec.Description).To(Equal(description))
+
+	By("Waiting for the rancher cluster to have a deployed agent")
+	Eventually(func() bool {
+		Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+		return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed)
+	}, input.WaitRancherIntervals...).Should(BeTrue())
+
+	By("Waiting for the rancher cluster to be ready")
+	Eventually(func() bool {
+		Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+		return conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady)
+	}, input.WaitRancherIntervals...).Should(BeTrue())
+
+	By("Rancher cluster should have the 'NoCreatorRBAC' annotation")
+	Eventually(func() bool {
+		Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+		_, found := rancherCluster.Annotations[turtlesannotations.NoCreatorRBACAnnotation]
+		return found
+	}, input.WaitRancherIntervals...).Should(BeTrue())
+
+	By("Rancher cluster should have the 'provisioning.cattle.io/externally-managed' annotation")
+	Eventually(func() bool {
+		Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+		_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
+		return found
+	}, input.WaitRancherIntervals...).Should(BeTrue())
+
+	if !input.SkipLatestFeatureChecks { // Can be removed after Turtles v0.26 is used a starter for the chart upgrade test.
+		By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+			value, found := rancherCluster.Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
+			return found && value == "false"
+		}, input.WaitRancherIntervals...).Should(BeTrue())
+	}
+
+	By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
+	rancherKubeconfig := RancherGetClusterKubeconfig(ctx, RancherGetClusterKubeconfigInput{
+		ClusterProxy:     input.BootstrapClusterProxy,
+		SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
+		Namespace:        rancherCluster.Spec.FleetWorkspaceName,
+		RancherServerURL: input.RancherServerURL,
+		WriteToTempFile:  true,
+		WaitInterval:     input.WaitRancherIntervals,
+	})
+
+	Eventually(func() bool {
+		rancherConnectRes := &RunCommandResult{}
+		RunCommand(ctx, RunCommandInput{
+			Command: "kubectl",
+			Args: []string{
+				"--kubeconfig",
+				rancherKubeconfig.TempFilePath,
+				"get",
+				"nodes",
+				"--insecure-skip-tls-verify",
+			},
+		}, rancherConnectRes)
+
+		log.FromContext(ctx).Info("kubectl stdout", "output", string(rancherConnectRes.Stdout))
+
+		if rancherConnectRes.Error != nil || rancherConnectRes.ExitCode != 0 {
+			log.FromContext(ctx).Info("kubectl error", "error", rancherConnectRes.Error, "exitCode", rancherConnectRes.ExitCode)
+			log.FromContext(ctx).Info("Failed to connect to cluster using Rancher kubeconfig, retrying...")
+
+			return false
+		}
+
+		return true
+	}, input.WaitKubeconfigIntervals...).Should(BeTrue())
+
+	return rancherCluster
 }

@@ -155,24 +155,21 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		By("Provisioning workload cluster (validates zero-downtime requirement)")
 
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerRKE2V1Beta1Topology,
-			ClusterName:                    clusterName,
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			TestClusterReimport:            false,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-rancher",
-			DeleteClusterWaitName:          "wait-controllers",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
-			SkipCleanup:                    true, // Keep cluster running during upgrade
-			SkipDeletionTest:               true,
-			SkipLatestFeatureChecks:        true,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIDockerRKE2V1Beta1Topology,
+			ClusterName:               clusterName,
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			TestClusterReimport:       false,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-rancher",
+			DeleteClusterWaitName:     "wait-controllers",
+			TopologyNamespace:         topologyNamespace,
+			SkipCleanup:               true, // Keep cluster running during upgrade
+			SkipDeletionTest:          true,
+			SkipLatestFeatureChecks:   true,
 			AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
