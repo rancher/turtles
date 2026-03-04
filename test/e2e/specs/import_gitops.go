@@ -88,6 +88,10 @@ type CreateUsingGitOpsSpecInput struct {
 	// SkipLatestFeatureChecks can be used to skip tests that have not been released yet and can not be tested
 	// with stable versions of Turtles, for example during the chart upgrade test.
 	SkipLatestFeatureChecks bool
+
+	// SkipClusterAvailableWait can be used to skip the VerifyClusterAvailable check. This is useful for managed
+	// clusters like GKE that may be in the middle of automatic upgrades during the test.
+	SkipClusterAvailableWait bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -259,14 +263,16 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
 		})
 
-		By("Waiting for the CAPI Cluster to be Available")
-		framework.VerifyClusterAvailable(
-			ctx,
-			framework.VerifyClusterAvailableInput{
-				Getter:    input.BootstrapClusterProxy.GetClient(),
-				Namespace: capiCluster.Namespace,
-				Name:      capiCluster.Name,
-			})
+		if !input.SkipClusterAvailableWait {
+			By("Waiting for the CAPI Cluster to be Available")
+			framework.VerifyClusterAvailable(
+				ctx,
+				framework.VerifyClusterAvailableInput{
+					Getter:    input.BootstrapClusterProxy.GetClient(),
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				})
+		}
 
 		if input.TestClusterReimport {
 			By("Deleting Rancher cluster record to simulate unimporting the cluster")
