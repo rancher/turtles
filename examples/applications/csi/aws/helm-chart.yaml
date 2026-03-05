@@ -7,9 +7,6 @@ spec:
     releaseName: aws-ebs-csi-driver
     repo: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
     chart: aws-ebs-csi-driver
-    templateValues:
-      node: |-
-        hostNetwork: true
   insecureSkipTLSVerify: true
   targets:
   - clusterSelector:

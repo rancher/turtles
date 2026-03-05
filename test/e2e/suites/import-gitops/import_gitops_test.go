@@ -296,7 +296,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIAwsKubeadmTopology,
 			ClusterName:               "cluster-aws-kubeadm",
-			ControlPlaneMachineCount:  ptr.To(1),
+			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
@@ -350,7 +350,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIAwsEC2RKE2Topology,
 			ClusterName:               "cluster-aws-rke2",
-			ControlPlaneMachineCount:  ptr.To(1),
+			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
@@ -480,7 +480,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			ClusterTemplate:           e2e.CAPIvSphereKubeadmTopology,
 			TopologyNamespace:         topologyNamespace,
 			ClusterName:               "cluster-vsphere-kubeadm",
-			ControlPlaneMachineCount:  ptr.To(3),
+			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
@@ -535,7 +535,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			ClusterTemplate:           e2e.CAPIvSphereRKE2Topology,
 			TopologyNamespace:         topologyNamespace,
 			ClusterName:               "cluster-vsphere-rke2",
-			ControlPlaneMachineCount:  ptr.To(3),
+			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
