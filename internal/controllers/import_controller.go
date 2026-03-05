@@ -532,15 +532,17 @@ func (r *CAPIImportReconciler) optOutOfClusterOwner(ctx context.Context, rancher
 func (r *CAPIImportReconciler) optOutOfFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster) {
 	log := log.FromContext(ctx)
 
-	annotations := rancherCluster.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
+	if feature.Gates.Enabled(feature.UseCAAPF) {
+		annotations := rancherCluster.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
 
-	if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; !found {
-		annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
-		rancherCluster.SetAnnotations(annotations)
+		if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; !found {
+			annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
+			rancherCluster.SetAnnotations(annotations)
 
-		log.Info("Added fleet annotation to Rancher cluster")
+			log.Info("Added fleet annotation to Rancher cluster")
+		}
 	}
 }

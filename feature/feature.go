@@ -34,6 +34,10 @@ const (
 
 	// UseRancherDefaultRegistry if enabled Turtles will use the Rancher default registry for pulling provider images.
 	UseRancherDefaultRegistry featuregate.Feature = "use-rancher-default-registry"
+
+	// UseCAAPF if enabled Turtles will rely on CAAPF to install Fleet on CAPI workload clusters.
+	// Otherwise Rancher will install Fleet.
+	UseCAAPF featuregate.Feature = "use-caapf"
 )
 
 func init() {
@@ -45,4 +49,5 @@ var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
 	NoCertManager:             {Default: false, PreRelease: featuregate.Alpha},
 	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Alpha},
+	UseCAAPF:                  {Default: false, PreRelease: featuregate.Alpha},
 }
