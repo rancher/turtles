@@ -109,6 +109,12 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
+				{
+					Name:                   "lb-configmap",
+					Paths:                  []string{"examples/applications/lb/docker"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
+				},
 			},
 		}
 	})
