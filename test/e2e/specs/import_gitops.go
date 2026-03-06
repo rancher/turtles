@@ -89,8 +89,12 @@ type CreateUsingGitOpsSpecInput struct {
 	// with stable versions of Turtles, for example during the chart upgrade test.
 	SkipLatestFeatureChecks bool
 
-	// SkipClusterAvailableWait can be used to skip the VerifyClusterAvailable check. This is useful for managed
-	// clusters like GKE that may be in the middle of automatic upgrades during the test.
+	// SkipClusterAvailableWait can be used to skip the VerifyClusterAvailable check.
+	// CAPI's VerifyClusterAvailable asserts that the Available condition has an empty Message,
+	// but managed clusters like GKE may have a non-empty message during automatic upgrades
+	// (e.g. "TopologyReconciled: Cluster is upgrading to v1.x.x"). Since CAPG's releaseChannel
+	// enum (rapid|regular|stable|extended) does not support disabling auto-upgrades, this skip
+	// is necessary for GKE clusters.
 	SkipClusterAvailableWait bool
 }
 

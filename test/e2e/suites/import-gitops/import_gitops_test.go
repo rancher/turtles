@@ -456,13 +456,13 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 			ClusterTemplate:           e2e.CAPIGCPGKETopology,
 			ClusterName:               "cluster-gke",
 			ControlPlaneMachineCount:  ptr.To(1),
-			WorkerMachineCount:        ptr.To(3),
+			WorkerMachineCount:        ptr.To(3), // GKE regional clusters (us-west1 has 3 zones) require machine pool replicas to be a multiple of the zone count (1 node per zone × 3 zones = 3 replicas minimum).
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
 			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
 			DeleteClusterWaitName:     "wait-gke-delete",
 			TopologyNamespace:         topologyNamespace,
-			SkipClusterAvailableWait:  true,
+			SkipClusterAvailableWait:  true, // GKE auto-upgrades cause non-empty Available condition message
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "gcp-cluster-classes-gke",
