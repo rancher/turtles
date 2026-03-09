@@ -99,8 +99,8 @@ var (
 	//go:embed data/cluster-templates/aws-kubeadm-topology.yaml
 	CAPIAwsKubeadmTopology []byte
 
-	//go:embed data/cluster-templates/gcp-gke.yaml
-	CAPIGCPGKE []byte
+	//go:embed data/cluster-templates/gcp-gke-topology.yaml
+	CAPIGCPGKETopology []byte
 
 	//go:embed data/cluster-templates/gcp-kubeadm-topology.yaml
 	CAPIGCPKubeadmTopology []byte

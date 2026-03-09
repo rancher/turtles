@@ -1,0 +1,32 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: "${NAMESPACE}"
+  labels:
+    cluster-api.cattle.io/rancher-auto-import: "true"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+  topology:
+    classRef:
+      name: gcp-gke-example
+      namespace: ${TOPOLOGY_NAMESPACE}
+    version: ${GCP_GKE_KUBERNETES_VERSION}
+    variables:
+      - name: project
+        value: ${GCP_PROJECT}
+      - name: region
+        value: ${GCP_REGION}
+      - name: networkName
+        value: ${GCP_NETWORK_NAME}
+    workers:
+      machinePools:
+        - class: default-system
+          name: system-pool
+          replicas: ${WORKER_MACHINE_COUNT}
+        - class: default-worker
+          name: worker-pool
+          replicas: ${WORKER_MACHINE_COUNT}
