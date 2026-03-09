@@ -29,26 +29,25 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 192.168.0.0/16
+        - 192.168.0.0/16
   topology:
     classRef:
       name: azure-rke2-example
       namespace: ${TOPOLOGY_NAMESPACE}
     controlPlane:
-      replicas: 3
+      replicas: 1
     variables:
-    - name: subscriptionID
-      value: ${AZURE_SUBSCRIPTION_ID}
-    - name: location
-      value: germanywestcentral
-    - name: resourceGroup
-      value: highlander-e2e-azure-rke2
-    - name: azureClusterIdentityName
-      value: cluster-identity
-    version: ${RKE2_VERSION}
+      - name: subscriptionID
+        value: ${AZURE_SUBSCRIPTION_ID}
+      - name: location
+        value: germanywestcentral
+      - name: resourceGroup
+        value: highlander-e2e-azure-rke2
+      - name: azureClusterIdentityName
+        value: cluster-identity
+    version: ${AZURE_RKE2_KUBERNETES_VERSION}
     workers:
       machineDeployments:
-      - class: rke2-default-worker
-        name: md-0
-        replicas: 3
-
+        - class: rke2-default-worker
+          name: md-0
+          replicas: 1

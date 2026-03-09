@@ -193,18 +193,29 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitInterval:     input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		}, rancherKubeconfig)
 
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-			Command: "kubectl",
-			Args: []string{
-				"--kubeconfig",
-				rancherKubeconfig.TempFilePath,
-				"get",
-				"nodes",
-				"--insecure-skip-tls-verify",
-			},
-		}, rancherConnectRes)
-		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
-		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+		Eventually(func() bool {
+			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+				Command: "kubectl",
+				Args: []string{
+					"--kubeconfig",
+					rancherKubeconfig.TempFilePath,
+					"get",
+					"nodes",
+					"--insecure-skip-tls-verify",
+				},
+			}, rancherConnectRes)
+
+			log.FromContext(ctx).Info("kubectl stdout", "output", string(rancherConnectRes.Stdout))
+
+			if rancherConnectRes.Error != nil || rancherConnectRes.ExitCode != 0 {
+				log.FromContext(ctx).Info("kubectl error", "error", rancherConnectRes.Error, "exitCode", rancherConnectRes.ExitCode)
+				log.FromContext(ctx).Info("Failed to connect to cluster using Rancher kubeconfig, retrying...")
+
+				return false
+			}
+
+			return true
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig")...).Should(BeTrue())
 	}
 
 	BeforeEach(func() {
@@ -540,18 +551,29 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 			WaitInterval:     input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 		}, rancherKubeconfig)
 
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-			Command: "kubectl",
-			Args: []string{
-				"--kubeconfig",
-				rancherKubeconfig.TempFilePath,
-				"get",
-				"nodes",
-				"--insecure-skip-tls-verify",
-			},
-		}, rancherConnectRes)
-		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
-		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+		Eventually(func() bool {
+			turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+				Command: "kubectl",
+				Args: []string{
+					"--kubeconfig",
+					rancherKubeconfig.TempFilePath,
+					"get",
+					"nodes",
+					"--insecure-skip-tls-verify",
+				},
+			}, rancherConnectRes)
+
+			log.FromContext(ctx).Info("kubectl stdout", "output", string(rancherConnectRes.Stdout))
+
+			if rancherConnectRes.Error != nil || rancherConnectRes.ExitCode != 0 {
+				log.FromContext(ctx).Info("kubectl error", "error", rancherConnectRes.Error, "exitCode", rancherConnectRes.ExitCode)
+				log.FromContext(ctx).Info("Failed to connect to cluster using Rancher kubeconfig, retrying...")
+
+				return false
+			}
+
+			return true
+		}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig")...).Should(BeTrue())
 	}
 
 	BeforeEach(func() {
