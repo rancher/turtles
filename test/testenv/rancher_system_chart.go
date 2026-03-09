@@ -221,7 +221,6 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--create-namespace",
 		"--namespace", input.RancherNamespace,
 		"--version", input.RancherVersion,
-		"--reuse-values",
 		"--set", fmt.Sprintf("hostname=%s", rancherHookResult.Hostname),
 		"--set", fmt.Sprintf("replicas=%v", input.RancherReplicas),
 		"--set", "extraEnv[0].name=CATTLE_CHART_DEFAULT_URL",
