@@ -64,7 +64,7 @@ func (b *CAPIProvider) GetType() string {
 
 // GetItems returns the list of GenericProviders for CAPIProviderList.
 func (b *CAPIProviderList) GetItems() []operatorv1.GenericProvider {
-	providers := []operatorv1.GenericProvider{}
+	providers := make([]operatorv1.GenericProvider, 0, len(b.Items))
 
 	for index := range b.Items {
 		providers = append(providers, &b.Items[index])

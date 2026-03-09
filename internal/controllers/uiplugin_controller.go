@@ -39,6 +39,7 @@ import (
 type UIPluginReconciler struct {
 	client.Client
 	*runtime.Scheme
+
 	UncachedClient client.Client
 }
 

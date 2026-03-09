@@ -81,6 +81,7 @@ type TestEnvironmentConfiguration struct {
 type TestEnvironment struct {
 	manager.Manager
 	client.Client
+
 	Config *rest.Config
 	env    *envtest.Environment
 	cancel context.CancelFunc
@@ -254,7 +255,7 @@ func getFilePathToAPI(root, org, pkg, apis string) string {
 
 	packageVersionRegex := regexp.MustCompile(fmt.Sprintf(`^(.*)%s/%s *v(.+)`, org, pkg))
 
-	for _, line := range strings.Split(string(modBits), "\n") {
+	for _, line := range strings.Split(string(modBits), "\n") { //nolint:modernize
 		matches := packageVersionRegex.FindStringSubmatch(line)
 		if len(matches) > 0 {
 			packageVersion = matches[2]
