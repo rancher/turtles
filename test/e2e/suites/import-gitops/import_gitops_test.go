@@ -467,26 +467,37 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 })
 
 var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-gcp-gke"
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIGCPGKE,
-			ClusterName:                    "cluster-gke",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capg-create-cluster",
-			DeleteClusterWaitName:          "wait-gke-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIGCPGKETopology,
+			ClusterName:               "cluster-gke",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(3), // GKE regional clusters (us-west1 has 3 zones) require machine pool replicas to be a multiple of the zone count (1 node per zone × 3 zones = 3 replicas minimum).
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
+			DeleteClusterWaitName:     "wait-gke-delete",
+			TopologyNamespace:         topologyNamespace,
+			SkipClusterAvailableWait:  true, // GKE auto-upgrades cause non-empty Available condition message
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "gcp-cluster-classes-gke",
+					Paths:           []string{"examples/clusterclasses/gcp/gke"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
 		}
 	})
 })
