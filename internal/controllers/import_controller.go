@@ -158,7 +158,9 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
 				return err
 			}
+
 			controllerutil.AddFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
+
 			return r.Client.Update(ctx, capiCluster)
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error adding finalizer: %w", err)
@@ -311,6 +313,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 				if annotation == "" {
 					return "CAPI cluster imported to Rancher"
 				}
+
 				return annotation
 			}(),
 		},

@@ -1,6 +1,5 @@
 //nolint:goheader
 //go:build !prime
-// +build !prime
 
 /*
 Copyright © 2023 - 2024 SUSE LLC

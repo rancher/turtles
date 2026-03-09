@@ -82,7 +82,7 @@ func setFinalizers(obj client.Object) {
 	}
 
 	// Only append the desired finalizer if it doesn't exist
-	for _, finalizer := range finalizers {
+	for _, finalizer := range finalizers { //nolint:modernize
 		if finalizer == metav1.FinalizerDeleteDependents {
 			return
 		}

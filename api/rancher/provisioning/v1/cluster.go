@@ -50,7 +50,8 @@ type ClusterStatus struct {
 type ClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Cluster `json:"items"`
+
+	Items []Cluster `json:"items"`
 }
 
 // GetConditions method to implement capi conditions getter interface.

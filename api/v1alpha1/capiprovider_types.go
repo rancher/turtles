@@ -34,6 +34,9 @@ const (
 //
 //nolint:lll
 type CAPIProviderSpec struct {
+	// ProviderSpec is the spec of the underlying CAPI Provider resource.
+	operatorv1.ProviderSpec `json:",inline"`
+
 	// Name is the name of the provider to enable
 	// +optional
 	// +kubebuilder:example=aws
@@ -62,9 +65,6 @@ type CAPIProviderSpec struct {
 	// EnableAutomaticUpdate can be used to automatically update the CAPIProvider to a newest version.
 	// +optional
 	EnableAutomaticUpdate bool `json:"enableAutomaticUpdate,omitempty"`
-
-	// ProviderSpec is the spec of the underlying CAPI Provider resource.
-	operatorv1.ProviderSpec `json:",inline"`
 }
 
 // Features defines a collection of features for the CAPI Provider to apply.
@@ -111,6 +111,9 @@ type WorkloadIdentityRef struct {
 
 // CAPIProviderStatus defines the observed state of CAPIProvider.
 type CAPIProviderStatus struct {
+	// ProviderStatus is the status of the underlying CAPI Provider resource.
+	operatorv1.ProviderStatus `json:",inline"`
+
 	// Indicates the provider status
 	// +kubebuilder:default=Pending
 	Phase Phase `json:"phase,omitempty"`
@@ -121,8 +124,6 @@ type CAPIProviderStatus struct {
 
 	// Name reflects actual provider name, which will be visible to users in 'kubectl get capiproviders -A -o wide'
 	Name string `json:"name,omitempty"`
-
-	operatorv1.ProviderStatus `json:",inline"`
 }
 
 // CAPIProvider is the Schema for the CAPI Providers API.
@@ -151,7 +152,8 @@ type CAPIProvider struct {
 type CAPIProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CAPIProvider `json:"items"`
+
+	Items []CAPIProvider `json:"items"`
 }
 
 func init() {
