@@ -16,7 +16,7 @@ env:
   CONTROLLER_IMG: controller
   PULL_POLICY: Never
   CERT_MANAGER_VERSION: v1.16.3
-  RANCHER_VERSION: v2.14.0-alpha3
+  RANCHER_VERSION: v2.14.0-alpha9
 
 jobs:
   prime-test:
