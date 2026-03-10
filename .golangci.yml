@@ -1,6 +1,6 @@
 version: "2"
 run:
-  go: "1.24"
+  go: "1.25"
   allow-parallel-runners: true
 linters:
   default: all
@@ -18,16 +18,19 @@ linters:
     - godox
     - ireturn
     - mnd
+    - noinlineerr
     - nlreturn
     - nolintlint
     - nonamedreturns
     - paralleltest
+    - prealloc
     - rowserrcheck
     - sqlclosecheck
     - tagliatelle
     - varnamelen
     - wastedassign
     - wrapcheck
+    - wsl # use the new wsl_v5 instead
   settings:
     funlen:
       lines: 110
@@ -117,9 +120,6 @@ linters:
           - testpackage
         path: _test\.go
       - linters:
-          - dupl
-        path: internal/controllers/import_controller(_v3)?\.go
-      - linters:
           - revive
         text: var-naming
       - linters:
@@ -127,7 +127,7 @@ linters:
         text: ST1003
       - linters:
           - revive
-        text: 'package-comments: should have a package comment'
+        text: "package-comments: should have a package comment"
     paths:
       - examples/examples.go
       - .*_test\.go$
