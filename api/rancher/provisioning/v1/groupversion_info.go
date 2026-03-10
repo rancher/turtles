@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1 contains the rancher provisioning.cattle.io/v1 API proxy implementations.
+package v1
+
 // +kubebuilder:object:generate=true
 // +groupName=provisioning.cattle.io
-package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"

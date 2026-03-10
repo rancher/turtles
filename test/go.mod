@@ -1,6 +1,6 @@
 module github.com/rancher/turtles/test
 
-go 1.24.13
+go 1.25.8
 
 replace github.com/rancher/turtles => ../
 
