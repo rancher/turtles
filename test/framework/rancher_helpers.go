@@ -326,18 +326,22 @@ type ValidateRancherClusterInput struct {
 func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInput) *managementv3.Cluster {
 	By("Waiting for the rancher cluster record to appear")
 	rancherClusters := &managementv3.ClusterList{}
-	selectors := []client.ListOption{
-		client.MatchingLabels{
-			CapiClusterOwnerLabel:          input.CAPIClusterKey.Name,
-			CapiClusterOwnerNamespaceLabel: input.CAPIClusterKey.Namespace,
-			OwnedLabelName:                 "",
-		},
-	}
+	var rancherCluster *managementv3.Cluster
 	Eventually(func() bool {
-		Eventually(komega.List(rancherClusters, selectors...)).Should(Succeed())
-		return len(rancherClusters.Items) == 1
-	}, input.WaitRancherIntervals...).Should(BeTrue(), "No more than 1 Rancher Cluster should be found")
-	rancherCluster := &rancherClusters.Items[0]
+		Eventually(komega.List(rancherClusters)).Should(Succeed())
+		for i := range rancherClusters.Items {
+			c := &rancherClusters.Items[i]
+			labels := c.Labels
+			if labels[CapiClusterOwnerLabel] == input.CAPIClusterKey.Name &&
+				labels[CapiClusterOwnerNamespaceLabel] == input.CAPIClusterKey.Namespace {
+				if _, ok := labels[OwnedLabelName]; ok {
+					rancherCluster = c
+					return true
+				}
+			}
+		}
+		return false
+	}, input.WaitRancherIntervals...).Should(BeTrue(), "Rancher Cluster matching CAPI cluster should be found")
 	Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
 
 	By("Rancher cluster should have the custom description if it is provided")
