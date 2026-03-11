@@ -350,7 +350,7 @@ images:
       tag: v2.13.0
   infrastructureGCP:
     repository: rancher/cluster-api-gcp-controller
-    tag: v1.11.0  
+    tag: v1.11.1
   infrastructureVSphere:
     repository: rancher/cluster-api-vsphere-controller
     tag: v1.15.2
