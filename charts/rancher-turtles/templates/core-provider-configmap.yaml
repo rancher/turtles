@@ -55,9 +55,7 @@ kind: ConfigMap
 metadata:
   annotations:
     provider.cluster.x-k8s.io/compressed: "true"
-  creationTimestamp: null
   labels:
-    managed-by.operator.cluster.x-k8s.io: "true"
     provider.cluster.x-k8s.io/name: cluster-api
     provider.cluster.x-k8s.io/type: core
     provider.cluster.x-k8s.io/version: v1.12.2
