@@ -66,7 +66,15 @@ install_plugins() {
     tar zxvf "${KREW}.tar.gz" &&
     ./"${KREW}" install krew
   )
+  kubectl krew version
+
   kubectl krew install crust-gather
+  kubectl crust-gather --version
+
+  rm -rf ${KREW_ROOT}/index/operator # Clear the index to prevent errors and ensure update on next add
+  kubectl krew index add operator https://github.com/kubernetes-sigs/cluster-api-operator.git
+  kubectl krew install operator/clusterctl-operator
+  kubectl operator version
 }
 
 verify_kubectl_version

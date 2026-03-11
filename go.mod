@@ -2,6 +2,11 @@ module github.com/rancher/turtles
 
 go 1.25.8
 
+ignore (
+	./hack/tools/krew
+	./out
+)
+
 require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-logr/logr v1.4.3

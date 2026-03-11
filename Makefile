@@ -39,6 +39,10 @@ REPO ?= rancher/turtles
 CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
+ifndef CAPI_MANIFEST_UPDATE_VERSION
+CAPI_MANIFEST_UPDATE_VERSION := $(shell curl -s "https://api.github.com/repos/rancher-sandbox/cluster-api/releases/latest" | jq -r ".tag_name")
+endif
+CAPI_MANIFEST_OUTPUT_FILE ?= $(CHART_DIR)/templates/core-provider-configmap.yaml
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -66,7 +70,9 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
-export KREW_ROOT := $(abspath $(TOOLS_BIN_DIR))
+
+# Configure krew root directory to tools dir 
+export KREW_ROOT := $(abspath $(TOOLS_DIR))/krew
 export PATH := $(KREW_ROOT)/bin:$(PATH)
 
 # Set --output-base for conversion-gen if we are not within GOPATH
@@ -75,7 +81,6 @@ ifneq ($(abspath $(ROOT_DIR)),$(shell go env GOPATH)/src/github.com/rancher/turt
 else
 	export GOPATH := $(shell go env GOPATH)
 endif
-
 
 #
 # Ginkgo configuration.
@@ -167,9 +172,6 @@ GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 NOTES_BIN := notes
 NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
-
-CRUST_GATHER_BIN := crust-gather
-CRUST_GATHER := $(abspath $(TOOLS_BIN_DIR)/$(CRUST_GATHER_BIN))
 
 CHART_TESTING_VER := v3.14.0
 
@@ -495,9 +497,6 @@ $(CONVERSION_GEN): # Build conversion-gen from tools folder.
 .PHONY: $(GINKGO_BIN)
 $(GINKGO_BIN): $(GINKGO) ## Build a local copy of ginkgo.
 
-.PHONY: $(CRUST_GATHER_BIN)
-$(CRUST_GATHER_BIN): $(CRUST_GATHER) ## Download crust-gather.
-
 $(GO_APIDIFF): # Build go-apidiff from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
@@ -529,9 +528,6 @@ $(GH): # Download GitHub cli into the tools bin folder
 	hack/ensure-gh.sh \
 		-b $(TOOLS_BIN_DIR) \
 		$(GH_VERSION)
-
-$(CRUST_GATHER): # Downloads and install crust-gather
-	curl -sSfL https://github.com/crust-gather/crust-gather/raw/main/install.sh | sh -s - -f -b $(TOOLS_BIN_DIR)
 
 kubectl: # Download kubectl cli into tools bin folder
 	hack/ensure-kubectl.sh \
@@ -727,5 +723,16 @@ clean-rancher-charts: ## Remove the local rancher charts folder
 ## --------------------------------------
 
 .PHONY: collect-artifacts
-collect-artifacts: $(CRUST_GATHER_BIN)
-	$(CRUST_GATHER) collect -f $(ARTIFACTS_FOLDER)/gather
+collect-artifacts: kubectl
+	mkdir -p $(ARTIFACTS_FOLDER)
+	kubectl crust-gather collect -f $(ARTIFACTS_FOLDER)/gather
+
+## --------------------------------------
+## Update the CAPI Core Provider manifest
+## --------------------------------------
+
+.PHONY: update-core-capi-manifest
+update-core-capi-manifest: kubectl
+	CAPI_VERSION=$(CAPI_MANIFEST_UPDATE_VERSION) OUTPUT_FILE=$(CAPI_MANIFEST_OUTPUT_FILE) hack/fetch-core-capi.sh
+	mkdir -p $(ARTIFACTS_FOLDER)
+	yq '.binaryData.components' $(CAPI_MANIFEST_OUTPUT_FILE) | base64 -d | gzip -d > $(ARTIFACTS_FOLDER)/core-manifest-update-dump.yaml

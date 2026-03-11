@@ -40,3 +40,6 @@ hack/crd/bases/*
 **/Chart.lock
 
 .buildx-cache/
+
+# krew
+hack/tools/krew/*
