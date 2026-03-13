@@ -96,6 +96,10 @@ type CreateUsingGitOpsSpecInput struct {
 	// enum (rapid|regular|stable|extended) does not support disabling auto-upgrades, this skip
 	// is necessary for GKE clusters.
 	SkipClusterAvailableWait bool
+
+	// NotUsingCAAPF is used to determine whether the `provisioning.cattle.io/externally-managed`
+	// annotation should be present or not in an imported test cluster.
+	NotUsingCAAPF bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -265,6 +269,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+			NotUsingCAAPF:           input.NotUsingCAAPF,
 		})
 
 		if !input.SkipClusterAvailableWait {
