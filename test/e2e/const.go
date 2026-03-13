@@ -99,8 +99,8 @@ var (
 	//go:embed data/cluster-templates/aws-kubeadm-topology.yaml
 	CAPIAwsKubeadmTopology []byte
 
-	//go:embed data/cluster-templates/gcp-gke.yaml
-	CAPIGCPGKE []byte
+	//go:embed data/cluster-templates/gcp-gke-topology.yaml
+	CAPIGCPGKETopology []byte
 
 	//go:embed data/cluster-templates/gcp-kubeadm-topology.yaml
 	CAPIGCPKubeadmTopology []byte
@@ -195,18 +195,13 @@ const (
 	KubeadmTestLabel = "kubeadm"
 	Rke2TestLabel    = "rke2"
 
-	CapiClusterOwnerLabel          = "cluster-api.cattle.io/capi-cluster-owner"
-	CapiClusterOwnerNamespaceLabel = "cluster-api.cattle.io/capi-cluster-owner-ns"
-	OwnedLabelName                 = "cluster-api.cattle.io/owned"
-
 	GCPImageIDVar          = "GCP_IMAGE_ID"
 	GCPImageIDFormattedVar = "GCP_IMAGE_ID_FORMATTED"
 	GCPProjectIDVar        = "GCP_PROJECT"
 )
 
 const (
-	CAPIVersion     = "v1.12.2"
-	CAPIVersionBump = "CAPI_VERSION_TEST_BUMP"
+	CAPIVersion = "v1.12.2"
 )
 
 const (

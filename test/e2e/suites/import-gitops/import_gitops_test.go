@@ -42,21 +42,18 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerKubeadmTopology,
-			ClusterName:                    "cluster-docker-kubeadm",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			TestClusterReimport:            true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-rancher",
-			DeleteClusterWaitName:          "wait-controllers",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIDockerKubeadmTopology,
+			ClusterName:               "cluster-docker-kubeadm",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			TestClusterReimport:       true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-rancher",
+			DeleteClusterWaitName:     "wait-controllers",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
@@ -87,21 +84,18 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
-			ClusterName:                    "cluster-docker-rke2",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			TestClusterReimport:            false,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-rancher",
-			DeleteClusterWaitName:          "wait-controllers",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIDockerRKE2Topology,
+			ClusterName:               "cluster-docker-rke2",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			TestClusterReimport:       false,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-rancher",
+			DeleteClusterWaitName:     "wait-controllers",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
@@ -132,20 +126,17 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
-			ClusterName:                    "cluster-aks",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
-			DeleteClusterWaitName:          "wait-aks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIAzureAKSTopology,
+			ClusterName:               "cluster-aks",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
+			DeleteClusterWaitName:     "wait-aks-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-classes-aks",
@@ -170,21 +161,18 @@ var _ = Describe("[Azure] [Kubeadm] Create and delete CAPI cluster from cluster 
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAzureKubeadmTopology,
-			ClusterName:                    "cluster-azure-kubeadm",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			SkipDeletionTest:               false,
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
-			DeleteClusterWaitName:          "wait-aks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIAzureKubeadmTopology,
+			ClusterName:               "cluster-azure-kubeadm",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
+			DeleteClusterWaitName:     "wait-aks-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-class-kubeadm",
@@ -221,21 +209,18 @@ var _ = Describe("[Azure] [RKE2] Create and delete CAPI cluster from cluster cla
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAzureRKE2Topology,
-			ClusterName:                    "cluster-azure-rke2",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			SkipDeletionTest:               false,
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
-			DeleteClusterWaitName:          "wait-aks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIAzureRKE2Topology,
+			ClusterName:               "cluster-azure-rke2",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
+			DeleteClusterWaitName:     "wait-aks-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-class-rke2",
@@ -272,20 +257,17 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class"
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsEKSTopology,
-			ClusterName:                    "cluster-eks",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
-			DeleteClusterWaitName:          "wait-eks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIAwsEKSTopology,
+			ClusterName:               "cluster-eks",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
+			DeleteClusterWaitName:     "wait-eks-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-eks",
@@ -310,21 +292,18 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsKubeadmTopology,
-			ClusterName:                    "cluster-aws-kubeadm",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			SkipDeletionTest:               false,
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
-			DeleteClusterWaitName:          "wait-eks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIAwsKubeadmTopology,
+			ClusterName:               "cluster-aws-kubeadm",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			SkipDeletionTest:          false,
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
+			DeleteClusterWaitName:     "wait-eks-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-regular",
@@ -367,20 +346,17 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsEC2RKE2Topology,
-			ClusterName:                    "cluster-aws-rke2",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
-			DeleteClusterWaitName:          "wait-eks-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIAwsEC2RKE2Topology,
+			ClusterName:               "cluster-aws-rke2",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
+			DeleteClusterWaitName:     "wait-eks-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-class-rke2",
@@ -425,20 +401,17 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 		const gcpImageFormat = "https://www.googleapis.com/compute/v1/projects/%s/global/images/%s"
 		gcpImageFormatted := fmt.Sprintf(gcpImageFormat, e2e.LoadE2EConfig().MustGetVariable(e2e.GCPProjectIDVar), e2e.LoadE2EConfig().MustGetVariable(e2e.GCPImageIDVar))
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIGCPKubeadmTopology,
-			ClusterName:                    "cluster-gcp-kubeadm",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capg-create-cluster",
-			DeleteClusterWaitName:          "wait-gke-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
-			TopologyNamespace:              topologyNamespace,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIGCPKubeadmTopology,
+			ClusterName:               "cluster-gcp-kubeadm",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
+			DeleteClusterWaitName:     "wait-gke-delete",
+			TopologyNamespace:         topologyNamespace,
 			AdditionalTemplateVariables: map[string]string{
 				e2e.GCPImageIDFormattedVar: gcpImageFormatted,
 			},
@@ -467,26 +440,37 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 })
 
 var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-gcp-gke"
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIGCPGKE,
-			ClusterName:                    "cluster-gke",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capg-create-cluster",
-			DeleteClusterWaitName:          "wait-gke-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIGCPGKETopology,
+			ClusterName:               "cluster-gke",
+			ControlPlaneMachineCount:  ptr.To(1),
+			WorkerMachineCount:        ptr.To(3), // GKE regional clusters (us-west1 has 3 zones) require machine pool replicas to be a multiple of the zone count (1 node per zone × 3 zones = 3 replicas minimum).
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
+			DeleteClusterWaitName:     "wait-gke-delete",
+			TopologyNamespace:         topologyNamespace,
+			SkipClusterAvailableWait:  true, // GKE auto-upgrades cause non-empty Available condition message
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "gcp-cluster-classes-gke",
+					Paths:           []string{"examples/clusterclasses/gcp/gke"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
 		}
 	})
 })
@@ -505,20 +489,17 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
-			TopologyNamespace:              topologyNamespace,
-			ClusterName:                    "cluster-vsphere-kubeadm",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
-			DeleteClusterWaitName:          "wait-vsphere-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIvSphereKubeadmTopology,
+			TopologyNamespace:         topologyNamespace,
+			ClusterName:               "cluster-vsphere-kubeadm",
+			ControlPlaneMachineCount:  ptr.To(3),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
+			DeleteClusterWaitName:     "wait-vsphere-delete",
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "vsphere-cluster-classes-kubeadm",
@@ -563,20 +544,17 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 		By("Running local vSphere tests, deploying vSphere infrastructure provider")
 
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIvSphereRKE2Topology,
-			TopologyNamespace:              topologyNamespace,
-			ClusterName:                    "cluster-vsphere-rke2",
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
-			LabelNamespace:                 true,
-			RancherServerURL:               hostName,
-			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
-			DeleteClusterWaitName:          "wait-vsphere-delete",
-			CapiClusterOwnerLabel:          e2e.CapiClusterOwnerLabel,
-			CapiClusterOwnerNamespaceLabel: e2e.CapiClusterOwnerNamespaceLabel,
-			OwnedLabelName:                 e2e.OwnedLabelName,
+			E2EConfig:                 e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:     bootstrapClusterProxy,
+			ClusterTemplate:           e2e.CAPIvSphereRKE2Topology,
+			TopologyNamespace:         topologyNamespace,
+			ClusterName:               "cluster-vsphere-rke2",
+			ControlPlaneMachineCount:  ptr.To(3),
+			WorkerMachineCount:        ptr.To(1),
+			LabelNamespace:            true,
+			RancherServerURL:          hostName,
+			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
+			DeleteClusterWaitName:     "wait-vsphere-delete",
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "vsphere-cluster-classes-rke2",
