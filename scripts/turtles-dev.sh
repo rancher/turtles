@@ -221,7 +221,6 @@ install_local_providers_chart() {
         --set providers.infrastructureAzure.manager.verbosity=5 \
         --set providers.infrastructureGCP.enabled=true \
         --set providers.infrastructureGCP.manager.verbosity=5 \
-        --set providers.infrastructureGCP.variables.GCP_B64ENCODED_CREDENTIALS="" \
         --set providers.infrastructureVSphere.enabled=true \
         --set providers.infrastructureVSphere.manager.verbosity=5 \
         --create-namespace --wait \

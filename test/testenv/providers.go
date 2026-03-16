@@ -418,12 +418,6 @@ func applyProviderSecrets(ctx context.Context, input DeployRancherTurtlesProvide
 				Proxy:    input.BootstrapClusterProxy,
 				Template: e2e.AWSIdentitySecret,
 			})).To(Succeed(), "Failed to apply AWS provider secret")
-		case providerGCP:
-			By("Applying GCP provider secret")
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-				Proxy:    input.BootstrapClusterProxy,
-				Template: e2e.GCPProviderSecret,
-			})).To(Succeed(), "Failed to apply GCP provider secret")
 		case providerVSphere:
 			By("Applying vSphere provider secret")
 			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
