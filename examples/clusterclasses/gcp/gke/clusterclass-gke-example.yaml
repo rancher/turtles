@@ -44,6 +44,12 @@ spec:
         openAPIV3Schema:
           description: "The GCP project where the cluster will be created"
           type: string
+    - name: clusterName
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "Cluster Name for the created GKE cluster"
+          type: string
     - name: region
       required: true
       schema:
@@ -82,6 +88,18 @@ spec:
               path: /spec/template/spec/project
               valueFrom:
                 variable: project
+    - name: clusterNameControlPlane
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPManagedControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/clusterName
+              valueFrom:
+                variable: clusterName
     - name: region
       definitions:
         - selector:
@@ -138,6 +156,7 @@ metadata:
 spec:
   template:
     spec:
+      clusterName: ""
       project: ""
       location: ""
 ---

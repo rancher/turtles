@@ -22,6 +22,8 @@ spec:
         value: ${GCP_REGION}
       - name: networkName
         value: ${GCP_NETWORK_NAME}
+      - name: clusterName
+        value: ${CLUSTER_NAME}
     workers:
       machinePools:
         - class: default-system
