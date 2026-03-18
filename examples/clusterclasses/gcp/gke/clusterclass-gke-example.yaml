@@ -44,12 +44,6 @@ spec:
         openAPIV3Schema:
           description: "The GCP project where the cluster will be created"
           type: string
-    - name: clusterName
-      required: true
-      schema:
-        openAPIV3Schema:
-          description: "Cluster Name for the created GKE cluster"
-          type: string
     - name: region
       required: true
       schema:
@@ -99,7 +93,7 @@ spec:
             - op: add
               path: /spec/template/spec/clusterName
               valueFrom:
-                variable: clusterName
+                variable: builtin.cluster.name
     - name: region
       definitions:
         - selector:
