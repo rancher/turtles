@@ -258,8 +258,7 @@ func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistryS
 
 	Byf("Creating docker registry k8s secret (%s\\%s)", input.Namespace, input.Name)
 
-	cmdCreateSecret := &RunCommandResult{}
-	RunCommand(ctx, RunCommandInput{
+	cmdCreateSecret := RunCommand(ctx, RunCommandInput{
 		Command: "kubectl",
 		Args: []string{
 			"--kubeconfig",
@@ -277,7 +276,7 @@ func CreateDockerRegistrySecret(ctx context.Context, input CreateDockerRegistryS
 			"--docker-password",
 			input.DockerPassword,
 		},
-	}, cmdCreateSecret)
+	})
 
 	Expect(cmdCreateSecret.Error).NotTo(HaveOccurred(), "Failed creating docker registry k8s secret")
 	Expect(cmdCreateSecret.ExitCode).To(Equal(0), "Creating secret return non-zero exit code")

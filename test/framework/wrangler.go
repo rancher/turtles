@@ -21,6 +21,9 @@ import (
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,33 +32,25 @@ import (
 )
 
 func VerifyCertificatesInNamespace(ctx context.Context, cl client.Client, namespace string) {
-	Byf("Verifying no Certificates are used in namespace: %s", namespace)
-	certs := schema.GroupVersionKind{
-		Group:   "cert-manager.io",
-		Version: "v1",
-		Kind:    "Certificate",
+	Byf("Verifying no certificates.cert-manager.io CRD is installed")
+	crd := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "certificates.cert-manager.io",
+		},
 	}
-
-	certList := &unstructured.UnstructuredList{}
-	certList.SetGroupVersionKind(certs)
-
-	Expect(cl.List(ctx, certList, &client.ListOptions{Namespace: namespace})).Should(Succeed())
-	Expect(certList.Items).Should(BeEmpty(), "cert-manager Certificates should not have been deployed")
+	err := cl.Get(ctx, client.ObjectKeyFromObject(crd), crd)
+	Expect(apierrors.IsNotFound(err)).Should(BeTrue(), "certificates.cert-manager.io CRD should not be installed")
 }
 
 func VerifyIssuersInNamespace(ctx context.Context, cl client.Client, namespace string) {
-	Byf("Should verify no Issuers are used in namespace: %s", namespace)
-	issuers := schema.GroupVersionKind{
-		Group:   "cert-manager.io",
-		Version: "v1",
-		Kind:    "Issuer",
+	Byf("Verifying no issuers.cert-manager.io CRD is installed")
+	crd := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "issuers.cert-manager.io",
+		},
 	}
-
-	issuerList := &unstructured.UnstructuredList{}
-	issuerList.SetGroupVersionKind(issuers)
-
-	Expect(cl.List(ctx, issuerList, &client.ListOptions{Namespace: namespace})).Should(Succeed())
-	Expect(issuerList.Items).Should(BeEmpty(), "cert-manager Issuers should not have been deployed")
+	err := cl.Get(ctx, client.ObjectKeyFromObject(crd), crd)
+	Expect(apierrors.IsNotFound(err)).Should(BeTrue(), "issuers.cert-manager.io CRD should not be installed")
 }
 
 func VerifyCertManagerAnnotationsForProvider(ctx context.Context, cl client.Client, providerName string) {

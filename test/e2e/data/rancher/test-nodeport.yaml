@@ -8,7 +8,13 @@ spec:
   selector:
     app: rancher
   ports:
-  - nodePort: 30002
+  - nodePort: 30080
+    name: http
     port: 80
     protocol: TCP
     targetPort: 80
+  - nodePort: 30443
+    name: https
+    port: 443
+    protocol: TCP
+    targetPort: 443

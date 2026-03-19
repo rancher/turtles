@@ -53,9 +53,11 @@ type RunCommandResult struct {
 }
 
 // RunCommand will run a command with the given args and environment variables.
-func RunCommand(ctx context.Context, input RunCommandInput, result *RunCommandResult) {
+func RunCommand(ctx context.Context, input RunCommandInput) RunCommandResult {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for RunCommand")
 	Expect(input.Command).ToNot(BeEmpty(), "Invalid argument. input.Command can't be empty when calling RunCommand")
+
+	result := RunCommandResult{}
 
 	cmd := exec.Command(input.Command, input.Args...)
 
@@ -77,4 +79,6 @@ func RunCommand(ctx context.Context, input RunCommandInput, result *RunCommandRe
 	if exitError, ok := err.(*exec.ExitError); ok {
 		result.ExitCode = exitError.ExitCode()
 	}
+
+	return result
 }

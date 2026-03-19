@@ -38,6 +38,11 @@ RANCHER_CHARTS_REPO_DIR=${RANCHER_CHARTS_REPO_DIR}
 RANCHER_CHART_DEV_VERSION=${RANCHER_CHART_DEV_VERSION}
 RANCHER_CHARTS_BASE_BRANCH=${RANCHER_CHARTS_BASE_BRANCH}
 
+RANCHER_CERT_DIR=${RANCHER_CERT_DIR:-/tmp/rancher-private-ca}
+RANCHER_CERT_PATH=${RANCHER_CERT_PATH:-$RANCHER_CERT_DIR/tls.crt}
+RANCHER_KEY_PATH=${RANCHER_KEY_PATH:-$RANCHER_CERT_DIR/tls.key}
+RANCHER_CACERT_PATH=${RANCHER_CACERT_PATH:-$RANCHER_CERT_DIR/cacerts.pem}
+
 BASEDIR=$(dirname "$0")
 
 if pgrep -x ngrok > /dev/null; then
@@ -53,15 +58,21 @@ kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
 helm repo add rancher-$RANCHER_CHANNEL https://releases.rancher.com/server-charts/$RANCHER_CHANNEL --force-update
-helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update
 helm repo update
 
-helm install cert-manager jetstack/cert-manager \
-    --namespace cert-manager \
-    --create-namespace \
-    --set crds.enabled=true
+echo "Configuring Private CA Certificate..."
+./scripts/create-rancher-certs.sh
 
+# Create secrets
+kubectl create namespace cattle-system
+kubectl -n cattle-system create secret tls tls-rancher-ingress \
+  --cert $RANCHER_CERT_PATH \
+  --key $RANCHER_KEY_PATH
+kubectl -n cattle-system create secret generic tls-ca \
+  --from-file $RANCHER_CACERT_PATH
+
+echo "Installing Gitea..."
 helm install gitea gitea-charts/gitea \
     -f test/e2e/data/gitea/values.yaml \
     --set gitea.admin.password=$GITEA_PASSWORD \
@@ -112,6 +123,8 @@ helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --set image.tag=$RANCHER_IMAGE_TAG \
     --set debug=true \
     --version="$RANCHER_VERSION" \
+    --set ingress.tls.source=secret \
+    --set privateCA=true \
     --wait
 
 # Deploy Rancher test Nodeport
@@ -119,8 +132,8 @@ echo "Deploying Rancher test Nodeport..."
 kubectl apply -f test/e2e/data/rancher/test-nodeport.yaml
 
 # Wait for Rancher to be accessible locally
-echo "Waiting for Rancher to be accessible on localhost:30002..."
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:30002 | grep -q "200\|302\|301"; do 
+echo "Waiting for Rancher to be accessible on localhost:30080..."
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:30080 | grep -q "200\|302\|301"; do 
     echo "Waiting for test Rancher Nodeport..."
     sleep 2
 done
@@ -134,7 +147,7 @@ authtoken: $NGROK_AUTHTOKEN
 tunnels:
   rancher:
     proto: http
-    addr: http://localhost:30002
+    addr: http://localhost:30080
     hostname: $RANCHER_HOSTNAME
   gitea:
     proto: http

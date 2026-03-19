@@ -56,14 +56,13 @@ func CreateECRCreds(ctx context.Context, input CreateECRCredsInput) {
 	Expect(input.Region).ToNot(BeEmpty(), "Region is required for CreateECRCreds")
 
 	By("Getting password for ECR")
-	cmdPwdRes := &turtlesframework.RunCommandResult{}
-	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+	cmdPwdRes := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 		Command: "aws",
 		Args: []string{
 			"ecr",
 			"get-login-password",
 		},
-	}, cmdPwdRes)
+	})
 	Expect(cmdPwdRes.Error).NotTo(HaveOccurred(), "Failed getting ecr password")
 	Expect(cmdPwdRes.ExitCode).To(Equal(0), "Getting password return non-zero exit code")
 	ecrPassword := string(cmdPwdRes.Stdout)

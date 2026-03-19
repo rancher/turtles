@@ -198,6 +198,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			TurtlesImageTag:       "v0.0.1",
 			RancherHostname:       hostName,
 			RancherWaitInterval:   e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
+			SkipPrivateCASetup:    true,
 		})
 
 		By("Waiting for Rancher to be ready after upgrade")

@@ -58,15 +58,14 @@ func CreateEKSBootstrapClusterAndValidateImages(ctx context.Context, input Creat
 	By("Checking images are present in registry")
 	for _, image := range input.Images {
 		turtlesframework.Byf("Checking image: %s", image.Name)
-		cmdImgRes := &turtlesframework.RunCommandResult{}
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		cmdImgRes := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 			Command: "docker",
 			Args: []string{
 				"manifest",
 				"inspect",
 				image.Name,
 			},
-		}, cmdImgRes)
+		})
 
 		Expect(cmdImgRes.Error).NotTo(HaveOccurred(), "Failed checking if image is available %s error", image.Name)
 		Expect(cmdImgRes.ExitCode).To(Equal(0), "Image not found %s", image.Name)

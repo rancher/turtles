@@ -162,6 +162,9 @@ type UpgradeInstallRancherWithGiteaInput struct {
 
 	// RancherWaitInterval is the wait interval for Rancher.
 	RancherWaitInterval []interface{} `envDefault:"15m,30s"`
+
+	// SkipPrivateCASetup is a flag that can be used to not repeat the Private CA setup.
+	SkipPrivateCASetup bool
 }
 
 // UpgradeInstallRancherWithGitea upgrades Rancher to a new version and configures it with Gitea chart repository
@@ -210,6 +213,7 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		BootstrapClusterProxy:   input.BootstrapClusterProxy,
 		RancherIngressClassName: input.RancherIngressClassName,
 		RancherHostname:         input.RancherHostname,
+		SkipPrivateCASetup:      input.SkipPrivateCASetup,
 	})
 	input.RancherPatches = append(input.RancherPatches, rancherHookResult.ConfigPatches...)
 
@@ -230,6 +234,8 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--set", "extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION",
 		"--set", fmt.Sprintf("extraEnv[2].value=%s", input.ChartVersion),
 		"--set", "networkExposure.type=ingress",
+		"--set", "ingress.tls.source=secret",
+		"--set", "privateCA=true",
 		"--wait",
 	}
 

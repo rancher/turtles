@@ -59,9 +59,8 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 
 	turtlesframework.Byf("Creating cluster using eksctl (version %s)", eksVersion)
 
-	createClusterRes := &turtlesframework.RunCommandResult{}
 	numWorkerNodes := strconv.Itoa(k.numWorkers)
-	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+	createClusterRes := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 		Command: "eksctl",
 		Args: []string{
 			"create",
@@ -88,7 +87,7 @@ func (k *EKSClusterProvider) Create(ctx context.Context) {
 			"--node-type",
 			"m5.xlarge",
 		},
-	}, createClusterRes)
+	})
 	Expect(createClusterRes.Error).NotTo(HaveOccurred(), "Failed to create cluster using eksctl. Stderr: %s", createClusterRes.Stderr)
 	Expect(createClusterRes.ExitCode).To(Equal(0), "Creating cluster returned non-zero exit code. Stderr: %s", createClusterRes.Stderr)
 
@@ -106,8 +105,7 @@ func (k *EKSClusterProvider) Dispose(ctx context.Context) {
 
 	By("Deleting cluster using eksctl")
 
-	deleteClusterRes := &turtlesframework.RunCommandResult{}
-	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+	deleteClusterRes := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 		Command: "eksctl",
 		Args: []string{
 			"delete",
@@ -116,7 +114,7 @@ func (k *EKSClusterProvider) Dispose(ctx context.Context) {
 			k.name,
 			"--wait",
 		},
-	}, deleteClusterRes)
+	})
 	Expect(deleteClusterRes.Error).NotTo(HaveOccurred(), "Failed to delete cluster using eksctl. Stderr: %s", deleteClusterRes.Stderr)
 	Expect(deleteClusterRes.ExitCode).To(Equal(0), "Deleting cluster returned non-zero exit code. Stderr: %s", deleteClusterRes.Stderr)
 
