@@ -82,18 +82,6 @@ spec:
               path: /spec/template/spec/project
               valueFrom:
                 variable: project
-    - name: clusterNameControlPlane
-      definitions:
-        - selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: GCPManagedControlPlaneTemplate
-            matchResources:
-              controlPlane: true
-          jsonPatches:
-            - op: add
-              path: /spec/template/spec/clusterName
-              valueFrom:
-                variable: builtin.cluster.name
     - name: region
       definitions:
         - selector:
@@ -150,7 +138,6 @@ metadata:
 spec:
   template:
     spec:
-      clusterName: ""
       project: ""
       location: ""
 ---
