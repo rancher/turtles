@@ -149,7 +149,7 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/apiextensions-apiserver v0.34.5 // indirect
+	k8s.io/apiextensions-apiserver v0.34.5
 	k8s.io/apiserver v0.34.5 // indirect
 	k8s.io/cluster-bootstrap v0.34.2 // indirect
 	k8s.io/component-base v0.34.5 // indirect

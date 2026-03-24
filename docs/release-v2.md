@@ -214,7 +214,6 @@ It is generally not accepted to submit pull requests directly against release br
 
 - Critical bugs fixes, security issue fixes, or fixes for bugs without easy workarounds.
 - Dependency bumps for CVE (usually limited to CVE resolution; backports of non-CVE related version bumps are considered exceptions to be evaluated case by case)
-- Cert-manager version bumps (to avoid having releases with cert-manager versions that are out of support, when possible)
 - Changes required to support new Kubernetes versions, when possible.
 - Changes to use the latest Go patch version to build controller images.
 - Improvements to existing docs (the latest supported branch hosts the current version of the book)

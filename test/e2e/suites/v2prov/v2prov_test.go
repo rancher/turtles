@@ -150,8 +150,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			WaitInterval:     e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
 		})
 
-		rancherConnectRes := &turtlesframework.RunCommandResult{}
-		turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		rancherConnectRes := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 			Command: "kubectl",
 			Args: []string{
 				"--kubeconfig",
@@ -160,7 +159,7 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 				"nodes",
 				"--insecure-skip-tls-verify",
 			},
-		}, rancherConnectRes)
+		})
 		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
 		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
 	})

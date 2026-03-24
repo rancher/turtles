@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,6 +37,8 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var gvkGitRepo = schema.GroupVersionKind{Group: "fleet.cattle.io", Version: "v1alpha1", Kind: "GitRepo"}
 
 // FleetCreateGitRepoInput represents the input parameters for creating a Git repository in Fleet.
 type FleetCreateGitRepoInput struct {
@@ -84,7 +87,7 @@ type FleetCreateGitRepoInput struct {
 
 // FleetCreateGitRepo will create and apply a GitRepo resource to the cluster. See the Fleet docs
 // for further information: https://fleet.rancher.io/gitrepo-add
-func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
+func FleetCreateAndWaitGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	Expect(Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	defaultToCurrentGitRepo(&input)
@@ -118,10 +121,72 @@ func FleetCreateGitRepo(ctx context.Context, input FleetCreateGitRepoInput) {
 	err = t.Execute(&renderedTemplate, input)
 	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
 
+	pollingTime := 1 * time.Minute
 	Eventually(func() error {
-		Byf("Applying GitRepo: %s", renderedTemplate.String())
-		return Apply(ctx, input.ClusterProxy, renderedTemplate.Bytes())
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to apply GitRepo")
+		Byf("Checking if GitRepo %s/%s exists", input.Namespace, input.Name)
+		repo := &unstructured.Unstructured{}
+		repo.SetGroupVersionKind(gvkGitRepo)
+
+		err := input.ClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+			Namespace: input.Namespace,
+			Name:      input.Name,
+		}, repo)
+
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				Byf("Applying GitRepo: %s", renderedTemplate.String())
+				if err := Apply(ctx, input.ClusterProxy, renderedTemplate.Bytes()); err != nil {
+					return fmt.Errorf("applying GitRepo: %w", err)
+				}
+			} else {
+				return fmt.Errorf("fetching unstructured GitRepo: %w", err)
+			}
+		}
+
+		// GitRepo does not seem to reconcile on some errors.
+		// If after pollingTime/2 it's not ready, delete and recreate.
+		// See: https://github.com/rancher/fleet/issues/4865
+		time.Sleep(pollingTime / 2)
+
+		if err := input.ClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+			Namespace: input.Namespace,
+			Name:      input.Name,
+		}, repo); err != nil {
+			return fmt.Errorf("refreshing unstructured GitRepo: %w", err)
+		}
+
+		By("Checking if GitRepo is Ready")
+		if repo.GetDeletionTimestamp() != nil {
+			return fmt.Errorf("GitRepo is deleting")
+		}
+		readyClusters, statusFieldFound, err := unstructured.NestedInt64(repo.Object, "status", "readyClusters")
+		if err != nil {
+			FleetDeleteGitRepo(ctx, FleetDeleteGitRepoInput{
+				Name:         input.Name,
+				Namespace:    input.Namespace,
+				ClusterProxy: input.ClusterProxy,
+			})
+			return fmt.Errorf("fetching GitRepo.status.readyClusters: %w", err)
+		}
+		if !statusFieldFound {
+			FleetDeleteGitRepo(ctx, FleetDeleteGitRepoInput{
+				Name:         input.Name,
+				Namespace:    input.Namespace,
+				ClusterProxy: input.ClusterProxy,
+			})
+			return fmt.Errorf("GitRepo.status.readyClusters field not found. Can not determine if GitRepo is Ready.")
+		}
+		if readyClusters != 1 {
+			FleetDeleteGitRepo(ctx, FleetDeleteGitRepoInput{
+				Name:         input.Name,
+				Namespace:    input.Namespace,
+				ClusterProxy: input.ClusterProxy,
+			})
+			return fmt.Errorf("GitRepo is not Ready. Expected to be ready in 1 Cluster. readyclusters = %d", readyClusters)
+		}
+		return nil
+	}, 15*time.Minute, pollingTime).Should(Succeed(), "Failed to apply GitRepo")
+
 }
 
 // FleetDeleteGitRepoInput represents the input parameters for deleting a Git repository in the fleet.
@@ -149,8 +214,6 @@ func FleetDeleteGitRepo(ctx context.Context, input FleetDeleteGitRepoInput) {
 	}
 
 	By("Getting GitRepo from cluster")
-
-	gvkGitRepo := schema.GroupVersionKind{Group: "fleet.cattle.io", Version: "v1alpha1", Kind: "GitRepo"}
 
 	repo := &unstructured.Unstructured{}
 	repo.SetGroupVersionKind(gvkGitRepo)

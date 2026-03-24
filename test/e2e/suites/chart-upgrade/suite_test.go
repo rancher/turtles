@@ -86,10 +86,6 @@ var _ = SynchronizedBeforeSuite(
 			KubernetesVersion: e2eConfig.GetVariableOrEmpty(e2e.KubernetesVersionChartUpgradeVar),
 		})
 
-		testenv.DeployCertManager(ctx, testenv.DeployCertManagerInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-		})
-
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
 			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
 			CustomIngress:            e2e.TraefikIngress,

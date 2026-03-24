@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -112,8 +113,6 @@ type deployRancherIngressValuesFile struct {
 
 // DeployRancher deploys Rancher using the provided input parameters.
 // It expects the required input parameters to be non-nil.
-// If InstallCertManager is true, the function will install cert-manager.
-// The function adds the cert-manager chart repository and the Rancher chart repository.
 // It then updates the Rancher chart repository.
 // The function generates the extra values file for Rancher and writes it to the Helm extra values path.//
 // If RancherIngressConfig is provided, the function sets up the ingress for Rancher.
@@ -185,6 +184,8 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 		"--namespace", input.RancherNamespace,
 		"--create-namespace",
 		"--values", input.HelmExtraValuesPath,
+		"--set", "ingress.tls.source=secret",
+		"--set", "privateCA=true",
 	)
 	if input.RancherDebug {
 		installFlags = append(installFlags, "--set", "debug=true")
@@ -492,6 +493,106 @@ func deployTraefikIngressLoadBalancer(ctx context.Context, input RancherDeployIn
 	Eventually(komega.Object(ingressDeployment), input.IngressWaitInterval...).Should(HaveField("Status.AvailableReplicas", Equal(int32(1))))
 }
 
+type SetupRancherPrivateCAInput struct {
+	// BootstrapClusterProxy is the cluster proxy for bootstrapping.
+	BootstrapClusterProxy framework.ClusterProxy
+
+	// RancherHostname is the digested Rancher hostname. This depends on the environment type.
+	RancherHostname string
+
+	// CreateRancherCertsScriptPath is the file path to the certs creation script.
+	CreateRancherCertsScriptPath string `env:"CREATE_RANCHER_CERTS_SCRIPT_PATH"`
+
+	// RancherCertPath Rancher self-signed certificate.
+	RancherCertPath string `env:"RANCHER_CERT_PATH"`
+
+	// RancherCertKeyPath is the Rancher self-signed certificate key.
+	RancherCertKeyPath string `env:"RANCHER_CERT_KEY_PATH"`
+
+	// RancherCACertPath is the Rancher Private CA certificate.
+	RancherCACertPath string `env:"RANCHER_CACERT_PATH"`
+}
+
+// SetupRancherPrivateCA initializes the Rancher Private CA setups and loads the certificates into Secrets.
+func SetupRancherPrivateCA(ctx context.Context, input SetupRancherPrivateCAInput) {
+	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
+
+	Expect(ctx).NotTo(BeNil(), "ctx is required for RancherDeployIngress")
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "BootstrapClusterProxy is required for SetupRancherPrivateCA")
+	Expect(input.RancherHostname).NotTo(BeEmpty(), "RancherHostname can not be empty")
+	Expect(input.CreateRancherCertsScriptPath).NotTo(BeEmpty(), "CREATE_RANCHER_CERTS_SCRIPT_PATH can not be empty")
+	Expect(input.RancherCertPath).NotTo(BeEmpty(), "RANCHER_CERT_PATH can not be empty")
+	Expect(input.RancherCertKeyPath).NotTo(BeEmpty(), "RANCHER_CERT_KEY_PATH can not be empty")
+	Expect(input.RancherCACertPath).NotTo(BeEmpty(), "RANCHER_CACERT_PATH can not be empty")
+
+	if _, err := os.Stat(input.CreateRancherCertsScriptPath); err != nil {
+		Expect(fmt.Errorf("Create Rancher certs script not found in path: %s", input.CreateRancherCertsScriptPath)).Should(Succeed())
+	}
+
+	By("Running create Rancher certs script")
+	runGenerateCertsCmd := exec.Command(input.CreateRancherCertsScriptPath)
+	runGenerateCertsCmd.Env = append(os.Environ(),
+		"RANCHER_HOSTNAME="+input.RancherHostname)
+	out, err := runGenerateCertsCmd.CombinedOutput()
+	if err != nil {
+		Expect(fmt.Errorf("create Rancher certs script failed: %w\nOutput: %s", err, out)).Should(Succeed())
+	}
+
+	By(fmt.Sprintf("Creating Rancher Namespace %s", e2e.RancherNamespace))
+	cmdResult := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "kubectl",
+		Args: []string{
+			"--kubeconfig",
+			input.BootstrapClusterProxy.GetKubeconfigPath(),
+			"create",
+			"namespace",
+			e2e.RancherNamespace,
+		},
+	})
+	Expect(cmdResult.Error).NotTo(HaveOccurred(), "Failed creating Rancher namespace")
+	Expect(cmdResult.ExitCode).To(Equal(0), "Creating Rancher namespace returned non-zero exit code")
+
+	By("Creating Rancher tls-rancher-ingress Secret")
+	cmdResult = turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "kubectl",
+		Args: []string{
+			"--kubeconfig",
+			input.BootstrapClusterProxy.GetKubeconfigPath(),
+			"--namespace",
+			e2e.RancherNamespace,
+			"create",
+			"secret",
+			"tls",
+			"tls-rancher-ingress",
+			"--cert",
+			input.RancherCertPath,
+			"--key",
+			input.RancherCertKeyPath,
+		},
+	})
+	Expect(cmdResult.Error).NotTo(HaveOccurred(), "Failed creating Rancher tls-rancher-ingress secret")
+	Expect(cmdResult.ExitCode).To(Equal(0), "Creating Rancher tls-rancher-ingress secret returned non-zero exit code")
+
+	By("Creating Rancher tls-ca Secret")
+	cmdResult = turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "kubectl",
+		Args: []string{
+			"--kubeconfig",
+			input.BootstrapClusterProxy.GetKubeconfigPath(),
+			"--namespace",
+			e2e.RancherNamespace,
+			"create",
+			"secret",
+			"generic",
+			"tls-ca",
+			"--from-file",
+			input.RancherCACertPath,
+		},
+	})
+	Expect(cmdResult.Error).NotTo(HaveOccurred(), "Failed creating Rancher tls-ca secret")
+	Expect(cmdResult.ExitCode).To(Equal(0), "Creating Rancher tls-ca secret returned non-zero exit code")
+}
+
 // PreRancherInstallHookInput represents the input parameters for the pre-Rancher install hook.
 type PreRancherInstallHookInput struct {
 	// Ctx is the context for the hook execution.
@@ -511,6 +612,9 @@ type PreRancherInstallHookInput struct {
 
 	// RancherHostname is a maunally specified RancherHostname value
 	RancherHostname string `env:"RANCHER_HOSTNAME"`
+
+	// SkipPrivateCASetup is a flag that can be used to not repeat the Private CA setup.
+	SkipPrivateCASetup bool
 }
 
 // PreRancherInstallHookResult represents the result of a pre-Rancher install hook.
@@ -532,6 +636,8 @@ type PreRancherInstallHookResult struct {
 func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHookResult {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
+	result := PreRancherInstallHookResult{}
+
 	switch input.EnvironmentType {
 	case e2e.ManagementClusterEnvironmentEKS:
 		By("Getting ingress hostname")
@@ -548,34 +654,35 @@ func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHo
 			BootstrapClusterProxy: input.BootstrapClusterProxy,
 		})
 
-		return PreRancherInstallHookResult{
-			Hostname:         svcRes.Hostname,
-			IngressClassName: "traefik",
-		}
+		result.Hostname = svcRes.Hostname
+		result.IngressClassName = "traefik"
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		By("Getting internal cluster hostname")
 		hostname := getInternalClusterHostname(input.Ctx, input.BootstrapClusterProxy)
-		return PreRancherInstallHookResult{
-			Hostname:         hostname,
-			IngressClassName: input.RancherIngressClassName,
-		}
+
+		result.Hostname = hostname
+		result.IngressClassName = input.RancherIngressClassName
 	case e2e.ManagementClusterEnvironmentKind:
 		By("Using RANCHER_HOSTNAME")
 		// i.e. we are using ngrok locally
-		return PreRancherInstallHookResult{
-			Hostname:         input.RancherHostname,
-			IngressClassName: input.RancherIngressClassName,
-			ConfigPatches:    [][]byte{e2e.RancherServicePatch, e2e.IngressConfig, e2e.SystemStoreSettingPatch},
-		}
-
+		result.Hostname = input.RancherHostname
+		result.IngressClassName = input.RancherIngressClassName
+		result.ConfigPatches = [][]byte{e2e.RancherServicePatch, e2e.IngressConfig, e2e.SystemStoreSettingPatch}
 	case e2e.ManagementClusterEnvironmentInternalKind:
 		By("Using RANCHER_HOSTNAME for internal kind")
-		return PreRancherInstallHookResult{
-			Hostname: input.RancherHostname,
-		}
-
+		result.Hostname = input.RancherHostname
 	default:
 		Fail(fmt.Sprintf("Unknown MANAGEMENT_CLUSTER_ENVIRONMENT: %s", input.EnvironmentType))
 		return PreRancherInstallHookResult{}
 	}
+
+	if !input.SkipPrivateCASetup {
+		By("Setting up Rancher Private CA")
+		SetupRancherPrivateCA(input.Ctx, SetupRancherPrivateCAInput{
+			BootstrapClusterProxy: input.BootstrapClusterProxy,
+			RancherHostname:       result.Hostname,
+		})
+	}
+
+	return result
 }

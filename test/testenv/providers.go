@@ -290,8 +290,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 
 // UninstallRancherTurtlesProviders uninstalls the rancher-turtles-providers chart.
 func UninstallRancherTurtlesProviders(ctx context.Context, namespace string, clusterProxy framework.ClusterProxy) {
-	var cmd turtlesframework.RunCommandResult
-	turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+	cmdResult := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
 		Command: "helm",
 		Args: []string{
 			"uninstall", e2e.ProvidersChartName,
@@ -299,7 +298,9 @@ func UninstallRancherTurtlesProviders(ctx context.Context, namespace string, clu
 			"--kubeconfig", clusterProxy.GetKubeconfigPath(),
 			"--wait",
 		},
-	}, &cmd)
+	})
+	Expect(cmdResult.Error).NotTo(HaveOccurred(), "Failed to uninstall providers chart. Stderr: %s", cmdResult.Stderr)
+	Expect(cmdResult.ExitCode).To(Equal(0), "Uninstalling providers chart returned non-zero exit code. Stderr: %s", cmdResult.Stderr)
 }
 
 func enableAllProviders(values map[string]string) {

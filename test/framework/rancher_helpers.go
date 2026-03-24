@@ -393,8 +393,7 @@ func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInp
 	})
 
 	Eventually(func() bool {
-		rancherConnectRes := &RunCommandResult{}
-		RunCommand(ctx, RunCommandInput{
+		rancherConnectRes := RunCommand(ctx, RunCommandInput{
 			Command: "kubectl",
 			Args: []string{
 				"--kubeconfig",
@@ -403,7 +402,7 @@ func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInp
 				"nodes",
 				"--insecure-skip-tls-verify",
 			},
-		}, rancherConnectRes)
+		})
 
 		log.FromContext(ctx).Info("kubectl stdout", "output", string(rancherConnectRes.Stdout))
 

@@ -173,7 +173,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				additionalRepo.TargetNamespace = namespace.Name
 			}
 
-			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+			turtlesframework.FleetCreateAndWaitGitRepo(ctx, additionalRepo)
 		}
 
 		additionalVars := map[string]string{
@@ -468,7 +468,7 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 				additionalRepo.TargetNamespace = namespace.Name
 			}
 
-			turtlesframework.FleetCreateGitRepo(ctx, additionalRepo)
+			turtlesframework.FleetCreateAndWaitGitRepo(ctx, additionalRepo)
 		}
 
 		additionalVars := map[string]string{
