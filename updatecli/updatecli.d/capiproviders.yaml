@@ -94,7 +94,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api/releases/(.*)/'
+      matchpattern: "https://github.com/rancher-sandbox/cluster-api/releases/(.*)/"
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
@@ -103,8 +103,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-community.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api/releases/(.*)/'
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
+      matchpattern: "https://github.com/kubernetes-sigs/cluster-api/releases/(.*)/"
+      replacepattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
   bumpcapd:
@@ -112,7 +112,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/(.*)/'
+      matchpattern: "https://github.com/kubernetes-sigs/cluster-api/releases/(.*)/"
       replacepattern: 'https://github.com/kubernetes-sigs/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
@@ -121,7 +121,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/operator_reconciler_test.go
-      matchpattern: 'CAPIVersion = .*'
+      matchpattern: "CAPIVersion = .*"
       replacepattern: CAPIVersion = "{{ source "capirelease" }}"
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
@@ -130,7 +130,7 @@ targets:
     kind: file
     spec:
       file: ./test/e2e/const.go
-      matchpattern: 'CAPIVersion = .*'
+      matchpattern: "CAPIVersion = .*"
       replacepattern: CAPIVersion = "{{ source "capirelease" }}"
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
@@ -139,7 +139,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/(.*)/'
+      matchpattern: "https://github.com/rancher/cluster-api-provider-rke2/releases/(.*)/"
       replacepattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/{{ source "caprke2release" }}/'
     scmid: turtles
     sourceid: caprke2release # Will be ignored as `replacepattern` is specified
@@ -148,7 +148,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/(.*)/'
+      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/(.*)/"
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/{{ source "capzrelease" }}/'
     scmid: turtles
     sourceid: capzrelease # Will be ignored as `replacepattern` is specified
@@ -157,7 +157,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/(.*)/'
+      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/(.*)/"
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/{{ source "caparelease" }}/'
     scmid: turtles
     sourceid: caparelease # Will be ignored as `replacepattern` is specified
@@ -166,7 +166,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/(.*)/'
+      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/(.*)/"
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/{{ source "capgrelease" }}/'
     scmid: turtles
     sourceid: capgrelease # Will be ignored as `replacepattern` is specified
@@ -175,7 +175,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/(.*)/'
+      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/(.*)/"
       replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
     scmid: turtles
     sourceid: capvrelease # Will be ignored as `replacepattern` is specified
@@ -184,7 +184,7 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/(.*)/'
+      matchpattern: "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/(.*)/"
       replacepattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
     scmid: turtles
     sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
@@ -192,12 +192,12 @@ targets:
 # create a pr with the changes
 actions:
   default:
-    title: '[updatecli] Bump CAPI Providers versions'
+    title: "[updatecli] Bump CAPI Providers versions"
     kind: github/pullrequest
     scmid: turtles
     spec:
       automerge: true
       mergemethod: squash
       labels:
-        - area/update
-        - kind/chore
+        - area/providers
+        - kind/cleanup

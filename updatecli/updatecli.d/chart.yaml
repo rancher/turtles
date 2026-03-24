@@ -1,0 +1,54 @@
+name: Bump chart versions
+
+# define scm for turtles
+scms:
+  turtles:
+    kind: github
+    spec:
+      user: turtles-bot
+      email: turtles@suse.de
+      owner: rancher
+      repository: turtles
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      branch: main
+      commitusingapi: true
+
+# retrieve latest release
+sources:
+  kuberlrkubectlrelease:
+    kind: githubrelease
+    name: Get the latest kuberlr-kubectl
+    spec:
+      owner: "rancher"
+      repository: "kuberlr-kubectl"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
+
+# update targets
+targets:
+  helmchartshellimage:
+    name: bump kuberlr-kubectl
+    kind: yaml
+    spec:
+      file: "./charts/rancher-turtles/values.yaml"
+      key: "shellImage.image.tag"
+      value: '{{ source "kuberlrkubectlrelease" }}'
+    scmid: turtles
+    sourceid: kuberlrkubectlrelease
+
+# create a pr with the changes
+actions:
+  default:
+    title: "[updatecli] Bump chart versions"
+    kind: github/pullrequest
+    scmid: turtles
+    spec:
+      automerge: true
+      mergemethod: squash
+      labels:
+        - area/update
+        - area/chart
+        - kind/cleanup
