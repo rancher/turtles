@@ -152,7 +152,7 @@ jobs:
       - name: Create kind cluster
         run: |
           kind create cluster --name kind \
-            --image kindest/node@sha256:abd489f042d2b644e2d033f5c2d900bc707798d075e8186cb65e3f1367a9d5a1
+            --image kindest/node@sha256:745f8ed46d8e99517774768227fd1a0af34a6bf395aef9c7ed98fbce0e263918 # v1.34.2
 
       - name: Display kind version
         run: kind version
