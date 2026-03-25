@@ -59,18 +59,18 @@ jobs:
       - name: Install dependencies
         run: sudo snap install yq --channel=v4/stable
 
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: "${{ env.TURTLES_REF }}"
           path: turtles
 
-      - uses: rancher-eio/read-vault-secrets@main
+      - uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
         with:
           secrets: |
             github/token/rancher--rancher--pull_requests--write token | GH_TOKEN
 
       - name: Checkout rancher/rancher
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ${{ github.repository_owner }}/rancher
           ref: "${{ env.RANCHER_REF }}"
@@ -88,7 +88,7 @@ jobs:
           charts_branch=$(grep '"chart-default-branch"' pkg/settings/setting.go | cut -d'"' -f4)
           echo "charts_branch=$charts_branch" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ${{ github.repository_owner }}/charts
           ref: "${{ steps.find_charts_branch.outputs.charts_branch }}"

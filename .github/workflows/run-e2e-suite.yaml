@@ -88,11 +88,11 @@ jobs:
 
           aws-iam-authenticator version
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.3.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
       - name: Display kind version
@@ -100,7 +100,7 @@ jobs:
       - name: Display docker version
         run: docker version
       - name: Docker login
-        uses: docker/login-action@v4
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -109,13 +109,13 @@ jobs:
         run: make test-e2e
       - name: Collect run artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: artifacts_${{ inputs.artifact_name }}
           path: _artifacts
       - name: Send failed status to slack
         if: failure()
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook-type: incoming-webhook
           payload: |

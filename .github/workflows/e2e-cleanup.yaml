@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Install eksctl
@@ -37,7 +37,7 @@ jobs:
           ./scripts/ekstcl-e2e-cleanup.sh
       - name: Cleanup Azure Resources
         if: ${{ always() }}
-        uses: rancher/azure-janitor@v0.1.2
+        uses: rancher/azure-janitor@90a1ba53f7e37ad1e1a20455efe355c06849d84e # v0.1.2
         with:
           resource-groups: highlander-e2e*
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
@@ -47,7 +47,7 @@ jobs:
           commit: true
       - name: Cleanup GCP Resources
         if: ${{ always() }}
-        uses: rancher/gcp-janitor@v0.1.0
+        uses: rancher/gcp-janitor@a26ad042cc51fee265a080d862af88e5c3b11bc0 # v0.1.0
         with:
           credentials-json: ${{ secrets.GCP_CREDENTIALS }}
           zones: ${{ secrets.GCP_ZONE }}

@@ -18,7 +18,7 @@ jobs:
         branch: [ main, release-0.23]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.branch }}
           fetch-depth: 0
@@ -28,7 +28,7 @@ jobs:
         run: |
           git tag ${{ env.RELEASE_TAG }}
       - name: setupGo
-        uses: actions/setup-go@v6.3.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
       - name: Test release
@@ -40,7 +40,7 @@ jobs:
     if: ${{ failure() || cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: slackapi/slack-github-action@v3.0.1
+      - uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           payload: |
             {

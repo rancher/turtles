@@ -38,12 +38,12 @@ runs:
   using: "composite"
   steps:
     - name: Docker login to registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
-    - uses: sigstore/cosign-installer@v3.4.0
+    - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
     - name: Sign and verify manifests
       shell: bash
       env:
