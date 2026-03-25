@@ -41,7 +41,7 @@ jobs:
         run: make docker-build-prime
 
       - name: Package operator chart
-        run: make release-chart
+        run: NOTES_BASE_BRANCH=${GITHUB_HEAD_REF} make release-chart
 
       - name: Run chart-testing (lint)
         run: make test-chart
@@ -141,7 +141,7 @@ jobs:
         run: make docker-build-community TAG=${{ env.TAG }}
 
       - name: Package operator chart
-        run: make release-chart
+        run: NOTES_BASE_BRANCH=${GITHUB_HEAD_REF} make release-chart
 
       - name: Install kind
         run: |
