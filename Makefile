@@ -220,6 +220,10 @@ CLUSTER_NAME ?= capi-test
 CACHE_DIR ?= .buildx-cache/
 CACHE_COMMANDS = "--cache-from type=local,src=$(CACHE_DIR) --cache-to type=local,dest=$(CACHE_DIR),mode=max"
 
+# ETCD Verification
+ETCD_VERIFY_SCRIPT_PATH := $(ROOT_DIR)/scripts/collect-etcd-data.sh
+ETCD_VERSION := v3.6.9
+
 .PHONY: all
 all: build
 
@@ -552,6 +556,15 @@ $(CLUSTERCTL): $(TOOLS_BIN_DIR) ## Download and install clusterctl
 	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) $(CAPI_UPSTREAM_RELEASES)/download/$(CLUSTERCTL_VER)/clusterctl-linux-amd64
 	chmod +x $(CLUSTERCTL) 
 
+install-etcd-tools: $(TOOLS_BIN_DIR) ## Download and install etcdctl
+	mkdir -p /tmp/etcd-tools-unpack
+	curl -L https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -o /tmp/etcd-tools-unpack/etcd-${ETCD_VERSION}-linux-amd64.tar.gz
+	tar xzf /tmp/etcd-tools-unpack/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -C /tmp/etcd-tools-unpack --strip-components=1 --no-same-owner
+	mv /tmp/etcd-tools-unpack/etcdctl $(TOOLS_BIN_DIR)/etcdctl
+	mv /tmp/etcd-tools-unpack/etcdutl $(TOOLS_BIN_DIR)/etcdutl
+	mv /tmp/etcd-tools-unpack/etcd $(TOOLS_BIN_DIR)/etcd
+	rm -rf /tmp/etcd-tools-unpack
+
 ## --------------------------------------
 ## Release
 ## --------------------------------------
@@ -639,7 +652,8 @@ SKIP_RESOURCE_CLEANUP=$(SKIP_RESOURCE_CLEANUP) \
 USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) \
 TURTLES_PROVIDERS=$(TURTLES_PROVIDERS) \
 TURTLES_PROVIDERS_PATH=$(ROOT_DIR)/$(CHART_PACKAGE_DIR)/rancher-turtles-providers-$(RANCHER_CHART_DEV_VERSION).tgz \
-CREATE_RANCHER_CERTS_SCRIPT_PATH=$(CREATE_RANCHER_CERTS_SCRIPT_PATH)
+CREATE_RANCHER_CERTS_SCRIPT_PATH=$(CREATE_RANCHER_CERTS_SCRIPT_PATH) \
+ETCD_VERIFY_SCRIPT_PATH=$(ETCD_VERIFY_SCRIPT_PATH)
 
 E2E_RUN_COMMAND=$(E2ECONFIG_VARS) $(GINKGO) -v --trace -p -procs=10 -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --label-filter="$(GINKGO_LABEL_FILTER)" \
@@ -658,7 +672,7 @@ test-e2e: ## If MANAGEMENT_CLUSTER_ENVIRONMENT is 'eks', run remote e2e tests, o
 	fi
 
 .PHONY: test-e2e-local
-test-e2e-local: $(GINKGO) $(HELM) $(CLUSTERCTL) $(ENVSUBST) kubectl e2e-image build-local-rancher-charts ## Run the end-to-end tests
+test-e2e-local: $(GINKGO) $(HELM) $(CLUSTERCTL) $(ENVSUBST) kubectl e2e-image build-local-rancher-charts install-etcd-tools ## Run the end-to-end tests
 	$(E2E_RUN_COMMAND)
 
 .PHONY: test-e2e-remote
@@ -742,3 +756,10 @@ update-core-capi-manifest: kubectl
 	mkdir -p $(ARTIFACTS_FOLDER)
 	ARTIFACTS_FOLDER=$(ARTIFACTS_FOLDER) CAPI_VERSION=$(CAPI_MANIFEST_UPDATE_VERSION) OUTPUT_FILE=$(CAPI_MANIFEST_OUTPUT_FILE) hack/fetch-core-capi.sh
 
+## --------------------------------------
+## Verify ETCD size and collect data
+## --------------------------------------
+
+.PHONY: collect-etcd-data
+collect-etcd-data: install-etcd-tools
+	$(ETCD_VERIFY_SCRIPT_PATH)

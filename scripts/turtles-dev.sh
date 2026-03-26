@@ -244,6 +244,10 @@ install_local_providers_chart() {
 echo "Installing local Rancher Turtles Providers..."
 install_local_providers_chart
 
+echo "Exposing ETCD..."
+kubectl apply -f test/e2e/data/etcd/test-nodeport.yaml
+echo "To verify and collect ETCD data, run: make collect-etcd-data"
+
 if [ "$USE_TILT_DEV" == "true" ]; then
     kubectl wait --for=create deployments/rancher-turtles-controller-manager --namespace cattle-turtles-system --timeout=300s
     echo "Using Tilt for development..."

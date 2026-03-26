@@ -119,6 +119,9 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	result.BootstrapClusterLogFolder = filepath.Join(input.ArtifactFolder, "clusters", result.BootstrapClusterProxy.GetName())
 	Expect(os.MkdirAll(result.BootstrapClusterLogFolder, 0o750)).To(Succeed(), "Invalid argument. Log folder can't be created %s", result.BootstrapClusterLogFolder)
 
+	By("Exposing ETCD Pod with Nodeport")
+	Expect(turtlesframework.Apply(ctx, result.BootstrapClusterProxy, e2e.ETCDTestNodeport)).Should(Succeed())
+
 	return result
 }
 
@@ -157,6 +160,15 @@ func (r *SetupTestClusterResult) setupCluster(ctx context.Context, config *clust
 // "ingress-ready" so that the nginx ingress controller can pick it up, required by kind. See: https://kind.sigs.k8s.io/docs/user/ingress/#create-cluster
 // This hostname can be used in an environment where the cluster is isolated from the outside world and a Rancher hostname is required.
 func getInternalClusterHostname(ctx context.Context, clusterProxy framework.ClusterProxy) string {
+	if address := GetInternalAddress(ctx, clusterProxy); address == "" {
+		return ""
+	} else {
+		return address + "." + turtlesframework.MagicDNS
+	}
+}
+
+// GetInternalAddress gets the internal address by setting it to the IP of the first and only node in the boostrap cluster.
+func GetInternalAddress(ctx context.Context, clusterProxy framework.ClusterProxy) string {
 	cpNodeList := corev1.NodeList{}
 	Expect(clusterProxy.GetClient().List(ctx, &cpNodeList)).To(Succeed())
 	Expect(cpNodeList.Items).To(HaveLen(1))
@@ -167,7 +179,7 @@ func getInternalClusterHostname(ctx context.Context, clusterProxy framework.Clus
 
 	for _, address := range cpNode.Status.Addresses {
 		if address.Type == corev1.NodeInternalIP {
-			return address.Address + "." + turtlesframework.MagicDNS
+			return address.Address
 		}
 	}
 

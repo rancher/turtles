@@ -188,6 +188,13 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 	})
 
 	It("Should migrate to Rancher 2.14.x with zero-downtime", func() {
+		By("Verifying ETCD size before upgrade")
+		testenv.VerifyETCDSize(ctx, testenv.VerifyETCDSizeInput{
+			ClusterName:         bootstrapClusterProxy.GetName() + "-before",
+			ContainerName:       bootstrapClusterProxy.GetName() + "-control-plane",
+			ETCDEndpointAddress: testenv.GetInternalAddress(ctx, bootstrapClusterProxy),
+		})
+
 		By("Upgrading Rancher to 2.14.x with Gitea chart repository")
 		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
@@ -278,6 +285,13 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			BootstrapClusterProxy:   bootstrapClusterProxy,
 			Name:                    clusterName,
 			DeleteAfterVerification: true,
+		})
+
+		By("Verifying ETCD size after upgrade")
+		testenv.VerifyETCDSize(ctx, testenv.VerifyETCDSizeInput{
+			ClusterName:         bootstrapClusterProxy.GetName() + "-after",
+			ContainerName:       bootstrapClusterProxy.GetName() + "-control-plane",
+			ETCDEndpointAddress: testenv.GetInternalAddress(ctx, bootstrapClusterProxy),
 		})
 	})
 })
