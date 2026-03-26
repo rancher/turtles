@@ -94,7 +94,7 @@ variables:
   # GCP Configuration
   # Images are self-built and need versioned kubernetes components. See docs/image-builder
   GCP_KUBERNETES_VERSION: "v1.34.1"
-  GCP_GKE_KUBERNETES_VERSION: "v1.35.0"
+  GCP_GKE_KUBERNETES_VERSION: "v1.35.1"
   GCP_MACHINE_TYPE: "n1-standard-2"
   GCP_REGION: "europe-west2"
   GCP_IMAGE_ID: "cluster-api-ubuntu-2404-v1-34-1-1762253907" # Private image. See docs/image-builder
