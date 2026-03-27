@@ -1,10 +1,10 @@
 ---
-name: "Updatecli: CAPI provider version management"
+name: "Updatecli"
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 1 * * *'
+    - cron: "0 1 * * *"
 
 permissions:
   contents: "write"
