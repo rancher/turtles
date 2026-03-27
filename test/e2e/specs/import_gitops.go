@@ -353,6 +353,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				ClusterName:         input.ClusterName + "-bootstrap-" + specName,
 				ContainerName:       input.BootstrapClusterProxy.GetName() + "-control-plane",
 				ETCDEndpointAddress: testenv.GetInternalAddress(ctx, input.BootstrapClusterProxy),
+				KubeConfigPath:      input.BootstrapClusterProxy.GetKubeconfigPath(),
 			})
 		}
 	})

@@ -28,7 +28,9 @@ import (
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
-// VerifyETCDSizeInput is the input for VerifyETCDSize
+// VerifyETCDSizeInput is the input for VerifyETCDSize.
+// Note that for EKS only the etcd size will be tested using metrics.
+// Data will be not collected for EKS.
 type VerifyETCDSizeInput struct {
 	// ClusterName is the cluster for which the data is collected.
 	// Beware that launching the script multiple times for the same cluster will override the data.
@@ -43,6 +45,12 @@ type VerifyETCDSizeInput struct {
 	// VerifyETCDDataScriptPath is the file path to the certs creation script.
 	VerifyETCDDataScriptPath string `env:"ETCD_VERIFY_SCRIPT_PATH"`
 
+	// VerifyEKSETCDScriptPath is the file path to the EKS etcd verification script.
+	VerifyEKSETCDScriptPath string `env:"VERIFY_EKS_ETCD_SCRIPT_PATH"`
+
+	// KubeConfigPath is the file path to the cluster kubeconfig. Only used for EKS.
+	KubeConfigPath string
+
 	// ArtifactsFolder is the root path for the artifacts folder.
 	ArtifactsFolder string `env:"ARTIFACTS_FOLDER"`
 
@@ -55,13 +63,15 @@ func VerifyETCDSize(ctx context.Context, input VerifyETCDSizeInput) {
 	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
 
 	Expect(ctx).ShouldNot(BeNil(), "ctx is required for VerifyETCDSize")
-	Expect(input.ClusterName).ShouldNot(BeEmpty(), "ClusterName is required for VerifyETCDSize")
-	Expect(input.ArtifactsFolder).ShouldNot(BeEmpty(), "ArtifactsFolder is required for VerifyETCDSize")
 	Expect(input.ManagementClusterEnvironment).ShouldNot(BeEmpty(), "ManagementClusterEnvironment is required for VerifyETCDSize")
 
 	switch input.ManagementClusterEnvironment {
 	case e2e.ManagementClusterEnvironmentEKS:
+		Expect(input.VerifyEKSETCDScriptPath).ShouldNot(BeEmpty(), "VerifyEKSETCDScriptPath is required for VerifyETCDSize")
+		Expect(input.KubeConfigPath).ShouldNot(BeEmpty(), "KubeConfigPath is required for VerifyETCDSize")
 	default:
+		Expect(input.ClusterName).ShouldNot(BeEmpty(), "ClusterName is required for VerifyETCDSize")
+		Expect(input.ArtifactsFolder).ShouldNot(BeEmpty(), "ArtifactsFolder is required for VerifyETCDSize")
 		Expect(input.ContainerName).ShouldNot(BeEmpty(), "ContainerName is required for VerifyETCDSize")
 		Expect(input.ETCDEndpointAddress).ShouldNot(BeEmpty(), "ETCDEndpointAddress is required for VerifyETCDSize")
 		Expect(input.VerifyETCDDataScriptPath).ShouldNot(BeEmpty(), "VerifyETCDDataScriptPath is required for VerifyETCDSize")
@@ -69,8 +79,13 @@ func VerifyETCDSize(ctx context.Context, input VerifyETCDSizeInput) {
 
 	switch input.ManagementClusterEnvironment {
 	case e2e.ManagementClusterEnvironmentEKS:
-		GinkgoWriter.Println("ETCD size verification not yet supported for EKS")
-		return
+		verityEKSETCDCmd := exec.Command(input.VerifyEKSETCDScriptPath)
+		verityEKSETCDCmd.Env = append(os.Environ(),
+			"KUBECONFIG_PATH="+input.KubeConfigPath,
+		)
+		out, err := verityEKSETCDCmd.CombinedOutput()
+		GinkgoWriter.Printf("%s\n", out)
+		Expect(err).ShouldNot(HaveOccurred(), "EKS ETCD verification failed")
 	default:
 		verityETCDCmd := exec.Command(input.VerifyETCDDataScriptPath)
 		verityETCDCmd.Env = append(os.Environ(),

@@ -162,6 +162,11 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 		})
 		Expect(rancherConnectRes.Error).NotTo(HaveOccurred(), "Failed getting nodes with Rancher Kubeconfig")
 		Expect(rancherConnectRes.ExitCode).To(Equal(0), "Getting nodes return non-zero exit code")
+
+		By("Verifying ETCD size")
+		testenv.VerifyETCDSize(ctx, testenv.VerifyETCDSizeInput{
+			KubeConfigPath: bootstrapClusterProxy.GetKubeconfigPath(),
+		})
 	})
 
 	AfterEach(func() {
