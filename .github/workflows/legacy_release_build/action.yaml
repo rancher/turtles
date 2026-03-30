@@ -39,11 +39,11 @@ runs:
   using: "composite"
   steps:
     - name: setupGo
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
         go-version-file: go.mod
     - name: Docker login to ghcr registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}

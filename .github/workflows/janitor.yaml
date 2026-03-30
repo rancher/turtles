@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cleanup
-        uses: rancher/azure-janitor@v0.1.2
+        uses: rancher/azure-janitor@90a1ba53f7e37ad1e1a20455efe355c06849d84e # v0.1.2
         with:
             resource-groups: highlander-e2e*
             subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
@@ -28,7 +28,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Cleanup
-        uses: rancher/aws-janitor@v0.3.0
+        uses: rancher/aws-janitor@84b177ff822fb41a00b892d4294769fef3815dc5 # v0.3.0
         with:
           regions: eu-west-2
           commit: true
