@@ -54,6 +54,7 @@ var _ = Describe("[Docker] [Kubeadm]  Create and delete CAPI cluster functionali
 			CAPIClusterCreateWaitName: "wait-rancher",
 			DeleteClusterWaitName:     "wait-controllers",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
@@ -96,6 +97,7 @@ var _ = Describe("[Docker] [RKE2] Create and delete CAPI cluster functionality s
 			CAPIClusterCreateWaitName: "wait-rancher",
 			DeleteClusterWaitName:     "wait-controllers",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
@@ -143,6 +145,7 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
 			DeleteClusterWaitName:     "wait-aks-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-classes-aks",
@@ -179,6 +182,7 @@ var _ = Describe("[Azure] [Kubeadm] Create and delete CAPI cluster from cluster 
 			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
 			DeleteClusterWaitName:     "wait-aks-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-class-kubeadm",
@@ -227,6 +231,7 @@ var _ = Describe("[Azure] [RKE2] Create and delete CAPI cluster from cluster cla
 			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
 			DeleteClusterWaitName:     "wait-aks-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "azure-cluster-class-rke2",
@@ -274,6 +279,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class"
 			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
 			DeleteClusterWaitName:     "wait-eks-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-eks",
@@ -310,6 +316,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
 			DeleteClusterWaitName:     "wait-eks-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-classes-regular",
@@ -363,6 +370,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			CAPIClusterCreateWaitName: "wait-capa-create-cluster",
 			DeleteClusterWaitName:     "wait-eks-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-class-rke2",
@@ -418,6 +426,7 @@ var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality s
 			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
 			DeleteClusterWaitName:     "wait-gke-delete",
 			TopologyNamespace:         topologyNamespace,
+			VerifyETCDSize:            true,
 			AdditionalTemplateVariables: map[string]string{
 				e2e.GCPImageIDFormattedVar: gcpImageFormatted,
 			},
@@ -469,6 +478,7 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 			DeleteClusterWaitName:     "wait-gke-delete",
 			TopologyNamespace:         topologyNamespace,
 			SkipClusterAvailableWait:  true, // GKE auto-upgrades cause non-empty Available condition message
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "gcp-cluster-classes-gke",
@@ -506,6 +516,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			RancherServerURL:          hostName,
 			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
 			DeleteClusterWaitName:     "wait-vsphere-delete",
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "vsphere-cluster-classes-kubeadm",
@@ -561,6 +572,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			RancherServerURL:          hostName,
 			CAPIClusterCreateWaitName: "wait-capv-create-cluster",
 			DeleteClusterWaitName:     "wait-vsphere-delete",
+			VerifyETCDSize:            true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "vsphere-cluster-classes-rke2",

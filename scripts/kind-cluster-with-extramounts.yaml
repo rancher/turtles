@@ -5,6 +5,8 @@ nodes:
 - role: control-plane
   image: kindest/node:v1.34.0
   extraMounts:
+    - hostPath: /tmp/capi-test/etcd
+      containerPath: /tmp/capi-test/etcd
     - hostPath: /var/run/docker.sock
       containerPath: /var/run/docker.sock
   extraPortMappings:
@@ -12,6 +14,10 @@ nodes:
   - containerPort: 30001
     hostPort: 30001
     protocol: TCP
+  # ETCD listener Nodeport
+  - containerPort: 30002
+    hostPort: 30002
+    protocol: TCP  
   # Rancher test Nodeports (HTTP and HTTPs)
   - containerPort: 30080
     hostPort: 30080

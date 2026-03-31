@@ -147,6 +147,9 @@ var (
 
 	//go:embed data/gitea/values.yaml
 	GiteaValues []byte
+
+	//go:embed data/etcd/test-nodeport.yaml
+	ETCDTestNodeport []byte
 )
 
 const (

@@ -96,6 +96,10 @@ type CreateUsingGitOpsSpecInput struct {
 	// enum (rapid|regular|stable|extended) does not support disabling auto-upgrades, this skip
 	// is necessary for GKE clusters.
 	SkipClusterAvailableWait bool
+
+	// VerifyETCDSize can be used to verify ETCD database size and for the supported environments,
+	// collect debug data.
+	VerifyETCDSize bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -340,6 +344,15 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				RancherServerURL:        input.RancherServerURL,
 				WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 				SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+			})
+		}
+
+		if input.VerifyETCDSize {
+			By("Verifying ETCD size")
+			testenv.VerifyETCDSize(ctx, testenv.VerifyETCDSizeInput{
+				ClusterName:         input.ClusterName + "-bootstrap-" + specName,
+				ContainerName:       input.BootstrapClusterProxy.GetName() + "-control-plane",
+				ETCDEndpointAddress: testenv.GetInternalAddress(ctx, input.BootstrapClusterProxy),
 			})
 		}
 	})
