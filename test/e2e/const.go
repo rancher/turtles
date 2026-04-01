@@ -197,6 +197,7 @@ const (
 	VsphereTestLabel = "vsphere"
 	KubeadmTestLabel = "kubeadm"
 	Rke2TestLabel    = "rke2"
+	NoCAAPFLabel     = "nocaapf"
 
 	GCPImageIDVar          = "GCP_IMAGE_ID"
 	GCPImageIDFormattedVar = "GCP_IMAGE_ID_FORMATTED"

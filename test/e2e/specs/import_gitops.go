@@ -30,7 +30,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -100,6 +102,14 @@ type CreateUsingGitOpsSpecInput struct {
 	// VerifyETCDSize can be used to verify ETCD database size and for the supported environments,
 	// collect debug data.
 	VerifyETCDSize bool
+	
+	// NotUsingCAAPF is used to determine whether the `provisioning.cattle.io/externally-managed`
+	// annotation should be present or not in an imported test cluster.
+	NotUsingCAAPF bool
+
+	// ValidateFleetAgentWasInstalled is used to indicate whether the test should also check that
+	// the fleet-agent has been installed on the downstream cluster.
+	ValidateFleetAgentWasInstalled bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -269,6 +279,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+			NotUsingCAAPF:           input.NotUsingCAAPF,
 		})
 
 		if !input.SkipClusterAvailableWait {
@@ -280,6 +291,17 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 					Namespace: capiCluster.Namespace,
 					Name:      capiCluster.Name,
 				})
+		}
+
+		if input.ValidateFleetAgentWasInstalled {
+			By("Waiting for Fleet agent to be installed on downstream cluster")
+			framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+				Getter: input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name).GetClient(),
+				Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+					Name:      "fleet-agent",
+					Namespace: "cattle-fleet-system",
+				}},
+			}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 		}
 
 		if input.TestClusterReimport {
