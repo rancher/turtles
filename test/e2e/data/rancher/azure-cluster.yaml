@@ -12,6 +12,8 @@ spec:
   rkeConfig:
     chartValues:
       rke2-calico: {}
+      rke2-ingress-nginx: {}
+      rke2-traefik: {}
     etcd:
       snapshotRetention: 5
       snapshotScheduleCron: 0 */5 * * *
@@ -19,9 +21,11 @@ spec:
       cni: calico
       disable-kube-proxy: false
       etcd-expose-metrics: false
+      ingress-controller: traefik
     machinePoolDefaults: {}
     machinePools:
     - controlPlaneRole: true
+      drainBeforeDelete: true
       dynamicSchemaSpec: '{"resourceFields":{"acceleratedNetworking":{"type":"boolean","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
         if an Accelerated Networking NIC should be created for your VM"},"availabilitySet":{"type":"string","default":{"stringValue":"highlander-e2e","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Azure
         Availability Set to place the virtual machine into"},"availabilityZone":{"type":"string","default":{"stringValue":"","intValue":0,"boolValue":false,"stringSliceValue":null},"create":true,"update":true,"description":"Specify
@@ -71,6 +75,7 @@ spec:
     machineSelectorConfig:
     - config:
         protect-kernel-defaults: false
+    networking: {}
     registries: {}
     upgradeStrategy:
       controlPlaneConcurrency: "1"

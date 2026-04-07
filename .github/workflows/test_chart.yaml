@@ -15,7 +15,7 @@ env:
   MANIFEST_IMG: controller
   CONTROLLER_IMG: controller
   PULL_POLICY: Never
-  RANCHER_VERSION: v2.14.0-alpha9
+  RANCHER_VERSION: v2.14.0-alpha13
 
 jobs:
   prime-test:
