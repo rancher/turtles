@@ -48,8 +48,8 @@ variables:
 
   # RKE2 specifics
   RKE2_KUBERNETES_VERSION: "v1.35.0+rke2r1"
-  # Kubernetes version used for v2prov until Rancher v2.14 officially supports v1.35
-  V2PROV_RKE2_KUBERNETES_VERSION: "v1.34.1+rke2r1"
+  # Kubernetes version used for v2prov
+  V2PROV_RKE2_KUBERNETES_VERSION: "v1.35.3+rke2r1"
   RKE2_CNI: "none"
 
   # These two values are used for provisioning a CAPI v1.10 cluster (`v1beta1`) in the chart_upgrade test -> Kubernetes <=v1.33
@@ -106,7 +106,7 @@ variables:
   HELM_EXTRA_VALUES_FOLDER: "/tmp"
 
   # Rancher Configuration
-  RANCHER_VERSION: "v2.14.0-alpha3"
+  RANCHER_VERSION: "v2.14.0-alpha13"
   RANCHER_REPO_NAME: "rancher-alpha"
   RANCHER_PATH: "rancher-alpha/rancher"
   RANCHER_URL: "https://releases.rancher.com/server-charts/alpha"
