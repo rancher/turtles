@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package no_caapf
+package rancher_managed_fleet
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -28,14 +28,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
 
-var _ = Describe("[NoCAAPF] [Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.Rke2TestLabel, e2e.NoCAAPFLabel), func() {
+var _ = Describe("[RancherManagedFleet] [Docker] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.Rke2TestLabel, e2e.RancherManagedFleetLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
 
-		topologyNamespace = "creategitops-nocaapf-docker-rke2"
+		topologyNamespace = "creategitops-ranchermanagedfleet-docker-rke2"
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
@@ -48,7 +48,7 @@ var _ = Describe("[NoCAAPF] [Docker] [RKE2] Create and delete CAPI cluster funct
 			WorkerMachineCount:             ptr.To(1),
 			LabelNamespace:                 true,
 			TestClusterReimport:            false,
-			NotUsingCAAPF:                  true,
+			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			RancherServerURL:               hostName,
 			CAPIClusterCreateWaitName:      "wait-rancher",

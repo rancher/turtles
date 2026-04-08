@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package no_caapf
+package rancher_managed_fleet
 
 import (
 	"context"
@@ -54,13 +54,13 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	RunSpecs(t, "rancher-turtles-e2e-no-caapf")
+	RunSpecs(t, "rancher-turtles-e2e-rancher-managed-fleet")
 }
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		e2eConfig := e2e.LoadE2EConfig()
-		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-no-caapf"
+		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-rancher-managed-fleet"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
@@ -88,7 +88,7 @@ var _ = SynchronizedBeforeSuite(
 			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
 		})
 
-		By("Installing Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
+		By("Installing Rancher to 2.14.x with Gitea chart repository (enables system chart controller)")
 		rancherHookResult := testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,

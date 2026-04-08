@@ -91,7 +91,7 @@ var _ = SynchronizedBeforeSuite(
 			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
 		})
 
-		By("Installing Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
+		By("Installing Rancher to 2.14.x with Gitea chart repository (enables system chart controller)")
 		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,

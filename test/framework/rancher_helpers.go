@@ -321,9 +321,9 @@ type ValidateRancherClusterInput struct {
 	// with stable versions of Turtles, for example during the chart upgrade test.
 	SkipLatestFeatureChecks bool
 
-	// NotUsingCAAPF is used to determine whether the `provisioning.cattle.io/externally-managed`
+	// RancherManagedFleet is used to determine whether the `provisioning.cattle.io/externally-managed`
 	// annotation should be present or not in an imported test cluster.
-	NotUsingCAAPF bool
+	RancherManagedFleet bool
 }
 
 // ValidateRancherCluster performs all checks to validate the CAPI Cluster import into Rancher.
@@ -370,7 +370,7 @@ func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInp
 		return found
 	}, input.WaitRancherIntervals...).Should(BeTrue())
 
-	if input.NotUsingCAAPF {
+	if input.RancherManagedFleet {
 		By("Rancher cluster should not have the 'provisioning.cattle.io/externally-managed' annotation")
 		Eventually(func() bool {
 			Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())

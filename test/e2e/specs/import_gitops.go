@@ -103,9 +103,9 @@ type CreateUsingGitOpsSpecInput struct {
 	// collect debug data.
 	VerifyETCDSize bool
 	
-	// NotUsingCAAPF is used to determine whether the `provisioning.cattle.io/externally-managed`
+	// RancherManagedFleet is used to determine whether the `provisioning.cattle.io/externally-managed`
 	// annotation should be present or not in an imported test cluster.
-	NotUsingCAAPF bool
+	RancherManagedFleet bool
 
 	// ValidateFleetAgentWasInstalled is used to indicate whether the test should also check that
 	// the fleet-agent has been installed on the downstream cluster.
@@ -279,7 +279,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
-			NotUsingCAAPF:           input.NotUsingCAAPF,
+			RancherManagedFleet:           input.RancherManagedFleet,
 		})
 
 		if !input.SkipClusterAvailableWait {
