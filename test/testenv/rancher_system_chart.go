@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 // UpdateRancherDeploymentWithChartConfigInput represents the input for UpdateRancherDeploymentWithChartConfig.
@@ -417,4 +418,68 @@ func PushRancherChartsToGitea(ctx context.Context, input PushRancherChartsToGite
 		Branch:           input.RancherChartsBaseBranch,
 		ChartVersion:     input.ChartVersion,
 	}
+}
+
+// EnableCAAPFInput represents the input for EnableCAAPF.
+type EnableCAAPFInput struct {
+	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
+	BootstrapClusterProxy framework.ClusterProxy
+}
+
+// EnableCAAPF patches the rancher-config configmap to set the feature flag UseCAAPF to true.
+func EnableCAAPF(ctx context.Context, input EnableCAAPFInput) {
+	SetTurtlesFeatureGate(ctx, SetTurtlesFeatureGateInput{
+		BootstrapClusterProxy: input.BootstrapClusterProxy,
+		FeatureName:           "use-caapf",
+		Enabled:               true,
+	})
+}
+
+// SetTurtlesFeatureGateInput represents the input for SetTurtlesFeatureGate.
+type SetTurtlesFeatureGateInput struct {
+	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
+	BootstrapClusterProxy framework.ClusterProxy
+
+	// FeatureName is the name of the feature gate to set.
+	FeatureName string
+
+	// Enabled indicates whether the feature gate should be enabled or disabled.
+	Enabled bool
+}
+
+// SetTurtlesFeatureGate patches the rancher-config configmap to set a feature flag for Turtles.
+func SetTurtlesFeatureGate(ctx context.Context, input SetTurtlesFeatureGateInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for SetTurtlesFeatureGate")
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "BootstrapClusterProxy is required")
+	Expect(input.FeatureName).NotTo(BeEmpty(), "FeatureName is required")
+
+	By(fmt.Sprintf("Patching rancher-config ConfigMap to set %s feature gate to %v", input.FeatureName, input.Enabled))
+	cm := &corev1.ConfigMap{}
+	Expect(input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+		Name:      "rancher-config",
+		Namespace: e2e.RancherNamespace,
+	}, cm)).To(Succeed())
+	patch := client.MergeFrom(cm.DeepCopy())
+
+	if cm.Data == nil {
+		cm.Data = map[string]string{}
+	}
+	config := make(map[string]interface{})
+	if val, ok := cm.Data["rancher-turtles"]; ok && val != "" {
+		Expect(yaml.Unmarshal([]byte(val), &config)).To(Succeed(), "Failed to unmarshal rancher-turtles config")
+	}
+
+	features, ok := config["features"].(map[string]interface{})
+	if !ok {
+		features = make(map[string]interface{})
+		config["features"] = features
+	}
+	features[input.FeatureName] = map[string]interface{}{
+		"enabled": input.Enabled,
+	}
+
+	newVal, err := yaml.Marshal(config)
+	Expect(err).NotTo(HaveOccurred(), "Failed to marshal rancher-turtles config")
+	cm.Data["rancher-turtles"] = string(newVal)
+	Expect(input.BootstrapClusterProxy.GetClient().Patch(ctx, cm, patch)).To(Succeed(), "Failed to patch rancher-config ConfigMap")
 }
