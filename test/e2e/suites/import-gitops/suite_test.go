@@ -92,7 +92,7 @@ var _ = SynchronizedBeforeSuite(
 			// ChartVersion will be auto-populated from RANCHER_CHART_DEV_VERSION env var or Makefile default
 		})
 
-		By("Installing Rancher to 2.13.x with Gitea chart repository (enables system chart controller)")
+		By("Installing Rancher to 2.14.x with Gitea chart repository (enables system chart controller)")
 		rancherHookResult := testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
 			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
@@ -103,6 +103,9 @@ var _ = SynchronizedBeforeSuite(
 			RancherWaitInterval:   e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
+
+		By("Enable CAAPF")
+		testenv.EnableCAAPF(ctx, testenv.EnableCAAPFInput{BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy})
 
 		By("Waiting for Rancher to be ready")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
@@ -128,11 +131,11 @@ var _ = SynchronizedBeforeSuite(
 		var providerList string
 		cfg, _ := GinkgoConfiguration()
 		if cfg.LabelFilter == e2e.ShortTestLabel {
-			providerList = "docker,rke2,kubeadm"
+			providerList = "docker,rke2,kubeadm,fleet"
 		} else if cfg.LabelFilter == e2e.FullTestLabel {
-			providerList = "azure,aws,gcp,rke2,kubeadm"
+			providerList = "azure,aws,gcp,rke2,kubeadm,fleet"
 		} else if cfg.LabelFilter == e2e.VsphereTestLabel {
-			providerList = "vsphere,rke2,kubeadm"
+			providerList = "vsphere,rke2,kubeadm,fleet"
 		}
 
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{

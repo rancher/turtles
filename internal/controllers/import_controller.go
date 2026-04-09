@@ -322,7 +322,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	rancherCluster = cmp.Or(rancherCluster, updatedCluster)
 
 	r.optOutOfClusterOwner(ctx, rancherCluster)
-	r.optOutOfFleetManagement(ctx, rancherCluster)
+	r.reconcileExternalFleetManagement(ctx, rancherCluster)
 
 	addedFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
 	if addedFinalizer {
@@ -530,9 +530,9 @@ func (r *CAPIImportReconciler) optOutOfClusterOwner(ctx context.Context, rancher
 	}
 }
 
-// optOutOfFleetManagement annotates the cluster with the fleet provisioning opt-out annotation,
-// allowing external fleet cluster management.
-func (r *CAPIImportReconciler) optOutOfFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster) {
+// reconcileExternalFleetManagement adds or removes the `provisioning.cattle.io/externally-managed` annotation
+// based on the feature gate `use-caapf`.
+func (r *CAPIImportReconciler) reconcileExternalFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster) {
 	log := log.FromContext(ctx)
 
 	annotations := rancherCluster.GetAnnotations()
@@ -540,10 +540,19 @@ func (r *CAPIImportReconciler) optOutOfFleetManagement(ctx context.Context, ranc
 		annotations = map[string]string{}
 	}
 
-	if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; !found {
-		annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
-		rancherCluster.SetAnnotations(annotations)
+	if feature.Gates.Enabled(feature.UseCAAPF) {
+		if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; !found {
+			annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
+			rancherCluster.SetAnnotations(annotations)
 
-		log.Info("Added fleet annotation to Rancher cluster")
+			log.Info("Added fleet annotation to Rancher cluster")
+		}
+	} else {
+		if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; found {
+			delete(annotations, turtlesannotations.ExternalFleetAnnotation)
+			rancherCluster.SetAnnotations(annotations)
+
+			log.Info("Removed fleet annotation from Rancher cluster")
+		}
 	}
 }

@@ -54,6 +54,7 @@ const (
 	azurePath               = "providers.infrastructureAzure."
 	gcpPath                 = "providers.infrastructureGCP."
 	vspherePath             = "providers.infrastructureVSphere."
+	fleetPath               = "providers.addonFleet."
 
 	defaultOCIRegistry = "registry.rancher.com/rancher/cluster-api-controller-components"
 
@@ -208,6 +209,8 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 			case "vsphere", "capv":
 				values[vspherePath+providerEnabledKey] = "true"
 				values[vspherePath+providerVerbosityKey] = debugVerbosityValue
+			case "fleet", "caapf":
+				values[fleetPath+providerEnabledKey] = "true"
 			case "", "all":
 			default:
 				log.FromContext(ctx).Info("Unknown provider in TURTLES_PROVIDERS, ignoring", "provider", provider)
