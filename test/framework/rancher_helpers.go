@@ -320,6 +320,10 @@ type ValidateRancherClusterInput struct {
 	// SkipLatestFeatureChecks can be used to skip tests that have not been released yet and can not be tested
 	// with stable versions of Turtles, for example during the chart upgrade test.
 	SkipLatestFeatureChecks bool
+
+	// RancherManagedFleet is used to determine whether the `provisioning.cattle.io/externally-managed`
+	// annotation should be present or not in an imported test cluster.
+	RancherManagedFleet bool
 }
 
 // ValidateRancherCluster performs all checks to validate the CAPI Cluster import into Rancher.
@@ -366,12 +370,21 @@ func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInp
 		return found
 	}, input.WaitRancherIntervals...).Should(BeTrue())
 
-	By("Rancher cluster should have the 'provisioning.cattle.io/externally-managed' annotation")
-	Eventually(func() bool {
-		Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
-		_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
-		return found
-	}, input.WaitRancherIntervals...).Should(BeTrue())
+	if input.RancherManagedFleet {
+		By("Rancher cluster should not have the 'provisioning.cattle.io/externally-managed' annotation")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+			_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
+			return found
+		}, input.WaitRancherIntervals...).Should(BeFalse())
+	} else {
+		By("Rancher cluster should have the 'provisioning.cattle.io/externally-managed' annotation")
+		Eventually(func() bool {
+			Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+			_, found := rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation]
+			return found
+		}, input.WaitRancherIntervals...).Should(BeTrue())
+	}
 
 	if !input.SkipLatestFeatureChecks { // Can be removed after Turtles v0.26 is used a starter for the chart upgrade test.
 		By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")

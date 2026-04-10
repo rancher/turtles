@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-rke2-example
@@ -17,12 +17,13 @@ spec:
       - 10.96.0.0/24
     serviceDomain: cluster.local
   topology:
-    class: docker-rke2-example
+    classRef:
+      name: docker-rke2-example
     controlPlane:
       replicas: 1
     variables:
     - name: rke2CNI
-      value: none
+      value: ""
     - name: dockerImage
       value: kindest/node:v1.34.0
     version: v1.34.1+rke2r1

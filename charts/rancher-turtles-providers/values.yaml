@@ -7,7 +7,7 @@ providers:
   # addonFleet: Cluster API Add-on Provider for Fleet (CAAPF).
   addonFleet:
     # enabled: Enables the installation of this provider.
-    enabled: true
+    enabled: false
     # namespace: The namespace where the provider manifests will be applied.
     namespace: fleet-addon-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
