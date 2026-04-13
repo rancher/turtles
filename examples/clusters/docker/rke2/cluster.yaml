@@ -4,7 +4,6 @@ metadata:
   name: docker-rke2-example
   labels:
     cluster-api.cattle.io/rancher-auto-import: "true"
-    cni: calico
   annotations:
     cluster-api.cattle.io/upstream-system-agent: "true"
 spec:
@@ -25,8 +24,8 @@ spec:
     - name: rke2CNI
       value: ""
     - name: dockerImage
-      value: kindest/node:v1.34.0
-    version: v1.34.1+rke2r1
+      value: kindest/node:v1.35.0
+    version: v1.35.0+rke2r1
     workers:
       machineDeployments:
       - class: default-worker
