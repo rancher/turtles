@@ -47,7 +47,13 @@ jobs:
 
       - name: Install kind
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-$(uname)-amd64
+          KIND_VERSION=0.31.0
+          PLATFORM=$(uname)-amd64
+          EXPECTED_SHA256_AMD64=eb244cbafcc157dff60cf68693c14c9a75c4e6e6fedaf9cd71c58117cb93e3fa # immutable hash for v0.31.0
+
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-${PLATFORM}
+          echo "$EXPECTED_SHA256_AMD64  kind" | sha256sum --check
+
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 
@@ -152,7 +158,13 @@ jobs:
 
       - name: Install kind
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-$(uname)-amd64
+          KIND_VERSION=0.31.0
+          PLATFORM=$(uname)-amd64
+          EXPECTED_SHA256_AMD64=eb244cbafcc157dff60cf68693c14c9a75c4e6e6fedaf9cd71c58117cb93e3fa # immutable hash for v0.31.0
+
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-${PLATFORM}
+          echo "$EXPECTED_SHA256_AMD64  kind" | sha256sum --check
+
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 

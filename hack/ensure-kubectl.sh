@@ -26,7 +26,29 @@ fi
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
 GOPATH_BIN="$(go env GOPATH)/bin/"
+
+# kubectl version and immutable checksum for validation
 MINIMUM_KUBECTL_VERSION=v1.34.1
+# renovate-local: kubectl-linux-amd64=v1.34.1
+KUBECTL_SUM_linux_amd64="7721f265e18709862655affba5343e85e1980639395d5754473dafaadcaa69e3" # immutable sha256 for v1.34.1 linux amd64
+# renovate-local: kubectl-linux-arm64=v1.34.1
+KUBECTL_SUM_linux_arm64="420e6110e3ba7ee5a3927b5af868d18df17aae36b720529ffa4e9e945aa95450" # immutable sha256 for v1.34.1 linux arm64
+# renovate-local: kubectl-darwin-amd64=v1.34.1
+KUBECTL_SUM_darwin_amd64="bb211f2b31f2b3bc60562b44cc1e3b712a16a98e9072968ba255beb04cefcfdf" # immutable sha256 for v1.34.1 darwin amd64
+# renovate-local: kubectl-darwin-arm64=v1.34.1
+KUBECTL_SUM_darwin_arm64="d80e5fa36f2b14005e5bb35d3a72818acb1aea9a081af05340a000e5fbdb2f76" # immutable sha256 for v1.34.1 darwin arm64
+
+# Krew version and immutable checksum for validation
+KREW_VERSION="v0.5.0"
+# renovate: datasource=github-release-attachments depName=kubernetes-sigs/krew digestVersion=v0.5.0
+KREW_SUM_linux_amd64="5d5a221fffdf331d1c5c68d9917530ecd102e0def5b5a6d62eeed1c404efb28a" # immutable sha256 for krew v0.5.0 linux amd64
+# renovate: datasource=github-release-attachments depName=kubernetes-sigs/krew digestVersion=v0.5.0
+KREW_SUM_linux_arm64="ab7a98b992424e76b6c162f8b67fb76c4b1e243598aa2807bdf226752f964548" # immutable sha256 for krew v0.5.0 linux arm64
+# renovate: datasource=github-release-attachments depName=kubernetes-sigs/krew digestVersion=v0.5.0
+KREW_SUM_darwin_amd64="2d60559126452b57e3df0612f0475a473363f064da35f817290dbbcd877d1ea8" # immutable sha256 for krew v0.5.0 darwin amd64
+# renovate: datasource=github-release-attachments depName=kubernetes-sigs/krew digestVersion=v0.5.0
+KREW_SUM_darwin_arm64="cd6e58b4e954e301abd19001d772846997216d696bcaa58f0bcf04708339ece3" # immutable sha256 for krew v0.5.0 darwin arm64
+
 goarch="$(go env GOARCH)"
 goos="$(go env GOOS)"
 
@@ -47,6 +69,9 @@ verify_kubectl_version() {
       echo "Updating to ${MINIMUM_KUBECTL_VERSION}."
 
       curl -sLo "${GOPATH_BIN}/kubectl" "https://dl.k8s.io/release/${MINIMUM_KUBECTL_VERSION}/bin/${goos}/${goarch}/kubectl"
+      KUBECTL_SUM_VAR="KUBECTL_SUM_${goos}_${goarch}"
+      echo "${!KUBECTL_SUM_VAR}  $GOPATH_BIN/kubectl" | sha256sum --check
+
       chmod +x "${GOPATH_BIN}/kubectl"
       verify_gopath_bin
     else
@@ -58,12 +83,16 @@ verify_kubectl_version() {
 
 install_plugins() {
   (
-    set -x; cd "$(mktemp -d)" &&
-    OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
-    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
-    KREW="krew-${OS}_${ARCH}" &&
-    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
-    tar zxvf "${KREW}.tar.gz" &&
+    set -x; cd "$(mktemp -d)"
+    OS="$(uname | tr '[:upper:]' '[:lower:]')"
+    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
+    KREW="krew-${OS}_${ARCH}"
+
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/download/${KREW_VERSION}/${KREW}.tar.gz"
+    KREW_SUM_VAR="KREW_SUM_${OS}_${ARCH}"
+    echo "${!KREW_SUM_VAR}  ${KREW}.tar.gz" | sha256sum --check
+
+    tar zxvf "${KREW}.tar.gz"
     ./"${KREW}" install krew
   )
   kubectl krew version

@@ -26,12 +26,6 @@ else
 GO_ARCH = arm64
 endif
 
-ifeq ($(shell go env GOOS),linux)
-UPDATECLI_OS = Linux
-else
-UPDATECLI_OS = Darwin
-endif
-
 GO_VERSION ?= $(shell grep "go " go.mod | head -1 |awk '{print $$NF}')
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
@@ -150,10 +144,6 @@ GINKGO_BIN := ginkgo
 GINGKO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
 GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
-
-UPDATECLI_BIN := updatecli
-UPDATECLI_VER := v0.94.0
-UPDATECLI := $(abspath $(TOOLS_BIN_DIR)/$(UPDATECLI_BIN)-$(UPDATECLI_VER))
 
 HELM_VER := v3.18.4
 HELM_BIN := helm
@@ -318,10 +308,6 @@ lint: $(GOLANGCI_LINT) ## Lint the codebase
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
-
-.PHONY: updatecli
-updatecli-apply: $(UPDATECLI)
-	$(UPDATECLI) apply --config ./updatecli/updatecli.d
 
 ## --------------------------------------
 ## Testing
@@ -521,12 +507,6 @@ $(SETUP_ENVTEST): # Build setup-envtest from tools folder.
 
 $(GINKGO): # Build ginkgo from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINGKO_VER)
-
-$(UPDATECLI): # Install updatecli
-	curl -sSL -o ${TOOLS_BIN_DIR}/updatecli_${GO_ARCH}.tar.gz https://github.com/updatecli/updatecli/releases/download/${UPDATECLI_VER}/updatecli_${UPDATECLI_OS}_${GO_ARCH}.tar.gz
-	cd ${TOOLS_BIN_DIR} && tar -xzf updatecli_${GO_ARCH}.tar.gz
-	cd ${TOOLS_BIN_DIR} && chmod +x updatecli
-	cd ${TOOLS_BIN_DIR} && mv updatecli $(UPDATECLI_BIN)-$(UPDATECLI_VER)
 
 $(GOLANGCI_LINT): # Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOLANGCI_LINT_PKG) $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)

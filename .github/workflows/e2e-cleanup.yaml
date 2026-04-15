@@ -25,9 +25,11 @@ jobs:
         run: |
           ARCH=amd64
           PLATFORM=$(uname -s)_$ARCH
+          EKSCTL_VERSION=0.225.0
+          EXPECTED_SHA256_AMD64=041ad321cafd82596b33562f1e95a8c1035a9e0b2e95e9f2bcd2ada7219def83 # immutable hash for v0.225.0 AMD64
 
-          curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
-          curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+          curl -sLO "https://github.com/eksctl-io/eksctl/releases/download/v$EKSCTL_VERSION/eksctl_$PLATFORM.tar.gz"
+          echo "$EXPECTED_SHA256_AMD64  eksctl_Linux_amd64.tar.gz" | sha256sum --check
 
           tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
 
