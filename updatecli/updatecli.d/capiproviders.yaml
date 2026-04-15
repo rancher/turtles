@@ -40,7 +40,7 @@ sources:
     kind: githubrelease
     name: Get the latest CAPI Azure infrastructure provider release
     spec:
-      owner: "rancher-sandbox"
+      owner: "rancher"
       repository: "cluster-api-provider-azure"
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
@@ -50,7 +50,7 @@ sources:
     kind: githubrelease
     name: Get the latest CAPI AWS infrastructure provider release
     spec:
-      owner: "rancher-sandbox"
+      owner: "rancher"
       repository: "cluster-api-provider-aws"
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
@@ -60,7 +60,7 @@ sources:
     kind: githubrelease
     name: Get the latest CAPI GCP infrastructure provider release
     spec:
-      owner: "rancher-sandbox"
+      owner: "rancher"
       repository: "cluster-api-provider-gcp"
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
@@ -70,7 +70,7 @@ sources:
     kind: githubrelease
     name: Get the latest CAPI vSphere infrastructure provider release
     spec:
-      owner: "rancher-sandbox"
+      owner: "rancher"
       repository: "cluster-api-provider-vsphere"
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
@@ -80,7 +80,7 @@ sources:
     kind: githubrelease
     name: Get the latest CAPI add-on provider Fleet release
     spec:
-      owner: "rancher-sandbox"
+      owner: "rancher"
       repository: "cluster-api-addon-provider-fleet"
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
@@ -148,8 +148,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/(.*)/"
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-azure/releases/{{ source "capzrelease" }}/'
+      matchpattern: "https://github.com/rancher/cluster-api-provider-azure/releases/(.*)/"
+      replacepattern: 'https://github.com/rancher/cluster-api-provider-azure/releases/{{ source "capzrelease" }}/'
     scmid: turtles
     sourceid: capzrelease # Will be ignored as `replacepattern` is specified
   bumpcapa:
@@ -157,8 +157,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/(.*)/"
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-aws/releases/{{ source "caparelease" }}/'
+      matchpattern: "https://github.com/rancher/cluster-api-provider-aws/releases/(.*)/"
+      replacepattern: 'https://github.com/rancher/cluster-api-provider-aws/releases/{{ source "caparelease" }}/'
     scmid: turtles
     sourceid: caparelease # Will be ignored as `replacepattern` is specified
   bumpcapg:
@@ -166,8 +166,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/(.*)/"
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/{{ source "capgrelease" }}/'
+      matchpattern: "https://github.com/rancher/cluster-api-provider-gcp/releases/(.*)/"
+      replacepattern: 'https://github.com/rancher/cluster-api-provider-gcp/releases/{{ source "capgrelease" }}/'
     scmid: turtles
     sourceid: capgrelease # Will be ignored as `replacepattern` is specified
   bumpcapv:
@@ -175,8 +175,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: "https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/(.*)/"
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
+      matchpattern: "https://github.com/rancher/cluster-api-provider-vsphere/releases/(.*)/"
+      replacepattern: 'https://github.com/rancher/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
     scmid: turtles
     sourceid: capvrelease # Will be ignored as `replacepattern` is specified
   bumpcapifleet:
