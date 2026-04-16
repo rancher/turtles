@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -102,7 +103,7 @@ type CreateUsingGitOpsSpecInput struct {
 	// VerifyETCDSize can be used to verify ETCD database size and for the supported environments,
 	// collect debug data.
 	VerifyETCDSize bool
-	
+
 	// RancherManagedFleet is used to determine whether the `provisioning.cattle.io/externally-managed`
 	// annotation should be present or not in an imported test cluster.
 	RancherManagedFleet bool
@@ -279,8 +280,25 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
-			RancherManagedFleet:           input.RancherManagedFleet,
+			RancherManagedFleet:     input.RancherManagedFleet,
 		})
+
+		// Validate that CAPI cluster does not have CAAPF finalizer, when CAAPF is disabled
+		if input.RancherManagedFleet {
+			By("CAPI cluster should not have the 'fleet.addons.cluster.x-k8s.io' finalizer")
+			Eventually(func() bool {
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
+
+				return slices.Contains(capiCluster.GetFinalizers(), "fleet.addons.cluster.x-k8s.io")
+			}, capiClusterCreateWait...).Should(BeFalse(), "Failed to detect that 'fleet.addons.cluster.x-k8s.io' finalizer was removed from CAPI cluster")
+		}
 
 		if !input.SkipClusterAvailableWait {
 			By("Waiting for the CAPI Cluster to be Available")
