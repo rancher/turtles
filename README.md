@@ -17,7 +17,7 @@ Currently, this project has the following functionality:
 
 ## Installation & Usage
 
-Rancher Turtles is deployed using a Helm Chart. For instructions, see the [getting started guide](https://turtles.docs.rancher.com/turtles/stable/en/tutorials/quickstart.html).
+Rancher Turtles is part of Rancher. See the [Rancher setup](https://turtles.docs.rancher.com/turtles/stable/en/tutorials/rancher.html) documentation on how to get started with Rancher and Turtles.
 
 ## Documentation
 
