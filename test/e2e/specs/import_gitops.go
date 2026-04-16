@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -281,6 +282,23 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
 			RancherManagedFleet:     input.RancherManagedFleet,
 		})
+
+		// Validate that CAPI cluster does not have CAAPF finalizer, when CAAPF is disabled
+		if input.RancherManagedFleet {
+			By("CAPI cluster should not have the 'fleet.addons.cluster.x-k8s.io' finalizer")
+			Eventually(func() bool {
+				capiCluster := framework.GetClusterByName(
+					ctx,
+					framework.GetClusterByNameInput{
+						Getter:    input.BootstrapClusterProxy.GetClient(),
+						Name:      input.ClusterName,
+						Namespace: namespace.Name,
+					},
+				)
+
+				return slices.Contains(capiCluster.GetFinalizers(), "fleet.addons.cluster.x-k8s.io")
+			}, capiClusterCreateWait...).Should(BeFalse(), "Failed to detect that 'fleet.addons.cluster.x-k8s.io' finalizer was removed from CAPI cluster")
+		}
 
 		if !input.SkipClusterAvailableWait {
 			By("Waiting for the CAPI Cluster to be Available")
