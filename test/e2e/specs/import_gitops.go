@@ -55,7 +55,7 @@ type CreateUsingGitOpsSpecInput struct {
 	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
 	RancherServerURL      string
 
-	ClusterctlBinaryPath        string `env:"CLUSTERCTL_BINARY_PATH"`
+	ClusterctlConfigPath        string `env:"CLUSTERCTL_CONFIG_PATH"`
 	ClusterTemplate             []byte
 	AdditionalTemplates         [][]byte
 	ClusterName                 string
@@ -102,7 +102,7 @@ type CreateUsingGitOpsSpecInput struct {
 	// VerifyETCDSize can be used to verify ETCD database size and for the supported environments,
 	// collect debug data.
 	VerifyETCDSize bool
-	
+
 	// RancherManagedFleet is used to determine whether the `provisioning.cattle.io/externally-managed`
 	// annotation should be present or not in an imported test cluster.
 	RancherManagedFleet bool
@@ -279,7 +279,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
-			RancherManagedFleet:           input.RancherManagedFleet,
+			RancherManagedFleet:     input.RancherManagedFleet,
 		})
 
 		if !input.SkipClusterAvailableWait {
@@ -414,7 +414,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			framework.WaitForClusterDeleted(ctx, framework.WaitForClusterDeletedInput{
 				ClusterProxy:         input.BootstrapClusterProxy,
 				Cluster:              capiClusterObj,
-				ClusterctlConfigPath: input.ClusterctlBinaryPath,
+				ClusterctlConfigPath: input.ClusterctlConfigPath,
 			}, deleteClusterWait...)
 
 			if rancherCluster != nil {
@@ -633,7 +633,7 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 			framework.WaitForClusterDeleted(ctx, framework.WaitForClusterDeletedInput{
 				ClusterProxy:         input.BootstrapClusterProxy,
 				Cluster:              capiClusterObj,
-				ClusterctlConfigPath: input.ClusterctlBinaryPath,
+				ClusterctlConfigPath: input.ClusterctlConfigPath,
 			}, deleteClusterWait...)
 
 			if rancherCluster != nil {

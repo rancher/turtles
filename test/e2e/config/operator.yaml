@@ -101,7 +101,7 @@ variables:
   GCP_IMAGE_ID_FORMATTED: "" #Calculated at runtime: https://www.googleapis.com/compute/v1/projects/${GCP_PROJECT_ID}/global/images/${GCP_IMAGE_ID}"
 
   # CLI Tool Paths
-  CLUSTERCTL_BINARY_PATH: ""
+  CLUSTERCTL_CONFIG_PATH: ""
   HELM_BINARY_PATH: "helm"
   HELM_EXTRA_VALUES_FOLDER: "/tmp"
 
