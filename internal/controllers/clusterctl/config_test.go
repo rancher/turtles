@@ -66,7 +66,7 @@ data:
         url: https://github.com/rancher-sandbox/cluster-api/releases/v1.12.2/core-components.yaml
       - name: gcp
         type: InfrastructureProvider
-        url: https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/v1.11.1/infrastructure-components.yaml
+        url: https://github.com/rancher/cluster-api-provider-gcp/releases/v1.11.1/infrastructure-components.yaml
       - name: rke2
         type: ControlPlaneProvider
         url: https://github.com/rancher/cluster-api-provider-rke2/releases/v0.24.3/control-plane-components.yaml
@@ -93,7 +93,7 @@ data:
 							{
 								Name: "gcp",
 								Type: "InfrastructureProvider",
-								URL:  "https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/v1.99.99/updated-infrastructure-components.yaml",
+								URL:  "https://github.com/rancher/cluster-api-provider-gcp/releases/v1.99.99/updated-infrastructure-components.yaml",
 							},
 							{
 								Name: "rke2",
@@ -142,7 +142,7 @@ data:
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "gcp",
 			Type: "InfrastructureProvider",
-			URL:  "https://github.com/rancher-sandbox/cluster-api-provider-gcp/releases/v1.99.99/updated-infrastructure-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api-provider-gcp/releases/v1.99.99/updated-infrastructure-components.yaml",
 		}))
 
 		// Ensure rke2 controlplane provider remains unchanged
