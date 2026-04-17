@@ -544,8 +544,6 @@ func (r *CAPIImportReconciler) reconcileExternalFleetManagement(ctx context.Cont
 
 	if feature.Gates.Enabled(feature.UseCAAPF) {
 		addFleetAnnotation(ctx, annotations, rancherCluster)
-
-		controllerutil.AddFinalizer(capiCluster, FleetAddonFinalizer)
 	} else {
 		removeFleetAnnotation(ctx, annotations, rancherCluster)
 
