@@ -56,7 +56,7 @@ type CreateUsingGitOpsSpecInput struct {
 	ArtifactFolder        string `env:"ARTIFACTS_FOLDER"`
 	RancherServerURL      string
 
-	ClusterctlBinaryPath        string `env:"CLUSTERCTL_BINARY_PATH"`
+	ClusterctlConfigPath        string `env:"CLUSTERCTL_CONFIG_PATH"`
 	ClusterTemplate             []byte
 	AdditionalTemplates         [][]byte
 	ClusterName                 string
@@ -432,7 +432,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			framework.WaitForClusterDeleted(ctx, framework.WaitForClusterDeletedInput{
 				ClusterProxy:         input.BootstrapClusterProxy,
 				Cluster:              capiClusterObj,
-				ClusterctlConfigPath: input.ClusterctlBinaryPath,
+				ClusterctlConfigPath: input.ClusterctlConfigPath,
 			}, deleteClusterWait...)
 
 			if rancherCluster != nil {
@@ -651,7 +651,7 @@ func CreateUsingGitOpsV1Beta1Spec(ctx context.Context, inputGetter func() Create
 			framework.WaitForClusterDeleted(ctx, framework.WaitForClusterDeletedInput{
 				ClusterProxy:         input.BootstrapClusterProxy,
 				Cluster:              capiClusterObj,
-				ClusterctlConfigPath: input.ClusterctlBinaryPath,
+				ClusterctlConfigPath: input.ClusterctlConfigPath,
 			}, deleteClusterWait...)
 
 			if rancherCluster != nil {

@@ -1,0 +1,3 @@
+# This config is needed by the CAPI test framework.
+# Since it's only used to delete Clusters, and not to install providers, it can be empty.
+{}
