@@ -2,32 +2,7 @@
 
 This package contains e2e tests for rancher-turtles project. Implementation is based on e2e suite from [cluster-api](https://github.com/kubernetes-sigs/cluster-api/tree/main/test).
 
-## Quickstart
-
-### Prerequisites
-
-Required IAM permissions: <https://eksctl.io/usage/minimum-iam-policies/>
-
-In order to correctly populate provided URL rancher requires to be configured with resolvable server-url setting. In local e2e setup this is handled with [helm based](https://github.com/ngrok/kubernetes-ingress-controller#helm) installation for [ngrok-ingress](https://github.com/ngrok/kubernetes-ingress-controller), using free account.
-
-To setup a free account, the simplest way is to follow their [quickstart](https://ngrok.com/docs/using-ngrok-with/k8s/) guide, specifically steps required to populate these two environment variables:
-
-```bash
-export NGROK_AUTHTOKEN=[AUTHTOKEN]
-export NGROK_API_KEY=[API_KEY]
-```
-
-Then you need to configure the domain name by going into `Dashboard -> Cloud Edge -> Domains` and clicking the `New Domain` button. This will generate a random domain name for the free account. Copy the value and then store it in your environment with:
-
-```bash
-export RANCHER_HOSTNAME=<YOUR_DOMAIN_NAME>
-```
-
-Now you are ready to start your e2e test run.
-
-**Note:** If you want to run vSphere e2e tests locally, please refer to the instructions provided in the [Running vSphere e2e tests locally](#running-vsphere-e2e-tests-locally) section.
-
-### Workspace Setup
+## Workspace Setup
 
 Setup the multi-module workspace, by running the following commands in the turtles root folder.  
 This will generate a `turtles/go.work` file to allow linting in tests. Be aware that this may break vendoring process used for `make test` task due to incompatibility between the two.  
@@ -44,22 +19,6 @@ For example in VSCode `settings.json`:
  "go.buildTags": "e2e",
 ```
 
-### Running the tests
-
-From the project root directory:
-
-```bash
-make test-e2e
-```
-
-This will consequently:
-
-1. Install all prerequisite dependencies, like `helm`, `kustomize`, `controller-gen`.
-1. Build a docker image with the current repository code using `docker-build-prime` Makefile target.
-1. Generate a test release chart containing docker image tag built in the previous step
-1. Create the test cluster, run the test suite, cleanup all test resourses.
-1. Collect the [artifacts](#artifacts)
-
 ### Running the short e2e tests
 
 Tests tagged with the `short` label are verified for any submitted Pull Requests as a minimum requirement.
@@ -70,6 +29,14 @@ MANAGEMENT_CLUSTER_ENVIRONMENT=isolated-kind TAG=v0.0.1 GINKGO_LABEL_FILTER=shor
 ```
 
 Note that `SOURCE_REPO` needs to point to your forked repository, and `GITHUB_HEAD_REF` to your feature branch where commits have been pushed already.  
+
+This will consequently:
+
+1. Install all prerequisite dependencies, like `helm`, `kustomize`, `controller-gen`.
+1. Build a docker image with the current repository code using `docker-build-prime` Makefile target.
+1. Generate a test release chart containing docker image tag built in the previous step
+1. Create the test cluster, run the test suite, cleanup all test resourses.
+1. Collect the [artifacts](#artifacts)
 
 ## Providers chart usage in E2E
 
@@ -163,14 +130,12 @@ Most notable ones:
 ```yaml
 variables:
   RANCHER_VERSION: "v2.14.0-alpha13" # Default rancher version to install
-  RANCHER_HOSTNAME: "localhost" # Your ngrok domain
-  NGROK_API_KEY: "" # Key and token values for establishing ingress
-  NGROK_AUTHTOKEN: ""
+  RANCHER_HOSTNAME: "localhost" # Your rancher domain
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind" # Environment to run the tests in: eks, isolated-kind, kind.
   TURTLES_VERSION: "v0.0.1" # Version of the turtles image to use
   TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e" # Rancher turtles image to use. It is pre-loaded from local docker registry in kind environment, but expected to be pulled and available in `eks` cluster environment
   ARTIFACTS_FOLDER: "_artifacts" # Folder for the e2e run artifacts collection with crust-gather.
-  SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2,DOCKER_REGISTRY_TOKEN,DOCKER_REGISTRY_USERNAME,DOCKER_REGISTRY_CONFIG" # Is a list of environment variable keys, values of which would be excluded from collected artifacts data.
+  SECRET_KEYS: "RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2,DOCKER_REGISTRY_TOKEN,DOCKER_REGISTRY_USERNAME,DOCKER_REGISTRY_CONFIG" # Is a list of environment variable keys, values of which would be excluded from collected artifacts data.
 ```
 
 ## Artifacts collection
@@ -205,10 +170,6 @@ Import of the resources can be found in `test/e2e/helpers.go`.
 While all the tests are based on the combination of [ginkgo](https://github.com/onsi/ginkgo) and [gomega](https://github.com/onsi/gomega), to simplify the process of writing tests the [komega](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest/komega) could be used. However this requires conformity to the `client.Object` inteface for all custom resources `rancher-turtles` is using.
 
 ## Cluster configuration
-
-### Kind
-
-[Kind](https://kind.sigs.k8s.io/) is used to set up a cluster for e2e tests. All required components like rancher and rancher-turtles are installed using [helm](https://helm.sh/docs) charts. This option can be enabled by setting `MANAGEMENT_CLUSTER_ENVIRONMENT` to `kind`. It's also required to set `NGROK_API_KEY`, `NGROK_AUTHTOKEN` and `RANCHER_HOSTNAME` environment variables.
 
 ### Isolated Kind
 

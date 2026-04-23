@@ -70,7 +70,6 @@ var _ = SynchronizedBeforeSuite(
 			BootstrapClusterProxy:     setupClusterResult.BootstrapClusterProxy,
 			CustomIngress:             e2e.TraefikIngress,
 			CustomIngressLoadBalancer: e2e.TraefikIngressLoadBalancer,
-			DefaultIngressClassPatch:  e2e.IngressClassPatch,
 		})
 
 		By("Deploying Gitea for chart repository")

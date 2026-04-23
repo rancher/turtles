@@ -286,7 +286,7 @@ vendor-clean:
 
 .PHOHY: dev-env
 dev-env: build-local-rancher-charts ## Create a local development environment
-	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
+	./scripts/turtles-dev.sh
 
 ## --------------------------------------
 ## Lint / Verify
