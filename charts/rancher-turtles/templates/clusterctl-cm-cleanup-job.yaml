@@ -51,6 +51,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: pre-upgrade-job
       containers:
       - name: rancher-clusterctl-configmap-cleanup
