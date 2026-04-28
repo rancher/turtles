@@ -40,6 +40,13 @@ spec:
     name: {{ index .Values "providers" "infrastructureDocker" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "infrastructureDocker" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "infrastructureDocker" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "infrastructureDocker" "fetchConfig" "url" }}

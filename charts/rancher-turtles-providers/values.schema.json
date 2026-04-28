@@ -137,6 +137,13 @@
   },
   "type": "object",
   "properties": {
+    "imagePullSecrets": {
+      "type": "array",
+      "description": "Secret names to use when pulling images for provider deployments.",
+      "items": {
+        "type": "string"
+      }
+    },
     "providers": {
       "type": "object",
       "description": "Providers configuration.",

@@ -40,6 +40,13 @@ spec:
     name: {{ index .Values "providers" "bootstrapRKE2" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "bootstrapRKE2" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "bootstrapRKE2" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "bootstrapRKE2" "fetchConfig" "url" }}

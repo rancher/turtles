@@ -40,6 +40,13 @@ spec:
     name: {{ index .Values "providers" "controlplaneRKE2" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "controlplaneRKE2" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "controlplaneRKE2" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "controlplaneRKE2" "fetchConfig" "url" }}

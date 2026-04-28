@@ -2,6 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# imagePullSecrets: Secret names to use when pulling images for provider deployments.
+imagePullSecrets: []
+# imagePullSecrets:
+#   - secret1
+
 # providers: Providers configuration.
 providers:
   # addonFleet: Cluster API Add-on Provider for Fleet (CAAPF).
