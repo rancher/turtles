@@ -60,12 +60,6 @@ var (
 	//go:embed data/rancher/system-store-setting-patch.yaml
 	SystemStoreSettingPatch []byte
 
-	//go:embed data/rancher/rancher-service-patch.yaml
-	RancherServicePatch []byte
-
-	//go:embed data/rancher/ingress-class-patch.yaml
-	IngressClassPatch []byte
-
 	//go:embed data/rancher/rancher-setting-patch.yaml
 	RancherSettingPatch []byte
 
@@ -165,7 +159,6 @@ type ManagementClusterEnvironmentType string
 const (
 	ManagementClusterEnvironmentEKS          ManagementClusterEnvironmentType = "eks"
 	ManagementClusterEnvironmentIsolatedKind ManagementClusterEnvironmentType = "isolated-kind"
-	ManagementClusterEnvironmentKind         ManagementClusterEnvironmentType = "kind"
 	ManagementClusterEnvironmentInternalKind ManagementClusterEnvironmentType = "internal-kind"
 )
 

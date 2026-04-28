@@ -14,13 +14,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -xe
+set -e
 
-RANCHER_HOSTNAME=$1
-if [ -z "$RANCHER_HOSTNAME" ]; then
-    echo "You must pass a rancher host name"
+if [ -z "$PANGOLIN_ENDPOINT" ]; then
+    echo "You must pass a Pangolin endpoint. (ex. my.pangolin.example.com)"
     exit 1
 fi
+
+if [ -z "$NEWT_SITE_ID" ]; then
+    echo "You must pass a Newt site client ID."
+    exit 1
+fi
+
+if [ -z "$NEWT_SITE_SECRET" ]; then
+    echo "You must pass a Newt site client secret."
+    exit 1
+fi
+
+if [ -z "$PANGOLIN_SITE_DOMAIN" ]; then
+    echo "You must pass a Pangolin site domain. (ex. myname.myteam.my.pangolin.example.com)"
+    exit 1
+fi
+
+if [ -z "$PANGOLIN_SITE_IDENTIFIER" ]; then
+    echo "You must pass a Pangolin site identifier. (ex. some-randomly-generated-name)"
+    echo "Note: this is the **Identifier** of the Pangolin Site, not the name."
+    echo "      This value is normally randomly generated when creating a new Site on the Pangolin Dashboard."
+    exit 1
+fi
+
+RANCHER_HOSTNAME="rancher.$PANGOLIN_SITE_DOMAIN"
+GITEA_HOSTNAME="gitea.$PANGOLIN_SITE_DOMAIN"
+PANGOLIN_IP_ADDRESS=$(dig +short "$PANGOLIN_ENDPOINT")
 
 RANCHER_CHANNEL=${RANCHER_CHANNEL:-alpha}
 RANCHER_PASSWORD=${RANCHER_PASSWORD:-rancheradmin}
@@ -33,7 +58,6 @@ TURTLES_VERSION=${TURTLES_VERSION:-dev}
 TURTLES_IMAGE=${TURTLES_IMAGE:-ghcr.io/rancher/turtles:$TURTLES_VERSION}
 
 GITEA_PASSWORD=${GITEA_PASSWORD:-giteaadmin}
-GITEA_INGRESS_CLASS_NAME=${GITEA_INGRESS_CLASS_NAME:-ngrok}
 RANCHER_CHARTS_REPO_DIR=${RANCHER_CHARTS_REPO_DIR}
 RANCHER_CHART_DEV_VERSION=${RANCHER_CHART_DEV_VERSION}
 RANCHER_CHARTS_BASE_BRANCH=${RANCHER_CHARTS_BASE_BRANCH}
@@ -45,23 +69,23 @@ RANCHER_CACERT_PATH=${RANCHER_CACERT_PATH:-$RANCHER_CERT_DIR/cacerts.pem}
 
 BASEDIR=$(dirname "$0")
 
-if pgrep -x ngrok > /dev/null; then
-    echo "Stopping existing ngrok processes..."
-    pkill -x ngrok
-    sleep 2
-fi
-
+printf "\n\033[0;33m### Creating a management Cluster\033[0m\n"
 kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml" --name $CLUSTER_NAME
 docker pull $RANCHER_IMAGE
 kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME
+
+printf "\n\033[0;33m### Building and loading Turtles image\033[0m\n"
+make docker-build-prime
+kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
 
 kubectl rollout status deployment coredns -n kube-system --timeout=90s
 
 helm repo add rancher-$RANCHER_CHANNEL https://releases.rancher.com/server-charts/$RANCHER_CHANNEL --force-update
 helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update
+helm repo add fossorial https://charts.fossorial.io --force-update
 helm repo update
 
-echo "Configuring Private CA Certificate..."
+printf "\n\033[0;33m### Configuring Private CA Certificate\033[0m\n"
 ./scripts/create-rancher-certs.sh
 
 # Create secrets
@@ -72,7 +96,7 @@ kubectl -n cattle-system create secret tls tls-rancher-ingress \
 kubectl -n cattle-system create secret generic tls-ca \
   --from-file $RANCHER_CACERT_PATH
 
-echo "Installing Gitea..."
+printf "\n\033[0;33m### Installing Gitea\033[0m\n"
 helm install gitea gitea-charts/gitea \
     -f test/e2e/data/gitea/values.yaml \
     --set gitea.admin.password=$GITEA_PASSWORD \
@@ -80,19 +104,7 @@ helm install gitea gitea-charts/gitea \
     --create-namespace \
     --wait
 
-cleanup() {
-    echo "Cleaning up background processes..."
-    [ -n "$NGROK_PID" ] && kill $NGROK_PID 2>/dev/null && echo "Stopped ngrok (PID: $NGROK_PID)"
-    [ -f "$NGROK_CONFIG_FILE" ] && rm -f "$NGROK_CONFIG_FILE" && echo "Removed ngrok config file"
-}
-trap cleanup EXIT INT TERM
-
-# Build and load the controller image
-make docker-build-prime
-kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
-
 # Deploy Gitea test Nodeport
-echo "Deploying Gitea test Nodeport..."
 kubectl apply -f test/e2e/data/gitea/test-nodeport.yaml
 
 # Wait for Gitea to be accessible locally
@@ -104,7 +116,7 @@ done
 echo "Gitea is accessible locally!"
 
 # Now setup Gitea repo and push charts
-echo "Creating new Gitea repository..."
+printf "\n\033[0;33m### Configuring new Gitea repository for Rancher charts\033[0m\n"
 curl -X POST "http://gitea:$GITEA_PASSWORD@localhost:30001/api/v1/user/repos" \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
@@ -114,6 +126,7 @@ echo "Pushing charts repository to Gitea..."
 git -C $RANCHER_CHARTS_REPO_DIR remote add fork http://gitea:$GITEA_PASSWORD@localhost:30001/gitea/charts.git
 git -C $RANCHER_CHARTS_REPO_DIR push --set-upstream fork $RANCHER_CHARTS_BASE_BRANCH
 
+printf "\n\033[0;33m### Installing Rancher\033[0m\n"
 helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --namespace cattle-system \
     --create-namespace \
@@ -125,6 +138,12 @@ helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --version="$RANCHER_VERSION" \
     --set ingress.tls.source=secret \
     --set privateCA=true \
+    --set "extraEnv[0].name=CATTLE_CHART_DEFAULT_URL" \
+    --set "extraEnv[0].value=http://gitea-http.gitea.svc.cluster.local:3000/gitea/charts.git" \
+    --set "extraEnv[1].name=CATTLE_CHART_DEFAULT_BRANCH" \
+    --set "extraEnv[1].value=$RANCHER_CHARTS_BASE_BRANCH" \
+    --set "extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION" \
+    --set "extraEnv[2].value=$RANCHER_CHART_DEV_VERSION" \
     --wait
 
 # Deploy Rancher test Nodeport
@@ -139,74 +158,50 @@ until curl -s -o /dev/null -w "%{http_code}" http://localhost:30080 | grep -q "2
 done
 echo "Rancher is accessible locally!"
 
-# Now both services are ready, start ngrok with both endpoints
-NGROK_CONFIG_FILE="/tmp/ngrok-turtles-dev.yml"
-cat > "$NGROK_CONFIG_FILE" <<EOF
-version: 2
-authtoken: $NGROK_AUTHTOKEN
-tunnels:
-  rancher:
-    proto: http
-    addr: http://localhost:30080
-    hostname: $RANCHER_HOSTNAME
-  gitea:
-    proto: http
-    addr: http://localhost:30001
-    hostname: gitea.$RANCHER_HOSTNAME
-EOF
+printf "\n\033[0;33m### Installing Newt\033[0m\n"
+kubectl create namespace newt
+kubectl -n newt create secret generic newt-auth \
+    --from-literal=NEWT_ID=$NEWT_SITE_ID \
+    --from-literal=NEWT_SECRET=$NEWT_SITE_SECRET \
+    --from-literal=PANGOLIN_ENDPOINT="https://$PANGOLIN_ENDPOINT"
+mkdir -p /tmp/newt
+PANGOLIN_IP_ADDRESS="$PANGOLIN_IP_ADDRESS" RANCHER_HOSTNAME="$RANCHER_HOSTNAME" GITEA_HOSTNAME="$GITEA_HOSTNAME" envsubst <test/e2e/data/newt/values.yaml > /tmp/newt/values.yaml
+helm install newt fossorial/newt \
+  -n newt \
+  -f /tmp/newt/values.yaml \
+  --wait
 
-echo "Starting ngrok with both Rancher and Gitea endpoints..."
-ngrok start --all --config "$NGROK_CONFIG_FILE" --log stdout > /tmp/ngrok-turtles-dev.log 2>&1 &
-NGROK_PID=$!
-echo "ngrok started with PID: $NGROK_PID"
-sleep 5
-
-if ! kill -0 $NGROK_PID 2>/dev/null; then
-    echo "ERROR: ngrok failed, check logs:"
-    cat /tmp/ngrok-turtles-dev.log
-    exit 1
-fi
-
-# Wait for both endpoints to be accessible via ngrok
-echo "Waiting for Gitea to be accessible via ngrok (https://gitea.$RANCHER_HOSTNAME)..."
+# Wait for both endpoints to be accessible via Pangolin
+echo "Waiting for Gitea to be accessible via Pangolin (https://$GITEA_HOSTNAME)..."
 RETRY_COUNT=0
 MAX_RETRIES=30
-until [ "$(curl -s -o /dev/null -w "%{http_code}" https://gitea.$RANCHER_HOSTNAME)" = "200" ]; do 
+until [ "$(curl -s -o /dev/null -w "%{http_code}" https://$GITEA_HOSTNAME)" = "200" ]; do 
     RETRY_COUNT=$((RETRY_COUNT+1))
     if [ $RETRY_COUNT -gt $MAX_RETRIES ]; then
-        echo "ERROR: Gitea not accessible via ngrok after $MAX_RETRIES attempts"
-        echo "ngrok logs:"
-        cat /tmp/ngrok-turtles-dev.log
+        echo "ERROR: Gitea not accessible via Pangolin after $MAX_RETRIES attempts"
         exit 1
     fi
-    echo "Waiting for gitea via ngrok (attempt $RETRY_COUNT/$MAX_RETRIES)..."
+    echo "Waiting for gitea via Pangolin (attempt $RETRY_COUNT/$MAX_RETRIES)..."
     sleep 2
 done
-echo "Gitea is accessible via ngrok!"
+echo "Gitea is accessible via Pangolin!"
 
-echo "Waiting for Rancher to be accessible via ngrok (https://$RANCHER_HOSTNAME)..."
+echo "Waiting for Rancher to be accessible via Pangolin (https://$RANCHER_HOSTNAME)..."
 RETRY_COUNT=0
 until [ "$(curl -s -o /dev/null -w "%{http_code}" https://$RANCHER_HOSTNAME)" = "200" ] || [ "$(curl -s -o /dev/null -w "%{http_code}" https://$RANCHER_HOSTNAME)" = "302" ]; do 
     RETRY_COUNT=$((RETRY_COUNT+1))
     if [ $RETRY_COUNT -gt $MAX_RETRIES ]; then
-        echo "ERROR: Rancher not accessible via ngrok after $MAX_RETRIES attempts"
-        echo "ngrok logs:"
-        cat /tmp/ngrok-turtles-dev.log
+        echo "ERROR: Rancher not accessible via Pangolin after $MAX_RETRIES attempts"
         exit 1
     fi
-    echo "Waiting for rancher via ngrok (attempt $RETRY_COUNT/$MAX_RETRIES)..."
+    echo "Waiting for rancher via Pangolin (attempt $RETRY_COUNT/$MAX_RETRIES)..."
     sleep 2
 done
-echo "Rancher is accessible via ngrok!"
+echo "Rancher is accessible via Pangolin!"
 
+printf "\n\033[0;33m### Applying custom Rancher Settings\033[0m\n"
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
-
-# Update Rancher deployment with environment variables pointing to Gitea charts
-kubectl set env deployment/rancher -n cattle-system \
-    CATTLE_CHART_DEFAULT_URL=https://gitea.$RANCHER_HOSTNAME/gitea/charts.git \
-    CATTLE_CHART_DEFAULT_BRANCH=$RANCHER_CHARTS_BASE_BRANCH \
-    CATTLE_RANCHER_TURTLES_VERSION=$RANCHER_CHART_DEV_VERSION
 
 # Wait for Rancher to restart with new config
 kubectl rollout status deployment/rancher -n cattle-system --timeout=300s
@@ -220,7 +215,9 @@ install_local_providers_chart() {
 
     helm upgrade --install rancher-turtles-providers out/charts/rancher-turtles-providers \
         -n cattle-turtles-system \
+        --set providers.bootstrapRKE2.enabled=true \
         --set providers.bootstrapRKE2.manager.verbosity=5 \
+        --set providers.controlplaneRKE2.enabled=true \
         --set providers.controlplaneRKE2.manager.verbosity=5 \
         --set providers.bootstrapKubeadm.enabled=true \
         --set providers.bootstrapKubeadm.manager.verbosity=5 \
@@ -241,15 +238,15 @@ install_local_providers_chart() {
         --timeout 180s
 }
 
-echo "Installing local Rancher Turtles Providers..."
+printf "\n\033[0;33m### Installing local Rancher Turtles Providers\033[0m\n"
 install_local_providers_chart
 
-echo "Exposing ETCD..."
+printf "\n\033[0;33m### Exposing ETCD\033[0m\n"
 kubectl apply -f test/e2e/data/etcd/test-nodeport.yaml
 echo "To verify and collect ETCD data, run: make collect-etcd-data"
 
 if [ "$USE_TILT_DEV" == "true" ]; then
     kubectl wait --for=create deployments/rancher-turtles-controller-manager --namespace cattle-turtles-system --timeout=300s
-    echo "Using Tilt for development..."
+    printf "\n\033[0;33m### Using Tilt for development\033[0m\n"
     tilt up
 fi
