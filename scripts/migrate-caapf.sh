@@ -23,14 +23,16 @@ TURTLES_NS="cattle-turtles-system"
 CAAPF_NS="fleet-addon-system"
 
 # Labels
-CAAPF_CC_LABEL="clusterclass-name.fleet.addons.cluster.x-k8s.io"
-CAAPF_CC_NS_LABEL="clusterclass-namespace.fleet.addons.cluster.x-k8s.io"
-CAPI_NAME_LABEL="cluster.x-k8s.io/cluster-name"
 MIGRATION_LABEL="migration.fleet.cattle.io/upgrade-2.14=true"
+CAAPF_MANAGED_LABEL="migration.fleet.cattle.io/caapf-managed=true"
+PAUSE_LABEL="migration.fleet.cattle.io/paused=true"
 
 # Rancher/Turtles labels on Management Clusters (v3)
 RANCHER_CAPI_OWNER="cluster-api.cattle.io/capi-cluster-owner"
 RANCHER_CAPI_NS="cluster-api.cattle.io/capi-cluster-owner-ns"
+
+# Finalizers
+CAAPF_FINALIZER="fleet.addons.cluster.x-k8s.io"
 
 # Helper for dry-run
 run_cmd() {
@@ -45,8 +47,41 @@ log() {
     echo -e "\033[1;34m[INFO]\033[0m $*"
 }
 
+# Emit unique "bundle-namespace/bundle-name" keys for BundleDeployments in a namespace,
+# excluding the per-cluster fleet-agent system bundle.
+bd_bundle_keys() {
+    kubectl get bundledeployments -n "$1" -o json 2>/dev/null | jq -r --arg agent "fleet-agent-$2" '
+        .items[]
+        | select(.metadata.labels["fleet.cattle.io/bundle-namespace"] != null
+                 and .metadata.labels["fleet.cattle.io/bundle-name"] != null
+                 and .metadata.labels["fleet.cattle.io/bundle-name"] != $agent)
+        | "\(.metadata.labels["fleet.cattle.io/bundle-namespace"])/\(.metadata.labels["fleet.cattle.io/bundle-name"])"
+    ' | sort -u
+}
+
+# Discover all CAAPF-managed clusters by owner references and finalizers.
+discover_caapf_clusters() {
+    log "Discovering CAAPF-managed clusters..."
+    # Get all Fleet clusters that are owned by CAPI clusters.
+    local CAPI_OWNED=$(kubectl get clusters.fleet.cattle.io -A -o json | jq -r '
+        .items[] | . as $item |
+        .metadata.ownerReferences[]? | select(.kind == "Cluster" and (.apiVersion | startswith("cluster.x-k8s.io"))) |
+        "\($item.metadata.namespace) \($item.metadata.name) \(.name)"
+    ' || true)
+
+    # Iterate over all CAPI-owned Fleet clusters and check if the CAAPF finalizer is present.
+    CAAPF_CLUSTERS=()
+    while read -r NS FLEET_NAME CAPI_NAME; do
+      [ -z "$NS" ] && continue
+      FINALIZERS=$(kubectl get clusters.cluster.x-k8s.io "$CAPI_NAME" -n "$NS" -o jsonpath='{.metadata.finalizers}' 2>/dev/null || true)
+      if echo "$FINALIZERS" | grep -qF "$CAAPF_FINALIZER"; then
+        CAAPF_CLUSTERS+=("$NS/$FLEET_NAME/$CAPI_NAME")
+      fi
+    done <<< "$CAPI_OWNED"
+}
+
 if [ "$PHASE" == "pre" ]; then
-    log "Starting pre-upgrade phase for Rancher 2.14.1..."
+    log "Starting pre-upgrade phase for Rancher 2.14.2..."
 
     log "Scaling down controllers..."
     for DEPLOY in "rancher-turtles-controller-manager:$TURTLES_NS" "caapf-controller-manager:$CAAPF_NS"; do
@@ -57,92 +92,310 @@ if [ "$PHASE" == "pre" ]; then
         fi
     done
 
-    # 2. Propagate labels to clusters.management.cattle.io
-    log "Propagating CAAPF targeting labels to clusters.management.cattle.io..."
-    CAAPF_CLUSTERS=$(kubectl get clusters.fleet.cattle.io -A -l "$CAAPF_CC_LABEL" -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}')
+    # Wait for controller pods to terminate.
+    for DEPLOY in "rancher-turtles-controller-manager:$TURTLES_NS" "caapf-controller-manager:$CAAPF_NS"; do
+        NAME=$(echo "$DEPLOY" | cut -d':' -f1)
+        NS=$(echo "$DEPLOY" | cut -d':' -f2)
+        if [ "$DRY_RUN" = "true" ]; then continue; fi
+        SELECTOR=$(kubectl get deployment -n "$NS" "$NAME" -o json 2>/dev/null \
+            | jq -r '.spec.selector.matchLabels | to_entries | map(.key + "=" + .value) | join(",")')
+        if [ -z "$SELECTOR" ] || [ "$SELECTOR" = "null" ]; then
+            log "Warning: could not determine pod selector for $NS/$NAME; skipping termination wait."
+            continue
+        fi
+        log "Waiting for $NS/$NAME pods to terminate..."
+        if ! kubectl wait --for=delete pod -n "$NS" -l "$SELECTOR" --timeout=120s &>/dev/null; then
+            log "Warning: timeout waiting for $NS/$NAME pods to terminate; proceeding anyway."
+        fi
+    done
 
-    for ITEM in $CAAPF_CLUSTERS; do
+    discover_caapf_clusters
+
+    # Map of CAPI namespaces to management clusters.
+    declare -A CAPI_NS_TO_MGT
+    # Map of ClusterClass namespaces to management clusters.
+    declare -A CLASS_NS_TO_MGT
+    # Set of CAPI cluster namespaces.
+    declare -A CAPI_CLUSTER_NAMESPACES
+    # Set of ClusterClass namespaces that are referenced from at least 1 CAPI cluster.
+    declare -A CLASS_NAMESPACES
+
+    # Populate maps and sets
+    for ITEM in "${CAAPF_CLUSTERS[@]}"; do
         OLD_NS=$(echo "$ITEM" | cut -d'/' -f1)
         OLD_NAME=$(echo "$ITEM" | cut -d'/' -f2)
+        CAPI_NAME=$(echo "$ITEM" | cut -d'/' -f3)
 
-        CAPI_NAME=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o jsonpath="{.metadata.labels['$CAPI_NAME_LABEL']}")
         CAPI_NS="$OLD_NS"
-        if [ -z "$CAPI_NAME" ]; then CAPI_NAME=$OLD_NAME; fi
+        CAPI_CLUSTER_NAMESPACES["$CAPI_NS"]=1
 
-        # Find the cluster resource
+        # Detect cross-namespace ClusterClass reference.
+        # v1beta1 uses spec.topology.classNamespace; v1beta2 uses spec.topology.classRef.namespace.
+        CLASS_NS=$(kubectl get clusters.cluster.x-k8s.io "$CAPI_NAME" -n "$OLD_NS" -o json 2>/dev/null | jq -r '
+                .spec.topology.classRef.namespace //
+                .spec.topology.classNamespace //
+                empty
+            ' || true)
+        if [ -n "$CLASS_NS" ] && [ "$CLASS_NS" != "$CAPI_NS" ]; then
+            CLASS_NAMESPACES["$CLASS_NS"]=1
+        fi
+
+        # Find the management cluster.
         MGT_CLUSTER_NAME=$(kubectl get clusters.management.cattle.io -l "$RANCHER_CAPI_OWNER=$CAPI_NAME,$RANCHER_CAPI_NS=$CAPI_NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 
         if [ -n "$MGT_CLUSTER_NAME" ]; then
-            log "Propagate labels from $OLD_NAME to $MGT_CLUSTER_NAME..."
-
-            # - KEEP: CAPI/CAAPF labels (cluster.x-k8s.io, fleet.addons.cluster.x-k8s.io)
-            # - KEEP: Any custom user labels
-            # - DROP: Internal system labels (cattle.io, k8s.io, kubernetes.io)
-            LABELS_JSON=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o json | jq -c '
-                .metadata.labels | with_entries(
-                    select(
-                        (.key | test("cluster\\.x-k8s\\.io|fleet\\.addons\\.cluster\\.x-k8s\\.io"))
-                        or (
-                            (.key | test("cattle\\.io|k8s\\.io|kubernetes\\.io") | not)
-                        )
-                    )
-                )')
-
-            if [ -n "$LABELS_JSON" ] && [ "$LABELS_JSON" != "{}" ]; then
-                run_cmd kubectl patch clusters.management.cattle.io "$MGT_CLUSTER_NAME" --type='merge' -p "{\"metadata\":{\"labels\":$LABELS_JSON}}"
+            existing="${CAPI_NS_TO_MGT[$CAPI_NS]:-}"
+            CAPI_NS_TO_MGT["$CAPI_NS"]="${existing:+$existing }$MGT_CLUSTER_NAME"
+            if [ -n "$CLASS_NS" ] && [ "$CLASS_NS" != "$CAPI_NS" ]; then
+                existing="${CLASS_NS_TO_MGT[$CLASS_NS]:-}"
+                CLASS_NS_TO_MGT["$CLASS_NS"]="${existing:+$existing }$MGT_CLUSTER_NAME"
             fi
         fi
     done
+
+    # Copy labels from old Fleet clusters onto their management clusters before the
+    # collision check, so that the label-selector query sees the post-migration
+    # label set.
+    log "Copying Fleet-cluster labels onto management clusters..."
+    for ITEM in "${CAAPF_CLUSTERS[@]}"; do
+        OLD_NS=$(echo "$ITEM" | cut -d'/' -f1)
+        OLD_NAME=$(echo "$ITEM" | cut -d'/' -f2)
+        CAPI_NAME=$(echo "$ITEM" | cut -d'/' -f3)
+        CAPI_NS="$OLD_NS"
+
+        MGT_CLUSTER_NAME=$(kubectl get clusters.management.cattle.io -l "$RANCHER_CAPI_OWNER=$CAPI_NAME,$RANCHER_CAPI_NS=$CAPI_NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+        [ -z "$MGT_CLUSTER_NAME" ] && continue
+
+        log "Copy labels from $OLD_NAME to $MGT_CLUSTER_NAME..."
+        # - KEEP: CAPI/CAAPF labels (cluster.x-k8s.io, fleet.addons.cluster.x-k8s.io)
+        # - KEEP: app.kubernetes.io/* recommended labels (user-set application metadata,
+        #         e.g. app.kubernetes.io/name; the broad kubernetes.io DROP rule would
+        #         otherwise strip these alongside the internal kubernetes.io/* labels)
+        # - KEEP: Any custom user labels
+        # - DROP: Internal system labels (cattle.io, k8s.io, kubernetes.io)
+        LABELS_JSON=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o json | jq -c '
+            .metadata.labels
+                | with_entries(
+                    select(
+                        (.key | test("cluster\\.x-k8s\\.io|fleet\\.addons\\.cluster\\.x-k8s\\.io|app\\.kubernetes\\.io"))
+                    or (
+                        (.key | test("cattle\\.io|k8s\\.io|kubernetes\\.io") | not)
+                    )
+                )
+            )')
+
+        if [ -n "$LABELS_JSON" ] && [ "$LABELS_JSON" != "{}" ]; then
+            run_cmd kubectl patch clusters.management.cattle.io "$MGT_CLUSTER_NAME" --type='merge' -p "{\"metadata\":{\"labels\":$LABELS_JSON}}"
+        fi
+    done
+
+    COLLISION_FOUND=false
+    # Map of bundle names to namespaces. 
+    declare -A SEEN_BUNDLE_NS
+    # Union set of cluster namespaces and clusterclass namespaces. 
+    declare -A COLLISION_NAMESPACES
+    declare -A COLLISION_NS_TO_MGT
+
+    # Applying BundleNamespaceMappings makes every migration-labeled bundle from every CAPI
+    # cluster namespace and class namespace eligible to be deployed to any cluster in fleet-default.
+    # Two types of collisions may occur:
+    #
+    #   1. Name collision: two bundles with the same name from different namespaces both
+    #      target the same cluster, producing conflicting BundleDeployments.
+    #
+    #   2. Label collision: a clusterSelector that was safe under namespace isolation (only
+    #      one cluster existed in the namespace) now matches multiple clusters in fleet-default
+    #      that happen to share the same labels.
+    for NS in "${!CAPI_CLUSTER_NAMESPACES[@]}"; do
+        COLLISION_NAMESPACES["$NS"]=1
+        COLLISION_NS_TO_MGT["$NS"]="${CAPI_NS_TO_MGT[$NS]:-}"
+    done
+    for NS in "${!CLASS_NAMESPACES[@]}"; do
+        COLLISION_NAMESPACES["$NS"]=1
+        existing="${COLLISION_NS_TO_MGT[$NS]:-}"
+        COLLISION_NS_TO_MGT["$NS"]="${existing:+$existing }${CLASS_NS_TO_MGT[$NS]:-}"
+    done
+
+    log "Checking for bundle collisions before applying BundleNamespaceMappings..."
+    for CAPI_NS in "${!COLLISION_NAMESPACES[@]}"; do
+        # Check 1: duplicate names across CAPI namespaces.
+        RNAMES=$(
+            kubectl get bundles.fleet.cattle.io -n "$CAPI_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true
+            kubectl get gitrepos.fleet.cattle.io -n "$CAPI_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true
+            kubectl get helmops.fleet.cattle.io -n "$CAPI_NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true
+        )
+        for RNAME in $RNAMES; do
+            # Skip fleet-agent-* system bundles.
+            if [[ "$RNAME" == fleet-agent-* ]]; then continue; fi
+
+            if [ -n "${SEEN_BUNDLE_NS[$RNAME]+_}" ] && [ "${SEEN_BUNDLE_NS[$RNAME]}" != "$CAPI_NS" ]; then
+                log "ERROR: Name collision — '$RNAME' in '${SEEN_BUNDLE_NS[$RNAME]}' and '$CAPI_NS' would produce conflicting BundleDeployments in fleet-default."
+                COLLISION_FOUND=true
+            else
+                SEEN_BUNDLE_NS["$RNAME"]="$CAPI_NS"
+            fi
+        done
+
+        # Check 2: collisions due to labels.
+        # Max number of clusters that a selector in this namespace could match.
+        EXPECTED_COUNT=$(echo "${COLLISION_NS_TO_MGT[$CAPI_NS]:-}" | wc -w | tr -d ' ')
+        # Select targets from all Bundles, GitRepos, and HelmOps in this namespace
+        # and create a tab-separated list of "RESOURCE_NAME LABEL_SELECTOR_1,...,LABEL_SELECTOR_N". 
+        SELECTOR_PAIRS=$(
+            kubectl get bundles.fleet.cattle.io -n "$CAPI_NS" -o json 2>/dev/null | jq -r '
+                    .items[] | . as $r |
+                    # Skip system bundles
+                    select(.metadata.name | startswith("fleet-agent-") | not) |
+                    ($r.spec.targets // [])[] |
+                    select(.clusterSelector.matchLabels != null) |
+                    [$r.metadata.name,
+                     (.clusterSelector.matchLabels | to_entries | map(.key + "=" + .value) | join(","))
+                    ] | @tsv'
+            kubectl get gitrepos.fleet.cattle.io -n "$CAPI_NS" -o json 2>/dev/null | jq -r '
+                    .items[] | . as $r |
+                    ($r.spec.targets // [])[] |
+                    select(.clusterSelector.matchLabels != null) |
+                    [$r.metadata.name,
+                     (.clusterSelector.matchLabels | to_entries | map(.key + "=" + .value) | join(","))
+                    ] | @tsv'
+            kubectl get helmops.fleet.cattle.io -n "$CAPI_NS" -o json 2>/dev/null | jq -r '
+                .items[] | . as $r |
+                ($r.spec.targets // [])[] |
+                select(.clusterSelector.matchLabels != null) |
+                [$r.metadata.name,
+                 (.clusterSelector.matchLabels | to_entries | map(.key + "=" + .value) | join(","))
+                ] | @tsv'
+        )
+
+        while IFS=$'\t' read -r RNAME LABEL_SEL; do
+            [ -z "$RNAME" ] && continue
+            MATCH_COUNT=$(kubectl get clusters.management.cattle.io \
+                -l "$LABEL_SEL" --no-headers 2>/dev/null \
+                | grep -cv '^local[[:space:]]' || true)
+            if [ "$MATCH_COUNT" -gt "$EXPECTED_COUNT" ]; then
+                log "ERROR: Label collision — '$RNAME' in '$CAPI_NS' selector '$LABEL_SEL' matches $MATCH_COUNT management clusters (expected $EXPECTED_COUNT)."
+                COLLISION_FOUND=true
+            fi
+        done <<< "$SELECTOR_PAIRS"
+
+        # Check 3: Check targets for global deployment risks (empty selectors).
+        TARGET_ERRORS=$(
+            kubectl get bundles.fleet.cattle.io,gitrepos.fleet.cattle.io,helmops.fleet.cattle.io -n "$CAPI_NS" -o json 2>/dev/null | jq -r '
+                .items[] | . as $r |
+                select(.metadata.name | startswith("fleet-agent-") | not) |
+                if ($r.spec.targets == null or ($r.spec.targets | length == 0)) then
+                    "ERROR: \($r.metadata.namespace)/\($r.metadata.name) has NO targets defined. It will target ALL clusters in fleet-default."
+                elif (any($r.spec.targets[]; .clusterSelector == null or .clusterSelector == {} or .clusterSelector.matchLabels == {} or (.clusterSelector.matchLabels == null and (.clusterSelector.matchExpressions == null or .clusterSelector.matchExpressions == [])))) then
+                    "ERROR: \($r.metadata.namespace)/\($r.metadata.name) has an empty clusterSelector. It will target ALL clusters in fleet-default."
+                else
+                    empty
+                end'
+        )
+        if [ -n "$TARGET_ERRORS" ]; then
+            log "$TARGET_ERRORS"
+            COLLISION_FOUND=true
+        fi
+    done
+
+    if [ "$COLLISION_FOUND" = "true" ]; then
+        log "Aborting pre-upgrade: resolve the above collisions before proceeding."
+        exit 1
+    fi
+    log "No collisions detected. Proceeding with migration."
+
+    # Label Fleet clusters for post-phase discovery
+    for ITEM in "${CAAPF_CLUSTERS[@]}"; do
+        OLD_NS=$(echo "$ITEM" | cut -d'/' -f1)
+        OLD_NAME=$(echo "$ITEM" | cut -d'/' -f2)
+
+        # Label CAAPF clusters so that they can be retrieved in post-upgrade phase
+        run_cmd kubectl label clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" "$CAAPF_MANAGED_LABEL" --overwrite
+    done
+
+    # Namespaces where at least one Fleet resource was labeled.
+    declare -A BNM_NAMESPACES
+    # Union set of CAPI cluster namespaces and ClusterClass namespaces.
+    declare -A ALL_MIGRATION_NAMESPACES
+    for NS in "${!CAPI_CLUSTER_NAMESPACES[@]}" "${!CLASS_NAMESPACES[@]}"; do
+        ALL_MIGRATION_NAMESPACES["$NS"]=1
+    done
     
-    # 3. Find and Pause Fleet Resources
-    log "Find Fleet resources targeting CAAPF-managed clusters..."
-    RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io")
-    MIGRATED_NAMESPACES=""
+    log "Add migration labels to Fleet resources that are located in CAPI cluster and class namespaces..."
+    RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io" "bundles.fleet.cattle.io")
     for RES in "${RESOURCES[@]}"; do
         log "Pausing and labeling $RES..."
-        if [[ "$RES" == "helmops.fleet.cattle.io" ]]; then
-            BUNDLE_OWNER_LABEL="fleet.cattle.io/fleet-helm-name"
-        else
-            BUNDLE_OWNER_LABEL="fleet.cattle.io/repo-name"
-        fi
-        # CAAPF-specific labels https://rancher.github.io/cluster-api-addon-provider-fleet/04_reference/01_import-strategy.html#label-synchronization
-        ITEMS=$(kubectl get "$RES" -A -o json | jq -r --arg label1 "$CAAPF_CC_LABEL" --arg label2 "$CAAPF_CC_NS_LABEL" '
-                .items[] |
-                select(
-                    any(.spec.targets[]?;
-                        (.clusterSelector.matchLabels[$label1] != null) or
-                        (.clusterSelector.matchLabels[$label2] != null) or
-                        (any(.clusterSelector.matchExpressions[]?;
-                            .key == $label1 or .key == $label2
-                        ))
-                    )
-                ) |
-                .metadata.namespace + "/" + .metadata.name
-        ')
+        for NS in "${!ALL_MIGRATION_NAMESPACES[@]}"; do
+            ITEMS=$(kubectl get "$RES" -n "$NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+            for NAME in $ITEMS; do
+                if [[ "$RES" == "bundles.fleet.cattle.io" ]]; then
+                    # Skip fleet-agent-* system bundles entirely.
+                    if [[ "$NAME" == fleet-agent-* ]]; then
+                        log "Skipping system bundle $NAME in $NS"
+                        continue
+                    fi
+                    # Skip bundles derived from a GitRepo: they are handled
+                    # alongside the GitRepo resource itself below.
+                    REPO_LABEL=$(kubectl get bundles.fleet.cattle.io "$NAME" -n "$NS" \
+                        -o jsonpath='{.metadata.labels.fleet\.cattle\.io/repo-name}' 2>/dev/null || true)
+                    if [ -n "$REPO_LABEL" ]; then
+                        continue
+                    fi
+                    # Skip bundles derived from a HelmOp: they are handled 
+                    # alongside the HelmOp resource itself below.
+                    HELMOP_LABEL=$(kubectl get bundles.fleet.cattle.io "$NAME" -n "$NS" \
+                        -o jsonpath='{.metadata.labels.fleet\.cattle\.io/fleet-helm-name}' 2>/dev/null || true)
+                    if [ -n "$HELMOP_LABEL" ]; then
+                        continue
+                    fi
+                fi
 
-        for ITEM in $ITEMS; do
-            NS=$(echo "$ITEM" | cut -d'/' -f1); NAME=$(echo "$ITEM" | cut -d'/' -f2)
-            MIGRATED_NAMESPACES="$MIGRATED_NAMESPACES $NS"
-            run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' -p '{"spec":{"paused":true}}'
-            # HelmOp resources propagate any labels that are set in their .spec.labels field, 
-            # to their derived bundles.This is important so that the BundleNamespaceMapping 
-            # resource that is added in the next step, can match the correct bundles.
-            if [[ "$RES" == "helmops.fleet.cattle.io" ]]; then
-                run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type=merge -p '{"spec":{"labels":{"migration.fleet.cattle.io/upgrade-2.14":"true"}}}'
-            else
-                run_cmd kubectl label "$RES" "$NAME" -n "$NS" "$MIGRATION_LABEL" --overwrite
-                BUNDLES=$(kubectl get bundles -n "$NS" -l "$BUNDLE_OWNER_LABEL=$NAME" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
-                for BUNDLE in $BUNDLES; do
-                    run_cmd kubectl label bundle "$BUNDLE" -n "$NS" "$MIGRATION_LABEL" --overwrite
-                done
-            fi
+                BNM_NAMESPACES["$NS"]=1
+
+                # Check if resource is already paused.
+                IS_PAUSED=$(kubectl get "$RES" "$NAME" -n "$NS" -o jsonpath='{.spec.paused}' 2>/dev/null || true)
+
+                if [ "$IS_PAUSED" != "true" ]; then
+                    log "Marking $RES $NS/$NAME for unpausing in post phase..."
+                    run_cmd kubectl label "$RES" "$NAME" -n "$NS" "$PAUSE_LABEL" --overwrite
+                    run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' -p '{"spec":{"paused":true}}'
+                else
+                    log "Skipping adding pause label for $NS/$NAME (already paused)"
+                fi
+
+                # Add migration label.
+                if [[ "$RES" == "helmops.fleet.cattle.io" ]]; then
+                    # Propagate the pause label and the migration label to derived bundles, if the script
+                    # paused this HelmOp resource earlier. Otherwise just propagate the migration label.
+                    if [ "$IS_PAUSED" != "true" ]; then
+                        run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' \
+                            -p "{\"spec\":{\"labels\":{\"${MIGRATION_LABEL%=*}\":\"true\",\"${PAUSE_LABEL%=*}\":\"true\"}}}"
+                    else
+                        run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' \
+                            -p "{\"spec\":{\"labels\":{\"${MIGRATION_LABEL%=*}\":\"true\"}}}"
+                    fi
+                else
+                    # GitRepo/Bundle: label the resource itself.
+                    run_cmd kubectl label "$RES" "$NAME" -n "$NS" "$MIGRATION_LABEL" --overwrite
+
+                    # For GitRepos, also label and pause derived bundles if they are not already paused.
+                    if [[ "$RES" == "gitrepos.fleet.cattle.io" ]]; then
+                        BUNDLES=$(kubectl get bundles.fleet.cattle.io -n "$NS" -l "fleet.cattle.io/repo-name=$NAME" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+                        for BUNDLE in $BUNDLES; do
+                            IS_B_PAUSED=$(kubectl get bundles.fleet.cattle.io "$BUNDLE" -n "$NS" -o jsonpath='{.spec.paused}' 2>/dev/null || true)
+                            if [ "$IS_B_PAUSED" != "true" ]; then
+                                run_cmd kubectl label bundles.fleet.cattle.io "$BUNDLE" -n "$NS" "$PAUSE_LABEL" --overwrite
+                                run_cmd kubectl patch bundles.fleet.cattle.io "$BUNDLE" -n "$NS" --type='merge' -p '{"spec":{"paused":true}}'
+                            fi
+                            run_cmd kubectl label bundles.fleet.cattle.io "$BUNDLE" -n "$NS" "$MIGRATION_LABEL" --overwrite
+                        done
+                    fi
+                fi
+            done
         done
     done
 
-    # 4. Create BundleNamespaceMappings
-    UNIQUE_NS=$(echo "$MIGRATED_NAMESPACES" | tr ' ' '\n' | sort -u)
-    for NS in $UNIQUE_NS; do
-        if [ -z "$NS" ]; then continue; fi
+    # Create BundleNamespaceMappings
+    for NS in "${!BNM_NAMESPACES[@]}"; do
         MAPPING_YAML=$(cat <<EOF
 apiVersion: fleet.cattle.io/v1alpha1
 kind: BundleNamespaceMapping
@@ -151,48 +404,59 @@ metadata:
   namespace: $NS
 bundleSelector:
   matchLabels:
-    migration.fleet.cattle.io/upgrade-2.14: "true"
+    ${MIGRATION_LABEL%=*}: "${MIGRATION_LABEL#*=}"
 namespaceSelector:
   matchLabels:
     kubernetes.io/metadata.name: fleet-default
 EOF
 )
-    if [ "$DRY_RUN" = "true" ]; then
+        if [ "$DRY_RUN" = "true" ]; then
             echo "[DRY-RUN] Would apply the following BundleNamespaceMapping in $NS:"
             echo "$MAPPING_YAML"
         else
             echo "$MAPPING_YAML" | kubectl apply -f -
-    fi
+        fi
     done
     log "Pre-upgrade phase complete."
 elif [ "$PHASE" == "post" ]; then
     log "Starting post-upgrade phase..."
 
-    # 1. Map old Fleet clusters to new Fleet clusters and copy templateValues
-    OLD_FLEET_CLUSTERS=$(kubectl get clusters.fleet.cattle.io -A -l "$CAAPF_CC_LABEL" -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}')
+    # Use labels to find the clusters that were marked in the pre phase.
+    # This is necessary because Turtles removes the CAAPF finalizer from CAPI clusters when use-caapf=false.
+    CAAPF_CLUSTERS=()
+    log "Discovering clusters marked for migration..."
+    ITEMS=$(kubectl get clusters.fleet.cattle.io -A -l "$CAAPF_MANAGED_LABEL" -o json | jq -r '
+        .items[] |
+        (
+            [ .metadata.ownerReferences[]?
+                | select(.kind == "Cluster" and (.apiVersion | startswith("cluster.x-k8s.io")))
+                | .name
+            ][0] // .metadata.name
+        ) as $capi |
+        "\(.metadata.namespace) \(.metadata.name) \($capi)"
+    ' || true)
 
-    for ITEM in $OLD_FLEET_CLUSTERS; do
+    while read -r NS FLEET_NAME CAPI_NAME; do
+        [ -z "$NS" ] && continue
+        CAAPF_CLUSTERS+=("$NS/$FLEET_NAME/$CAPI_NAME")
+    done <<< "$ITEMS"
+
+    # Map old Fleet clusters to new Fleet clusters and copy templateValues.
+    for ITEM in "${CAAPF_CLUSTERS[@]}"; do
         OLD_NS=$(echo "$ITEM" | cut -d'/' -f1)
         OLD_NAME=$(echo "$ITEM" | cut -d'/' -f2)
+        CAPI_NAME=$(echo "$ITEM" | cut -d'/' -f3)
 
-        # Skip fleet-local and fleet-default namespaces
+        # Skip fleet-local and fleet-default namespaces.
         if [[ "$OLD_NS" == "fleet-local" || "$OLD_NS" == "fleet-default" ]]; then
             continue
         fi
 
-        # Get CAPI Cluster details from the old Fleet cluster labels
-        # CAAPF propagates labels from the CAPI cluster to the Fleet cluster
-        CAPI_NAME=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o jsonpath="{.metadata.labels['$CAPI_NAME_LABEL']}")
         CAPI_NS="$OLD_NS"
-
-        if [ -z "$CAPI_NAME" ]; then
-            # Fallback to name if label is missing
-            CAPI_NAME=$OLD_NAME
-        fi
 
         log "Searching for management cluster associated with CAPI Cluster $CAPI_NS/$CAPI_NAME..."
 
-        # Find the Rancher management cluster that owns this CAPI cluster
+        # Find the Rancher management cluster that owns this CAPI cluster.
         MGT_CLUSTER_NAME=$(kubectl get clusters.management.cattle.io -l "$RANCHER_CAPI_OWNER=$CAPI_NAME,$RANCHER_CAPI_NS=$CAPI_NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 
         if [ -z "$MGT_CLUSTER_NAME" ]; then
@@ -200,7 +464,7 @@ elif [ "$PHASE" == "post" ]; then
             continue
         fi
 
-        # The new Fleet cluster name in fleet-default is the same as the management cluster name
+        # The new Fleet cluster name in fleet-default is the same as the management cluster name.
         NEW_FLEET_CLUSTER_NAME=$MGT_CLUSTER_NAME
 
         log "Waiting for new Fleet cluster '$NEW_FLEET_CLUSTER_NAME' in fleet-default..."
@@ -215,41 +479,43 @@ elif [ "$PHASE" == "post" ]; then
             sleep 30
         done
 
-        # Copy templateValues
-        TEMPLATE_VALUES=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o jsonpath='{.spec.templateValues}' 2>/dev/null || echo "{}")
+        # Copy templateValues.
+        TEMPLATE_VALUES=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o json 2>/dev/null \
+            | jq -c '.spec.templateValues // {}' \
+            || echo "{}")
 
-        if [ -n "$TEMPLATE_VALUES" ] && [ "$TEMPLATE_VALUES" != "{}" ]; then
+        if [ -n "$TEMPLATE_VALUES" ] && [ "$TEMPLATE_VALUES" != "{}" ] && [ "$TEMPLATE_VALUES" != "null" ]; then
             log "Copying templateValues from $OLD_NAME to $NEW_FLEET_CLUSTER_NAME..."
             run_cmd kubectl patch clusters.fleet.cattle.io "$NEW_FLEET_CLUSTER_NAME" -n fleet-default --type='merge' -p "{\"spec\":{\"templateValues\":$TEMPLATE_VALUES}}"
         fi
     done
 
-    # 2. Unpause migrated resources
-    log "Unpausing migrated GitRepos and HelmOps..."
-    RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io")
+    # Unpause migrated resources.
+    log "Unpausing migrated GitRepos, HelmOps and Bundles..."
+    RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io" "bundles.fleet.cattle.io")
     for RES in "${RESOURCES[@]}"; do
-        if [[ "$RES" == "helmops.fleet.cattle.io" ]]; then
-            ITEMS=$(kubectl get "$RES" -A -o json | jq -r '
-                .items[] |
-                select(.spec.labels["migration.fleet.cattle.io/upgrade-2.14"] == "true") |
-                .metadata.namespace + "/" + .metadata.name
-            ')
-        else
-            ITEMS=$(kubectl get "$RES" -A -l "$MIGRATION_LABEL" -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}')
-        fi
-        for ITEM in $ITEMS; do
-            NS=$(echo "$ITEM" | cut -d'/' -f1)
-            NAME=$(echo "$ITEM" | cut -d'/' -f2)
+        ITEMS=$(kubectl get "$RES" -A -l "${PAUSE_LABEL%=*}=true" -o json 2>/dev/null \
+            | jq -r '.items[] | "\(.metadata.namespace) \(.metadata.name)"' || true)
+        while read -r NS NAME; do
+            [ -z "$NS" ] && continue
             log "Unpausing $RES: $NS/$NAME"
             run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' -p '{"spec":{"paused":false}}'
+            # Remove the pause label after unpausing
+            run_cmd kubectl label "$RES" "$NAME" -n "$NS" "${PAUSE_LABEL%=*}"-
+            # For HelmOps, also strip pause label from spec.labels.
+            if [[ "$RES" == "helmops.fleet.cattle.io" ]]; then
+                run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' \
+                    -p "{\"spec\":{\"labels\":{\"${PAUSE_LABEL%=*}\":null}}}"
+            fi
             if [ "$DRY_RUN" != "true" ]; then sleep 5; fi
-        done
+        done <<< "$ITEMS"
     done
-    
+
     log "Cleanup: Deleting old CAAPF-managed Fleet clusters..."
-    for ITEM in $OLD_FLEET_CLUSTERS; do
+    for ITEM in "${CAAPF_CLUSTERS[@]}"; do
         OLD_NS=$(echo "$ITEM" | cut -d'/' -f1)
         OLD_NAME=$(echo "$ITEM" | cut -d'/' -f2)
+        CAPI_NAME=$(echo "$ITEM" | cut -d'/' -f3)
 
         # Safety check: Do not delete clusters in fleet-local or fleet-default
         if [[ "$OLD_NS" == "fleet-local" || "$OLD_NS" == "fleet-default" ]]; then
@@ -257,15 +523,30 @@ elif [ "$PHASE" == "post" ]; then
             continue
         fi
 
-        CAPI_NAME=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o jsonpath="{.metadata.labels['$CAPI_NAME_LABEL']}")
         CAPI_NS="$OLD_NS"
-        if [ -z "$CAPI_NAME" ]; then CAPI_NAME=$OLD_NAME; fi
 
         NEW_FLEET_CLUSTER_NAME=$(kubectl get clusters.management.cattle.io -l "$RANCHER_CAPI_OWNER=$CAPI_NAME,$RANCHER_CAPI_NS=$CAPI_NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
         if [ -z "$NEW_FLEET_CLUSTER_NAME" ]; then
             log "Warning: Could not find new Fleet cluster for $OLD_NS/$OLD_NAME. Skipping deletion."
             continue
         fi
+
+        # Wait for the new Fleet cluster to reconcile before comparing bundles.
+        log "Waiting for $NEW_FLEET_CLUSTER_NAME to reconcile before comparing bundles..."
+        WAIT_RETRIES=0
+        while true; do
+            IFS='|' read -r STATUS_NS R D <<< "$(kubectl get clusters.fleet.cattle.io "$NEW_FLEET_CLUSTER_NAME" -n fleet-default -o json 2>/dev/null \
+                | jq -r '"\(.status.namespace // "")|\(.status.summary.ready // 0)|\(.status.summary.desiredReady // 0)"' \
+                || echo "|0|0")" || true
+            if [ -n "$STATUS_NS" ] && [ "$R" = "$D" ]; then break; fi
+            if [ "$DRY_RUN" = "true" ]; then break; fi
+            WAIT_RETRIES=$((WAIT_RETRIES + 1))
+            if [ "$WAIT_RETRIES" -ge 20 ]; then
+                log "Warning: $NEW_FLEET_CLUSTER_NAME not reconciled (status.namespace='$STATUS_NS' ready=$R desired=$D) after 10 minutes. Skipping deletion."
+                continue 2
+            fi
+            sleep 30
+        done
 
         OLD_BD_NS=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o jsonpath='{.status.namespace}' 2>/dev/null || true)
         NEW_BD_NS=$(kubectl get clusters.fleet.cattle.io "$NEW_FLEET_CLUSTER_NAME" -n fleet-default -o jsonpath='{.status.namespace}' 2>/dev/null || true)
@@ -274,15 +555,35 @@ elif [ "$PHASE" == "post" ]; then
             continue
         fi
 
-        OLD_BD_COUNT=$(kubectl get bundledeployments -n "$OLD_BD_NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-        NEW_BD_COUNT=$(kubectl get bundledeployments -n "$NEW_BD_NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-        if [ "$OLD_BD_COUNT" -ne "$NEW_BD_COUNT" ]; then
-            log "Warning: BundleDeployment count mismatch for $OLD_NAME ($OLD_BD_COUNT) vs $NEW_FLEET_CLUSTER_NAME ($NEW_BD_COUNT). Skipping deletion."
+        # Check that the bundles that target the old cluster are now targeting the new cluster 
+        # too. If a bundle was paused before pre-phase then show it as missing and skip deleting
+        # the old cluster.
+        OLD_KEYS=$(bd_bundle_keys "$OLD_BD_NS" "$OLD_NAME")
+        NEW_KEYS=$(bd_bundle_keys "$NEW_BD_NS" "$NEW_FLEET_CLUSTER_NAME")
+        MISSING=$(comm -23 <(echo "$OLD_KEYS") <(echo "$NEW_KEYS"))
+
+        if [ -n "$MISSING" ]; then
+            log "Warning: bundles present on $OLD_NAME but missing on $NEW_FLEET_CLUSTER_NAME (skipping deletion):"
+            log "$MISSING"
             continue
         fi
 
-        log "BundleDeployment counts match ($OLD_BD_COUNT). Deleting old Fleet cluster: $OLD_NS/$OLD_NAME"
+        log "All bundles from $OLD_NAME present on $NEW_FLEET_CLUSTER_NAME. Deleting old Fleet cluster: $OLD_NS/$OLD_NAME"
         run_cmd kubectl delete clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS"
+
+        # Also delete CAAPF BNM after the old Fleet cluster is deleted.
+        CLASS_NS=$(kubectl get clusters.cluster.x-k8s.io "$CAPI_NAME" -n "$OLD_NS" -o json \
+            2>/dev/null | jq -r '
+                .spec.topology.classRef.namespace //
+                .spec.topology.classNamespace //
+                empty
+            ' || true)
+        if [ -n "$CLASS_NS" ] && [ "$CLASS_NS" != "$OLD_NS" ]; then
+            if kubectl get bundlenamespacemappings.fleet.cattle.io "$OLD_NS" -n "$CLASS_NS" &>/dev/null; then
+                log "Deleting dead CAAPF BNM $CLASS_NS/$OLD_NS (targeted cluster namespace $OLD_NS)..."
+                run_cmd kubectl delete bundlenamespacemappings.fleet.cattle.io "$OLD_NS" -n "$CLASS_NS"
+            fi
+        fi
     done
 
     log "Post-upgrade phase complete."
