@@ -404,6 +404,29 @@ docker-build-and-push-community:
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
 
+REPO ?= rancher
+IMAGE ?= turtles
+IMAGE_NAME ?= $(REPO)/$(IMAGE):$(TAG)
+PUSH_BUILD_TAGS ?= community
+
+.PHONY: push-image
+push-image: buildx-machine docker-pull-prerequisites ## Build and push community image (used by publish-image action for public registry)
+	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+			$(IID_FILE_FLAG) \
+			$(BUILDX_ARGS) \
+			--platform=$(TARGET_PLATFORMS) \
+			--push \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=. \
+			--build-arg go_build_tags=$(PUSH_BUILD_TAGS) \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(IMAGE_NAME)
+
+.PHONY: push-prime-image
+push-prime-image: ## Build and push prime image with SBOM and provenance attestations
+	BUILDX_ARGS="--sbom=true --attest type=provenance,mode=max" \
+	$(MAKE) push-image PUSH_BUILD_TAGS=prime
+
 ##@ Deployment
 
 ifndef ignore-not-found

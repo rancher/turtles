@@ -3,11 +3,7 @@ name: Turtles release
 on:
   push:
     tags:
-      # This is just a temporary filter while we maintain two release workflows.
-      # TODO: change to "v*" when this becomes the only one.
-      - "v0.2[5-9].*"
-      - "v0.[3-9]*"
-      - "v[1-9]*"
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -15,183 +11,57 @@ permissions:
   id-token: write # to read vault secrets
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-        - platform: linux/amd64
-          tag-suffix: "linux-amd64"
-        - platform: linux/arm64
-          tag-suffix: "linux-arm64"
-    env:
-      TAG: ${{ github.ref_name }}
+  publish-images:
+    runs-on: [runs-on, runner=8cpu-linux-x64, "run-id=${{ github.run_id }}", image=ubuntu22-full-x64]
     steps:
     - name: Checkout code
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
 
-    - name: Setup QEMU
-      uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
-      with:
-        image: tonistiigi/binfmt:qemu-v8.1.5
-        cache-image: false
-
     - name: Read Vault secrets
-      uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
+      uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89
       with:
         secrets: |
           secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
           secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials password | DOCKER_PASSWORD ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGE_REGISTRY ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGE_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGE_REGISTRY_PASSWORD ;
-
-    - name: Log into Docker Hub registry
-      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-      with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
-
-    - name: Log into Staging registry
-      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-      with:
-        username: ${{ env.STAGE_REGISTRY_USERNAME }}
-        password: ${{ env.STAGE_REGISTRY_PASSWORD }}
-        registry: ${{ env.STAGE_REGISTRY }}
-
-    - name: Build and push community image
-      shell: bash
-      env:
-        REGISTRY: docker.io
-        ORG: rancher
-      run: |
-        IID_FILE=$(mktemp)
-        make docker-build-and-push-community TAG=${{ env.TAG }}-${{ matrix.tag-suffix }} REGISTRY=${{ env.REGISTRY }} ORG=${{ env.ORG }} IID_FILE=${IID_FILE} TARGET_PLATFORMS=${{ matrix.platform }}
-
-    - name: Build and push prime image
-      shell: bash
-      env:
-        REGISTRY: ${{ env.STAGE_REGISTRY }}
-        ORG: rancher
-      run: |
-        IID_FILE=$(mktemp)
-        make docker-build-and-push-prime TAG=${{ env.TAG }}-${{ matrix.tag-suffix }} REGISTRY=${{ env.REGISTRY }} ORG=${{ env.ORG }} IID_FILE=${IID_FILE} TARGET_PLATFORMS=${{ matrix.platform }}
-
-  merge:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-        - image-type: community
-        - image-type: prime
-    env:
-      TAG: ${{ github.ref_name }}
-    needs:
-    - release
-    steps:
-    - name: Read Vault secrets
-      uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
-      with:
-        secrets: |
-          secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials password | DOCKER_PASSWORD ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGE_REGISTRY ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGE_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGE_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | PRIME_STG_REGISTRY ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | PRIME_STG_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | PRIME_STG_REGISTRY_PASSWORD ;
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
-    - name: Log into Docker Hub registry
-      if: ${{ matrix.image-type == 'community' }}
-      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+    - name: Push image to DockerHub
+      uses: rancher/ecm-distro-tools/actions/publish-image@5d6e63896fea85836b2fca6dfb9236bcefe2aaa5
       with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+        image: turtles
+        tag: ${{ github.ref_name }}
+        platforms: linux/amd64,linux/arm64
+        push-to-prime: false
+        public-repo: rancher
+        public-username: ${{ env.DOCKER_USERNAME }}
+        public-password: ${{ env.DOCKER_PASSWORD }}
+        make-target: push-image
 
-    - name: Log into Staging registry
-      if: ${{ matrix.image-type == 'prime' }}
-      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+    - name: Push image to staging registry
+      if: ${{ !contains(github.ref_name, '-rc') }}
+      uses: rancher/ecm-distro-tools/actions/publish-image@5d6e63896fea85836b2fca6dfb9236bcefe2aaa5
       with:
-        username: ${{ env.STAGE_REGISTRY_USERNAME }}
-        password: ${{ env.STAGE_REGISTRY_PASSWORD }}
-        registry: ${{ env.STAGE_REGISTRY }}
-
-    - name: Install Cosign
-      if: ${{ matrix.image-type == 'prime' }}
-      uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
-
-    - name: Install slsactl
-      if: ${{ matrix.image-type == 'prime' }}
-      uses: rancherlabs/slsactl/actions/install-slsactl@3c6d1c0351b2edae98b6305c41772084a267848b # v0.1.30
-
-    - name: Create multi-platform image and push
-      shell: bash
-      run: |
-        IMAGE="turtles"
-        if [ "${{ matrix.image-type }}" = "community" ]; then
-          URL="docker.io/rancher/${IMAGE}:${{ env.TAG }}"
-          docker buildx imagetools create -t "${URL}" \
-            "${URL}-linux-amd64" \
-            "${URL}-linux-arm64"
-          echo "Pushed multi-platform image: ${URL}"
-        elif [ "${{ matrix.image-type }}" = "prime" ]; then
-          URL="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}"
-          docker buildx imagetools create -t "${URL}" \
-            "${URL}-linux-amd64" \
-            "${URL}-linux-arm64"
-          echo "Pushed multi-platform image: ${URL}"
-
-          # Extract the multi-platform image digest for signing
-          docker pull ${URL}
-          IMAGE_DIGEST=$( docker inspect --format='{{index .RepoDigests 0}}' ${URL} | sed 's/.*@//' )
-          # Set as environment variable for next steps
-          MULTI_PLATFORM_IMAGE="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}@${IMAGE_DIGEST}"
-          echo "MULTI_PLATFORM_IMAGE"=${MULTI_PLATFORM_IMAGE} >> "$GITHUB_ENV"
-
-          # Also set a tag-specific variable for provenance attestation step
-          MULTI_PLATFORM_IMAGE_TAG="${{ env.STAGE_REGISTRY }}/rancher/${IMAGE}:${{ env.TAG }}@${IMAGE_DIGEST}"
-          echo "MULTI_PLATFORM_IMAGE_TAG"=${MULTI_PLATFORM_IMAGE_TAG} >> "$GITHUB_ENV"
-        fi
-
-    - name: Sign multi-platform image
-      shell: bash
-      if: ${{ matrix.image-type == 'prime' }}
-      run: |
-        cosign sign \
-          --oidc-provider=github-actions \
-          --yes \
-          --sign-container-identity="${{ env.PRIME_REGISTRY }}/rancher/${IMAGE}" \
-          "${MULTI_PLATFORM_IMAGE}"
-
-    - name: Attest provenance
-      shell: bash
-      if: ${{ matrix.image-type == 'prime' }}
-      run: |
-        max_retries=3
-        retry_delay=5
-        i=0
-
-        while [ "${i}" -lt "${max_retries}" ]; do
-            if slsactl download provenance --format=slsav1 "${MULTI_PLATFORM_IMAGE_TAG}" > provenance-slsav1.json; then
-                break
-            fi
-            if [ "${i}" -eq "$(( max_retries - 1 ))" ]; then
-                echo "ERROR: Failed to generate slsav1 provenance. Check whether the image is present in the Prime registry."
-                exit 1
-            fi
-            i=$(( i + 1 ))
-            sleep "${retry_delay}"
-        done
-
-        cat provenance-slsav1.json
-        cosign attest --yes --predicate provenance-slsav1.json --type slsaprovenance1 "${MULTI_PLATFORM_IMAGE}"
+        image: turtles
+        tag: ${{ github.ref_name }}
+        platforms: linux/amd64,linux/arm64
+        push-to-public: false
+        prime-repo: rancher
+        identity-registry: ${{ env.PRIME_REGISTRY }}
+        prime-registry: ${{ env.PRIME_STG_REGISTRY }}
+        prime-username: ${{ env.PRIME_STG_REGISTRY_USERNAME }}
+        prime-password: ${{ env.PRIME_STG_REGISTRY_PASSWORD }}
+        prime-make-target: push-prime-image
 
   chart-release:
     name: Helm chart release
     uses: ./.github/workflows/chart-release.yml
     needs:
-    - merge
+    - publish-images
     with:
       tag: ${{ github.ref_name }}
       org: rancher
