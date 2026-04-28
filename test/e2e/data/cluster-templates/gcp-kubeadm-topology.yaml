@@ -1,3 +1,12 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${CLUSTER_NAME}-gcp-credentials
+  namespace: ${NAMESPACE}
+type: Opaque
+stringData:
+  credentials: "${GCP_CREDENTIALS}"
+---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
@@ -36,4 +45,8 @@ spec:
         value: ${GCP_IMAGE_ID_FORMATTED}
       - name: machineType
         value: ${GCP_MACHINE_TYPE}
+      - name: credentialSecretName
+        value: ${CLUSTER_NAME}-gcp-credentials
+      - name: credentialSecretNamespace
+        value: ${NAMESPACE}
     version: ${GCP_KUBERNETES_VERSION}

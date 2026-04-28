@@ -48,7 +48,7 @@ env:
   # GCP Credentials and Configuration
   GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
   GCP_NETWORK_NAME: ${{ secrets.GCP_NETWORK_NAME }}
-  CAPG_ENCODED_CREDS: ${{ secrets.CAPG_ENCODED_CREDS }}
+  GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
   # Azure Credentials
   AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}

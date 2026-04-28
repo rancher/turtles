@@ -57,6 +57,18 @@ spec:
         openAPIV3Schema:
           description: "The GCP network name"
           type: string
+    - name: credentialSecretName
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "Name of the Secret containing GCP credentials for this cluster"
+          type: string
+    - name: credentialSecretNamespace
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: "Namespace of the Secret containing GCP credentials"
+          type: string
   patches:
     - name: project
       definitions:
@@ -118,6 +130,20 @@ spec:
               path: /spec/template/spec/network/name
               valueFrom:
                 variable: networkName
+    - name: credentialsRef
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPManagedClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/credentialsRef
+              valueFrom:
+                template: |
+                  name: "{{ .credentialSecretName }}"
+                  namespace: "{{ .credentialSecretNamespace }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPManagedClusterTemplate
@@ -130,6 +156,9 @@ spec:
       region: ""
       network:
         name: ""
+      credentialsRef:
+        name: ""
+        namespace: ""
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPManagedControlPlaneTemplate
