@@ -48,6 +48,13 @@ spec:
     name: {{ index .Values "providers" "infrastructureAWS" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "infrastructureAWS" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "infrastructureAWS" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "infrastructureAWS" "fetchConfig" "url" }}
