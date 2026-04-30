@@ -164,7 +164,7 @@ CHART_TESTING_VER := v3.14.0
 TAG ?= dev
 ARCH ?= linux/$(shell go env GOARCH)
 TARGET_BUILD ?= prime
-TARGET_PLATFORMS := linux/amd64,linux/arm64
+TARGET_PLATFORMS ?= linux/amd64,linux/arm64
 MACHINE := rancher-turtles
 REGISTRY ?= ghcr.io
 ORG ?= rancher
@@ -389,16 +389,30 @@ docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-bu
 			--build-arg go_build_tags=$(TARGET_BUILD) \
 			--build-arg ldflags="$(LDFLAGS)" . -t $(CONTROLLER_IMG):$(TAG)
 
-.PHONY: docker-build-and-push-prime
-docker-build-and-push-prime:
-	$(MAKE) docker-build-and-push TARGET_BUILD=prime
-
-.PHONY: docker-build-and-push-community
-docker-build-and-push-community:
-	$(MAKE) docker-build-and-push TARGET_BUILD=community
-
 docker-list-all:
 	@echo $(CONTROLLER_IMG):${TAG}
+
+# The following targets are called by the publish-image action in the release workflow.
+# See .github/workflows/release.yml for details.
+# The docker-build-and-push* targets above were used by the old release workflow.
+.PHONY: push-image
+push-image: docker-pull-prerequisites ## Build and push community image (called by publish-image action)
+	DOCKER_BUILDKIT=1 docker buildx build \
+		$(IID_FILE_FLAG) \
+		$(BUILDX_ARGS) \
+		--platform=$(TARGET_PLATFORMS) \
+		--push \
+		--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+		--build-arg goproxy=$(GOPROXY) \
+		--build-arg package=. \
+		--build-arg go_build_tags=community \
+		--build-arg ldflags="$(LDFLAGS)" . -t $(REPO)/$(CONTROLLER_IMAGE_NAME):$(TAG)
+
+.PHONY: push-prime-image
+push-prime-image: ## Build and push prime image with SBOM and provenance (called by publish-image action)
+	BUILDX_ARGS="--sbom=true --attest type=provenance,mode=max" \
+	$(MAKE) push-image TARGET_BUILD=prime
+
 
 ##@ Deployment
 
