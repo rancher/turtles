@@ -40,13 +40,14 @@ const (
 )
 
 func init() {
-	utilruntime.Must(MutableGates.Add(defaultGates))
+	utilruntime.Must(MutableGates.Add(DefaultGates))
 }
 
-var defaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
+// DefaultGates are the default settings for Turtles feature gates.
+var DefaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AgentTLSMode:              {Default: true, PreRelease: featuregate.Beta},
 	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
-	NoCertManager:             {Default: false, PreRelease: featuregate.Alpha},
-	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Alpha},
+	NoCertManager:             {Default: true, PreRelease: featuregate.Beta},
+	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Beta},
 	UseCAAPF:                  {Default: false, PreRelease: featuregate.Alpha},
 }

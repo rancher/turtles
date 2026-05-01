@@ -133,6 +133,10 @@ func main() {
 		setupLog.Info("insecure-skip-verify is True. This should only be used for development and testing purposes. Use at your own risk.")
 	}
 
+	for featureGate := range feature.DefaultGates {
+		setupLog.Info(fmt.Sprintf("Feature '%s' enabled: %t", featureGate, feature.Gates.Enabled(featureGate)))
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: server.Options{
