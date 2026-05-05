@@ -30,7 +30,6 @@ GO_VERSION ?= $(shell grep "go " go.mod | head -1 |awk '{print $$NF}')
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 REPO ?= rancher/turtles
 
-CAPI_VERSION ?= $(shell grep "sigs.k8s.io/cluster-api" go.mod | head -1 |awk '{print $$NF}')
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
 CAPI_MANIFEST_UPDATE_VERSION ?= $(shell curl -s "https://api.github.com/repos/rancher-sandbox/cluster-api/releases/latest" | jq -r ".tag_name")
@@ -158,9 +157,6 @@ GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT_VER := $(shell cat .github/workflows/golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER))
 GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-
-NOTES_BIN := notes
-NOTES := $(abspath $(TOOLS_BIN_DIR)/$(NOTES_BIN))
 
 CHART_TESTING_VER := v3.14.0
 
@@ -475,9 +471,6 @@ $(ENVSUBST_BIN): $(ENVSUBST) ## Build a local copy of envsubst.
 .PHONY: $(KUSTOMIZE_BIN)
 $(KUSTOMIZE_BIN): $(KUSTOMIZE) ## Build a local copy of kustomize.
 
-.PHONY: $(NOTES_BIN)
-$(NOTES_BIN): $(NOTES) ## Build a local copy of kustomize.
-
 .PHONY: $(SETUP_ENVTEST_BIN)
 $(SETUP_ENVTEST_BIN): $(SETUP_ENVTEST) ## Build a local copy of setup-envtest.
 
@@ -511,9 +504,6 @@ $(GINKGO): # Build ginkgo from tools folder.
 
 $(GOLANGCI_LINT): # Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOLANGCI_LINT_PKG) $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
-
-$(NOTES): # Download and install note generator from cluster-api commit
-	hack/make-release-notes.sh $(TOOLS_BIN_DIR) $(CAPI_VERSION)
 
 $(GH): # Download GitHub cli into the tools bin folder
 	hack/ensure-gh.sh \
@@ -565,7 +555,7 @@ $(CHART_PACKAGE_DIR):
 
 .PHONY: release
 release: clean-release $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
-	$(MAKE) release-chart
+	$(MAKE) build-chart
 
 .PHONY: build-chart
 build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PACKAGE_DIR) ## Builds the chart to publish with a release
@@ -586,11 +576,6 @@ build-providers-chart: $(HELM) $(RELEASE_DIR) $(PROVIDERS_CHART_RELEASE_DIR) $(C
 	cp -rf $(PROVIDERS_CHART_DIR)/* $(PROVIDERS_CHART_RELEASE_DIR)
 	cd $(PROVIDERS_CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(PROVIDERS_CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
-
-.PHONY: release-chart
-release-chart: $(HELM) $(NOTES) build-chart verify-gen
-	$(NOTES) --repository $(REPO) -add-kubernetes-version-support=false -from=tags/$(PREVIOUS_TAG) -release=$(RELEASE_TAG) -branch=main > $(CHART_RELEASE_DIR)/RELEASE_NOTES.md
-	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
 
 .PHONY: test-chart
 test-chart: build-chart
