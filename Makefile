@@ -376,7 +376,7 @@ docker-build-community: ## Build docker image with community tag
 	$(MAKE) docker-build TARGET_BUILD=community
 
 .PHONY: docker-build-and-push
-docker-build-and-push: buildx-machine docker-pull-prerequisites ## Run docker-build-and-push targets for all architectures
+docker-build-and-push: buildx-machine docker-pull-prerequisites ## Build and push multi-arch image for all platforms
 	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build $(ADDITIONAL_COMMANDS) \
 			--platform $(TARGET_PLATFORMS) \
 			--push \
@@ -394,7 +394,6 @@ docker-list-all:
 
 # The following targets are called by the publish-image action in the release workflow.
 # See .github/workflows/release.yml for details.
-# The docker-build-and-push* targets above were used by the old release workflow.
 .PHONY: push-image
 push-image: docker-pull-prerequisites ## Build and push community image (called by publish-image action)
 	DOCKER_BUILDKIT=1 docker buildx build \
