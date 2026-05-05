@@ -48,6 +48,13 @@ spec:
     name: {{ index .Values "providers" "infrastructureGCP" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "infrastructureGCP" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "infrastructureGCP" "fetchConfig" "url" }}

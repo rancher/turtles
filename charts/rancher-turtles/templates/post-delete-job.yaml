@@ -66,6 +66,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: post-delete-job
       containers:
       - name: cluster-api-operator-mutatingwebhook-cleanup
@@ -99,6 +105,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: post-delete-job
       containers:
       - name: cluster-api-operator-validatingwebhook-cleanup
@@ -132,6 +144,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: post-delete-job
       restartPolicy: Never
       containers:
@@ -166,6 +184,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: post-delete-job
       restartPolicy: Never
       containers:
