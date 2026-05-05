@@ -55,6 +55,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: pre-delete-job
       containers:
       - name: rancher-capiprovider-cleanup
@@ -91,6 +97,12 @@ spec:
   ttlSecondsAfterFinished: 300
   template:
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: pre-delete-job
       containers:
       - name: rancher-clusterctlconfig-cleanup

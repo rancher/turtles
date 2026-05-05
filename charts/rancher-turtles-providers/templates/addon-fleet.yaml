@@ -104,6 +104,13 @@ spec:
     name: {{ index .Values "providers" "addonFleet" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "addonFleet" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "addonFleet" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "addonFleet" "fetchConfig" "url" }}

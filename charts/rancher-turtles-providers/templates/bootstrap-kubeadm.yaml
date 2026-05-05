@@ -40,6 +40,13 @@ spec:
     name: {{ index .Values "providers" "bootstrapKubeadm" "configSecret" "name" }}
     namespace: {{ index .Values "providers" "bootstrapKubeadm" "configSecret" "namespace" }}
 {{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
 {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" }}
   fetchConfig:
     {{- if index .Values "providers" "bootstrapKubeadm" "fetchConfig" "url" }}
