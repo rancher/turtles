@@ -103,20 +103,11 @@ type deployRancherValuesFile struct {
 	Hostname          string `json:"hostname"`
 }
 
-type ngrokCredentials struct {
-	NgrokAPIKey    string `json:"apiKey" yaml:"apiKey"`
-	NgrokAuthToken string `json:"authtoken" yaml:"authtoken"`
-}
-type deployRancherIngressValuesFile struct {
-	Credentials ngrokCredentials `json:"credentials" yaml:"credentials"`
-}
-
 // DeployRancher deploys Rancher using the provided input parameters.
 // It expects the required input parameters to be non-nil.
 // It then updates the Rancher chart repository.
 // The function generates the extra values file for Rancher and writes it to the Helm extra values path.//
 // If RancherIngressConfig is provided, the function sets up the ingress for Rancher.
-// If RancherServicePatch is provided, the function updates the Rancher service.
 // The function waits for the Rancher webhook rollout and the fleet controller rollout.
 //
 // Note: Use UpgradeInstallRancherWithGitea instead to bootstrap Rancher using a custom Turtles system chart.
@@ -321,21 +312,6 @@ type RancherDeployIngressInput struct {
 
 	// EnvironmentType is the type of the invironment to select ingress to be deployed.
 	EnvironmentType e2e.ManagementClusterEnvironmentType `env:"MANAGEMENT_CLUSTER_ENVIRONMENT"`
-
-	// NgrokApiKey is the API key for Ngrok.
-	NgrokApiKey string `env:"NGROK_API_KEY"`
-
-	// NgrokAuthToken is the authentication token for Ngrok.
-	NgrokAuthToken string `env:"NGROK_AUTHTOKEN"`
-
-	// NgrokPath is the path to the Ngrok binary.
-	NgrokPath string `env:"NGROK_PATH"`
-
-	// NgrokRepoName is the name of the Ngrok repository.
-	NgrokRepoName string `env:"NGROK_REPO_NAME"`
-
-	// NgrokRepoURL is the URL of the Ngrok repository.
-	NgrokRepoURL string `env:"NGROK_URL"`
 }
 
 // RancherDeployIngress deploys an ingress based on the provided input.
@@ -343,10 +319,6 @@ type RancherDeployIngressInput struct {
 // - If the IngressType is CustomIngress:
 //   - CustomIngress, CustomIngressNamespace, CustomIngressDeployment, and IngressWaitInterval must not be empty.
 //   - deployIsolatedModeIngress is called with the provided context and input.
-//
-// - If the IngressType is NgrokIngress:
-//   - NgrokApiKey, NgrokAuthToken, NgrokPath, NgrokRepoName, NgrokRepoURL, and HelmExtraValuesPath must not be empty.
-//   - deployNgrokIngress is called with the provided context and input.
 //
 // - If the IngressType is EKSNginxIngress:
 //   - IngressWaitInterval must not be nil.
@@ -364,14 +336,6 @@ func RancherDeployIngress(ctx context.Context, input RancherDeployIngressInput) 
 	case e2e.ManagementClusterEnvironmentIsolatedKind:
 		Expect(input.CustomIngress).ToNot(BeEmpty(), "CustomIngress is required when using custom ingress")
 		deployIsolatedModeIngress(ctx, input)
-	case e2e.ManagementClusterEnvironmentKind:
-		Expect(input.NgrokApiKey).ToNot(BeEmpty(), "NgrokApiKey is required when using ngrok ingress")
-		Expect(input.NgrokAuthToken).ToNot(BeEmpty(), "NgrokAuthToken is required when using ngrok ingress")
-		Expect(input.NgrokPath).ToNot(BeEmpty(), "NgrokPath is required  when using ngrok ingress")
-		Expect(input.NgrokRepoName).ToNot(BeEmpty(), "NgrokRepoName is required when using ngrok ingress")
-		Expect(input.NgrokRepoURL).ToNot(BeEmpty(), "NgrokRepoURL is required when using ngrok ingress")
-		Expect(input.HelmExtraValuesPath).ToNot(BeNil(), "HelmExtraValuesPath is when using ngrok ingress")
-		deployNgrokIngress(ctx, input)
 	case e2e.ManagementClusterEnvironmentEKS:
 		deployEKSIngress(input)
 	case e2e.ManagementClusterEnvironmentInternalKind:
@@ -425,57 +389,6 @@ func deployEKSIngress(input RancherDeployIngressInput) {
 		"service.type": "LoadBalancer",
 	})
 	Expect(err).ToNot(HaveOccurred())
-}
-
-func deployNgrokIngress(ctx context.Context, input RancherDeployIngressInput) {
-	By("Setting up ngrok-ingress-controller")
-	addChart := &opframework.HelmChart{
-		BinaryPath:      input.HelmBinaryPath,
-		Name:            input.NgrokRepoName,
-		Path:            input.NgrokRepoURL,
-		Commands:        opframework.Commands(opframework.Repo, opframework.Add),
-		AdditionalFlags: opframework.Flags("--force-update"),
-		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
-	}
-	_, err := addChart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
-
-	updateChart := &opframework.HelmChart{
-		BinaryPath: input.HelmBinaryPath,
-		Commands:   opframework.Commands(opframework.Repo, opframework.Update),
-		Kubeconfig: input.BootstrapClusterProxy.GetKubeconfigPath(),
-	}
-	_, err = updateChart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
-
-	yamlExtraValues, err := yaml.Marshal(deployRancherIngressValuesFile{
-		Credentials: ngrokCredentials{
-			NgrokAPIKey:    input.NgrokApiKey,
-			NgrokAuthToken: input.NgrokAuthToken,
-		},
-	})
-	Expect(err).ToNot(HaveOccurred())
-	err = os.WriteFile(input.HelmExtraValuesPath, yamlExtraValues, 0644)
-	Expect(err).ToNot(HaveOccurred())
-
-	installFlags := opframework.Flags(
-		"--timeout", "5m",
-		"--values", input.HelmExtraValuesPath,
-	)
-
-	installChart := &opframework.HelmChart{
-		BinaryPath:      input.HelmBinaryPath,
-		Name:            input.NgrokRepoName,
-		Path:            input.NgrokPath,
-		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
-		Wait:            true,
-		AdditionalFlags: installFlags,
-	}
-	_, err = installChart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
-
-	By("Setting up default ingress class")
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, input.DefaultIngressClassPatch)).To(Succeed())
 }
 
 func deployTraefikIngressLoadBalancer(ctx context.Context, input RancherDeployIngressInput) {
@@ -662,12 +575,6 @@ func PreRancherInstallHook(input PreRancherInstallHookInput) PreRancherInstallHo
 
 		result.Hostname = hostname
 		result.IngressClassName = input.RancherIngressClassName
-	case e2e.ManagementClusterEnvironmentKind:
-		By("Using RANCHER_HOSTNAME")
-		// i.e. we are using ngrok locally
-		result.Hostname = input.RancherHostname
-		result.IngressClassName = input.RancherIngressClassName
-		result.ConfigPatches = [][]byte{e2e.RancherServicePatch, e2e.IngressConfig, e2e.SystemStoreSettingPatch}
 	case e2e.ManagementClusterEnvironmentInternalKind:
 		By("Using RANCHER_HOSTNAME for internal kind")
 		result.Hostname = input.RancherHostname

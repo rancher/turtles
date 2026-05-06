@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       MANAGEMENT_CLUSTER_ENVIRONMENT:
-        description: "The infrastructure to use for the management cluster: eks, kind or isolated-kind"
+        description: "The infrastructure to use for the management cluster: eks or isolated-kind"
         type: string
         required: true
         default: "eks"
@@ -36,11 +36,7 @@ env:
   GITHUB_USERNAME: ${{ github.actor }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Rancher Credentials
-  RANCHER_HOSTNAME: ${{ secrets.NGROK_DOMAIN }}
   RANCHER_PASSWORD: ${{ secrets.RANCHER_PASSWORD }}
-  # Ngrok Credentials
-  NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
   # AWS Credentials
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

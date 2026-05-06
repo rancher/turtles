@@ -1,0 +1,94 @@
+newtInstances:
+  - name: turtles-dev-tunnel
+    auth:
+      existingSecretName: newt-auth
+    enabled: true
+    blueprintFile: /etc/newt/provisioning-blueprint.yaml
+    blueprintData: |
+      public-resources:
+        ${RANCHER_HOSTNAME}:
+          name: Rancher HTTP
+          protocol: http
+          full-domain: ${RANCHER_HOSTNAME}
+          targets:
+          - site: ${PANGOLIN_SITE_IDENTIFIER}
+            hostname: rancher.cattle-system.svc.cluster.local
+            method: http
+            port: 80
+            healthcheck:
+              hostname: rancher.cattle-system.svc.cluster.local
+              port: 80
+              enabled: true
+              path: /
+              interval: 30
+              timeout: 5
+              method: GET
+              status: 200
+        ${GITEA_HOSTNAME}:
+          name: Gitea HTTP
+          protocol: http
+          full-domain: ${GITEA_HOSTNAME}
+          targets:
+          - site: ${PANGOLIN_SITE_IDENTIFIER}
+            hostname: gitea-http.gitea.svc.cluster.local
+            method: http
+            port: 3000
+            healthcheck:
+              hostname: gitea-http.gitea.svc.cluster.local
+              port: 3000
+              enabled: true
+              path: /
+              interval: 30
+              timeout: 5
+              method: GET
+              status: 200
+    networkPolicy:
+      enabled: true
+      components:
+        defaultApp:
+          enabled: true
+          egress:
+            - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: kube-system
+                podSelector:
+                  matchLabels:
+                    k8s-app: kube-dns
+              ports:
+                - port: 53
+                  protocol: UDP
+                - port: 53
+                  protocol: TCP
+            - to:
+              - ipBlock:
+                  cidr: ${PANGOLIN_IP_ADDRESS}/32
+              ports:
+              - protocol: UDP
+                port: 21820
+              - protocol: UDP
+                port: 51820
+              - protocol: TCP
+                port: 443
+            - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: cattle-system
+              - podSelector:
+                  matchLabels:
+                    app: rancher
+              ports:
+                - protocol: TCP
+                  port: 80
+                - protocol: TCP
+                  port: 443
+            - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: gitea
+              - podSelector:
+                  matchLabels:
+                    app: gitea
+              ports:
+                - protocol: TCP
+                  port: 3000

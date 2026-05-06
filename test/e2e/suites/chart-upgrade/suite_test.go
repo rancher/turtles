@@ -87,9 +87,8 @@ var _ = SynchronizedBeforeSuite(
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{
-			BootstrapClusterProxy:    setupClusterResult.BootstrapClusterProxy,
-			CustomIngress:            e2e.TraefikIngress,
-			DefaultIngressClassPatch: e2e.IngressClassPatch,
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			CustomIngress:         e2e.TraefikIngress,
 		})
 
 		By("Deploying Gitea for chart repository")
