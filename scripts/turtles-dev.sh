@@ -125,6 +125,12 @@ helm install rancher rancher-$RANCHER_CHANNEL/rancher \
     --version="$RANCHER_VERSION" \
     --set ingress.tls.source=secret \
     --set privateCA=true \
+    --set "extraEnv[0].name=CATTLE_CHART_DEFAULT_URL" \
+    --set "extraEnv[0].value=http://gitea-http.gitea.svc.cluster.local:3000/gitea/charts.git" \
+    --set "extraEnv[1].name=CATTLE_CHART_DEFAULT_BRANCH" \
+    --set "extraEnv[1].value=$RANCHER_CHARTS_BASE_BRANCH" \
+    --set "extraEnv[2].name=CATTLE_RANCHER_TURTLES_VERSION" \
+    --set "extraEnv[2].value=$RANCHER_CHART_DEV_VERSION" \
     --wait
 
 # Deploy Rancher test Nodeport
@@ -142,20 +148,20 @@ echo "Rancher is accessible locally!"
 # Now both services are ready, start ngrok with both endpoints
 NGROK_CONFIG_FILE="/tmp/ngrok-turtles-dev.yml"
 cat > "$NGROK_CONFIG_FILE" <<EOF
-version: 2
-authtoken: $NGROK_AUTHTOKEN
-tunnels:
-  rancher:
-    proto: http
-    addr: http://localhost:30080
-    hostname: $RANCHER_HOSTNAME
-  gitea:
-    proto: http
-    addr: http://localhost:30001
-    hostname: gitea.$RANCHER_HOSTNAME
+version: 3
+
+agent:
+  authtoken: $NGROK_AUTHTOKEN
+  api_key: $NGROK_API_KEY
+
+endpoints:
+  - name: rancher
+    url: $RANCHER_HOSTNAME
+    upstream:
+      url: http://localhost:30080
 EOF
 
-echo "Starting ngrok with both Rancher and Gitea endpoints..."
+echo "Starting ngrok with Rancher endpoint..."
 ngrok start --all --config "$NGROK_CONFIG_FILE" --log stdout > /tmp/ngrok-turtles-dev.log 2>&1 &
 NGROK_PID=$!
 echo "ngrok started with PID: $NGROK_PID"
@@ -166,23 +172,6 @@ if ! kill -0 $NGROK_PID 2>/dev/null; then
     cat /tmp/ngrok-turtles-dev.log
     exit 1
 fi
-
-# Wait for both endpoints to be accessible via ngrok
-echo "Waiting for Gitea to be accessible via ngrok (https://gitea.$RANCHER_HOSTNAME)..."
-RETRY_COUNT=0
-MAX_RETRIES=30
-until [ "$(curl -s -o /dev/null -w "%{http_code}" https://gitea.$RANCHER_HOSTNAME)" = "200" ]; do 
-    RETRY_COUNT=$((RETRY_COUNT+1))
-    if [ $RETRY_COUNT -gt $MAX_RETRIES ]; then
-        echo "ERROR: Gitea not accessible via ngrok after $MAX_RETRIES attempts"
-        echo "ngrok logs:"
-        cat /tmp/ngrok-turtles-dev.log
-        exit 1
-    fi
-    echo "Waiting for gitea via ngrok (attempt $RETRY_COUNT/$MAX_RETRIES)..."
-    sleep 2
-done
-echo "Gitea is accessible via ngrok!"
 
 echo "Waiting for Rancher to be accessible via ngrok (https://$RANCHER_HOSTNAME)..."
 RETRY_COUNT=0
@@ -201,15 +190,6 @@ echo "Rancher is accessible via ngrok!"
 
 envsubst <test/e2e/data/rancher/rancher-setting-patch.yaml | kubectl apply -f -
 kubectl apply -f test/e2e/data/rancher/system-store-setting-patch.yaml
-
-# Update Rancher deployment with environment variables pointing to Gitea charts
-kubectl set env deployment/rancher -n cattle-system \
-    CATTLE_CHART_DEFAULT_URL=https://gitea.$RANCHER_HOSTNAME/gitea/charts.git \
-    CATTLE_CHART_DEFAULT_BRANCH=$RANCHER_CHARTS_BASE_BRANCH \
-    CATTLE_RANCHER_TURTLES_VERSION=$RANCHER_CHART_DEV_VERSION
-
-# Wait for Rancher to restart with new config
-kubectl rollout status deployment/rancher -n cattle-system --timeout=300s
 
 install_local_providers_chart() {
     make build-providers-chart
