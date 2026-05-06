@@ -32,7 +32,7 @@ REPO ?= rancher/turtles
 
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
 CAPI_UPSTREAM_RELEASES ?= $(CAPI_UPSTREAM_REPO)/releases
-CAPI_MANIFEST_UPDATE_VERSION ?= $(shell curl -s "https://api.github.com/repos/rancher-sandbox/cluster-api/releases/latest" | jq -r ".tag_name")
+CAPI_MANIFEST_UPDATE_VERSION ?= $(shell curl -s "https://api.github.com/repos/rancher/cluster-api/releases/latest" | jq -r ".tag_name")
 CAPI_MANIFEST_OUTPUT_FILE ?= $(CHART_DIR)/templates/core-provider-configmap.yaml
 
 # Use GOPROXY environment variable if set

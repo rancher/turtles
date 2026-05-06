@@ -7,7 +7,6 @@ on:
         description: CAPI Core version (ex. 'v1.2.3' or empty for latest)
         required: false
 
-
 env:
   TURTLES_REF: "${{ github.ref_name }}"
   GH_TOKEN: "${{ github.token }}"
@@ -36,7 +35,7 @@ jobs:
           CAPI_MANIFEST_UPDATE_VERSION=${{ inputs.capi_version }}
           if [ -z "${CAPI_MANIFEST_UPDATE_VERSION}" ]; then
             echo "Fetching latest CAPI Core version"
-            CAPI_MANIFEST_UPDATE_VERSION=$(curl -s "https://api.github.com/repos/rancher-sandbox/cluster-api/releases/latest" | jq -r ".tag_name")
+            CAPI_MANIFEST_UPDATE_VERSION=$(curl -s "https://api.github.com/repos/rancher/cluster-api/releases/latest" | jq -r ".tag_name")
             echo "Found version ${CAPI_MANIFEST_UPDATE_VERSION}"
           fi
           echo "CAPI_MANIFEST_UPDATE_VERSION=${CAPI_MANIFEST_UPDATE_VERSION}" >> $GITHUB_ENV
