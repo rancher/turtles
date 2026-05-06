@@ -32,12 +32,6 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Setup QEMU
-      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
-      with:
-        image: tonistiigi/binfmt:qemu-v8.1.5
-        cache-image: false
-
     - name: Read Vault secrets
       uses: rancher-eio/read-vault-secrets@main
       with:
@@ -47,37 +41,35 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials registry | STAGE_REGISTRY ;
           secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials username | STAGE_REGISTRY_USERNAME ;
           secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGE_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
-    - name: Log into Docker Hub registry
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+    - name: Push community image to DockerHub
+      uses: rancher/ecm-distro-tools/actions/publish-image@067de5ae5517b661b4d2f10e22cc5a21aa0ac915
       with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+        image: turtles
+        tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
+        platforms: ${{ matrix.platform }}
+        push-to-public: true
+        push-to-prime: false
+        public-repo: rancher
+        public-username: ${{ env.DOCKER_USERNAME }}
+        public-password: ${{ env.DOCKER_PASSWORD }}
+        make-target: push-image
 
-    - name: Log into Staging registry
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+    - name: Push prime image to staging registry
+      uses: rancher/ecm-distro-tools/actions/publish-image@067de5ae5517b661b4d2f10e22cc5a21aa0ac915
       with:
-        username: ${{ env.STAGE_REGISTRY_USERNAME }}
-        password: ${{ env.STAGE_REGISTRY_PASSWORD }}
-        registry: ${{ env.STAGE_REGISTRY }}
-
-    - name: Build and push community image
-      shell: bash
-      env:
-        REGISTRY: docker.io
-        ORG: rancher
-      run: |
-        IID_FILE=$(mktemp)
-        make docker-build-and-push-community TAG=${{ env.TAG }}-${{ matrix.tag-suffix }} REGISTRY=${{ env.REGISTRY }} ORG=${{ env.ORG }} IID_FILE=${IID_FILE} TARGET_PLATFORMS=${{ matrix.platform }}
-
-    - name: Build and push prime image
-      shell: bash
-      env:
-        REGISTRY: ${{ env.STAGE_REGISTRY }}
-        ORG: rancher
-      run: |
-        IID_FILE=$(mktemp)
-        make docker-build-and-push-prime TAG=${{ env.TAG }}-${{ matrix.tag-suffix }} REGISTRY=${{ env.REGISTRY }} ORG=${{ env.ORG }} IID_FILE=${IID_FILE} TARGET_PLATFORMS=${{ matrix.platform }}
+        image: turtles
+        tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
+        platforms: ${{ matrix.platform }}
+        push-to-public: false
+        push-to-prime: true
+        prime-repo: rancher
+        identity-registry: ${{ env.PRIME_REGISTRY }}
+        prime-registry: ${{ env.STAGE_REGISTRY }}
+        prime-username: ${{ env.STAGE_REGISTRY_USERNAME }}
+        prime-password: ${{ env.STAGE_REGISTRY_PASSWORD }}
+        prime-make-target: push-prime-image
 
   merge:
     runs-on: ubuntu-latest
@@ -117,14 +109,6 @@ jobs:
         password: ${{ env.STAGE_REGISTRY_PASSWORD }}
         registry: ${{ env.STAGE_REGISTRY }}
 
-    - name: Install Cosign
-      if: ${{ matrix.image-type == 'prime' }}
-      uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
-
-    - name: Install slsactl
-      if: ${{ matrix.image-type == 'prime' }}
-      uses: rancherlabs/slsactl/actions/install-slsactl@a5177a3699b7cabfa4797e883314dde7e40523cc # v0.1.22
-
     - name: Create multi-platform image and push
       shell: bash
       run: |
@@ -154,6 +138,14 @@ jobs:
           echo "MULTI_PLATFORM_IMAGE_TAG"=${MULTI_PLATFORM_IMAGE_TAG} >> "$GITHUB_ENV"
         fi
 
+    - name: Install Cosign
+      if: ${{ matrix.image-type == 'prime' }}
+      uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+
+    - name: Install slsactl
+      if: ${{ matrix.image-type == 'prime' }}
+      uses: rancherlabs/slsactl/actions/install-slsactl@d70524abe2bec09b488ab946abcb4bef9c1331bf # v0.1.31
+
     - name: Sign multi-platform image
       shell: bash
       if: ${{ matrix.image-type == 'prime' }}
@@ -161,7 +153,7 @@ jobs:
         cosign sign \
           --oidc-provider=github-actions \
           --yes \
-          --sign-container-identity="${{ env.PRIME_REGISTRY }}/rancher/${IMAGE}" \
+          --sign-container-identity="${{ env.PRIME_REGISTRY }}/rancher/turtles" \
           "${MULTI_PLATFORM_IMAGE}"
 
     - name: Attest provenance
