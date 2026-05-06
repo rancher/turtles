@@ -94,8 +94,8 @@ targets:
     kind: file
     spec:
       file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: "https://github.com/rancher-sandbox/cluster-api/releases/(.*)/"
-      replacepattern: 'https://github.com/rancher-sandbox/cluster-api/releases/{{ source "capirelease" }}/'
+      matchpattern: "https://github.com/rancher/cluster-api/releases/(.*)/"
+      replacepattern: 'https://github.com/rancher/cluster-api/releases/{{ source "capirelease" }}/'
     scmid: turtles
     sourceid: capirelease # Will be ignored as `replacepattern` is specified
   bumpcapicommunity:

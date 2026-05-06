@@ -2,7 +2,7 @@
 
 # script-specific variables
 CAPI_VERSION="${CAPI_VERSION:-latest}"
-CAPI_RELEASE_URL="${CAPI_RELEASE_URL:-https://github.com/rancher-sandbox/cluster-api/releases/${CAPI_VERSION}/core-components.yaml}"
+CAPI_RELEASE_URL="${CAPI_RELEASE_URL:-https://github.com/rancher/cluster-api/releases/${CAPI_VERSION}/core-components.yaml}"
 CORE_CAPI_NAMESPACE="${CORE_CAPI_NAMESPACE:-cattle-capi-system}"
 OUTPUT_FILE="${OUTPUT_FILE:-/tmp/core-provider-configmap.yaml}"
 ARTIFACTS_FOLDER="${ARTIFACTS_FOLDER:-_artifacts}"
