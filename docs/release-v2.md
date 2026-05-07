@@ -24,6 +24,15 @@ The providers chart should also be released whenever there is a new version of T
 
 * Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release before creating a new tag for the release. The version should match the Turtles version.
 
+* If you are cutting a release candidate for a new patch, ensure that all dependencies are bumped to the latest available patch version. This includes:
+  - go version
+  - go.mod direct dependencies
+  - CAPI providers (including Core)
+  - rancher/kuberlr-kubectl image
+
+  In case CAPI providers are updated, ensure test coverage by running the e2e long and/or vSphere suites against the related release branch.
+
+
 ### Create a new tag for the release
 
 Creating a new tag on `rancher/turtles` triggers a GitHub Actions [workflow](https://github.com/rancher/turtles/actions/workflows/release-v2.yaml) that builds the container images for the given tag and pushes them to their respective registries.
