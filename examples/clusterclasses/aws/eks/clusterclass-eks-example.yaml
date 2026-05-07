@@ -20,7 +20,7 @@ spec:
           templateRef:
             name: "eks-md-0"
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
-            kind: EKSConfigTemplate
+            kind: NodeadmConfigTemplate
         infrastructure:
           templateRef:
             name: "eks-md-0"
@@ -40,6 +40,12 @@ spec:
           description: "AWS SSH key name to use"
           type: string
           default: ""
+    - name: eksLookupType
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: "AmazonLinux2023"
     - name: instanceType
       required: false
       schema:
@@ -102,6 +108,10 @@ spec:
                   - default-worker
           jsonPatches:
             - op: add
+              path: /spec/template/spec/ami/eksLookupType
+              valueFrom:
+                variable: eksLookupType
+            - op: add
               path: /spec/template/spec/sshKeyName
               valueFrom:
                 variable: sshKeyName
@@ -138,11 +148,15 @@ metadata:
 spec:
   template:
     spec:
+      ami:
+        eksLookupType: "AmazonLinux2023"
+      cloudInit:
+        insecureSkipSecretsManager: true
       instanceType: "replaced_by_patch"
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
-kind: EKSConfigTemplate
+kind: NodeadmConfigTemplate
 metadata:
   name: "eks-md-0"
 spec:
