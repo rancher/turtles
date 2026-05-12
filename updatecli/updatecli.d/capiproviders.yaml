@@ -20,7 +20,7 @@ sources:
     kind: githubrelease
     name: Get the latest core CAPI release
     spec:
-      owner: "rancher-sandbox"
+      owner: "rancher"
       repository: "cluster-api"
       token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
