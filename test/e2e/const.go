@@ -202,7 +202,7 @@ const (
 )
 
 const (
-	CAPIVersion = "v1.12.2"
+	CAPIVersion = "v1.12.7"
 )
 
 const (
