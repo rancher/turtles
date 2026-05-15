@@ -6,7 +6,7 @@ metadata:
 spec:
   providers:
   - name: vsphere
-    url: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/v1.12.0/infrastructure-components.yaml
+    url: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/v1.14.0/infrastructure-components.yaml
     type: InfrastructureProvider
   images:
   - name: infrastructure-vsphere

@@ -27,6 +27,7 @@ import (
 	"github.com/blang/semver/v4"
 	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	accorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
@@ -89,9 +90,13 @@ func SyncConfigMap(ctx context.Context, c client.Client, owner string) error {
 		return fmt.Errorf("serializing updated ClusterctlConfig: %w", err)
 	}
 
-	configMap.Data["clusterctl.yaml"] = string(clusterctlYaml)
+	acConfigMap := accorev1.ConfigMap(configMap.GetName(), configMap.GetNamespace())
 
-	if err := c.Patch(ctx, configMap, client.Apply, []client.PatchOption{
+	acConfigMap.Data = map[string]string{
+		"clusterctl.yaml": string(clusterctlYaml),
+	}
+
+	if err := c.Apply(ctx, acConfigMap, []client.ApplyOption{
 		client.ForceOwnership,
 		client.FieldOwner(owner),
 	}...); err != nil {

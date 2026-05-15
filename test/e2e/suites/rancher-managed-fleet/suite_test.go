@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/rancher/turtles/test/e2e"
-	"github.com/rancher/turtles/test/framework"
 	"github.com/rancher/turtles/test/testenv"
 )
 
@@ -114,18 +113,14 @@ var _ = SynchronizedBeforeSuite(
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      "rancher-turtles-controller-manager",
-				Namespace: e2e.NewRancherTurtlesNamespace,
+				Namespace: e2e.RancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
-
-		By("Applying test ClusterctlConfig")
-		Expect(framework.Apply(ctx, setupClusterResult.BootstrapClusterProxy, e2e.ClusterctlConfig)).To(Succeed())
 
 		// Currently only CAPD and CARKE2 are needed for this suite
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
-			UseLegacyCAPINamespace:  false,
-			RancherTurtlesNamespace: e2e.NewRancherTurtlesNamespace,
+			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
 			ProviderList:            "docker,rke2",
 		})
 

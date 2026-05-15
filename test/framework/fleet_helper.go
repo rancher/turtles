@@ -121,7 +121,7 @@ func FleetCreateAndWaitGitRepo(ctx context.Context, input FleetCreateGitRepoInpu
 	err = t.Execute(&renderedTemplate, input)
 	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
 
-	pollingTime := 1 * time.Minute
+	pollingTime := 2 * time.Minute
 	Eventually(func() error {
 		Byf("Checking if GitRepo %s/%s exists", input.Namespace, input.Name)
 		repo := &unstructured.Unstructured{}
@@ -154,6 +154,13 @@ func FleetCreateAndWaitGitRepo(ctx context.Context, input FleetCreateGitRepoInpu
 		}, repo); err != nil {
 			return fmt.Errorf("refreshing unstructured GitRepo: %w", err)
 		}
+
+		By("Dumping GitRepo")
+		repoJson, err := repo.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("Marshalling unstructured GitRepo: %w", err)
+		}
+		GinkgoWriter.Printf("%s", string(repoJson))
 
 		By("Checking if GitRepo is Ready")
 		if repo.GetDeletionTimestamp() != nil {

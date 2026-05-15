@@ -65,7 +65,6 @@ const (
 
 	deployCAPIControllerManager = "capi-controller-manager"
 	namespaceCAPISystem         = "cattle-capi-system"
-	legacyNamespaceCAPISystem   = "capi-system"
 
 	deployKubeadmBootstrapControllerManager = "capi-kubeadm-bootstrap-controller-manager"
 	namespaceKubeadmBootstrapSystem         = "capi-kubeadm-bootstrap-system"
@@ -122,11 +121,6 @@ type DeployRancherTurtlesProvidersInput struct {
 	// ProviderList is an optional comma-separated list of providers to enable on first install.
 	// Examples: "all", "azure,aws".
 	ProviderList string `env:"TURTLES_PROVIDERS" envDefault:"all"`
-
-	// UseLegacyCAPINamespace indicates whether to use legacy namespace (capi-system) for core CAPI provider.
-	// Set to true when installing/upgrading from old Turtles versions (v0.24.x and earlier).
-	// Set to false for new installations with system chart controller (v0.25.x+).
-	UseLegacyCAPINamespace bool
 
 	// RancherTurtlesNamespace indicates the namespace where rancher-turtles is deployed.
 	RancherTurtlesNamespace string
@@ -269,7 +263,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	// Applying provider secrets assumes that the namespaces used for the secrets have been created beforehand by the providers chart.
 	applyProviderSecrets(ctx, input, enabledProviders)
 
-	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders, input.UseLegacyCAPINamespace)
+	deploymentsToWait := getDeploymentsForEnabledProviders(enabledProviders)
 	if len(deploymentsToWait) > 0 {
 		By("Waiting for provider deployments to be ready")
 		Expect(input.WaitDeploymentsReadyInterval).ToNot(BeNil(), "WaitDeploymentsReadyInterval is required when waiting for deployments")
@@ -351,14 +345,9 @@ func getEnabledCAPIProviders(values map[string]string) []string {
 	return out
 }
 
-func getDeploymentsForEnabledProviders(enabled []string, useLegacyCAPINamespace bool) []types.NamespacedName {
-	capiNamespace := namespaceCAPISystem
-	if useLegacyCAPINamespace {
-		capiNamespace = legacyNamespaceCAPISystem
-	}
-
+func getDeploymentsForEnabledProviders(enabled []string) []types.NamespacedName {
 	deployments := []types.NamespacedName{
-		{Name: deployCAPIControllerManager, Namespace: capiNamespace},
+		{Name: deployCAPIControllerManager, Namespace: namespaceCAPISystem},
 	}
 
 	for _, name := range enabled {
@@ -391,18 +380,6 @@ func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesPr
 			values["providers.infrastructureAWS.variables.EXP_EXTERNAL_RESOURCE_GC"] = "true"
 			values["providers.infrastructureAWS.variables.CAPA_LOGLEVEL"] = "5"
 			values["providers.infrastructureAWS.manager.syncPeriod"] = "5m"
-		case providerDocker:
-			By("Configuring Docker provider with OCI registry")
-			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
-				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: input.RancherTurtlesNamespace,
-				ConfigMapName:      "clusterctl-config",
-			})
-			dockerVersion := getProviderVersion(clusterctl, "docker")
-			Expect(dockerVersion).ToNot(BeEmpty(), "Docker provider version must be available in clusterctl config")
-
-			values["providers.infrastructureDocker.fetchConfig.oci"] = fmt.Sprintf("%s:%s", defaultOCIRegistry, dockerVersion)
-			By("Using Docker provider version " + dockerVersion + " from OCI registry")
 		}
 	}
 }

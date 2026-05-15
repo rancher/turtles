@@ -119,7 +119,7 @@ var _ = SynchronizedBeforeSuite(
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      "rancher-turtles-controller-manager",
-				Namespace: e2e.NewRancherTurtlesNamespace,
+				Namespace: e2e.RancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 

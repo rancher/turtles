@@ -26,6 +26,10 @@ on:
         description: Skip deleting git repo and cluster tests
         default: false
         type: boolean
+      continue_on_error:
+        description: Ignore test errors
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -113,6 +117,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run e2e tests
+        continue-on-error: ${{ inputs.continue_on_error }}
         run: make test-e2e
       - name: Collect run artifacts
         if: always()

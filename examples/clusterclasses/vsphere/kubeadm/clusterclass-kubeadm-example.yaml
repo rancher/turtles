@@ -10,12 +10,12 @@ spec:
       name: vsphere-kubeadm-example-controlplane
     machineInfrastructure:
       templateRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: VSphereMachineTemplate
         name: vsphere-kubeadm-example-controlplane
   infrastructure:
     templateRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: VSphereClusterTemplate
       name: vsphere-kubeadm-example
   workers:
@@ -28,7 +28,7 @@ spec:
             name: vsphere-kubeadm-example-worker
         infrastructure:
           templateRef:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereMachineTemplate
             name: vsphere-kubeadm-example-worker
   variables:
@@ -141,7 +141,7 @@ spec:
               valueFrom:
                 variable: vSphereTLSThumbprint
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -167,10 +167,9 @@ spec:
                   powerOffMode: trySoft
                   resourcePool: '{{ .vSphereResourcePool }}'
                   server: '{{ .vSphereServer }}'
-                  storagePolicyName: ''
                   template: '{{ .vSphereTemplate }}'
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereMachineTemplate
             matchResources:
               controlPlane: true
@@ -194,10 +193,9 @@ spec:
                   powerOffMode: trySoft
                   resourcePool: '{{ .vSphereResourcePool }}'
                   server: '{{ .vSphereServer }}'
-                  storagePolicyName: ''
                   template: '{{ .vSphereTemplate }}'
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -380,7 +378,7 @@ spec:
                 names:
                   - vsphere-kubeadm-example-worker
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereClusterTemplate
 metadata:
   name: vsphere-kubeadm-example
@@ -390,6 +388,7 @@ spec:
       identityRef:
         kind: VSphereClusterIdentity
         name: cluster-identity
+      server: "set-by-patch"
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
@@ -446,7 +445,7 @@ spec:
         - mkdir -p /etc/pre-kubeadm-commands
         - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort); do echo "Running script $script"; "$script"; done
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-kubeadm-example-controlplane
@@ -459,7 +458,7 @@ spec:
       network:
         devices: []
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-kubeadm-example-worker

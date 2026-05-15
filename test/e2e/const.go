@@ -24,23 +24,8 @@ import (
 )
 
 var (
-	//go:embed data/capi-operator/capi-providers.yaml
-	CapiProviders []byte
-
-	//go:embed data/capi-operator/capi-providers-oci.yaml
-	CapiProvidersOci []byte
-
-	//go:embed data/capi-operator/capv-provider.yaml
-	CapvProvider []byte
-
-	//go:embed data/capi-operator/aws-provider.yaml
-	AWSProvider []byte
-
-	//go:embed data/capi-operator/gcp-provider.yaml
-	GCPProvider []byte
-
-	//go:embed data/capi-operator/azure-provider.yaml
-	AzureProvider []byte
+	//go:embed data/capi-operator/community-providers.yaml
+	CommunityProviders []byte
 
 	//go:embed data/capi-operator/capa-identity-secret.yaml
 	AWSIdentitySecret []byte
@@ -87,9 +72,6 @@ var (
 	//go:embed data/cluster-templates/docker-rke2-topology.yaml
 	CAPIDockerRKE2Topology []byte
 
-	//go:embed data/cluster-templates/docker-rke2-v1beta1-topology.yaml
-	CAPIDockerRKE2V1Beta1Topology []byte
-
 	//go:embed data/cluster-templates/aws-eks-topology.yaml
 	CAPIAwsEKSTopology []byte
 
@@ -119,9 +101,6 @@ var (
 
 	//go:embed data/cluster-templates/vsphere-rke2-topology.yaml
 	CAPIvSphereRKE2Topology []byte
-
-	//go:embed data/capi-operator/clusterctlconfig.yaml
-	ClusterctlConfig []byte
 
 	// CAPIProvider test data
 
@@ -153,11 +132,10 @@ var (
 )
 
 const (
-	RancherTurtlesNamespace    = "rancher-turtles-system"
-	NewRancherTurtlesNamespace = "cattle-turtles-system"
-	RancherNamespace           = "cattle-system"
-	TraefikIngressNamespace    = "traefik"
-	TraefikIngressDeployment   = "traefik"
+	RancherTurtlesNamespace  = "cattle-turtles-system"
+	RancherNamespace         = "cattle-system"
+	TraefikIngressNamespace  = "traefik"
+	TraefikIngressDeployment = "traefik"
 )
 
 type ManagementClusterEnvironmentType string
@@ -205,7 +183,7 @@ const (
 )
 
 const (
-	CAPIVersion = "v1.12.2"
+	CAPIVersion = "v1.13.1"
 )
 
 const (
