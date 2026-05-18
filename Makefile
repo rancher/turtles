@@ -149,6 +149,8 @@ HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
 CLUSTERCTL_VER := v1.13.1
+# update sha256 with each CAPI bump for security validation
+CLUSTERCTL_VER_SHA256 := 1604175d27395566c58456e77f1af0478d124ac0d6427265ece2c7fe0bdba88d
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 CLUSTERCTL_CONFIG_PATH := ${ROOT_DIR}/test/e2e/config/clusterctl-config.yaml
@@ -210,7 +212,9 @@ CACHE_COMMANDS = "--cache-from type=local,src=$(CACHE_DIR) --cache-to type=local
 # ETCD Verification
 ETCD_VERIFY_SCRIPT_PATH := $(ROOT_DIR)/scripts/collect-etcd-data.sh
 VERIFY_EKS_ETCD_SCRIPT_PATH := $(ROOT_DIR)/scripts/verify-eks-etcd-size.sh
-ETCD_VERSION := v3.6.9
+ETCD_VERSION := v3.6.11
+# update sha256 with each etcd bump for security validation
+ETCD_VERSION_SHA256 := 8756f7a4eaf921668a83de0bf13c0f65cae9186a165696e3ae8396afe6f557ed
 
 .PHONY: all
 all: build
@@ -531,6 +535,7 @@ kubectl: # Download kubectl cli into tools bin folder
 $(HELM): ## Put helm into tools folder.
 	mkdir -p $(TOOLS_BIN_DIR)
 	rm -f "$(TOOLS_BIN_DIR)/$(HELM_BIN)*"
+	# the official helm installation script performs checksum validation.
 	curl --retry $(CURL_RETRIES) -fsSL -o $(TOOLS_BIN_DIR)/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 	chmod 700 $(TOOLS_BIN_DIR)/get_helm.sh
 	USE_SUDO=false HELM_INSTALL_DIR=$(TOOLS_BIN_DIR) DESIRED_VERSION=$(HELM_VER) BINARY_NAME=$(HELM_BIN)-$(HELM_VER) $(TOOLS_BIN_DIR)/get_helm.sh
@@ -539,11 +544,13 @@ $(HELM): ## Put helm into tools folder.
 
 $(CLUSTERCTL): $(TOOLS_BIN_DIR) ## Download and install clusterctl
 	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) $(CAPI_UPSTREAM_RELEASES)/download/$(CLUSTERCTL_VER)/clusterctl-linux-amd64
+	echo "${CLUSTERCTL_VER_SHA256}  $(CLUSTERCTL)" | sha256sum --check
 	chmod +x $(CLUSTERCTL) 
 
 install-etcd-tools: $(TOOLS_BIN_DIR) ## Download and install etcdctl
 	mkdir -p /tmp/etcd-tools-unpack
 	curl -L https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -o /tmp/etcd-tools-unpack/etcd-${ETCD_VERSION}-linux-amd64.tar.gz
+	echo "${ETCD_VERSION_SHA256}  /tmp/etcd-tools-unpack/etcd-${ETCD_VERSION}-linux-amd64.tar.gz" | sha256sum --check
 	tar xzf /tmp/etcd-tools-unpack/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -C /tmp/etcd-tools-unpack --strip-components=1 --no-same-owner
 	mv /tmp/etcd-tools-unpack/etcdctl $(TOOLS_BIN_DIR)/etcdctl
 	mv /tmp/etcd-tools-unpack/etcdutl $(TOOLS_BIN_DIR)/etcdutl
