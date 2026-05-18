@@ -14,7 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -euo pipefail
+
+# Check required tools
+for TOOL in kubectl jq; do
+    if ! command -v "$TOOL" >/dev/null 2>&1; then
+        echo "Error: required tool '$TOOL' not found in PATH." >&2
+        exit 1
+    fi
+done
 
 # Configuration
 DRY_RUN=${DRY_RUN:-true}
@@ -98,7 +106,7 @@ if [ "$PHASE" == "pre" ]; then
         NS=$(echo "$DEPLOY" | cut -d':' -f2)
         if [ "$DRY_RUN" = "true" ]; then continue; fi
         SELECTOR=$(kubectl get deployment -n "$NS" "$NAME" -o json 2>/dev/null \
-            | jq -r '.spec.selector.matchLabels | to_entries | map(.key + "=" + .value) | join(",")')
+            | jq -r '.spec.selector.matchLabels | to_entries | map(.key + "=" + .value) | join(",")' || true)
         if [ -z "$SELECTOR" ] || [ "$SELECTOR" = "null" ]; then
             log "Warning: could not determine pod selector for $NS/$NAME; skipping termination wait."
             continue
@@ -173,7 +181,7 @@ if [ "$PHASE" == "pre" ]; then
         #         otherwise strip these alongside the internal kubernetes.io/* labels)
         # - KEEP: Any custom user labels
         # - DROP: Internal system labels (cattle.io, k8s.io, kubernetes.io)
-        LABELS_JSON=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o json | jq -c '
+        LABELS_JSON=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o json 2>/dev/null | jq -c '
             .metadata.labels
                 | with_entries(
                     select(
@@ -182,7 +190,7 @@ if [ "$PHASE" == "pre" ]; then
                         (.key | test("cattle\\.io|k8s\\.io|kubernetes\\.io") | not)
                     )
                 )
-            )')
+            )' || echo "{}")
 
         if [ -n "$LABELS_JSON" ] && [ "$LABELS_JSON" != "{}" ]; then
             run_cmd kubectl patch clusters.management.cattle.io "$MGT_CLUSTER_NAME" --type='merge' -p "{\"metadata\":{\"labels\":$LABELS_JSON}}"
@@ -250,21 +258,21 @@ if [ "$PHASE" == "pre" ]; then
                     select(.clusterSelector.matchLabels != null) |
                     [$r.metadata.name,
                      (.clusterSelector.matchLabels | to_entries | map(.key + "=" + .value) | join(","))
-                    ] | @tsv'
+                    ] | @tsv' || true
             kubectl get gitrepos.fleet.cattle.io -n "$CAPI_NS" -o json 2>/dev/null | jq -r '
                     .items[] | . as $r |
                     ($r.spec.targets // [])[] |
                     select(.clusterSelector.matchLabels != null) |
                     [$r.metadata.name,
                      (.clusterSelector.matchLabels | to_entries | map(.key + "=" + .value) | join(","))
-                    ] | @tsv'
+                    ] | @tsv' || true
             kubectl get helmops.fleet.cattle.io -n "$CAPI_NS" -o json 2>/dev/null | jq -r '
                 .items[] | . as $r |
                 ($r.spec.targets // [])[] |
                 select(.clusterSelector.matchLabels != null) |
                 [$r.metadata.name,
                  (.clusterSelector.matchLabels | to_entries | map(.key + "=" + .value) | join(","))
-                ] | @tsv'
+                ] | @tsv' || true
         )
 
         while IFS=$'\t' read -r RNAME LABEL_SEL; do
