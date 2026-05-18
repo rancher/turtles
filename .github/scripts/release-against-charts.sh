@@ -142,9 +142,15 @@ sed -i "s/${PREV_CHART_VERSION}/${NEW_CHART_VERSION}/g" ./packages/rancher-turtl
 git add packages/rancher-turtles
 git commit -m "$COMMIT_MSG"
 
+# Fully regenerate chart artifacts
+make pull-scripts
+PACKAGE=rancher-turtles make prepare
+PACKAGE=rancher-turtles make icon
+PACKAGE=rancher-turtles make patch
+PACKAGE=rancher-turtles make clean
 PACKAGE=rancher-turtles make charts
-git add ./assets/rancher-turtles ./charts/rancher-turtles index.yaml
-git commit -m "make charts"
+git add .
+git commit -m "PACKAGE=rancher-turtles make prepare/icon/patch/clean/charts"
 
 # Prepends to list
 yq --inplace ".rancher-turtles = [\"${NEW_CHART_VERSION}+up${NEW_TURTLES_VERSION_SHORT}\"] + .rancher-turtles" release.yaml
