@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	errorutils "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,7 +62,7 @@ const (
 type CAPIImportReconciler struct {
 	Client             client.Client
 	UncachedClient     client.Client
-	recorder           record.EventRecorder
+	recorder           events.EventRecorder
 	WatchFilterValue   string
 	Scheme             *runtime.Scheme
 	InsecureSkipVerify bool
@@ -112,7 +112,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return fmt.Errorf("adding watch for namespaces: %w", err)
 	}
 
-	r.recorder = mgr.GetEventRecorderFor("rancher-turtles")
+	r.recorder = mgr.GetEventRecorder("rancher-turtles")
 	r.controller = c
 	r.externalTracker = external.ObjectTracker{
 		Controller: c,

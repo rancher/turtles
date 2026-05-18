@@ -22,6 +22,7 @@ package capiprovider
 import (
 	"context"
 	_ "embed"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -41,9 +42,11 @@ import (
 
 const (
 	// vSphere is used as a sample certified provider.
-	capvDeploymentName = "capv-controller-manager"
-	capvNamespace      = "capv-system"
-	capvProviderName   = "vsphere"
+	capvDeploymentName  = "capv-controller-manager"
+	capvNamespace       = "capv-system"
+	capvProviderName    = "vsphere"
+	capvInitialVersion  = "v1.14.0" //see test/e2e/data/test-providers/clusterctlconfig.yaml
+	capvUpgradedVersion = "v1.15.0" //see test/e2e/data/test-providers/clusterctlconfig-updated.yaml
 
 	// vCluster is used as an uknown provider.
 	// Uknown in this context means this provider is not certified and not known by clusterctl upstream.
@@ -77,7 +80,8 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			},
 		})
 
-		verifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace}, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.12.0")
+		verifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace},
+			fmt.Sprintf("registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:%s", capvInitialVersion))
 	})
 
 	It("Should have pinned latest installed version", func() {
@@ -85,7 +89,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		Expect(bootstrapClusterProxy.GetClient().
 			Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 			Should(Succeed())
-		Expect(provider.Spec.Version).Should(Equal("v1.12.0"))
+		Expect(provider.Spec.Version).Should(Equal(capvInitialVersion))
 	})
 
 	It("Should notify of available update when bumping ClusterctlConfig", func() {
@@ -106,7 +110,7 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 			return true
 		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition with UpdateAvailable reason")
 		Expect(checkLastVersionCondition.Status).Should(Equal(metav1.ConditionFalse), "UpdateAvailable status must be False")
-		Expect(checkLastVersionCondition.Message).Should(Equal("Provider version update available. Current latest is v1.13.0"))
+		Expect(checkLastVersionCondition.Message).Should(Equal(fmt.Sprintf("Provider version update available. Current latest is %s", capvUpgradedVersion)))
 	})
 
 	It("Should not automatically update provider version", func() {
@@ -114,8 +118,9 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		Expect(bootstrapClusterProxy.GetClient().
 			Get(ctx, types.NamespacedName{Namespace: capvNamespace, Name: capvProviderName}, provider)).
 			Should(Succeed())
-		Expect(provider.Spec.Version).Should(Equal("v1.12.0"))
-		consistentlyVerifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace}, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.12.0")
+		Expect(provider.Spec.Version).Should(Equal(capvInitialVersion))
+		consistentlyVerifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace},
+			fmt.Sprintf("registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:%s", capvInitialVersion))
 	})
 
 	It("Should automatically update provider version if EnabledAutomaticUpdate", func() {
@@ -141,8 +146,9 @@ var _ = Describe("CAPIProvider lifecycle", Ordered, Label(e2e.ShortTestLabel), f
 		}, e2e.LoadE2EConfig().GetIntervals("default", "wait-capiprovider-update")...).
 			Should(BeTrue(), "CAPIProvider must have CheckLatestVersionTime condition True")
 
-		Expect(provider.Spec.Version).Should(Equal("v1.13.0"))
-		verifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace}, "registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:v1.13.0")
+		Expect(provider.Spec.Version).Should(Equal(capvUpgradedVersion))
+		verifyManagerImage(ctx, types.NamespacedName{Name: capvDeploymentName, Namespace: capvNamespace},
+			fmt.Sprintf("registry.k8s.io/cluster-api-vsphere/cluster-api-vsphere-controller:%s", capvUpgradedVersion))
 	})
 
 	It("Should delete vSphere provider and namespace", func() {
@@ -185,6 +191,13 @@ var _ = Describe("no-cert-manager feature verification", Ordered, Label(e2e.Shor
 	BeforeAll(func() {
 		SetClient(bootstrapClusterProxy.GetClient())
 		SetContext(ctx)
+	})
+
+	It("Should apply initial ClusterctlConfig", func() {
+		// This is mainly to avoid installing latest,
+		// which may bring new API versions and generate
+		// conflicts with the CAPIProviders lifecycle test.
+		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.ClusterctlConfigInitial)).Should(Succeed())
 	})
 
 	It("Should install provider", func() {

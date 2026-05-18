@@ -17,16 +17,12 @@ limitations under the License.
 package testenv
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
-	"regexp"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v3"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	"github.com/rancher/turtles/test/e2e"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
@@ -54,9 +49,6 @@ type CAPIOperatorDeployProviderInput struct {
 	// CAPIProvidersYAML is the YAML representation of the CAPI providers.
 	CAPIProvidersYAML [][]byte
 
-	// CAPIProvidersOCIYAML is the YAML representation of the CAPI providers with OCI.
-	CAPIProvidersOCIYAML []OCIProvider
-
 	// WaitDeploymentsReadyInterval is the interval for waiting for deployments to be ready.
 	WaitDeploymentsReadyInterval []interface{} `envDefault:"15m,10s"`
 
@@ -71,11 +63,6 @@ type CAPIOperatorDeployProviderInput struct {
 type ProviderTemplateData struct {
 	// ProviderVersion is the version of the provider
 	ProviderVersion string
-}
-
-type OCIProvider struct {
-	Name string
-	File string
 }
 
 // Provider represents a cluster-api provider with version
@@ -101,11 +88,7 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 
 	Expect(ctx).NotTo(BeNil(), "ctx is required for CAPIOperatorDeployProvider")
 	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for CAPIOperatorDeployProvider")
-	// Ensure at least one provider source is available
-	if (len(input.CAPIProvidersYAML) == 0) &&
-		(len(input.CAPIProvidersOCIYAML) == 0) {
-		Expect(false).To(BeTrue(), "Either CAPIProvidersYAML or CAPIProvidersOCIYAML must be provided")
-	}
+	Expect(len(input.CAPIProvidersYAML)).ShouldNot(BeZero(), "CAPIProvidersYAML must be provided")
 
 	for _, secret := range input.CAPIProvidersSecretsYAML {
 		By("Adding CAPI Operator variables secret")
@@ -119,27 +102,6 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 	for _, provider := range input.CAPIProvidersYAML {
 		By("Adding CAPI Operator provider")
 		Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, provider)).To(Succeed(), "Failed to add CAPI operator providers")
-	}
-
-	for _, ociProvider := range input.CAPIProvidersOCIYAML {
-		if ociProvider.Name != "" && ociProvider.File != "" {
-			By("Adding CAPI Operator provider from OCI: " + ociProvider.Name)
-
-			clusterctl := turtlesframework.GetClusterctl(ctx, turtlesframework.GetClusterctlInput{
-				GetLister:          input.BootstrapClusterProxy.GetClient(),
-				ConfigMapNamespace: e2e.RancherTurtlesNamespace,
-				ConfigMapName:      "clusterctl-config",
-			})
-
-			providerVersion := getProviderVersion(clusterctl, ociProvider.Name)
-			By("Using provider version " + providerVersion + " provider " + ociProvider.Name)
-			Expect(providerVersion).ToNot(BeEmpty(), "Failed to get provider versions from file")
-
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-				Proxy:    input.BootstrapClusterProxy,
-				Template: renderProviderTemplate(ociProvider.File, ProviderTemplateData{ProviderVersion: providerVersion}),
-			})).To(Succeed(), "Failed to apply secret for capi providers")
-		}
 	}
 
 	if len(input.WaitForDeployments) == 0 {
@@ -160,9 +122,6 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 			}, input.WaitDeploymentsReadyInterval...)
 			Expect(input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(deployment), deployment)).Should(Succeed())
 			wantRepository := "registry.suse.com/rancher"
-			if strings.HasPrefix(deployment.Name, "capd") {
-				wantRepository = "gcr.io/k8s-staging-cluster-api"
-			}
 			for _, container := range deployment.Spec.Template.Spec.Containers {
 				Expect(strings.HasPrefix(container.Image, wantRepository), fmt.Sprintf("Container image %s does not use expected repository %s", container.Image, wantRepository))
 			}
@@ -179,47 +138,6 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 			}
 		}
 	}
-}
-
-func renderProviderTemplate(operatorTemplateFile string, data ProviderTemplateData) []byte {
-	Expect(turtlesframework.Parse(&data)).To(Succeed(), "Failed to parse environment variables")
-
-	t := template.New("capi-operator")
-	t, err := t.Parse(operatorTemplateFile)
-	Expect(err).ShouldNot(HaveOccurred(), "Failed to parse template")
-
-	var renderedTemplate bytes.Buffer
-	err = t.Execute(&renderedTemplate, data)
-	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
-
-	return renderedTemplate.Bytes()
-}
-
-// getProviderVersionsFromFile reads the local config.yaml file and parses provider versions
-func getProviderVersion(clusterctlYaml string, name string) string {
-	var config ClusterctlConfig
-	err := yaml.Unmarshal([]byte(clusterctlYaml), &config)
-	Expect(err).ShouldNot(HaveOccurred(), "Failed to parse clusterctl.yaml content")
-
-	// Extract versions from provider URLs
-	versionRegex := regexp.MustCompile(`/releases/(v?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?)/`)
-
-	for _, provider := range config.Providers {
-		if provider.Name == name {
-			return extractVersionFromURL(provider.URL, versionRegex)
-		}
-	}
-
-	return ""
-}
-
-// extractVersionFromURL extracts version from GitHub release URL
-func extractVersionFromURL(url string, regex *regexp.Regexp) string {
-	matches := regex.FindStringSubmatch(url)
-	if len(matches) > 1 {
-		return matches[1]
-	}
-	return ""
 }
 
 type RemoveCAPIProviderInput struct {

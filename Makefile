@@ -148,7 +148,7 @@ HELM_VER := v3.18.4
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-CLUSTERCTL_VER := v1.12.2
+CLUSTERCTL_VER := v1.13.1
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 CLUSTERCTL_CONFIG_PATH := ${ROOT_DIR}/test/e2e/config/clusterctl-config.yaml
@@ -188,7 +188,7 @@ PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 # Rancher charts testing
 export RANCHER_CHARTS_REPO_DIR ?=  $(abspath $(RELEASE_DIR)/rancher-charts)
 export RANCHER_CHART_DEV_VERSION ?= 108.0.0+up99.99.99
-export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.14
+export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.15
 
 # Rancher Private CA setup
 CREATE_RANCHER_CERTS_SCRIPT_PATH ?= $(ROOT_DIR)/scripts/create-rancher-certs.sh

@@ -17,7 +17,6 @@ limitations under the License.
 package testenv
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -211,10 +210,6 @@ func DeployRancherTurtles(ctx context.Context, input DeployRancherTurtlesInput) 
 	if err != nil {
 		Expect(fmt.Errorf("Unable to perform chart upgrade: %w\nOutput: %s, Command: %s", err, out, strings.Join(fullCommand, " "))).ToNot(HaveOccurred())
 	}
-
-	By("Applying test ClusterctlConfig")
-	clusterctlConfigYAML := bytes.Replace(e2e.ClusterctlConfig, []byte("cattle-turtles-system"), []byte("rancher-turtles-system"), 1)
-	Expect(turtlesframework.Apply(ctx, input.BootstrapClusterProxy, clusterctlConfigYAML)).To(Succeed())
 
 	if input.CAPIProvidersYAML != nil {
 		By("Adding CAPI infrastructure providers")

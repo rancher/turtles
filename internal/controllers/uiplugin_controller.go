@@ -107,7 +107,9 @@ func (r *UIPluginReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	if err := r.Patch(ctx, destination, client.Apply, []client.PatchOption{
+	applyConfiguration := client.ApplyConfigurationFromUnstructured(destination)
+
+	if err := r.Apply(ctx, applyConfiguration, []client.ApplyOption{
 		client.ForceOwnership,
 		client.FieldOwner("ui-plugin-controller"),
 	}...); err != nil {

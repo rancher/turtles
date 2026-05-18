@@ -10,12 +10,12 @@ spec:
       name: vsphere-rke2-example-controlplane
     machineInfrastructure:
       templateRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: VSphereMachineTemplate
         name: vsphere-rke2-example-controlplane
   infrastructure:
     templateRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: VSphereClusterTemplate
       name: vsphere-rke2-example
   workers:
@@ -28,7 +28,7 @@ spec:
             name: vsphere-rke2-example-worker
         infrastructure:
           templateRef:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereMachineTemplate
             name: vsphere-rke2-example-worker
   variables:
@@ -147,7 +147,7 @@ spec:
               valueFrom:
                 variable: vSphereTLSThumbprint
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereClusterTemplate
             matchResources:
               infrastructureCluster: true
@@ -173,10 +173,9 @@ spec:
                   powerOffMode: trySoft
                   resourcePool: '{{ .vSphereResourcePool }}'
                   server: '{{ .vSphereServer }}'
-                  storagePolicyName: ''
                   template: '{{ .vSphereTemplate }}'
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereMachineTemplate
             matchResources:
               controlPlane: true
@@ -200,10 +199,9 @@ spec:
                   powerOffMode: trySoft
                   resourcePool: '{{ .vSphereResourcePool }}'
                   server: '{{ .vSphereServer }}'
-                  storagePolicyName: ''
                   template: '{{ .vSphereTemplate }}'
           selector:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: VSphereMachineTemplate
             matchResources:
               machineDeploymentClass:
@@ -374,7 +372,7 @@ spec:
                 names:
                   - vsphere-rke2-example-worker
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereClusterTemplate
 metadata:
   name: vsphere-rke2-example
@@ -384,6 +382,7 @@ spec:
       identityRef:
         kind: VSphereClusterIdentity
         name: cluster-identity
+      server: "set-by-patch"
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: RKE2ControlPlaneTemplate
@@ -417,7 +416,7 @@ spec:
           extraArgs:
             - "--cloud-provider=external"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-rke2-example-controlplane
@@ -430,7 +429,7 @@ spec:
       network:
         devices: []
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereMachineTemplate
 metadata:
   name: vsphere-rke2-example-worker

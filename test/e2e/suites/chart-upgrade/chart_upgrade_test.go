@@ -21,10 +21,8 @@ package chart_upgrade
 
 import (
 	_ "embed"
-	"os"
 	"strings"
 
-	"github.com/drone/envsubst/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,19 +52,16 @@ const (
 	capiDeploymentName = "capi-controller-manager"
 	capiNamespace      = "cattle-capi-system"
 	capiProviderName   = "cluster-api"
-
-	capdNamespace    = "capd-system"
-	capdProviderName = "capd-controller-manager"
 )
 
 // This is the updated version of the chart-upgrade test for verifying updating from a Rancher version that
-// uses Turtles with CAPI v1.10 to a Rancher version that uses Turtles with CAPI v1.11.
-//   - Users that are bumping to v2.14 (CAPI v1.11) will always be on v2.13 as Rancher does not support skipping a minor.
-//     1. Install Rancher v2.13.2 which includes Turtles as system chart.
+// uses Turtles with CAPI v1.12 to a Rancher version that uses Turtles with CAPI v1.13.
+//   - Users that are bumping to v2.15 (CAPI v1.13) will always be on v2.14 as Rancher does not support skipping a minor.
+//     1. Install Rancher v2.14.1 which includes Turtles as system chart.
 //     2. Validate Rancher and Turtles are installed successfully.
-//     3. Install CAPI providers: for this test, only `docker,rke2`
-//     4. Provisions and runs checks on workload cluster using `v1beta1` clients: `CreateUsingGitOpsV1Beta1Spec`.
-//     5. `UpgradeInstallRancherWithGitea` and configure current version of Turtles -> this uses CAPI v1.11.
+//     3. Install CAPI providers: for this test, only `docker,rke2`.
+//     4. Provisions and runs checks on workload cluster.
+//     5. `UpgradeInstallRancherWithGitea` and configure current version of Turtles -> this uses CAPI v1.13.
 //     6. Confirm that Turtles is rolled-out.
 //     7. Check providers after upgrade.
 //     8. Verify the workload cluster is still available and active.
@@ -85,11 +80,11 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		clusterName = "cluster-docker-rke2"
 	})
 
-	It("Should install Rancher 2.13.2, including Turtles v0.25.2 as system chart, and provision a workload cluster", func() {
-		By("Installing Rancher 2.13.2 (simulating existing Rancher installation)")
+	It("Should install Rancher 2.14.1, including Turtles v0.26.1 as system chart, and provision a workload cluster", func() {
+		By("Installing Rancher 2.14.1 (simulating existing Rancher installation)")
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			RancherVersion:        "2.13.2",
+			RancherVersion:        "2.14.1",
 			RancherChartRepoName:  "rancher-latest",
 			RancherChartPath:      "rancher-latest/rancher",
 			RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
@@ -102,13 +97,13 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Getter: bootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      turtlesDeploymentName,
-				Namespace: e2e.NewRancherTurtlesNamespace,
+				Namespace: e2e.RancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Fetching the Turtles controller Pod for later")
 		podList := &corev1.PodList{}
-		Expect(bootstrapClusterProxy.GetClient().List(ctx, podList, &client.ListOptions{Namespace: e2e.NewRancherTurtlesNamespace}))
+		Expect(bootstrapClusterProxy.GetClient().List(ctx, podList, &client.ListOptions{Namespace: e2e.RancherTurtlesNamespace}))
 		Expect(podList.Items).ShouldNot(BeEmpty(), "Turtles namespace must have at least one pod running")
 		for i, pod := range podList.Items {
 			if strings.HasPrefix(pod.Name, turtlesDeploymentName) {
@@ -118,76 +113,52 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		Expect(toBeUpdatedTurtlesPod).ShouldNot(BeNil(), "Turtles must have a controller manager pod running")
 		GinkgoWriter.Printf("Found Turtles controller pod: %s\n", toBeUpdatedTurtlesPod.GetName())
 
-		// NOTE: we install CAPD using `CAPIProvider` to make it simple to update the version later.
-		By("Installing CAPD v1.10.6 for provisioning a v1beta1 cluster")
-		capdProviderYaml, err := envsubst.Eval(string(e2e.CapiProviders), func(s string) string {
-			if s == "CAPD_VERSION" {
-				return "v1.10.6"
-			}
-
-			return os.Getenv(s)
-		})
-		Expect(err).ToNot(HaveOccurred(), "Failed to substitute CAPD version in provider YAML")
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersYAML: [][]byte{
-				[]byte(capdProviderYaml),
-			},
-			WaitForDeployments: []types.NamespacedName{
-				{
-					Name:      capdProviderName,
-					Namespace: capdNamespace,
-				},
-			},
-		})
-
-		By("Installing CAPI providers via providers chart")
-		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
-			BootstrapClusterProxy:        bootstrapClusterProxy,
-			WaitDeploymentsReadyInterval: e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers"),
-			UseLegacyCAPINamespace:       false, // >=v0.25.0 uses `cattle-capi-system`
-			RancherTurtlesNamespace:      e2e.NewRancherTurtlesNamespace,
-			ProviderList:                 "rke2,fleet",
-		})
+		By("Installing community providers")
+		framework.Apply(ctx, bootstrapClusterProxy, e2e.CommunityProviders)
 	})
 
-	specs.CreateUsingGitOpsV1Beta1Spec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		By("Provisioning workload cluster (validates zero-downtime requirement)")
 
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterTemplate:           e2e.CAPIDockerRKE2V1Beta1Topology,
-			ClusterName:               clusterName,
-			ControlPlaneMachineCount:  ptr.To(1),
-			WorkerMachineCount:        ptr.To(1),
-			LabelNamespace:            true,
-			TestClusterReimport:       false,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-rancher",
-			DeleteClusterWaitName:     "wait-controllers",
-			TopologyNamespace:         topologyNamespace,
-			SkipCleanup:               true, // Keep cluster running during upgrade
-			SkipDeletionTest:          true,
-			SkipLatestFeatureChecks:   true,
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
+			ClusterName:                    clusterName,
+			ControlPlaneMachineCount:       ptr.To(1),
+			WorkerMachineCount:             ptr.To(1),
+			LabelNamespace:                 true,
+			TestClusterReimport:            false,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-rancher",
+			DeleteClusterWaitName:          "wait-controllers",
+			TopologyNamespace:              topologyNamespace,
+			SkipCleanup:                    true, // Keep cluster running during upgrade
+			SkipDeletionTest:               true,
+			SkipLatestFeatureChecks:        true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			AdditionalTemplateVariables: map[string]string{
+				"RKE2_CNI": `""`,
+			},
 			AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
 				{
 					Name:            "docker-cluster-classes-regular",
-					Paths:           []string{"examples/clusterclasses/docker/rke2-v1beta1"},
+					Paths:           []string{"examples/clusterclasses/docker/rke2"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
 				{
-					Name:            "docker-cni",
-					Paths:           []string{"examples/applications/cni/calico"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
+					Name:                   "lb-configmap",
+					Paths:                  []string{"examples/applications/lb/docker"},
+					ClusterProxy:           bootstrapClusterProxy,
+					TargetClusterNamespace: true,
 				},
 			},
 		}
 	})
 
-	It("Should migrate to Rancher 2.14.x with zero-downtime", func() {
+	It("Should migrate to Rancher 2.15.x with zero-downtime", func() {
 		By("Verifying ETCD size before upgrade")
 		testenv.VerifyETCDSize(ctx, testenv.VerifyETCDSizeInput{
 			ClusterName:         bootstrapClusterProxy.GetName() + "-before",
@@ -195,7 +166,10 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			ETCDEndpointAddress: testenv.GetInternalAddress(ctx, bootstrapClusterProxy),
 		})
 
-		By("Upgrading Rancher to 2.14.x with Gitea chart repository")
+		By("Deleting community providers")
+		framework.Delete(ctx, bootstrapClusterProxy, e2e.CommunityProviders)
+
+		By("Upgrading Rancher to 2.15.x with Gitea chart repository")
 		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
@@ -229,7 +203,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			Getter: bootstrapClusterProxy.GetClient(),
 			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 				Name:      turtlesDeploymentName,
-				Namespace: e2e.NewRancherTurtlesNamespace,
+				Namespace: e2e.RancherTurtlesNamespace,
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
@@ -256,26 +230,11 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		By("Updating CAPD for reconciling v1beta2 clusters")
-		capdProviderYaml, err := envsubst.Eval(string(e2e.CapiProviders), func(s string) string {
-			if s == "CAPD_VERSION" {
-				return e2e.CAPIVersion
-			}
-
-			return os.Getenv(s)
-		})
-		Expect(err).ToNot(HaveOccurred(), "Failed to substitute CAPD version in provider YAML")
-		testenv.CAPIOperatorDeployProvider(ctx, testenv.CAPIOperatorDeployProviderInput{
-			BootstrapClusterProxy: bootstrapClusterProxy,
-			CAPIProvidersYAML: [][]byte{
-				[]byte(capdProviderYaml),
-			},
-			WaitForDeployments: []types.NamespacedName{
-				{
-					Name:      capdProviderName,
-					Namespace: capdNamespace,
-				},
-			},
+		By("Installing Providers from chart")
+		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
+			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
+			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
+			ProviderList:            "docker,rke2",
 		})
 
 		By("Verifying workload cluster survived the upgrade (zero-downtime validated)")
