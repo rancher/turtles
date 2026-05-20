@@ -39,8 +39,6 @@ jobs:
         with:
           cache: false
           go-version-file: go.mod
-      - name: Display kind version
-        run: kind version
       - name: Display docker version
         run: docker version
       - name: Run e2e tests

@@ -93,6 +93,8 @@ func BuildKindImage(ctx context.Context, version string) {
 			version,
 		},
 	})
+	GinkgoWriter.Printf("kind build stdout: \n%s\n", string(kindBuildImage.Stdout))
+	GinkgoWriter.Printf("kind build stderr: \n%s\n", string(kindBuildImage.Stderr))
 	Expect(kindBuildImage.Error).NotTo(HaveOccurred(), "Failed building kindest/node image")
 	Expect(kindBuildImage.ExitCode).To(Equal(0), "Building kindest/node image returned non-zero exit code")
 }
