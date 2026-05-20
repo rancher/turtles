@@ -120,8 +120,11 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
 		By("Provisioning workload cluster (validates zero-downtime requirement)")
 
+		e2eConfig := e2e.LoadE2EConfig()
+		kubernetesVersion := e2eConfig.GetVariableOrEmpty(e2e.KubernetesVersionChartUpgradeVar)
+
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
+			E2EConfig:                      e2eConfig,
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
 			ClusterName:                    clusterName,
@@ -139,7 +142,9 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalTemplateVariables: map[string]string{
-				"RKE2_CNI": `""`,
+				"RKE2_CNI":                `""`,
+				"KUBERNETES_VERSION":      kubernetesVersion,
+				"RKE2_KUBERNETES_VERSION": kubernetesVersion + "+rke2r1",
 			},
 			AdditionalFleetGitRepos: []framework.FleetCreateGitRepoInput{
 				{

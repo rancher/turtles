@@ -259,12 +259,12 @@ spec:
     spec:
       preRKE2Commands:
         - sudo hostnamectl set-hostname $(curl -s http://169.254.169.254/1.0/meta-data/hostname)
-      agentConfig:
-        kubelet:
-          extraArgs:
-            - --cloud-provider=external
+      agentConfig: {}
       serverConfig:
         cloudProviderName: external
+        disableComponents:
+          kubernetesComponents:
+            - cloudController
         etcd:
           backupConfig:
             retention: "10"
@@ -309,9 +309,5 @@ metadata:
 spec:
   template:
     spec:
-      agentConfig:
-        kubelet:
-          extraArgs:
-            - --cloud-provider=external
       preRKE2Commands:
         - sudo hostnamectl set-hostname $(curl -s http://169.254.169.254/1.0/meta-data/hostname)

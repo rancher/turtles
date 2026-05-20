@@ -160,7 +160,8 @@ const (
 	SkipResourceCleanupVar = "SKIP_RESOURCE_CLEANUP"
 	SkipDeletionTestVar    = "SKIP_DELETION_TEST"
 
-	KubernetesVersionChartUpgradeVar = "KUBERNETES_MANAGEMENT_VERSION_CHART_UPGRADE"
+	KubernetesManagementVersionChartUpgradeVar = "KUBERNETES_MANAGEMENT_VERSION_CHART_UPGRADE"
+	KubernetesVersionChartUpgradeVar           = "KUBERNETES_VERSION_CHART_UPGRADE"
 
 	RKE2VersionVar       = "RKE2_KUBERNETES_VERSION"
 	RKE2V2ProvVersionVar = "V2PROV_RKE2_KUBERNETES_VERSION"

@@ -173,7 +173,6 @@ metadata:
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.35.0
       bootstrapTimeout: 15m
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2

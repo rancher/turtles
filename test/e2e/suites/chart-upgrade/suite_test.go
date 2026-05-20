@@ -81,9 +81,10 @@ var _ = SynchronizedBeforeSuite(
 
 		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-chart-upgrade"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
-			E2EConfig:         e2eConfig,
-			Scheme:            e2e.InitScheme(),
-			KubernetesVersion: e2eConfig.GetVariableOrEmpty(e2e.KubernetesVersionChartUpgradeVar),
+			E2EConfig:                   e2eConfig,
+			Scheme:                      e2e.InitScheme(),
+			KubernetesManagementVersion: e2eConfig.GetVariableOrEmpty(e2e.KubernetesManagementVersionChartUpgradeVar),
+			KubernetesVersion:           e2eConfig.GetVariableOrEmpty(e2e.KubernetesVersionChartUpgradeVar),
 		})
 
 		testenv.RancherDeployIngress(ctx, testenv.RancherDeployIngressInput{

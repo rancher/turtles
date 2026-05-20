@@ -21,7 +21,8 @@ You'll need:
 
 ### 3. Create vSphere Credentials File
 
-Create a `vsphere.json` file with your vSphere credentials:
+Create a `vsphere.json` file with your vSphere credentials.  
+See Confluence for a more specific configuration sample.
 
 ```bash
 cat > packer/ova/vsphere.json <<EOF
@@ -34,7 +35,8 @@ cat > packer/ova/vsphere.json <<EOF
   "datastore": "datastore1",
   "folder": "Templates",
   "network": "VM Network",
-  "insecure_connection": "true"
+  "insecure_connection": "true",
+  "convert_to_template": "true"
 }
 EOF
 ```
@@ -78,6 +80,8 @@ Build Ubuntu 24.04 with your chosen Kubernetes version:
 ```bash
 PACKER_VAR_FILES="$(pwd)/my-k8s-config.json" make build-node-ova-vsphere-ubuntu-2404
 ```
+
+Beware that connection to SSH will take a while. Be patient.
 
 What happens:
 1. Packer connects to vSphere

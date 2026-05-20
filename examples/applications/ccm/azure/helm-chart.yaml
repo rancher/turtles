@@ -7,7 +7,7 @@ spec:
     releaseName: cloud-provider-azure
     repo: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
     chart: cloud-provider-azure
-    version: v1.34.5
+    version: v1.36.0
     templateValues:
       infra: |-
         clusterName: ${ .ClusterValues.Cluster.metadata.name }
