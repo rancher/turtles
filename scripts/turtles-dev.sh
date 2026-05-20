@@ -51,6 +51,7 @@ if pgrep -x ngrok > /dev/null; then
     sleep 2
 fi
 
+kind build node-image --type release --image kindest/node:v1.36.1 v1.36.1
 kind create cluster --config "$BASEDIR/kind-cluster-with-extramounts.yaml" --name $CLUSTER_NAME
 docker pull $RANCHER_IMAGE
 kind load docker-image $RANCHER_IMAGE --name $CLUSTER_NAME

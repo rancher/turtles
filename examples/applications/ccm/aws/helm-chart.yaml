@@ -14,8 +14,6 @@ spec:
         - --cloud-provider=aws
         - --use-service-account-credentials=true
         - --configure-cloud-routes=false
-      image: |-
-        tag: v1.34.0
       nodeSelector: |-
         ${- if contains "RKE2ControlPlane" ( .ClusterValues | quote ) }
         node-role.kubernetes.io/control-plane: "true"

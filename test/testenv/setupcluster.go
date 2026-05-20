@@ -56,8 +56,14 @@ type SetupTestClusterInput struct {
 	// ArtifactFolder is the folder where artifacts are stored.
 	ArtifactFolder string `env:"ARTIFACTS_FOLDER"`
 
-	// KubernetesVersion is the version of Kubernetes to use.
-	KubernetesVersion string `env:"KUBERNETES_MANAGEMENT_VERSION"`
+	// EKSManagementVersion is the EKS specific version to use for the management Cluster in EKS environment type.
+	EKSManagementVersion string `env:"EKS_MANAGEMENT_VERSION"`
+
+	// KubernetesVersion is the version of Kubernetes to use for the management Cluster.
+	KubernetesManagementVersion string `env:"KUBERNETES_MANAGEMENT_VERSION"`
+
+	// KubernetesVersion is the version of Kubernetes to use for the downstream Clusters.
+	KubernetesVersion string `env:"KUBERNETES_VERSION"`
 
 	// HelmBinaryPath is the path to the Helm binary.
 	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
@@ -99,16 +105,15 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	clusterName := createClusterName(input.E2EConfig.ManagementClusterName)
 	result := &SetupTestClusterResult{}
 
-	if input.CustomClusterProvider == nil && input.EnvironmentType == e2e.ManagementClusterEnvironmentEKS {
+	switch input.EnvironmentType {
+	case e2e.ManagementClusterEnvironmentEKS:
 		input.CustomClusterProvider = EKSBootstrapCluster
-	}
-
-	if input.CustomClusterProvider == nil && input.EnvironmentType == e2e.ManagementClusterEnvironmentInternalKind {
+	default:
 		input.CustomClusterProvider = KindWithExtraPortMappingsBootstrapCluster
 	}
 
 	By("Setting up the bootstrap cluster")
-	result.setupCluster(ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.KubernetesVersion, input.CustomClusterProvider)
+	result.setupCluster(ctx, input.E2EConfig, input.Scheme, clusterName, input.UseExistingCluster, input.EKSManagementVersion, input.KubernetesManagementVersion, input.KubernetesVersion, input.CustomClusterProvider)
 
 	if input.UseExistingCluster {
 		return result
@@ -125,21 +130,13 @@ func SetupTestCluster(ctx context.Context, input SetupTestClusterInput) *SetupTe
 	return result
 }
 
-func (r *SetupTestClusterResult) setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster bool, kubernetesVersion string, customClusterProvider CustomClusterProvider) {
+func (r *SetupTestClusterResult) setupCluster(ctx context.Context, config *clusterctl.E2EConfig, scheme *runtime.Scheme, clusterName string, useExistingCluster bool, eksManagementVersion string, kubernetesManagementVersion string, kubernetesDownstreamVersion string, customClusterProvider CustomClusterProvider) {
 	var clusterProvider bootstrap.ClusterProvider
 	kubeconfigPath := ""
 
 	if !useExistingCluster {
-		if customClusterProvider != nil { // if customClusterProvider is provided, use it to create the bootstrap cluster instead of kind
-			clusterProvider = customClusterProvider(ctx, config, clusterName, kubernetesVersion)
-		} else {
-			clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
-				Name:               clusterName,
-				KubernetesVersion:  kubernetesVersion,
-				RequiresDockerSock: true,
-				Images:             config.Images,
-			})
-		}
+		Expect(customClusterProvider).ShouldNot(BeNil())
+		clusterProvider = customClusterProvider(ctx, config, clusterName, eksManagementVersion, kubernetesManagementVersion, kubernetesDownstreamVersion)
 
 		Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
 

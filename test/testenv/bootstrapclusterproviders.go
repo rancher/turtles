@@ -18,6 +18,7 @@ package testenv
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,15 +26,17 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
+	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 // CustomClusterProvider is a function type that represents a custom cluster provider.
 // It takes in a context, an E2EConfig, a cluster name, and a Kubernetes version as parameters.
 // It returns a bootstrap.ClusterProvider.
-type CustomClusterProvider func(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider
+type CustomClusterProvider func(ctx context.Context, config *clusterctl.E2EConfig, clusterName, eksManagementVersion string, kubernetesManagementVersion string, kubernetesDownstreamVersion string) bootstrap.ClusterProvider
 
 // EKSBootstrapCluster is a function that creates a new EKS bootstrap cluster.
-func EKSBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider {
+func EKSBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, eksManagementVersion string, _ string, _ string) bootstrap.ClusterProvider {
 	By("Creating a new EKS bootstrap cluster")
 
 	region := config.Variables["KUBERNETES_MANAGEMENT_AWS_REGION"]
@@ -42,7 +45,7 @@ func EKSBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clus
 	eksCreateResult := &CreateEKSBootstrapClusterAndValidateImagesInputResult{}
 	CreateEKSBootstrapClusterAndValidateImages(ctx, CreateEKSBootstrapClusterAndValidateImagesInput{
 		Name:       clusterName,
-		Version:    kubernetesVersion,
+		Version:    eksManagementVersion,
 		Region:     region,
 		NumWorkers: 1,
 		Images:     config.Images,
@@ -52,13 +55,24 @@ func EKSBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clus
 }
 
 // KindBootstrapCluster is a function that creates a new kind bootstrap cluster with extra port mappings. This is useful for forwarding requests from the host.
-func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, kubernetesVersion string) bootstrap.ClusterProvider {
+func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clusterctl.E2EConfig, clusterName, _ string, kubernetesManagementVersion string, kubernetesDownstreamVersion string) bootstrap.ClusterProvider {
+
+	Expect(kubernetesManagementVersion).ShouldNot(BeEmpty(), "kubernetesManagementVersion is required")
+
+	By(fmt.Sprintf("Building kindest/node:%s for management Cluster", kubernetesManagementVersion))
+	BuildKindImage(ctx, kubernetesManagementVersion)
+
+	if len(kubernetesDownstreamVersion) > 0 {
+		By(fmt.Sprintf("Building kindest/node:%s for downstream Clusters", kubernetesDownstreamVersion))
+		BuildKindImage(ctx, kubernetesDownstreamVersion)
+	}
+
 	By("Creating a new kind bootstrap cluster with extra port mappings")
 
 	return bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 		Name:               clusterName,
-		KubernetesVersion:  kubernetesVersion,
-		RequiresDockerSock: false,
+		KubernetesVersion:  kubernetesManagementVersion,
+		RequiresDockerSock: true,
 		Images:             config.Images,
 		ExtraPortMappings: []v1alpha4.PortMapping{
 			{ContainerPort: 80, HostPort: 80, Protocol: v1alpha4.PortMappingProtocolTCP},
@@ -66,4 +80,19 @@ func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clus
 			{ContainerPort: 30002, HostPort: 30002, Protocol: v1alpha4.PortMappingProtocolTCP}, // etcd nodeport
 		},
 	})
+}
+
+func BuildKindImage(ctx context.Context, version string) {
+	kindBuildImage := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+		Command: "kind",
+		Args: []string{
+			"build",
+			"node-image",
+			"--type", "release",
+			"--image", fmt.Sprintf("kindest/node:%s", version),
+			version,
+		},
+	})
+	Expect(kindBuildImage.Error).NotTo(HaveOccurred(), "Failed building kindest/node image")
+	Expect(kindBuildImage.ExitCode).To(Equal(0), "Building kindest/node image returned non-zero exit code")
 }

@@ -15,7 +15,8 @@ env:
   MANIFEST_IMG: controller
   CONTROLLER_IMG: controller
   PULL_POLICY: Never
-  RANCHER_VERSION: v2.14.0-alpha13
+  RANCHER_VERSION: v2.15.0-alpha4
+  KUBERNETES_MANAGEMENT_VERSION: v1.36.1
 
 jobs:
   prime-test:
@@ -59,8 +60,8 @@ jobs:
 
       - name: Create kind cluster
         run: |
-          kind create cluster --name kind \
-            --image kindest/node@sha256:4613778f3cfcd10e615029370f5786704559103cf27bef934597ba562b269661 # v1.35
+          kind build node-image --type release --image kindest/node:${{ env.KUBERNETES_MANAGEMENT_VERSION }} ${{ env.KUBERNETES_MANAGEMENT_VERSION }}
+          kind create cluster --name kind --image kindest/node:${{ env.KUBERNETES_MANAGEMENT_VERSION }}
 
       - name: Display kind version
         run: kind version
@@ -170,8 +171,8 @@ jobs:
 
       - name: Create kind cluster
         run: |
-          kind create cluster --name kind \
-            --image kindest/node@sha256:abd489f042d2b644e2d033f5c2d900bc707798d075e8186cb65e3f1367a9d5a1
+          kind build node-image --type release --image kindest/node:${{ env.KUBERNETES_MANAGEMENT_VERSION }} ${{ env.KUBERNETES_MANAGEMENT_VERSION }}
+          kind create cluster --name kind --image kindest/node:${{ env.KUBERNETES_MANAGEMENT_VERSION }}
 
       - name: Display kind version
         run: kind version
