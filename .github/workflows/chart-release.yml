@@ -58,8 +58,10 @@ jobs:
           rm -rf .cr-index
           mkdir -p .cr-index
 
-      - name: Run chart-releaser upload
-        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ inputs.tag }}" --make-release-latest=false
+      - name: Run chart-releaser upload (draft release)
+        # Phase 1: create release as draft so all assets can be verified before publishing.
+        # The release must be manually undrafted from the GitHub UI - be careful not to mark it as latest.
+        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ inputs.tag }}" --make-release-latest=false --draft
 
       - name: Verify chart asset present (recover if missing)
         run: |
@@ -69,11 +71,6 @@ jobs:
             exit 1
           fi
           ASSET_NAME=$(basename "${CHART_FILE}")
-
-          if ! gh release view "${{ inputs.tag }}" > /dev/null 2>&1; then
-            echo "ERROR: Release '${{ inputs.tag }}' not found."
-            exit 1
-          fi
 
           FOUND=$(gh release view "${{ inputs.tag }}" \
             --json assets \
@@ -89,3 +86,8 @@ jobs:
 
       - name: Run chart-releaser index
         run: cr index --push --release-name-template "${{ inputs.tag }}"
+
+      # Phase 2: once the draft-first process is validated over a few releases,
+      # uncomment the step below and enable immutable releases.
+      # - name: Publish release
+      #   run: gh release edit "${{ inputs.tag }}" --draft=false --latest=false
