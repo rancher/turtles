@@ -1,0 +1,118 @@
+name: Release Turtles Providers against rancher/prime-charts
+on:
+  workflow_dispatch:
+    inputs:
+      charts_ref:
+        description: "Submit PR against the following rancher/prime-charts branch (e.g. dev-v2.14). Use 'auto' to derive from the current turtles branch."
+        required: true
+        default: "auto"
+      prev_turtles_providers:
+        description: "Previous Turtles Providers version (e.g. v0.26.0-rc.0)"
+        required: true
+        default: ""
+      new_turtles_providers:
+        description: "New Turtles Providers version (e.g. v0.26.0)"
+        required: true
+        default: ""
+      bump_major:
+        description: "Set 'true' to bump chart major version when the Turtles Providers minor version increases (e.g., v0.25.0 → v0.26.0-rc.0). Default: false"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+env:
+  TURTLES_REF: "${{ github.ref_name }}"
+  PREV_TURTLES_PROVIDERS: ${{ github.event.inputs.prev_turtles_providers }}
+  NEW_TURTLES_PROVIDERS: ${{ github.event.inputs.new_turtles_providers }}
+
+jobs:
+  create-rancher-prime-charts-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for vault
+      id-token: write
+    steps:
+      - name: Resolve charts_ref
+        run: |
+          INPUT="${{ github.event.inputs.charts_ref }}"
+          if [ "${INPUT}" != "auto" ]; then
+            echo "CHARTS_REF=${INPUT}" >> $GITHUB_ENV
+          else
+            TURTLES_BRANCH="${{ github.ref_name }}"
+            if [[ "$TURTLES_BRANCH" =~ ^release/v0\.([0-9]+)$ ]]; then
+              TURTLES_MINOR="${BASH_REMATCH[1]}"
+              RANCHER_MINOR=$(( TURTLES_MINOR - 12 ))
+              echo "CHARTS_REF=dev-v2.${RANCHER_MINOR}" >> $GITHUB_ENV
+              echo "Derived charts_ref: dev-v2.${RANCHER_MINOR} from ${TURTLES_BRANCH}"
+            else
+              echo "ERROR: Cannot derive charts_ref from branch '${TURTLES_BRANCH}'. Please trigger again with an explicit charts_ref value."
+              exit 1
+            fi
+          fi
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: "${{ env.TURTLES_REF }}"
+          path: turtles
+      
+      # - uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6 # v3
+      #   with:
+      #     secrets: |
+      #       secret/data/github/repo/${{ github.repository }}/github/app-credentials appId | APPID;
+      #       secret/data/github/repo/${{ github.repository }}/github/app-credentials privateKey | PRIVATEKEY
+
+      # - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+      #   id: app-token
+      #   with:
+      #     app-id: ${{ env.APPID }}
+      #     private-key: ${{ env.PRIVATEKEY }}
+      #     owner: ${{ github.repository_owner }}
+      #     repositories: |
+      #       prime-charts
+
+      - name: Checkout rancher/prime-charts repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ github.repository_owner }}/prime-charts
+          ref: "${{ env.CHARTS_REF }}"
+          token: ${{ steps.app-token.outputs.token }}
+          path: prime-charts
+          # Allow making git push request later on
+          persist-credentials: true
+
+      - name: Configure the committer
+        run: |
+          cd prime-charts
+          user_id=$(gh api "/users/$APP_USER" --jq .id)
+          git config --global user.name "$APP_USER"
+          git config --global user.email "${user_id}+${APP_USER}@users.noreply.github.com"
+        env:
+          GH_TOKEN: "${{ env.GH_TOKEN }}"
+          APP_USER: "${{ github.actor }}"
+
+      - name: Run release script
+        run: |
+          cd prime-charts
+          BRANCH="bump-turtles-providers-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+          git checkout -b "$BRANCH" "$CHARTS_REF"
+          ../turtles/.github/scripts/release-against-prime-charts.sh . ../turtles "$PREV_TURTLES_PROVIDERS" "$NEW_TURTLES_PROVIDERS" ${{ github.event.inputs.bump_major }}
+
+      - name: Push and create pull request
+        env:
+          GH_TOKEN: "${{ env.GH_TOKEN }}"
+        run: |
+          cd prime-charts
+          git push origin "$BRANCH"
+          body=$(../turtles/.github/scripts/release-message.sh "$PREV_TURTLES_PROVIDERS" "$NEW_TURTLES_PROVIDERS")
+
+          gh pr create \
+            --title "[$CHARTS_REF] Bump rancher-turtles-providers to $NEW_TURTLES_PROVIDERS" \
+            --body "$body" \
+            --repo ${{ github.repository_owner }}/prime-charts \
+            --head "${{ github.repository_owner }}:$BRANCH" \
+            --base "$CHARTS_REF"
