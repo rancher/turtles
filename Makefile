@@ -408,8 +408,12 @@ push-image: docker-pull-prerequisites ## Build and push community image (called 
 		--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
 		--build-arg goproxy=$(GOPROXY) \
 		--build-arg package=. \
-		--build-arg go_build_tags=community \
+		--build-arg go_build_tags=$(TARGET_BUILD) \
 		--build-arg ldflags="$(LDFLAGS)" . -t $(REPO)/$(CONTROLLER_IMAGE_NAME):$(TAG)
+
+.PHONY: push-community-image
+push-community-image: ## Build and push community image
+	$(MAKE) push-image TARGET_BUILD=community
 
 .PHONY: push-prime-image
 push-prime-image: ## Build and push prime image with SBOM and provenance (called by publish-image action)

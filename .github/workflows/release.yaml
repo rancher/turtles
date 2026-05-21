@@ -54,7 +54,7 @@ jobs:
         public-repo: rancher
         public-username: ${{ env.DOCKER_USERNAME }}
         public-password: ${{ env.DOCKER_PASSWORD }}
-        make-target: push-image
+        make-target: push-community-image
 
     - name: Push prime image to staging registry
       uses: rancher/ecm-distro-tools/actions/publish-image@a7a867a6376bf4a1cee397558f3c85393769f069
