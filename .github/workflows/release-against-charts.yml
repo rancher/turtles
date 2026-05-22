@@ -84,10 +84,6 @@ jobs:
           GH_TOKEN: "${{ env.GH_TOKEN }}"
           APP_USER: "${{ github.actor }}"
 
-      - name: Install dependencies
-        run: |
-          sudo snap install yq --channel=v4/stable
-
       - name: Run release script
         run: |
           cd charts
