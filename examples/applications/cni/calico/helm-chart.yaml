@@ -1,10 +1,38 @@
 apiVersion: fleet.cattle.io/v1alpha1
 kind: HelmOp
 metadata:
+  name: calico-crds
+spec:
+  helm:
+    version: v3.32.0
+    releaseName: projectcalico
+    repo: https://docs.tigera.io/calico/charts
+    chart: projectcalico.org.v3
+  insecureSkipTLSVerify: true
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cni: calico
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values:
+          - azure-rke2-example
+          - azure-kubeadm-example
+          - docker-kubeadm-example
+          - docker-rke2-example
+          - docker-rke2-v1beta1-example
+          - vsphere-kubeadm-example
+          - vsphere-rke2-example
+          - gcp-kubeadm-example
+---
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmOp
+metadata:
   name: calico-cni
 spec:
   helm:
-    version: v3.31.3
+    version: v3.32.0
     releaseName: projectcalico
     repo: https://docs.tigera.io/calico/charts
     chart: tigera-operator
@@ -26,13 +54,6 @@ spec:
         - name: "${ $variable.value }"
           ${- end}
         ${- end } 
-  diff:
-    comparePatches:
-    - apiVersion: operator.tigera.io/v1
-      kind: Installation
-      name: default
-      operations:
-      - {"op":"remove", "path":"/spec/kubernetesProvider"}
   insecureSkipTLSVerify: true
   targets:
   - clusterSelector:
@@ -47,7 +68,6 @@ spec:
           - docker-kubeadm-example
           - docker-rke2-example
           - docker-rke2-v1beta1-example
-          - etcd-snapshot-restore
           - vsphere-kubeadm-example
           - vsphere-rke2-example
           - gcp-kubeadm-example
