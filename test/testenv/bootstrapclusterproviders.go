@@ -19,6 +19,7 @@ package testenv
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -82,19 +83,27 @@ func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clus
 	})
 }
 
+// BuildKindImage is a function that builds a local kindest/node image for an arbitrary k8s version.
+// FIXME: https://github.com/rancher/turtles/issues/2449
 func BuildKindImage(ctx context.Context, version string) {
-	kindBuildImage := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-		Command: "kind",
-		Args: []string{
-			"build",
-			"node-image",
-			"--type", "release",
-			"--image", fmt.Sprintf("kindest/node:%s", version),
-			version,
-		},
-	})
-	GinkgoWriter.Printf("kind build stdout: \n%s\n", string(kindBuildImage.Stdout))
-	GinkgoWriter.Printf("kind build stderr: \n%s\n", string(kindBuildImage.Stderr))
-	Expect(kindBuildImage.Error).NotTo(HaveOccurred(), "Failed building kindest/node image")
-	Expect(kindBuildImage.ExitCode).To(Equal(0), "Building kindest/node image returned non-zero exit code")
+	Eventually(func() error {
+		kindBuildImage := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
+			Command: "kind",
+			Args: []string{
+				"build",
+				"node-image",
+				"--type", "release",
+				"--image", fmt.Sprintf("kindest/node:%s", version),
+				version,
+			},
+		})
+		if kindBuildImage.Error != nil || kindBuildImage.ExitCode != 0 {
+			GinkgoWriter.Printf("\n\n!!! FIXME: Failed to build kindest/node image !!!")
+			GinkgoWriter.Printf("kind build stdout: \n%s\n", string(kindBuildImage.Stdout))
+			GinkgoWriter.Printf("kind build stderr: \n%s\n", string(kindBuildImage.Stderr))
+			return fmt.Errorf("Failed to build kindest/node image. Exit Code: %d. Error: %w",
+				kindBuildImage.ExitCode, kindBuildImage.Error)
+		}
+		return nil
+	}).WithPolling(5 * time.Minute).WithTimeout(30 * time.Minute).ShouldNot(HaveOccurred())
 }
