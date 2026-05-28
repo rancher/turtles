@@ -350,13 +350,13 @@ images:
     tag: v1.13.2
   bootstrapRKE2:
     repository: rancher/cluster-api-provider-rke2-bootstrap
-    tag: v0.24.4
+    tag: v0.25.0
   controlplaneKubeadm:
     repository: rancher/kubeadm-control-plane-controller
     tag: v1.13.2
   controlplaneRKE2:
     repository: rancher/cluster-api-provider-rke2-controlplane
-    tag: v0.24.4
+    tag: v0.25.0
   infrastructureAWS:
     repository: rancher/cluster-api-aws-controller
     tag: v2.11.1
