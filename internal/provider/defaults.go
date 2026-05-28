@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
+	configclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -38,8 +39,9 @@ const (
 	// AzureProvider is the default capz provider name.
 	AzureProvider = "azure"
 	// GCPProvider is the default capg provider name.
-	GCPProvider = "gcp"
-	trueValue   = "true"
+	GCPProvider        = "gcp"
+	trueValue          = "true"
+	latestVersionValue = "latest"
 )
 
 // SetProviderSpec sets the default values for the provider spec and updates to latest available version.
@@ -103,15 +105,36 @@ func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1
 		return err
 	}
 
+	// Check if the provider is known by Turtles. This includes the ClusterctlConfig overrides.
 	providerVersion, knownProvider := config.GetProviderVersion(ctx, provider.ProviderName(), provider.Spec.Type.ToKind())
 
-	latest, err := config.IsLatestVersion(providerVersion, provider.Spec.Version)
+	// Check if the provider is known by the clusterctl embedded list. See `clusterctl config repositories`.
+	initConfig, err := configclient.New(ctx, "/config/clusterctl.yaml")
+	if err != nil {
+		return fmt.Errorf("initializing clusterctl config client: %w", err)
+	}
+	upstreamProviders, err := initConfig.Providers().List()
+	if err != nil {
+		return fmt.Errorf("listing upstream providers: %w", err)
+	}
+	upstreamKnownProvider := false
+	for _, upstreamProvider := range upstreamProviders {
+		if provider.ProviderName() == upstreamProvider.Name() {
+			upstreamKnownProvider = true
+			break
+		}
+	}
+
+	// Check if version is latest
+	latest, err := config.IsLatestVersion(provider.Spec.Version, providerVersion)
 	if err != nil {
 		return err
 	}
 
 	switch {
-	case !knownProvider:
+	case !knownProvider && !upstreamKnownProvider:
+		// Provider is not known by Turtles and clusterctl.
+		// It is not possible to determine a version to install.
 		conditions.Set(provider, metav1.Condition{
 			Type:               string(turtlesv1.CheckLatestVersionTime),
 			Status:             metav1.ConditionUnknown,
@@ -127,8 +150,11 @@ func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1
 			Message:            "Latest version is set",
 			LastTransitionTime: metav1.Now(),
 		})
-
-		provider.Spec.Version = providerVersion
+		if providerVersion != clusterctl.LatestVersionKey {
+			provider.Spec.Version = providerVersion
+		} else {
+			provider.Spec.Version = ""
+		}
 
 	case !latest && !provider.Spec.EnableAutomaticUpdate:
 		conditions.Set(provider, metav1.Condition{
@@ -154,7 +180,11 @@ func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1
 			})
 		}
 
-		provider.Spec.Version = providerVersion
+		if providerVersion != clusterctl.LatestVersionKey {
+			provider.Spec.Version = providerVersion
+		} else {
+			provider.Spec.Version = ""
+		}
 	}
 
 	return nil

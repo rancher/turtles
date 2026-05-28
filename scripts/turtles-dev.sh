@@ -90,7 +90,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Build and load the controller image
-make docker-build-prime
+make docker-build-community
 kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
 
 # Deploy Gitea test Nodeport
@@ -223,8 +223,8 @@ install_local_providers_chart() {
         --timeout 180s
 }
 
-echo "Installing local Rancher Turtles Providers..."
-install_local_providers_chart
+#echo "Installing local Rancher Turtles Providers..."
+#install_local_providers_chart
 
 echo "Exposing ETCD..."
 kubectl apply -f test/e2e/data/etcd/test-nodeport.yaml

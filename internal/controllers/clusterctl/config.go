@@ -24,7 +24,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/blang/semver/v4"
 	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	accorev1 "k8s.io/client-go/applyconfigurations/core/v1"
@@ -40,7 +39,6 @@ import (
 var config *corev1.ConfigMap
 
 const (
-	latestVersionKey = "latest"
 	// ConfigPath is the path of the mounted clusterctl config.
 	ConfigPath = "/config/clusterctl.yaml"
 )
@@ -207,59 +205,31 @@ func extractNamespace(imageURI string) string {
 	return imageURI
 }
 
-// GetProviderVersion collects version of the collected provider overrides state.
-// Returns latest if the version is not found.
-func (r *ConfigRepository) GetProviderVersion(ctx context.Context, name, providerType string) (version string, providerKnown bool) {
+// GetProviderVersion gets the version of the provider parsing the provider URL in the clusterctl config.
+// It will return the found version if any, empty otherwise.
+func (r *ConfigRepository) GetProviderVersion(ctx context.Context, name, providerType string) (string, error) {
+	log := log.FromContext(ctx)
+
 	for _, provider := range r.Providers {
 		if provider.Name == name && strings.EqualFold(provider.Type, providerType) {
-			return collectVersion(ctx, provider.URL), true
+			log.V(5).Info("Provider found in Turtles clusterctl config")
+			return parseVersionFromURL(provider.URL)
 		}
 	}
 
-	return latestVersionKey, false
+	return "", nil
 }
 
-func collectVersion(ctx context.Context, url string) string {
+// parseVersionFromURL parses the version from the provider URL.
+// For example: "https://github.com/rancher/cluster-api-provider-aws/releases/v2.11.1/infrastructure-components.yaml"
+// Beware that "latest" is also a valid version, this does not check for a semantic version format.
+func parseVersionFromURL(url string) (string, error) {
 	version := strings.Split(url, "/")
 	slices.Reverse(version)
 
 	if len(version) < 2 {
-		log.FromContext(ctx).Info("Provider url is invalid for version resolve, defaulting to latest", "url", url)
-
-		return latestVersionKey
+		return "", fmt.Errorf("Provider url is invalid for version resolve: %s", url)
 	}
 
-	return version[1]
-}
-
-// IsLatestVersion checks version against the expected max version, and returns false
-// if the version given is newer then the latest in the clusterctlconfig override.
-func (r *ConfigRepository) IsLatestVersion(providerVersion, expected string) (bool, error) {
-	// Return true for providers without version boundary or unknown providers
-	if providerVersion == latestVersionKey {
-		return true, nil
-	}
-
-	version, _ := strings.CutPrefix(providerVersion, "v")
-
-	maxVersion, err := semver.Parse(version)
-	if err != nil {
-		return false, fmt.Errorf("unable to parse default provider version %s: %w", providerVersion, err)
-	}
-
-	expected = cmp.Or(expected, latestVersionKey)
-	if expected == latestVersionKey {
-		// Latest should be reduced to the actual version set on the clusterctlprovider resource
-		return false, nil
-	}
-
-	version, _ = strings.CutPrefix(expected, "v")
-
-	desiredVersion, err := semver.Parse(version)
-	if err != nil {
-		return false, fmt.Errorf("unable to parse desired version %s: %w", expected, err)
-	}
-
-	// Disallow versions beyond current clusterctl.yaml override default
-	return maxVersion.LTE(desiredVersion), nil
+	return version[1], nil
 }

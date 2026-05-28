@@ -231,7 +231,7 @@ def build_go_binary(context, reload_deps, debug, go_main, binary_name, label):
         gcflags = gcflags,
         go_main = go_main,
         ldflags = ldflags,
-        tags = "prime",
+        tags = "community",
         binary_name = binary_name,
     )
 
