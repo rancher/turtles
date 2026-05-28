@@ -53,6 +53,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - '*'
+  - awsclusterstaticidentities
   verbs:
   - create
   - delete

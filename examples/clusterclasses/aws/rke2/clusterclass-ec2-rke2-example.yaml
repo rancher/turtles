@@ -73,7 +73,6 @@ spec:
         openAPIV3Schema:
           description: The AWSClusterStaticIdentity resource name referencing the credentials to create the Cluster.
           type: string
-          default: cluster-identity
   patches:
     - name: awsClusterTemplate
       definitions:
@@ -99,7 +98,7 @@ spec:
             matchResources:
               infrastructureCluster: true
           jsonPatches:
-            - op: add
+            - op: replace
               path: /spec/template/spec/identityRef/name
               valueFrom:
                 variable: awsClusterIdentityName
@@ -167,7 +166,7 @@ spec:
     spec:
       identityRef:
         kind: AWSClusterStaticIdentity
-        name: cluster-identity
+        name: default
       bastion:
         enabled: false
       controlPlaneLoadBalancer:

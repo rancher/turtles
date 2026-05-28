@@ -1,11 +1,3 @@
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: AWSClusterStaticIdentity
-metadata:
-  name: cluster-identity
-spec:
-  secretRef: cluster-identity
-  allowedNamespaces: {}
----
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
@@ -38,7 +30,7 @@ spec:
       - name: cni
         value: none
       - name: awsClusterIdentityName
-        value: cluster-identity
+        value: ${AWS_CLUSTER_IDENTITY_NAME}
     version: ${RKE2_KUBERNETES_VERSION}
     workers:
       machineDeployments:
