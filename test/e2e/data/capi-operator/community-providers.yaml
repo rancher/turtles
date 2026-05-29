@@ -16,9 +16,9 @@ metadata:
 spec:
   name: rke2
   type: bootstrap
-  version: v0.24.3
+  version: v0.25.0
   fetchConfig:
-    oci: registry.rancher.com/rancher/cluster-api-provider-rke2-components:v0.24.3
+    oci: registry.rancher.com/rancher/cluster-api-provider-rke2-components:v0.25.0
 ---
 apiVersion: v1
 kind: Namespace
@@ -33,10 +33,10 @@ metadata:
 spec:
   name: rke2
   type: controlPlane
-  version: v0.24.3
+  version: v0.25.0
 # FIXME: https://github.com/rancher/turtles/issues/2350
 #  fetchConfig:
-#    oci: registry.rancher.com/rancher/cluster-api-provider-rke2-components:v0.24.3
+#    oci: registry.rancher.com/rancher/cluster-api-provider-rke2-components:v0.25.0
 ---
 apiVersion: v1
 kind: Namespace
