@@ -63,13 +63,13 @@ data:
     providers:
       - name: core
         type: CoreProvider
-        url: https://github.com/rancher/cluster-api/releases/v1.13.1/core-components.yaml
+        url: https://github.com/rancher/cluster-api/releases/v1.13.2/core-components.yaml
       - name: gcp
         type: InfrastructureProvider
         url: https://github.com/rancher/cluster-api-provider-gcp/releases/v1.11.1/infrastructure-components.yaml
       - name: rke2
         type: ControlPlaneProvider
-        url: https://github.com/rancher/cluster-api-provider-rke2/releases/v0.24.4/control-plane-components.yaml
+        url: https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/control-plane-components.yaml
     images:
       image1:
         repository: repo1
@@ -98,7 +98,7 @@ data:
 							{
 								Name: "rke2",
 								Type: "BootstrapProvider",
-								URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.24.4/bootstrap-components.yaml",
+								URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/bootstrap-components.yaml",
 							},
 							{
 								Name: "fleet",
@@ -135,7 +135,7 @@ data:
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "core",
 			Type: "CoreProvider",
-			URL:  "https://github.com/rancher/cluster-api/releases/v1.13.1/core-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api/releases/v1.13.2/core-components.yaml",
 		}))
 
 		// Ensure gcp infrastructure provider is updated
@@ -149,14 +149,14 @@ data:
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "rke2",
 			Type: "ControlPlaneProvider",
-			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.24.4/control-plane-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/control-plane-components.yaml",
 		}))
 
 		// Ensure a new rke2 bootstrap provider is added
 		Expect(configRepo.Providers).To(ContainElement(v1alpha1.Provider{
 			Name: "rke2",
 			Type: "BootstrapProvider",
-			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.24.4/bootstrap-components.yaml",
+			URL:  "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/bootstrap-components.yaml",
 		}))
 
 		// Ensure a new fleet addon provider is added
