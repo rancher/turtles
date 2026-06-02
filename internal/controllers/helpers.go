@@ -54,6 +54,9 @@ const (
 	fleetNamespaceMigrated    = "cluster-api.cattle.io/fleet-namespace-migrated"
 	fleetDisabledLabel        = "cluster-api.cattle.io/disable-fleet-auto-import"
 
+	rancherCredentialsNamespace = "cattle-global-data"
+	driverNameAnnotation        = "provisioning.cattle.io/driver"
+
 	defaultRequeueDuration = 1 * time.Minute
 	trueValue              = "true"
 )
