@@ -34,6 +34,7 @@ CAAPF_NS="fleet-addon-system"
 MIGRATION_LABEL="migration.fleet.cattle.io/upgrade-2.14=true"
 CAAPF_MANAGED_LABEL="migration.fleet.cattle.io/caapf-managed=true"
 PAUSE_LABEL="migration.fleet.cattle.io/paused=true"
+MIGRATED_CG_LABEL="migration.fleet.cattle.io/from-caapf=true"
 
 # Rancher/Turtles labels on Management Clusters (v3)
 RANCHER_CAPI_OWNER="cluster-api.cattle.io/capi-cluster-owner"
@@ -89,7 +90,7 @@ discover_caapf_clusters() {
 }
 
 if [ "$PHASE" == "pre" ]; then
-    log "Starting pre-upgrade phase for Rancher 2.14.2..."
+    log "Starting pre-upgrade phase for Rancher 2.14..."
 
     log "Scaling down controllers..."
     for DEPLOY in "rancher-turtles-controller-manager:$TURTLES_NS" "caapf-controller-manager:$CAAPF_NS"; do
@@ -305,11 +306,88 @@ if [ "$PHASE" == "pre" ]; then
         fi
     done
 
+    log "Checking CAAPF ClusterGroups for collisions before replicating into fleet-default..."
+    declare -A CG_SELECTORS
+    for CG_NS in "${!COLLISION_NAMESPACES[@]}"; do
+        CG_ITEMS=$(kubectl get clustergroups.fleet.cattle.io -n "$CG_NS" -o json 2>/dev/null | jq -c '
+            .items[]
+            | select((.metadata.ownerReferences // []) | map(
+                select((.kind == "Cluster" or .kind == "ClusterClass")
+                       and (.apiVersion | startswith("cluster.x-k8s.io")))
+              ) | length > 0)
+            | {name: .metadata.name, selector: (.spec.selector // {})}
+        ' || true)
+        while IFS= read -r CG; do
+            [ -z "$CG" ] && continue
+            CG_NAME=$(echo "$CG" | jq -r '.name')
+            CG_SEL=$(echo "$CG" | jq -cS '.selector')
+            # Prevent empty selectors that would target all clusters in fleet-default.
+            IS_EMPTY=$(echo "$CG_SEL" | jq -r '
+                ((.matchLabels // {}) | length) as $ml |
+                ((.matchExpressions // []) | length) as $me |
+                if $ml == 0 and $me == 0 then "true" else "false" end
+            ')
+            if [ "$IS_EMPTY" = "true" ]; then
+                log "ERROR: ClusterGroup '$CG_NS/$CG_NAME' has an empty selector. Replicating it would match ALL clusters in fleet-default."
+                COLLISION_FOUND=true
+                continue
+            fi
+            # Same name across namespaces with different selectors can't merge into one
+            # ClusterGroup in fleet-default.
+            if [ -n "${CG_SELECTORS[$CG_NAME]+_}" ] && [ "${CG_SELECTORS[$CG_NAME]}" != "$CG_SEL" ]; then
+                log "ERROR: ClusterGroup '$CG_NAME' exists in multiple namespaces with different selectors; cannot merge into fleet-default."
+                COLLISION_FOUND=true
+            else
+                CG_SELECTORS["$CG_NAME"]="$CG_SEL"
+            fi
+        done <<< "$CG_ITEMS"
+    done
+
+    # Check for pre-existing ClusterGroups of the same name in fleet-default without the migration label.
+    # These are user-created and should not be overwritten.
+    for CG_NAME in "${!CG_SELECTORS[@]}"; do
+        if kubectl get clustergroups.fleet.cattle.io "$CG_NAME" -n fleet-default &>/dev/null; then
+            EXISTING_TAG=$(kubectl get clustergroups.fleet.cattle.io "$CG_NAME" -n fleet-default \
+                -o jsonpath='{.metadata.labels.migration\.fleet\.cattle\.io/from-caapf}' 2>/dev/null || true)
+            if [ "$EXISTING_TAG" != "true" ]; then
+                log "ERROR: ClusterGroup '$CG_NAME' already exists in fleet-default without the migration marker; cannot safely overwrite."
+                COLLISION_FOUND=true
+            fi
+        fi
+    done
+
     if [ "$COLLISION_FOUND" = "true" ]; then
         log "Aborting pre-upgrade: resolve the above collisions before proceeding."
         exit 1
     fi
     log "No collisions detected. Proceeding with migration."
+
+    # Copy CAAPF ClusterGroups into fleet-default.
+    if [ "${#CG_SELECTORS[@]}" -gt 0 ]; then
+        log "Replicating ${#CG_SELECTORS[@]} CAAPF ClusterGroup(s) into fleet-default..."
+        for CG_NAME in "${!CG_SELECTORS[@]}"; do
+            SEL="${CG_SELECTORS[$CG_NAME]}"
+            CG_JSON=$(cat <<EOF
+{
+  "apiVersion": "fleet.cattle.io/v1alpha1",
+  "kind": "ClusterGroup",
+  "metadata": {
+    "name": "$CG_NAME",
+    "namespace": "fleet-default",
+    "labels": { "${MIGRATED_CG_LABEL%=*}": "${MIGRATED_CG_LABEL#*=}" }
+  },
+  "spec": { "selector": $SEL }
+}
+EOF
+)
+            if [ "$DRY_RUN" = "true" ]; then
+                echo "[DRY-RUN] Would apply ClusterGroup $CG_NAME in fleet-default:"
+                echo "$CG_JSON"
+            else
+                echo "$CG_JSON" | kubectl apply -f -
+            fi
+        done
+    fi
 
     # Label Fleet clusters for post-phase discovery
     for ITEM in "${CAAPF_CLUSTERS[@]}"; do
@@ -593,6 +671,30 @@ elif [ "$PHASE" == "post" ]; then
             fi
         fi
     done
+
+    log "Delete CAAPF-created ClusterGroups in CAPI and class namespaces..."
+    # Skip any namespaces that still contain CAAPF-managed Fleet clusters that are not yet deleted.
+    PENDING_NS=$(kubectl get clusters.fleet.cattle.io -A -l "$CAAPF_MANAGED_LABEL" \
+        -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' 2>/dev/null \
+        | sort -u || true)
+    CG_TO_DELETE=$(kubectl get clustergroups.fleet.cattle.io -A -o json 2>/dev/null | jq -r '
+        .items[]
+        | select(.metadata.namespace != "fleet-default" and .metadata.namespace != "fleet-local")
+        | select((.metadata.ownerReferences // []) | map(
+            select((.kind == "Cluster" or .kind == "ClusterClass")
+                   and (.apiVersion | startswith("cluster.x-k8s.io")))
+          ) | length > 0)
+        | "\(.metadata.namespace) \(.metadata.name)"
+    ' || true)
+    while read -r NS NAME; do
+        [ -z "$NS" ] && continue
+        if [ -n "$PENDING_NS" ] && echo "$PENDING_NS" | grep -qFx "$NS"; then
+            log "Skipping CAAPF ClusterGroup $NS/$NAME — namespace still has CAAPF-managed Fleet clusters."
+            continue
+        fi
+        log "Deleting CAAPF ClusterGroup $NS/$NAME"
+        run_cmd kubectl delete clustergroups.fleet.cattle.io "$NAME" -n "$NS"
+    done <<< "$CG_TO_DELETE"
 
     log "Post-upgrade phase complete."
 else
