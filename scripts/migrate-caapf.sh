@@ -35,6 +35,7 @@ MIGRATION_LABEL="migration.fleet.cattle.io/upgrade-2.14=true"
 CAAPF_MANAGED_LABEL="migration.fleet.cattle.io/caapf-managed=true"
 PAUSE_LABEL="migration.fleet.cattle.io/paused=true"
 MIGRATED_CG_LABEL="migration.fleet.cattle.io/from-caapf=true"
+KEEP_RESOURCES_LABEL="migration.fleet.cattle.io/keep-resources=true"
 
 # Rancher/Turtles labels on Management Clusters (v3)
 RANCHER_CAPI_OWNER="cluster-api.cattle.io/capi-cluster-owner"
@@ -307,7 +308,7 @@ if [ "$PHASE" == "pre" ]; then
     done
 
     log "Checking CAAPF ClusterGroups for collisions before replicating into fleet-default..."
-    declare -A CG_SELECTORS
+    declare -A CG_SELECTORS=()
     for CG_NS in "${!COLLISION_NAMESPACES[@]}"; do
         CG_ITEMS=$(kubectl get clustergroups.fleet.cattle.io -n "$CG_NS" -o json 2>/dev/null | jq -c '
             .items[]
@@ -405,7 +406,73 @@ EOF
     for NS in "${!CAPI_CLUSTER_NAMESPACES[@]}" "${!CLASS_NAMESPACES[@]}"; do
         ALL_MIGRATION_NAMESPACES["$NS"]=1
     done
-    
+
+    # keepResources protects the workloads deployed on downstream clusters from being garbage collected.
+    log "Setting keepResources=true on Fleet resources before pausing..."
+    RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io" "bundles.fleet.cattle.io")
+    for RES in "${RESOURCES[@]}"; do
+        for NS in "${!ALL_MIGRATION_NAMESPACES[@]}"; do
+            ITEMS=$(kubectl get "$RES" -n "$NS" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+            for NAME in $ITEMS; do
+                if [[ "$RES" == "bundles.fleet.cattle.io" ]]; then
+                    # Skip fleet-agent-* system bundles entirely.
+                    if [[ "$NAME" == fleet-agent-* ]]; then continue; fi
+                    # Skip bundles derived from a GitRepo or HelmOp: they inherit keepResources from their parent resource.
+                    REPO_LABEL=$(kubectl get bundles.fleet.cattle.io "$NAME" -n "$NS" \
+                        -o jsonpath='{.metadata.labels.fleet\.cattle\.io/repo-name}' 2>/dev/null || true)
+                    if [ -n "$REPO_LABEL" ]; then continue; fi
+                    HELMOP_LABEL=$(kubectl get bundles.fleet.cattle.io "$NAME" -n "$NS" \
+                        -o jsonpath='{.metadata.labels.fleet\.cattle\.io/fleet-helm-name}' 2>/dev/null || true)
+                    if [ -n "$HELMOP_LABEL" ]; then continue; fi
+                fi
+
+                # Only set and label keepResources if the resource did not already have it.
+                IS_KEPT=$(kubectl get "$RES" "$NAME" -n "$NS" -o jsonpath='{.spec.keepResources}' 2>/dev/null || true)
+                if [ "$IS_KEPT" != "true" ]; then
+                    log "Setting keepResources=true on $RES $NS/$NAME..."
+                    run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' -p '{"spec":{"keepResources":true}}'
+                    run_cmd kubectl label "$RES" "$NAME" -n "$NS" "$KEEP_RESOURCES_LABEL" --overwrite
+                else
+                    log "Skipping keepResources for $NS/$NAME (already set)"
+                fi
+            done
+        done
+    done
+
+    # Wait for keepResources to propagate to the BundleDeployments that target the old Fleet clusters.
+    if [ "$DRY_RUN" != "true" ]; then
+        log "Waiting for keepResources to sync to BundleDeployments..."
+        KR_WAIT_RETRIES=0
+        while true; do
+            PENDING=0
+            for ITEM in "${CAAPF_CLUSTERS[@]}"; do
+                OLD_NS=$(echo "$ITEM" | cut -d'/' -f1)
+                OLD_NAME=$(echo "$ITEM" | cut -d'/' -f2)
+                BDNS=$(kubectl get clusters.fleet.cattle.io "$OLD_NAME" -n "$OLD_NS" -o jsonpath='{.status.namespace}' 2>/dev/null || true)
+                [ -z "$BDNS" ] && continue
+                # Count non-agent BundleDeployments that have not yet picked up keepResources=true.
+                NOT_SYNCED=$(kubectl get bundledeployments -n "$BDNS" -o json 2>/dev/null \
+                    | jq -r --arg agent "fleet-agent-$OLD_NAME" '
+                        [ .items[]
+                          | select(.metadata.labels["fleet.cattle.io/bundle-name"] != $agent)
+                          | select((.spec.options.keepResources // false) != true) ] | length' 2>/dev/null || echo 0)
+                PENDING=$((PENDING + NOT_SYNCED))
+            done
+            if [ "$PENDING" -eq 0 ]; then
+                log "keepResources synced to all BundleDeployments."
+                break
+            fi
+            KR_WAIT_RETRIES=$((KR_WAIT_RETRIES + 1))
+            if [ "$KR_WAIT_RETRIES" -ge 20 ]; then
+                log "ERROR: keepResources did not sync to $PENDING BundleDeployment(s) after 10 minutes."
+                log "Aborting pre-upgrade: deleting old clusters now would risk deleting downstream workloads."
+                exit 1
+            fi
+            log "Still waiting: $PENDING BundleDeployment(s) without keepResources=true..."
+            sleep 30
+        done
+    fi
+
     log "Add migration labels to Fleet resources that are located in CAPI cluster and class namespaces..."
     RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io" "bundles.fleet.cattle.io")
     for RES in "${RESOURCES[@]}"; do
@@ -670,6 +737,27 @@ elif [ "$PHASE" == "post" ]; then
                 run_cmd kubectl delete bundlenamespacemappings.fleet.cattle.io "$OLD_NS" -n "$CLASS_NS"
             fi
         fi
+    done
+
+    # Remove keepResources from the resources this script has marked previously.
+    log "Removing keepResources from migrated Fleet resources in fully-migrated namespaces..."
+    KR_PENDING_NS=$(kubectl get clusters.fleet.cattle.io -A -l "$CAAPF_MANAGED_LABEL" \
+        -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' 2>/dev/null \
+        | sort -u || true)
+    RESOURCES=("gitrepos.fleet.cattle.io" "helmops.fleet.cattle.io" "bundles.fleet.cattle.io")
+    for RES in "${RESOURCES[@]}"; do
+        ITEMS=$(kubectl get "$RES" -A -l "${KEEP_RESOURCES_LABEL%=*}=true" -o json 2>/dev/null \
+            | jq -r '.items[] | "\(.metadata.namespace) \(.metadata.name)"' || true)
+        while read -r NS NAME; do
+            [ -z "$NS" ] && continue
+            if [ -n "$KR_PENDING_NS" ] && echo "$KR_PENDING_NS" | grep -qFx "$NS"; then
+                log "Skipping keepResources revert for $RES $NS/$NAME — namespace still has CAAPF-managed Fleet clusters."
+                continue
+            fi
+            log "Removing keepResources from $RES $NS/$NAME"
+            run_cmd kubectl patch "$RES" "$NAME" -n "$NS" --type='merge' -p '{"spec":{"keepResources":null}}'
+            run_cmd kubectl label "$RES" "$NAME" -n "$NS" "${KEEP_RESOURCES_LABEL%=*}"-
+        done <<< "$ITEMS"
     done
 
     log "Delete CAAPF-created ClusterGroups in CAPI and class namespaces..."
