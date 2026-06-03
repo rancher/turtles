@@ -105,9 +105,3 @@ updates:
     labels:
       - "kind/cleanup"
       - "area/build-and-release"
-
-  # Devcontainers updates
-  - package-ecosystem: "devcontainers"
-    directory: "/"
-    schedule:
-      interval: "weekly"

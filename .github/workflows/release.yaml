@@ -44,7 +44,7 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
     - name: Push community image to DockerHub
-      uses: rancher/ecm-distro-tools/actions/publish-image@a7a867a6376bf4a1cee397558f3c85393769f069
+      uses: rancher/ecm-distro-tools/actions/publish-image@3a1c5e3106195b82d8700f8f760107aa634fecdf
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -57,7 +57,7 @@ jobs:
         make-target: push-community-image
 
     - name: Push prime image to staging registry
-      uses: rancher/ecm-distro-tools/actions/publish-image@a7a867a6376bf4a1cee397558f3c85393769f069
+      uses: rancher/ecm-distro-tools/actions/publish-image@3a1c5e3106195b82d8700f8f760107aa634fecdf
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -96,14 +96,14 @@ jobs:
 
     - name: Log into Docker Hub registry
       if: ${{ matrix.image-type == 'community' }}
-      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
       with:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
     - name: Log into Staging registry
       if: ${{ matrix.image-type == 'prime' }}
-      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
       with:
         username: ${{ env.STAGE_REGISTRY_USERNAME }}
         password: ${{ env.STAGE_REGISTRY_PASSWORD }}

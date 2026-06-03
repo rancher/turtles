@@ -3,10 +3,7 @@ apiVersion: kind.x-k8s.io/v1alpha4
 name: capi-test
 nodes:
 - role: control-plane
-  image: kindest/node:v1.36.1
   extraMounts:
-    - hostPath: /tmp/capi-test/etcd
-      containerPath: /tmp/capi-test/etcd
     - hostPath: /var/run/docker.sock
       containerPath: /var/run/docker.sock
   extraPortMappings:

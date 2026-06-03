@@ -51,6 +51,7 @@ func (s *DefaultSynchronizer[T]) Get(ctx context.Context) error {
 	objKey := client.ObjectKeyFromObject(s.Destination)
 	if err := s.client.Get(ctx, objKey, s.Destination); client.IgnoreNotFound(err) != nil {
 		log.Error(err, "Unable to get mirrored manifest: "+objKey.String())
+		return err
 	}
 
 	return nil
@@ -92,12 +93,13 @@ func setFinalizers(obj client.Object) {
 }
 
 func setOwnerReference(owner, obj client.Object) {
+	controller := true
 	obj.SetOwnerReferences([]metav1.OwnerReference{{
 		APIVersion:         turtlesv1.GroupVersion.String(),
 		Kind:               turtlesv1.Kind,
 		Name:               owner.GetName(),
 		UID:                owner.GetUID(),
-		Controller:         new(true),
-		BlockOwnerDeletion: new(true),
+		Controller:         &controller,
+		BlockOwnerDeletion: &controller,
 	}})
 }

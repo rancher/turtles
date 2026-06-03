@@ -116,14 +116,20 @@ Once this workflow has finished, a new PR should have been created in the `ranch
 This part of the release is also automated via a GitHub Actions workflow, that needs to be invoked manually from GitHub. To invoke it, navigate to the [workflow](https://github.com/rancher/turtles/actions/workflows/release-against-rancher.yml), select the option `Run workflow` from the UI and pass the following parameters:
 
 - Use workflow from: Branch: main
-  This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.25`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
-- Submit PR against the following rancher/rancher branch (e.g. release/v2.12): release/v2.12
-  This must be set to the `rancher/rancher` branch that needs to be updated, with the new Turtles release. `release/v2.12` is used for Rancher 2.12.x, `release/v2.13` is used for Rancher 2.13.x and so on.
-- Previous Turtles version (e.g. v0.23.0-rc.0)
-  This is self explanatory, the value must be set to the previous Turtles version, for example `v0.25.1-rc.0`.
-- New Turtles version (e.g. v0.23.0)
-  This is self explanatory, the value must be set to the new Turtles version, for example `v0.25.1-rc.1`
-- Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.23.0 -> v0.24.0-rc.0). Default: false
+  This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.26`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
+- Submit PR against the following `rancher/rancher` branch(es) (e.g. `release/v2.15` and possibly `main`) as described below.
+  This must be set to the `rancher/rancher` branch that needs to be updated with the new Turtles release. Before running the workflow, determine which branch(es) to target by checking whether the corresponding Rancher release branch exists (e.g. `release/v2.15` for Turtles `v0.27.x`). The workflow must be run once per target branch. Based on that, follow one of these cases:
+  - The corresponding release branch does not exist yet (e.g. cutting `v0.27.x` RCs and `release/v2.15` hasn't been created yet): run the workflow once, targeting `main` branch only.
+  - The corresponding release branch exists (e.g. `release/v2.15` has been created): run the workflow twice - once targeting `release/v2.15` and once targeting `main`, to keep both branches up to date.
+  - A patch release for a previous minor (e.g. cutting `v0.26.x` while `v0.27.x` series is already active): run the workflow once, targeting 
+  `release/v2.14` only. At this point `main` is already tracking `v0.27.x` and should not be updated with `v0.26.x` changes.
+
+  Note that the Rancher release branch can be created at any point - before, during, or after the RC cycle - so always check whether it exists before running the workflow. If multiple Turtles releases are being cut at the same time (e.g. `v0.27.0-rc.4` and `v0.26.3`), apply the rules above independently for each one.
+- Previous Turtles version (e.g. v0.26.0-rc.0)
+  This is self explanatory, the value must be set to the previous Turtles version, for example `v0.26.1-rc.0`.
+- New Turtles version (e.g. v0.26.0)
+  This is self explanatory, the value must be set to the new Turtles version, for example `v0.26.1-rc.1`.
+- Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.26.0 -> v0.27.0-rc.0). Default: false
   This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`.
 
 Once this workflow has finished, a new PR should have been created in the `rancher/rancher` repository that updates the selected branch with the new Turtles version. You need to review and merge this PR. When this PR gets merged, you will have completed the process of releasing a new version of Turtles and including it in an upcoming version of Rancher.

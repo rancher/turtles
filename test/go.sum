@@ -388,8 +388,8 @@ k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 h1:SjGebBtkBqHFOli+05xYbK8YF1Dzk
 k8s.io/utils v0.0.0-20251002143259-bc988d571ff4/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 pgregory.net/rapid v1.2.0 h1:keKAYRcjm+e1F0oAuU5F5+YPAWcyxNNRK2wud503Gnk=
 pgregory.net/rapid v1.2.0/go.mod h1:PY5XlDGj0+V1FCq0o192FdRhpKHGTRIWBgqjDBTrq04=
-sigs.k8s.io/cluster-api v1.13.1 h1:5qksGznSU1fJOXIxsI4EayTqG1Q9S0qJNp3HdsVm1KU=
-sigs.k8s.io/cluster-api v1.13.1/go.mod h1:Hqq5yucu3OwPiAjNEh/O/zZX4dF63MD8Q6I0cwL/bUU=
+sigs.k8s.io/cluster-api v1.13.2 h1:NVdbVLmh6IyfdtENQAi80AijJf/FjfQLODz/6caDjlc=
+sigs.k8s.io/cluster-api v1.13.2/go.mod h1:h7cyiUh+N7sIBkSerqU8cDkYMtRlXVO1c5RoJE1p5+g=
 sigs.k8s.io/cluster-api-operator v0.27.0 h1:UruTkqz7HQucHItKfFulQryvzKfCdX9TmqmeT1+956Q=
 sigs.k8s.io/cluster-api-operator v0.27.0/go.mod h1:mpPqZzMjpjW4lYku/Yzh2s2OV2HFP1MYdfbCE0LUKiw=
 sigs.k8s.io/cluster-api-operator/test v0.27.0 h1:C0N73BlsrbGgBcmZrcB88XWhqdd/hwuawFpkQOl1bZs=

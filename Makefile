@@ -148,9 +148,9 @@ HELM_VER := v3.18.4
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
-CLUSTERCTL_VER := v1.13.1
+CLUSTERCTL_VER := v1.13.2
 # update sha256 with each CAPI bump for security validation
-CLUSTERCTL_VER_SHA256 := 1604175d27395566c58456e77f1af0478d124ac0d6427265ece2c7fe0bdba88d
+CLUSTERCTL_VER_SHA256 := ae1d0a60e7101eb6c5cea650740b3d8d3b50cd8c724a2a375ddd5744df6ea544
 CLUSTERCTL_BIN := clusterctl
 CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 CLUSTERCTL_CONFIG_PATH := ${ROOT_DIR}/test/e2e/config/clusterctl-config.yaml
@@ -161,6 +161,9 @@ GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT
 GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 CHART_TESTING_VER := v3.14.0
+
+KIND_VER := v0.31.0
+KIND_VER_SHA256 := eb244cbafcc157dff60cf68693c14c9a75c4e6e6fedaf9cd71c58117cb93e3fa
 
 # Registry / images
 TAG ?= dev
@@ -285,7 +288,7 @@ vendor-clean:
 	rm -rf vendor
 
 .PHOHY: dev-env
-dev-env: build-local-rancher-charts ## Create a local development environment
+dev-env: kind build-local-rancher-charts ## Create a local development environment
 	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
 
 ## --------------------------------------
@@ -561,6 +564,13 @@ install-etcd-tools: $(TOOLS_BIN_DIR) ## Download and install etcdctl
 	mv /tmp/etcd-tools-unpack/etcd $(TOOLS_BIN_DIR)/etcd
 	rm -rf /tmp/etcd-tools-unpack
 
+kind: # Download kind binary into tools bin folder
+	mkdir -p $(TOOLS_BIN_DIR)
+	curl -Lo "$(TOOLS_BIN_DIR)/kind" "https://kind.sigs.k8s.io/dl/${KIND_VER}/kind-linux-amd64"
+	echo "${KIND_VER_SHA256} $(TOOLS_BIN_DIR)/kind" | sha256sum --check
+	chmod +x $(TOOLS_BIN_DIR)/kind
+	kind version
+
 ## --------------------------------------
 ## Release
 ## --------------------------------------
@@ -664,7 +674,7 @@ test-e2e: ## If MANAGEMENT_CLUSTER_ENVIRONMENT is 'eks', run remote e2e tests, o
 	fi
 
 .PHONY: test-e2e-local
-test-e2e-local: $(GINKGO) $(HELM) $(CLUSTERCTL) $(ENVSUBST) kubectl e2e-image build-local-rancher-charts install-etcd-tools ## Run the end-to-end tests
+test-e2e-local: kind $(GINKGO) $(HELM) $(CLUSTERCTL) $(ENVSUBST) kubectl e2e-image build-local-rancher-charts install-etcd-tools ## Run the end-to-end tests
 	$(E2E_RUN_COMMAND)
 
 .PHONY: test-e2e-remote
