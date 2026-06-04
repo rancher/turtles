@@ -40,7 +40,10 @@ features:
   # use-caapf: Alpha feature to make Turtles rely on CAAPF to install Fleet in CAPI workload clusters.
   use-caapf:
     # enabled: Turn on or off.
-    enabled: false 
+    enabled: false
+  rancher-credential-translation:
+    # enabled: Turn on or off.
+    enabled: false
 # volumes: Volumes for controller pods.
 volumes:
   - name: clusterctl-config
