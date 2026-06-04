@@ -162,8 +162,8 @@ GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 CHART_TESTING_VER := v3.14.0
 
-KIND_VER := v0.31.0
-KIND_VER_SHA256 := eb244cbafcc157dff60cf68693c14c9a75c4e6e6fedaf9cd71c58117cb93e3fa
+KIND_VER := v0.32.0
+KIND_VER_SHA256 := 50030de23cf40a18505f20426f6a8506bedf13c6e509244bd1fa9463721b0f54
 
 # Registry / images
 TAG ?= dev
