@@ -19,6 +19,8 @@ package testenv
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -84,7 +86,6 @@ func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clus
 }
 
 // BuildKindImage is a function that builds a local kindest/node image for an arbitrary k8s version.
-// FIXME: https://github.com/rancher/turtles/issues/2449
 func BuildKindImage(ctx context.Context, version string) {
 	Eventually(func() error {
 		kindBuildImage := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
@@ -98,12 +99,28 @@ func BuildKindImage(ctx context.Context, version string) {
 			},
 		})
 		if kindBuildImage.Error != nil || kindBuildImage.ExitCode != 0 {
-			GinkgoWriter.Printf("\n\n!!! FIXME: Failed to build kindest/node image !!!")
+			// FIXME: https://github.com/rancher/turtles/issues/2449
+			GinkgoWriter.Printf("\nFailed to build kindest/node image\n")
 			GinkgoWriter.Printf("kind build stdout: \n%s\n", string(kindBuildImage.Stdout))
 			GinkgoWriter.Printf("kind build stderr: \n%s\n", string(kindBuildImage.Stderr))
+			cleanBuildKindImageCache()
 			return fmt.Errorf("Failed to build kindest/node image. Exit Code: %d. Error: %w",
 				kindBuildImage.ExitCode, kindBuildImage.Error)
 		}
 		return nil
 	}).WithPolling(5 * time.Minute).WithTimeout(30 * time.Minute).ShouldNot(HaveOccurred())
+}
+
+// cleanBuildKindImageCache is a helper function that deletes '/tmp/k8s-tar-extract-*' folders.
+// These are created by kind when downloading the k8s tarball that can be ~350MB in size.
+func cleanBuildKindImageCache() {
+	const cleanTarget = "/tmp/k8s-tar-extract-*"
+
+	matches, err := filepath.Glob(cleanTarget)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	for _, match := range matches {
+		GinkgoWriter.Printf("Cleaning kind build image cache %s\n", match)
+		Expect(os.RemoveAll(match)).Should(Succeed())
+	}
 }
