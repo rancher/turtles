@@ -25,6 +25,7 @@ import (
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/internal/sync"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-operator/controller"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -40,9 +41,7 @@ func objectFromKey(key client.ObjectKey, obj client.Object) client.Object {
 }
 
 var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
-	var (
-		ns *corev1.Namespace
-	)
+	var ns *corev1.Namespace
 
 	BeforeAll(func() {
 		mgr := testEnv.Manager
@@ -130,11 +129,14 @@ var _ = Describe("Reconcile CAPIProvider", Ordered, func() {
 		doSecret := objectFromKey(client.ObjectKeyFromObject(provider), &corev1.Secret{})
 		Eventually(testEnv.GetAs(provider, doSecret)).ShouldNot(BeNil())
 
-		Expect(cl.Create(ctx, &corev1.Namespace{
+		globalDataNs := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: sync.RancherCredentialsNamespace,
 			},
-		})).To(Succeed())
+		}
+		if apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(globalDataNs), &corev1.Namespace{})) {
+			Expect(testEnv.Create(ctx, globalDataNs)).ToNot(HaveOccurred())
+		}
 
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
