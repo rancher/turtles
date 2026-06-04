@@ -22,7 +22,7 @@ imagePullSecrets: []
 shellImage:
   image:
     repository: rancher/kuberlr-kubectl
-    tag: v6.0.3
+    tag: v6.1.0
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
