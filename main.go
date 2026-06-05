@@ -275,6 +275,9 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 
 		if err := (&controllers.RancherCredentialReconciler{
 			Client: mgr.GetClient(),
+			Translators: map[string]controllers.CredentialTranslator{
+				"aws": &controllers.AWSTranslator{},
+			},
 		}).SetupWithManager(ctx, mgr, controller.Options{
 			MaxConcurrentReconciles: concurrencyNumber,
 		}); err != nil {
