@@ -42,7 +42,8 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object) error {
 
 	obj.SetManagedFields(nil)
 
-	if err := setKind(cl, obj); err != nil {
+	err := setKind(cl, obj)
+	if err != nil {
 		return err
 	}
 
@@ -52,7 +53,7 @@ func Patch(ctx context.Context, cl client.Client, obj client.Object) error {
 	// See: https://github.com/kubernetes/kubernetes/issues/131175
 	//
 	// Also avoiding client.Merge in order to correctly propagate keys that have been removed.
-	err := cl.Update(ctx, obj)
+	err = cl.Update(ctx, obj)
 	if apierrors.IsNotFound(err) {
 		return cl.Create(ctx, obj)
 	}
