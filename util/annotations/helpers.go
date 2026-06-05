@@ -41,9 +41,9 @@ const (
 	ClusterDescriptionAnnotation = "cluster-api.cattle.io/cluster-description"
 	// ImportedClusterVersionManagementAnnotation is a Rancher management Cluster annotation that enables or disables version management for the Cluster.
 	ImportedClusterVersionManagementAnnotation = "rancher.io/imported-cluster-version-management"
-	// AWSClusterStaticIdentityRefAnnotation is the annotation added to a Rancher Cloud Credential
-	// to reference the translated AWSClusterStaticIdentity object name.
-	AWSClusterStaticIdentityRefAnnotation = "cluster-api.cattle.io/aws-static-identity-ref"
+	// CAPIIdentityRefAnnotation is the annotation added to a Rancher Cloud Credential
+	// to reference the translated CAPI identity object name.
+	CAPIIdentityRefAnnotation = "cluster-api.cattle.io/capi-static-identity-ref"
 )
 
 // HasClusterImportAnnotation returns true if the object has the `imported` annotation.
