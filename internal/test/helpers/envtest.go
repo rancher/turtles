@@ -164,7 +164,7 @@ func NewTestEnvironmentConfiguration(crdDirectoryPaths ...string) *TestEnvironme
 // usually the environment is initialized in a suite_test.go file within a `BeforeSuite` ginkgo block.
 func (t *TestEnvironmentConfiguration) Build() (*TestEnvironment, error) {
 	if _, err := t.env.Start(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	options := manager.Options{
@@ -206,7 +206,17 @@ func (t *TestEnvironment) StartManager(ctx context.Context) error {
 
 // Stop stops the test environment.
 func (t *TestEnvironment) Stop() error {
-	t.cancel()
+	if t == nil {
+		return nil
+	}
+
+	if t.cancel != nil {
+		t.cancel()
+	}
+
+	if t.env == nil {
+		return nil
+	}
 
 	return t.env.Stop()
 }
