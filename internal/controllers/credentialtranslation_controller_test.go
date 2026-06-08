@@ -45,6 +45,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 		rancherAWSSecret            *corev1.Secret
 		rancherAzureSecret          *corev1.Secret
 		translatedSecret            *corev1.Secret
+		existingSecret              *corev1.Secret
+		capaNs                      *corev1.Namespace
 		translatedIdentity          *unstructured.Unstructured
 	)
 
@@ -77,7 +79,20 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 									"spec": {
 										Type: "object",
 										Properties: map[string]apiextensionsv1.JSONSchemaProps{
-											"secretName": {Type: "string"},
+											"secretRef": {Type: "string"},
+											"allowedNamespaces": {
+												Type: "object",
+												Properties: map[string]apiextensionsv1.JSONSchemaProps{
+													"list": {
+														Type: "array",
+														Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+															Schema: &apiextensionsv1.JSONSchemaProps{
+																Type: "string",
+															},
+														},
+													},
+												},
+											},
 										},
 									},
 								},
@@ -107,7 +122,7 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 			Expect(testEnv.Create(ctx, globalDataNs)).ToNot(HaveOccurred())
 		}
 
-		capaNs := &corev1.Namespace{
+		capaNs = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: r.Translators["aws"].ProviderNamespace(),
 			},
@@ -160,6 +175,16 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 			},
 		}
 
+		existingSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      rancherAWSSecret.GetName(),
+				Namespace: capaNs.Name,
+			},
+			StringData: map[string]string{
+				"testData": "test-unchanged-data",
+			},
+		}
+
 		translatedIdentity = &unstructured.Unstructured{}
 		translatedIdentity.SetGroupVersionKind(schema.GroupVersionKind{
 			Group:   "infrastructure.cluster.x-k8s.io",
@@ -195,6 +220,7 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 			capaProvider,
 			rancherAWSSecret,
 			translatedSecret,
+			existingSecret,
 			translatedIdentity,
 		}
 		Expect(test.CleanupAndWait(ctx, cl, clientObjs...)).To(Succeed())
@@ -223,13 +249,35 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 				Name: rancherAWSSecret.GetName(),
 			}, translatedIdentity)).ToNot(HaveOccurred())
 
+			g.Expect(translatedIdentity.GetAnnotations()).To(HaveKeyWithValue(
+				cloudCredentialSecretAnnotation, string(rancherAWSSecret.UID)))
+
+			secretRef, found, err := unstructured.NestedString(translatedIdentity.Object, "spec", "secretRef")
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(found).To(BeTrue(), "secretRef field should exist")
+
+			g.Expect(secretRef).To(Equal(rancherAWSSecret.GetName()))
+
+			allowedNs, found, err := unstructured.NestedMap(translatedIdentity.Object, "spec", "allowedNamespaces")
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(found).To(BeTrue(), "allowedNamespaces field should exist")
+
+			Expect(allowedNs).To(HaveKeyWithValue(
+				"list",
+				ContainElement("fleet-default"),
+			))
+
 			g.Expect(cl.Get(ctx, types.NamespacedName{
 				Name:      rancherAWSSecret.GetName(),
 				Namespace: r.Translators["aws"].ProviderNamespace(),
 			}, translatedSecret)).ToNot(HaveOccurred())
 
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue("AccessKeyID", rancherAWSSecret.Data[rancherAWSAccessKeyField]))
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue("SecretAccessKey", rancherAWSSecret.Data[rancherAWSSecretKeyField]))
+			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
+				"AccessKeyID", rancherAWSSecret.Data[rancherAWSAccessKeyField]))
+			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
+				"SecretAccessKey", rancherAWSSecret.Data[rancherAWSSecretKeyField]))
+			g.Expect(translatedSecret.GetAnnotations()).To(HaveKeyWithValue(
+				cloudCredentialSecretAnnotation, string(rancherAWSSecret.UID)))
 
 			updatedRancherSecret := &corev1.Secret{}
 			g.Expect(cl.Get(ctx, types.NamespacedName{
@@ -290,6 +338,61 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 				Name:      rancherAWSSecret.GetName(),
 				Namespace: r.Translators["aws"].ProviderNamespace(),
 			}, translatedSecret))).To(BeTrue())
+		}).WithTimeout(10 * time.Second).Should(Succeed())
+	})
+
+	It("Should not delete existing secret when a collision is detected and Rancher Cloud Credential is removed", func() {
+		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
+		patchBase := client.MergeFrom(provider.DeepCopy())
+		provider.Status = turtlesv1.CAPIProviderStatus{
+			Phase: turtlesv1.Ready,
+		}
+
+		err := cl.Status().Patch(ctx, provider, patchBase)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(cl.Create(ctx, existingSecret)).ToNot(HaveOccurred())
+
+		Eventually(ctx, func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: rancherAWSSecret.Namespace,
+					Name:      rancherAWSSecret.Name,
+				},
+			})
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(err.Error()).To(ContainSubstring("collision detected"))
+		}).WithTimeout(10 * time.Second).Should(Succeed())
+
+		err = cl.Delete(ctx, rancherAWSSecret)
+		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+		Eventually(ctx, func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: rancherAWSSecret.Namespace,
+					Name:      rancherAWSSecret.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			updatedRancherSecret := &corev1.Secret{}
+
+			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
+				Namespace: rancherAWSSecret.Namespace,
+				Name:      rancherAWSSecret.Name,
+			}, updatedRancherSecret))).To(BeTrue())
+
+			updatedExistingSecret := &corev1.Secret{}
+
+			g.Expect(cl.Get(ctx, types.NamespacedName{
+				Name:      existingSecret.GetName(),
+				Namespace: existingSecret.GetNamespace(),
+			}, updatedExistingSecret)).ToNot(HaveOccurred())
+			g.Expect(updatedExistingSecret.Data).To(HaveKeyWithValue(
+				"testData", []byte("test-unchanged-data")))
+
+			g.Expect(updatedExistingSecret.GetAnnotations()).ToNot(HaveKey(cloudCredentialSecretAnnotation))
 		}).WithTimeout(10 * time.Second).Should(Succeed())
 	})
 
@@ -369,6 +472,46 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 				"AccessKeyID", updatedRancherSecret.Data[rancherAWSAccessKeyField]))
 			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
 				"SecretAccessKey", updatedRancherSecret.Data[rancherAWSSecretKeyField]))
+		}).WithTimeout(10 * time.Second).Should(Succeed())
+	})
+
+	It("Should not translate Rancher Cloud Credential secret when a collision is detected (a secret with the same name already exists)", func() {
+		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
+		patchBase := client.MergeFrom(provider.DeepCopy())
+		provider.Status = turtlesv1.CAPIProviderStatus{
+			Phase: turtlesv1.Ready,
+		}
+
+		err := cl.Status().Patch(ctx, provider, patchBase)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(cl.Create(ctx, existingSecret)).ToNot(HaveOccurred())
+
+		Eventually(ctx, func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: rancherAWSSecret.Namespace,
+					Name:      rancherAWSSecret.Name,
+				},
+			})
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(err.Error()).To(ContainSubstring("collision detected"))
+
+			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
+				Name: rancherAWSSecret.GetName(),
+			}, translatedIdentity))).To(BeTrue())
+
+			updatedExistingSecret := &corev1.Secret{}
+
+			g.Expect(cl.Get(ctx, types.NamespacedName{
+				Name:      existingSecret.GetName(),
+				Namespace: existingSecret.GetNamespace(),
+			}, updatedExistingSecret)).ToNot(HaveOccurred())
+
+			g.Expect(updatedExistingSecret.Data).To(HaveKeyWithValue(
+				"testData", []byte("test-unchanged-data")))
+
+			g.Expect(updatedExistingSecret.GetAnnotations()).ToNot(HaveKey(cloudCredentialSecretAnnotation))
 		}).WithTimeout(10 * time.Second).Should(Succeed())
 	})
 
