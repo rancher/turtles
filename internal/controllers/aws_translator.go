@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -38,6 +39,12 @@ const (
 	//nolint:gosec  // This is not a hardcoded secret, just a key name.
 	rancherAWSSecretKeyField = "amazonec2credentialConfig-secretKey"
 )
+
+// allowedAWSClusterNamespace is the only namespace where AWSClusterStaticIdentities will be allowed to be used.
+// for now it only supports `fleet-default`.
+var allowedAWSClusterNamespaceList = []string{
+	"fleet-default",
+}
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=awsclusterstaticidentities,verbs=get;list;watch;create;update;patch;delete
 
@@ -53,17 +60,15 @@ func (a *AWSTranslator) Translate(ctx context.Context, cl client.Client, credent
 		return "", nil
 	}
 
-	identityName := credential.Name
-
-	if err := generateCredentialSecret(ctx, cl, identityName, accessKeyID, secretAccessKey, a.ProviderNamespace()); err != nil {
+	if err := createOrUpdateCredentialSecret(ctx, cl, credential, accessKeyID, secretAccessKey, a.ProviderNamespace()); err != nil {
 		return "", err
 	}
 
-	if err := generateAWSClusterStaticIdentity(ctx, cl, identityName); err != nil {
+	if err := createOrUpdateAWSClusterStaticIdentity(ctx, cl, credential); err != nil {
 		return "", err
 	}
 
-	return identityName, nil
+	return credential.Name, nil
 }
 
 // Cleanup removes the translated CAPA identity and referenced secret for the given Cloud Credential.
@@ -73,24 +78,32 @@ func (a *AWSTranslator) Cleanup(ctx context.Context, cl client.Client, credentia
 	identityName := credential.Name
 
 	awsIdentity := awsClusterStaticIdentity(identityName)
-	if err := cl.Delete(ctx, awsIdentity); err != nil && !apierrors.IsNotFound(err) {
+
+	if err := cl.Get(ctx, types.NamespacedName{Name: identityName}, awsIdentity); err == nil {
+		if isObjectOwnedBySecret(awsIdentity, credential) {
+			if err := cl.Delete(ctx, awsIdentity); err != nil && !apierrors.IsNotFound(err) {
+				return err
+			}
+
+			log.Info("Deleted AWSClusterStaticIdentity", "name", identityName)
+		}
+	} else if !apierrors.IsNotFound(err) {
 		return err
 	}
 
-	log.Info("Deleted AWSClusterStaticIdentity", "name", identityName)
+	credSecret := &corev1.Secret{}
 
-	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      identityName,
-			Namespace: a.ProviderNamespace(),
-		},
-	}
+	if err := cl.Get(ctx, types.NamespacedName{Name: identityName, Namespace: a.ProviderNamespace()}, credSecret); err == nil {
+		if isObjectOwnedBySecret(credSecret, credential) {
+			if err := cl.Delete(ctx, credSecret); err != nil && !apierrors.IsNotFound(err) {
+				return err
+			}
 
-	if err := cl.Delete(ctx, credSecret); err != nil && !apierrors.IsNotFound(err) {
+			log.Info("Deleted credentials secret", "namespace", a.ProviderNamespace(), "name", identityName)
+		}
+	} else if !apierrors.IsNotFound(err) {
 		return err
 	}
-
-	log.Info("Deleted credentials secret", "namespace", a.ProviderNamespace(), "name", identityName)
 
 	return nil
 }
@@ -120,47 +133,57 @@ func awsClusterStaticIdentity(name string) *unstructured.Unstructured {
 	return obj
 }
 
-// generateCredentialSecret creates or updates the credentials Secret in the CAPA system namespace.
-func generateCredentialSecret(ctx context.Context, cl client.Client, name, accessKeyID, secretAccessKey, providerNs string) error {
+// createOrUpdateCredentialSecret creates or updates the credentials Secret in the CAPA system namespace.
+func createOrUpdateCredentialSecret(ctx context.Context, cl client.Client, sourceSecret *corev1.Secret, accessKey, secretKey, ns string) error {
 	credSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: providerNs,
+			Name:      sourceSecret.Name,
+			Namespace: ns,
 		},
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, cl, credSecret, func() error {
+		if err := verifySecretOwnership(credSecret, sourceSecret); err != nil {
+			return err
+		}
+
 		credSecret.Data = map[string][]byte{
-			"AccessKeyID":     []byte(accessKeyID),
-			"SecretAccessKey": []byte(secretAccessKey),
+			"AccessKeyID":     []byte(accessKey),
+			"SecretAccessKey": []byte(secretKey),
 		}
 
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("creating/updating credentials secret %s/%s: %w", providerNs, name, err)
+		return fmt.Errorf("creating/updating credentials secret %s/%s: %w", ns, sourceSecret.Name, err)
 	}
 
 	return nil
 }
 
-// generateAWSClusterStaticIdentity creates or updates the AWSClusterStaticIdentity referencing
+// createOrUpdateAWSClusterStaticIdentity creates or updates the AWSClusterStaticIdentity referencing
 // the credentials secret.
-func generateAWSClusterStaticIdentity(ctx context.Context, cl client.Client, name string) error {
-	awsIdentity := awsClusterStaticIdentity(name)
+func createOrUpdateAWSClusterStaticIdentity(ctx context.Context, cl client.Client, sourceSecret *corev1.Secret) error {
+	awsIdentity := awsClusterStaticIdentity(sourceSecret.Name)
 
 	identitySpec := map[string]any{
-		"secretRef":         name,
-		"allowedNamespaces": map[string]any{},
+		"secretRef": sourceSecret.Name,
+		"allowedNamespaces": map[string]any{
+			"list": allowedAWSClusterNamespaceList,
+		},
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, cl, awsIdentity, func() error {
+		if err := verifySecretOwnership(awsIdentity, sourceSecret); err != nil {
+			return err
+		}
+
 		awsIdentity.Object["spec"] = identitySpec
 
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("creating/updating AWSClusterStaticIdentity %s: %w", name, err)
+		return fmt.Errorf("creating/updating AWSClusterStaticIdentity %s: %w", sourceSecret.Name, err)
 	}
 
 	return nil

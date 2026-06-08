@@ -55,13 +55,22 @@ type Setup struct {
 	RancherHostname string
 }
 
-func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
+func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder, clusterNs string) (*corev1.Namespace, context.CancelFunc) {
 	turtlesframework.Byf("Creating a namespace for hosting the %q test spec", specName)
+
+	var nsName string
+	if clusterNs != "" {
+		nsName = clusterNs
+	} else {
+		nsName = fmt.Sprintf("%s-%s", specName, util.RandomString(6))
+	}
+
 	namespace, cancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
-		Creator:   clusterProxy.GetClient(),
-		ClientSet: clusterProxy.GetClientSet(),
-		Name:      fmt.Sprintf("%s-%s", specName, util.RandomString(6)),
-		LogFolder: filepath.Join(artifactFolder, "clusters", clusterProxy.GetName()),
+		Creator:             clusterProxy.GetClient(),
+		ClientSet:           clusterProxy.GetClientSet(),
+		Name:                nsName,
+		LogFolder:           filepath.Join(artifactFolder, "clusters", clusterProxy.GetName()),
+		IgnoreAlreadyExists: true,
 	})
 
 	return namespace, cancelWatches
