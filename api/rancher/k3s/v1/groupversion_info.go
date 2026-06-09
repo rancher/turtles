@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1 contains the k3s k3s.cattle.io/v1 API proxy implementations.
-// +kubebuilder:object:generate=true
-// +groupName=k3s.cattle.io
 package v1
 
 import (

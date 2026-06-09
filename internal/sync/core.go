@@ -19,6 +19,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -50,7 +51,9 @@ func (s *DefaultSynchronizer[T]) Get(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	objKey := client.ObjectKeyFromObject(s.Destination)
-	if err := s.client.Get(ctx, objKey, s.Destination); client.IgnoreNotFound(err) != nil {
+
+	err := s.client.Get(ctx, objKey, s.Destination)
+	if client.IgnoreNotFound(err) != nil {
 		log.Error(err, "Unable to get mirrored manifest: "+objKey.String())
 	}
 
@@ -65,7 +68,8 @@ func (s *DefaultSynchronizer[T]) Apply(ctx context.Context, reterr *error) {
 	setFinalizers(s.Destination)
 	setOwnerReference(s.Source, s.Destination)
 
-	if err := Patch(ctx, s.client, s.Destination); err != nil {
+	err := Patch(ctx, s.client, s.Destination)
+	if err != nil {
 		*reterr = kerrors.NewAggregate([]error{*reterr, err})
 		log.Error(*reterr, fmt.Sprintf("Unable to patch object: %s", *reterr))
 	}
@@ -82,10 +86,8 @@ func setFinalizers(obj client.Object) {
 	}
 
 	// Only append the desired finalizer if it doesn't exist
-	for _, finalizer := range finalizers {
-		if finalizer == metav1.FinalizerDeleteDependents {
-			return
-		}
+	if slices.Contains(finalizers, metav1.FinalizerDeleteDependents) {
+		return
 	}
 
 	finalizers = append(finalizers, metav1.FinalizerDeleteDependents)

@@ -42,7 +42,7 @@ func NewList(syncHandlers ...Sync) List {
 
 // Sync applies synchronization logic on all syncers in the list.
 func (s List) Sync(ctx context.Context) error {
-	errors := []error{}
+	errors := make([]error, 0, 2*len(s))
 
 	for _, syncer := range s {
 		errors = append(errors, syncer.Get(ctx), syncer.Sync(ctx))
@@ -53,7 +53,8 @@ func (s List) Sync(ctx context.Context) error {
 
 // Apply updates all syncer objects in the cluster.
 func (s List) Apply(ctx context.Context, reterr *error) {
-	errors := []error{*reterr}
+	errors := make([]error, 0, 1+len(s))
+	errors = append(errors, *reterr)
 
 	for _, syncer := range s {
 		var err error

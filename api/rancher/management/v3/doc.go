@@ -16,4 +16,7 @@ limitations under the License.
 
 // Package v3 rancher contains the rancher provisioning.cattle.io/v1 and
 // management.cattle.io/v3 API proxy implementations.
+//
+// +kubebuilder:object:generate=true
+// +groupName=management.cattle.io
 package v3

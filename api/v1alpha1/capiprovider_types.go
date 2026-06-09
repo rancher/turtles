@@ -59,12 +59,12 @@ type CAPIProviderSpec struct {
 	// +kubebuilder:example={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
 
+	// ProviderSpec is the spec of the underlying CAPI Provider resource.
+	operatorv1.ProviderSpec `json:",inline"`
+
 	// EnableAutomaticUpdate can be used to automatically update the CAPIProvider to a newest version.
 	// +optional
 	EnableAutomaticUpdate bool `json:"enableAutomaticUpdate,omitempty"`
-
-	// ProviderSpec is the spec of the underlying CAPI Provider resource.
-	operatorv1.ProviderSpec `json:",inline"`
 }
 
 // Features defines a collection of features for the CAPI Provider to apply.
@@ -119,10 +119,10 @@ type CAPIProviderStatus struct {
 	// +kubebuilder:default={CLUSTER_TOPOLOGY:"true",EXP_CLUSTER_RESOURCE_SET:"true",EXP_MACHINE_POOL: "true"}
 	Variables map[string]string `json:"variables,omitempty"`
 
+	operatorv1.ProviderStatus `json:",inline"`
+
 	// Name reflects actual provider name, which will be visible to users in 'kubectl get capiproviders -A -o wide'
 	Name string `json:"name,omitempty"`
-
-	operatorv1.ProviderStatus `json:",inline"`
 }
 
 // CAPIProvider is the Schema for the CAPI Providers API.
@@ -151,7 +151,8 @@ type CAPIProvider struct {
 type CAPIProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CAPIProvider `json:"items"`
+
+	Items []CAPIProvider `json:"items"`
 }
 
 func init() {
