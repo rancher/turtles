@@ -130,8 +130,7 @@ def update_manager(yaml, containerName, debug, env, name, project):
             for c in containers:
                 if c["name"] != containerName:
                     continue
-                if name != "turtles":  # use custom image for projects except turtles
-                    c["image"] = project.get("image")
+                c["image"] = project.get("image")
                 if project.get("command"):
                     c["command"] = project.get("command")
                 # Append additional args from the main file to any existing container args

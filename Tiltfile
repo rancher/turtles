@@ -40,7 +40,7 @@ always_enable_projects = ["turtles"]
 projects = {
     "turtles": {
         "context": ".",
-        "image": "ghcr.io/rancher/turtles:dev",
+        "image": "docker.io/rancher/turtles:dev",
         "live_reload_deps": [
             "main.go",
             "go.mod",

@@ -288,7 +288,8 @@ vendor-clean:
 	rm -rf vendor
 
 .PHOHY: dev-env
-dev-env: kind build-local-rancher-charts ## Create a local development environment
+dev-env: kind ## Create a local development environment
+	REGISTRY=docker.io $(MAKE) build-local-rancher-charts
 	./scripts/turtles-dev.sh ${RANCHER_HOSTNAME}
 
 ## --------------------------------------

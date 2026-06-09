@@ -30,7 +30,8 @@ RANCHER_IMAGE=${RANCHER_IMAGE:-rancher/rancher:$RANCHER_IMAGE_TAG}
 CLUSTER_NAME=${CLUSTER_NAME:-capi-test}
 USE_TILT_DEV=${USE_TILT_DEV:-true}
 TURTLES_VERSION=${TURTLES_VERSION:-dev}
-TURTLES_IMAGE=${TURTLES_IMAGE:-ghcr.io/rancher/turtles:$TURTLES_VERSION}
+TURTLES_REPO=${TURTLES_REPO:-docker.io}
+TURTLES_IMAGE=${TURTLES_IMAGE:-$TURTLES_REPO/rancher/turtles:$TURTLES_VERSION}
 KUBERNETES_VERSION=${KUBERNETES_VERSION:-v1.36.1}
 
 GITEA_PASSWORD=${GITEA_PASSWORD:-giteaadmin}
@@ -90,7 +91,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Build and load the controller image
-make docker-build-prime
+REGISTRY="$TURTLES_REPO" make docker-build-prime
 kind load docker-image $TURTLES_IMAGE --name $CLUSTER_NAME
 
 # Deploy Gitea test Nodeport
