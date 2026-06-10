@@ -132,12 +132,7 @@ fi
 
 yq --inplace ".turtlesVersion = \"${NEW_CHART_VERSION}+up${NEW_TURTLES_VERSION_SHORT}\"" ./build.yaml
 
-# Downloads dapper
-make .dapper
-
-# DAPPER_MODE=bind will make sure we output everything that changed
-DAPPER_MODE=bind ./.dapper go generate ./... || true
-DAPPER_MODE=bind ./.dapper rm -rf go .config
+go generate ./...
 
 git add .
 git commit -m "$COMMIT_MSG"
