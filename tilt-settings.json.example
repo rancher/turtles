@@ -1,5 +1,5 @@
 {
-    "default_registry": "ghcr.io/test",
+    "default_registry": "docker.io/rancher",
     "debug": {
         "turtles": {
             "continue": true,
