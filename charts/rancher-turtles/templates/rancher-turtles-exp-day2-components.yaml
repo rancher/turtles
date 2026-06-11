@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-day2-operations-serving-cert
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     turtles-capi.cattle.io: day2-operations
   name: etcdmachinesnapshots.turtles-capi.cattle.io
@@ -116,7 +116,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-day2-operations-serving-cert
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     turtles-capi.cattle.io: day2-operations
   name: etcdsnapshotrestores.turtles-capi.cattle.io
@@ -242,7 +242,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ index .Values "rancherTurtles" "namespace" }}/rancher-turtles-day2-operations-serving-cert
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.3
   labels:
     turtles-capi.cattle.io: day2-operations
   name: rke2etcdmachinesnapshotconfigs.turtles-capi.cattle.io
