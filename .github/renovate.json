@@ -36,7 +36,7 @@
       "description": "Pin rancher/kuberlr-kubectl to version 7 (v7.x.x)",
       "matchBaseBranches": ["release/v0.26"],
       "matchPackageNames": ["rancher/kuberlr-kubectl"],
-      "allowedVersions": "^7.0.0"
+      "allowedVersions": "<8.0.0"
     }
   ]
 }
