@@ -56,7 +56,7 @@ func manifestToObjects(in io.Reader) ([]runtime.Object, error) {
 			return nil, err
 		}
 
-		check := map[string]interface{}{}
+		check := map[string]any{}
 		if err := json.Unmarshal(bytes, &check); err != nil {
 			return nil, err
 		}

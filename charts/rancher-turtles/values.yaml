@@ -24,7 +24,7 @@ rancherTurtles:
   # kubectlImage: Image for kubectl tasks.
   kubectlImage: registry.k8s.io/kubernetes/kubectl:v1.31.4
   # shellImage: Image for shell tasks.
-  shellImage: rancher/kuberlr-kubectl:v5.0.0
+  shellImage: rancher/kuberlr-kubectl:v5.1.0
   # features: Optional and experimental features.
   features:
     # day2operations: Alpha feature.

@@ -90,7 +90,8 @@ type ClusterctlConfig struct {
 type ClusterctlConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CAPIProvider `json:"items"`
+
+	Items []CAPIProvider `json:"items"`
 }
 
 func init() {

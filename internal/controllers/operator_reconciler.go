@@ -391,7 +391,7 @@ func patchProviderManifestFn(objs []unstructured.Unstructured) ([]unstructured.U
 // removeCertManagerFn is a function that satisfies the type repository.ComponentsAlterFn
 // to remove cert-manager dependencies from the provider manifest.
 func removeCertManagerFn(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
-	updatedObjs := []unstructured.Unstructured{}
+	updatedObjs := []unstructured.Unstructured{} //nolint:prealloc
 
 	for _, o := range objs {
 		annotations := o.GetAnnotations()

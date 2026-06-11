@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v3 contains the rancher management.cattle.io/v3 API proxy implementations.
-// +kubebuilder:object:generate=true
-// +groupName=management.cattle.io
 package v3
 
 import (
