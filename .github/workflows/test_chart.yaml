@@ -52,7 +52,7 @@ jobs:
         run: make docker-build-prime
 
       - name: Package operator chart
-        run: make release-chart
+        run: make build-chart
 
       - name: Run chart-testing (lint)
         run: ct lint --validate-maintainers=false --charts out/charts/rancher-turtles/
@@ -141,7 +141,7 @@ jobs:
         run: make docker-build-community TAG=${{ env.TAG }}
 
       - name: Package operator chart
-        run: make release-chart
+        run: make build-chart
 
       - name: Create kind cluster
         uses: helm/kind-action@v1.12.0
