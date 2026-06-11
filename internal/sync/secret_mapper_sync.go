@@ -187,6 +187,7 @@ func (r B64) convert(data map[string][]byte) string {
 // SecretMapperSync is a structure mirroring variable secret state of the Rancher secret data.
 type SecretMapperSync struct { //nolint: recvcheck
 	*SecretSync
+
 	RancherSecret *corev1.Secret
 }
 

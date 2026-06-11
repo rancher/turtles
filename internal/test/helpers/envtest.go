@@ -81,6 +81,7 @@ type TestEnvironmentConfiguration struct {
 type TestEnvironment struct {
 	manager.Manager
 	client.Client
+
 	Config *rest.Config
 	env    *envtest.Environment
 	cancel context.CancelFunc
@@ -135,7 +136,7 @@ func (t *TestEnvironment) CreateNamespaceWithName(ctx context.Context, name stri
 
 // NewTestEnvironmentConfiguration creates a new test environment configuration for running tests.
 func NewTestEnvironmentConfiguration(crdDirectoryPaths ...string) *TestEnvironmentConfiguration {
-	resolvedCrdDirectoryPaths := []string{}
+	resolvedCrdDirectoryPaths := make([]string, 0, len(crdDirectoryPaths)+2)
 
 	for _, group := range crdDirectoryPaths {
 		resolvedCrdDirectoryPaths = append(
@@ -254,7 +255,7 @@ func getFilePathToAPI(root, org, pkg, apis string) string {
 
 	packageVersionRegex := regexp.MustCompile(fmt.Sprintf(`^(.*)%s/%s *v(.+)`, org, pkg))
 
-	for _, line := range strings.Split(string(modBits), "\n") {
+	for line := range strings.SplitSeq(string(modBits), "\n") {
 		matches := packageVersionRegex.FindStringSubmatch(line)
 		if len(matches) > 0 {
 			packageVersion = matches[2]
