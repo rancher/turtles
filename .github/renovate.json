@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>rancher/renovate-config//rancher-main#release"
+  ],
+  "devbox": {
+    "enabled": false
+  },
+  "baseBranchPatterns": [
+    "release/v0.26"
+  ],
+  "packageRules": [
+    {
+      "description": "Disable rancher/turtles updates on dockerfiles. This avoids PRs that bump the version tag in Turtles Helm chart.",
+      "matchPackageNames": ["rancher/turtles"],
+      "matchDatasources": ["docker"],
+      "enabled": false
+    },
+    {
+      "description": "Align with core CAPI v1.12 dependencies",
+      "matchBaseBranches": ["release/v0.26"],
+      "matchPackageNames": [
+        "sigs.k8s.io/controller-runtime"
+      ],
+      "allowedVersions": "<0.23.0"
+    },
+    {
+      "description": "Align with core CAPI v1.12 dependencies",
+      "matchBaseBranches": ["release/v0.26"],
+      "matchPackageNames": [
+        "k8s.io/**"
+      ],
+      "allowedVersions": "<0.35.0"
+    },
+    {
+      "description": "Pin rancher/kuberlr-kubectl to version 7 (v7.x.x)",
+      "matchBaseBranches": ["release/v0.26"],
+      "matchPackageNames": ["rancher/kuberlr-kubectl"],
+      "allowedVersions": "<8.0.0"
+    }
+  ]
+}
