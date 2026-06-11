@@ -113,3 +113,45 @@ var _ = Describe("[RancherManagedFleet] [Azure] [RKE2] Create and delete CAPI cl
 		}
 	})
 })
+
+var _ = Describe("[RancherManagedFleet] [Docker] [Kubeadm]  Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.KubeadmTestLabel, e2e.RancherManagedFleetLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-docker-kubeadm"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIDockerKubeadmTopology,
+			ClusterName:                    "cluster-docker-kubeadm",
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(1),
+			LabelNamespace:                 true,
+			TestClusterReimport:            true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-rancher",
+			DeleteClusterWaitName:          "wait-controllers",
+			TopologyNamespace:              topologyNamespace,
+			VerifyETCDSize:                 true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/docker/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+			AdditionalDownstreamTemplates: [][]byte{
+				e2e.CalicoManifest,
+			},
+		}
+	})
+})

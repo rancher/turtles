@@ -43,9 +43,7 @@ spec:
         operator: In
         values:
           - azure-kubeadm-example
-          - docker-kubeadm-example
           - docker-rke2-example
-          - docker-rke2-v1beta1-example
           - etcd-snapshot-restore
           - vsphere-kubeadm-example
           - vsphere-rke2-example

@@ -102,6 +102,11 @@ var (
 	//go:embed data/cluster-templates/vsphere-rke2-topology.yaml
 	CAPIvSphereRKE2Topology []byte
 
+	// Downstream test manifests
+
+	//go:embed data/applications/calico.yaml
+	CalicoManifest []byte
+
 	// CAPIProvider test data
 
 	//go:embed data/test-providers/capv-provider-no-ver.yaml
