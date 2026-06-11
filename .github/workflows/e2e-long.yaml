@@ -33,7 +33,10 @@ jobs:
       test_name: v2 provisioning
       artifact_name: v2prov
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
-      continue_on_error: true
+      # Use continue_on_error only to suppress v2prov
+      # issues until they are fixed in Rancher.
+      # This can happen when bumping a CAPI version.
+      continue_on_error: false
     secrets: inherit
   e2e_cleanup:
     if: always()
