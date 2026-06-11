@@ -107,22 +107,22 @@ get_go_version = $(shell go list -m $1 | awk '{print $$2}')
 GO_INSTALL := ./scripts/go-install.sh
 
 # Binaries
-KUSTOMIZE_VER := v5.7.0
+KUSTOMIZE_VER := v5.8.1
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER))
 KUSTOMIZE_PKG := sigs.k8s.io/kustomize/kustomize/v5
 
-SETUP_ENVTEST_VER := release-0.21
+SETUP_ENVTEST_VER := release-0.24
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(abspath $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER))
 SETUP_ENVTEST_PKG := sigs.k8s.io/controller-runtime/tools/setup-envtest
 
-CONTROLLER_GEN_VER := v0.18.0
+CONTROLLER_GEN_VER := v0.21.0
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(abspath $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER))
 CONTROLLER_GEN_PKG := sigs.k8s.io/controller-tools/cmd/controller-gen
 
-CONVERSION_GEN_VER := v0.33.0
+CONVERSION_GEN_VER := v0.36.1
 CONVERSION_GEN_BIN := conversion-gen
 # We are intentionally using the binary without version suffix, to avoid the version
 # in generated files.
@@ -134,17 +134,12 @@ ENVSUBST_BIN := envsubst
 ENVSUBST := $(abspath $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER))
 ENVSUBST_PKG := github.com/drone/envsubst/v2/cmd/envsubst
 
-GO_APIDIFF_VER := v0.8.3
-GO_APIDIFF_BIN := go-apidiff
-GO_APIDIFF := $(abspath $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER))
-GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
-
 GINKGO_BIN := ginkgo
 GINGKO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
 GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
-HELM_VER := v3.18.4
+HELM_VER := v4.2.0
 HELM_BIN := helm
 HELM := $(TOOLS_BIN_DIR)/$(HELM_BIN)-$(HELM_VER)
 
@@ -192,7 +187,7 @@ PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 
 # Rancher charts testing
 export RANCHER_CHARTS_REPO_DIR ?=  $(abspath $(RELEASE_DIR)/rancher-charts)
-export RANCHER_CHART_DEV_VERSION ?= 108.0.0+up99.99.99
+export RANCHER_CHART_DEV_VERSION ?= 110.0.0+up99.99.99
 export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.15
 
 # Rancher Private CA setup
@@ -215,9 +210,9 @@ CACHE_COMMANDS = "--cache-from type=local,src=$(CACHE_DIR) --cache-to type=local
 # ETCD Verification
 ETCD_VERIFY_SCRIPT_PATH := $(ROOT_DIR)/scripts/collect-etcd-data.sh
 VERIFY_EKS_ETCD_SCRIPT_PATH := $(ROOT_DIR)/scripts/verify-eks-etcd-size.sh
-ETCD_VERSION := v3.6.11
+ETCD_VERSION := v3.6.12
 # update sha256 with each etcd bump for security validation
-ETCD_VERSION_SHA256 := 8756f7a4eaf921668a83de0bf13c0f65cae9186a165696e3ae8396afe6f557ed
+ETCD_VERSION_SHA256 := d2564bb50b58e52fbaf3bde4a9561a1d04e20cdc761f795580e4d615d5d41355
 
 .PHONY: all
 all: build
@@ -487,9 +482,6 @@ $(CONTROLLER_GEN_BIN): $(CONTROLLER_GEN) ## Build a local copy of controller-gen
 .PHONY: $(CONVERSION_GEN_BIN)
 $(CONVERSION_GEN_BIN): $(CONVERSION_GEN) ## Build a local copy of conversion-gen.
 
-.PHONY: $(GO_APIDIFF_BIN)
-$(GO_APIDIFF_BIN): $(GO_APIDIFF) ## Build a local copy of go-apidiff
-
 .PHONY: $(ENVSUBST_BIN)
 $(ENVSUBST_BIN): $(ENVSUBST) ## Build a local copy of envsubst.
 
@@ -511,9 +503,6 @@ $(CONVERSION_GEN): # Build conversion-gen from tools folder.
 
 .PHONY: $(GINKGO_BIN)
 $(GINKGO_BIN): $(GINKGO) ## Build a local copy of ginkgo.
-
-$(GO_APIDIFF): # Build go-apidiff from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
 $(ENVSUBST): # Build gotestsum from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(ENVSUBST_PKG) $(ENVSUBST_BIN) $(ENVSUBST_VER)
