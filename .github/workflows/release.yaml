@@ -28,7 +28,7 @@ jobs:
       TAG: ${{ github.ref_name }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v5
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       with:
         fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
     - name: Push community image to DockerHub
-      uses: rancher/ecm-distro-tools/actions/publish-image@067de5ae5517b661b4d2f10e22cc5a21aa0ac915
+      uses: rancher/ecm-distro-tools/actions/publish-image@c7c07fc1b7ca15c3a8fca06899a6a5657d34ac35
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -57,7 +57,7 @@ jobs:
         make-target: push-community-image
 
     - name: Push prime image to staging registry
-      uses: rancher/ecm-distro-tools/actions/publish-image@067de5ae5517b661b4d2f10e22cc5a21aa0ac915
+      uses: rancher/ecm-distro-tools/actions/publish-image@c7c07fc1b7ca15c3a8fca06899a6a5657d34ac35
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -96,14 +96,14 @@ jobs:
 
     - name: Log into Docker Hub registry
       if: ${{ matrix.image-type == 'community' }}
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
       with:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
     - name: Log into Staging registry
       if: ${{ matrix.image-type == 'prime' }}
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
       with:
         username: ${{ env.STAGE_REGISTRY_USERNAME }}
         password: ${{ env.STAGE_REGISTRY_PASSWORD }}
@@ -140,7 +140,7 @@ jobs:
 
     - name: Install Cosign
       if: ${{ matrix.image-type == 'prime' }}
-      uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+      uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
     - name: Install slsactl
       if: ${{ matrix.image-type == 'prime' }}

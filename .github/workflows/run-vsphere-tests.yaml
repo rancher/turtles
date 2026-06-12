@@ -35,7 +35,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.2.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: go.mod
       - name: Display kind version
@@ -49,13 +49,13 @@ jobs:
           make test-e2e
       - name: Collect run artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: artifacts_vsphere
           path: _artifacts
       - name: Send failed status to slack
         if: failure()
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook-type: incoming-webhook
           payload: |
