@@ -22,7 +22,7 @@ imagePullSecrets: []
 shellImage:
   image:
     repository: rancher/kuberlr-kubectl
-    tag: v8.1.0
+    tag: v8.1.1
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
@@ -40,7 +40,7 @@ features:
   # use-caapf: Alpha feature to make Turtles rely on CAAPF to install Fleet in CAPI workload clusters.
   use-caapf:
     # enabled: Turn on or off.
-    enabled: false 
+    enabled: false
 # volumes: Volumes for controller pods.
 volumes:
   - name: clusterctl-config
