@@ -7,7 +7,8 @@
     "enabled": false
   },
   "baseBranchPatterns": [
-    "release/v0.26"
+    "release/v0.26",
+    "release/v0.25"
   ],
   "packageRules": [
     {
@@ -17,7 +18,7 @@
       "enabled": false
     },
     {
-      "description": "Align with core CAPI v1.12 dependencies",
+      "description": "release/v0.26: Align with core CAPI v1.12 dependencies",
       "matchBaseBranches": ["release/v0.26"],
       "matchPackageNames": [
         "sigs.k8s.io/controller-runtime"
@@ -25,7 +26,7 @@
       "allowedVersions": "<0.23.0"
     },
     {
-      "description": "Align with core CAPI v1.12 dependencies",
+      "description": "release/v0.26: Align with core CAPI v1.12 dependencies",
       "matchBaseBranches": ["release/v0.26"],
       "matchPackageNames": [
         "k8s.io/**"
@@ -33,10 +34,32 @@
       "allowedVersions": "<0.35.0"
     },
     {
-      "description": "Pin rancher/kuberlr-kubectl to version 7 (v7.x.x)",
+      "description": "release/v0.26: Pin rancher/kuberlr-kubectl to version 7 (v7.x.x)",
       "matchBaseBranches": ["release/v0.26"],
       "matchPackageNames": ["rancher/kuberlr-kubectl"],
       "allowedVersions": "<8.0.0"
+    },
+    {
+      "description": "release/v0.25: Align with core CAPI v1.10 dependencies",
+      "matchBaseBranches": ["release/v0.25"],
+      "matchPackageNames": [
+        "sigs.k8s.io/controller-runtime"
+      ],
+      "allowedVersions": "<0.21.0"
+    },
+    {
+      "description": "release/v0.25: Align with core CAPI v1.10 dependencies",
+      "matchBaseBranches": ["release/v0.25"],
+      "matchPackageNames": [
+        "k8s.io/**"
+      ],
+      "allowedVersions": "<0.33.0"
+    },
+    {
+      "description": "release/v0.25: Pin rancher/kuberlr-kubectl to version 6 (v6.x.x)",
+      "matchBaseBranches": ["release/v0.25"],
+      "matchPackageNames": ["rancher/kuberlr-kubectl"],
+      "allowedVersions": "<7.0.0"
     }
   ]
 }
