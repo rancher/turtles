@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -41,7 +40,7 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	var (
 		r                           *RancherCredentialReconciler
 		awsClusterStaticIdentityCRD *apiextensionsv1.CustomResourceDefinition
-		provider                    *turtlesv1.CAPIProvider
+		providerTemplate            *turtlesv1.CAPIProvider
 		rancherAWSSecret            *corev1.Secret
 		rancherAzureSecret          *corev1.Secret
 		translatedSecret            *corev1.Secret
@@ -131,7 +130,7 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 			Expect(testEnv.Create(ctx, capaNs)).ToNot(HaveOccurred())
 		}
 
-		provider = &turtlesv1.CAPIProvider{
+		providerTemplate = &turtlesv1.CAPIProvider{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      r.Translators["aws"].ProviderName(),
 				Namespace: capaNs.Name,
@@ -194,27 +193,13 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	})
 
 	AfterEach(func() {
-		capaProvider := &turtlesv1.CAPIProvider{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      r.Translators["aws"].ProviderName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			},
+		providerKey := client.ObjectKey{
+			Name:      r.Translators["aws"].ProviderName(),
+			Namespace: r.Translators["aws"].ProviderNamespace(),
 		}
 
-		// NOTE: deleting `CAPIProvider` occasionally causes flakes.
-		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err := cl.Get(ctx, client.ObjectKeyFromObject(capaProvider), capaProvider); err != nil {
-				return client.IgnoreNotFound(err)
-			}
-
-			capaProvider.SetFinalizers(nil)
-
-			return cl.Update(ctx, capaProvider)
-		})
-		Expect(err).NotTo(HaveOccurred())
-
-		err = cl.Delete(ctx, capaProvider)
-		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+		capaProvider := &turtlesv1.CAPIProvider{}
+		Expect(client.IgnoreNotFound(cl.Get(ctx, providerKey, capaProvider))).NotTo(HaveOccurred())
 
 		clientObjs := []client.Object{
 			capaProvider,
@@ -226,8 +211,28 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 		Expect(test.CleanupAndWait(ctx, cl, clientObjs...)).To(Succeed())
 	})
 
-	It("Should reconcile and translate Rancher Cloud Credential secret when CAPA is installed", func() {
+	It("Should reconcile and translate Rancher Cloud Credential secret when CAPA is installed and becomes ready", func() {
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
+
+		// provider is not yet ready, controller should requeue.
+		Eventually(ctx, func(g Gomega) {
+			res, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: rancherAWSSecret.Namespace,
+					Name:      rancherAWSSecret.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res.RequeueAfter).ToNot(BeZero())
+
+			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
+				Name:      rancherAWSSecret.GetName(),
+				Namespace: r.Translators["aws"].ProviderNamespace(),
+			}, translatedSecret))).To(BeTrue())
+		}).WithTimeout(10 * time.Second).Should(Succeed())
+
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
 			Phase: turtlesv1.Ready,
@@ -236,6 +241,7 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 		err := cl.Status().Patch(ctx, provider, patchBase)
 		Expect(err).NotTo(HaveOccurred())
 
+		// provider is now ready, controller should translate credentials.
 		Eventually(ctx, func(g Gomega) {
 			_, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -290,6 +296,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	})
 
 	It("Should delete translated CAPI identity when Rancher Cloud Credential is removed", func() {
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
@@ -342,6 +350,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	})
 
 	It("Should not delete existing secret when a collision is detected and Rancher Cloud Credential is removed", func() {
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
@@ -397,6 +407,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	})
 
 	It("Should update AWSClusterStaticIdentity when AWS Cloud Credential changes", func() {
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
@@ -476,6 +488,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	})
 
 	It("Should not translate Rancher Cloud Credential secret when a collision is detected (a secret with the same name already exists)", func() {
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
@@ -512,26 +526,6 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 				"testData", []byte("test-unchanged-data")))
 
 			g.Expect(updatedExistingSecret.GetAnnotations()).ToNot(HaveKey(cloudCredentialSecretAnnotation))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
-	})
-
-	It("Should requeue and not translate when CAPA CAPIProvider is installed but not yet ready", func() {
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-
-		Eventually(ctx, func(g Gomega) {
-			res, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(res.RequeueAfter).ToNot(BeZero())
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret))).To(BeTrue())
 		}).WithTimeout(10 * time.Second).Should(Succeed())
 	})
 
@@ -589,6 +583,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 			}, translatedSecret))).To(BeTrue())
 		}).WithTimeout(10 * time.Second).Should(Succeed())
 
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
@@ -619,6 +615,8 @@ var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	})
 
 	It("Should not translate non-AWS Rancher Cloud Credential", func() {
+		provider := providerTemplate.DeepCopy()
+
 		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
 		patchBase := client.MergeFrom(provider.DeepCopy())
 		provider.Status = turtlesv1.CAPIProviderStatus{
