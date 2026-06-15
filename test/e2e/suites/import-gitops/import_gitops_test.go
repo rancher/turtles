@@ -21,11 +21,13 @@ package import_gitops
 
 import (
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
 	turtlesframework "github.com/rancher/turtles/test/framework"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 )
@@ -259,7 +261,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIAwsKubeadmTopology,
 			ClusterName:               "cluster-aws-kubeadm",
-			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
+			ControlPlaneMachineCount:  ptr.To(3), // minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			SkipDeletionTest:          false,
 			LabelNamespace:            true,
@@ -299,13 +301,42 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 })
 
 var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
-	var topologyNamespace string
+	var topologyNamespace, capiClusterNamespace, credentialName string
 
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
 
 		topologyNamespace = "creategitops-aws-rke2"
+		// AWSClusterStaticIdentity only allows provisioning clusters in "fleet-default"
+		capiClusterNamespace = "fleet-default"
+		credentialName = "rancher-cloud-credential-aws"
+
+		By("Creating Rancher AWS Cloud Credential which will be translated into `AWSClusterStaticIdentity`")
+		lookupResult := &turtlesframework.RancherLookupUserResult{}
+		turtlesframework.RancherLookupUser(ctx, turtlesframework.RancherLookupUserInput{
+			Username:     "admin",
+			ClusterProxy: bootstrapClusterProxy,
+		}, lookupResult)
+
+		turtlesframework.CreateSecret(ctx, turtlesframework.CreateSecretInput{
+			Creator:   bootstrapClusterProxy.GetClient(),
+			Name:      credentialName,
+			Namespace: "cattle-global-data",
+			Type:      corev1.SecretTypeOpaque,
+			Data: map[string]string{
+				"amazonec2credentialConfig-accessKey": os.Getenv("AWS_ACCESS_KEY_ID"),
+				"amazonec2credentialConfig-secretKey": os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			},
+			Annotations: map[string]string{
+				"field.cattle.io/name":          credentialName,
+				"provisioning.cattle.io/driver": "aws",
+				"field.cattle.io/creatorId":     lookupResult.User,
+			},
+			Labels: map[string]string{
+				"cattle.io/creator": "norman",
+			},
+		})
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
@@ -314,7 +345,8 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			BootstrapClusterProxy:     bootstrapClusterProxy,
 			ClusterTemplate:           e2e.CAPIAwsEC2RKE2Topology,
 			ClusterName:               "cluster-aws-rke2",
-			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
+			Namespace:                 capiClusterNamespace,
+			ControlPlaneMachineCount:  ptr.To(3), // minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
@@ -322,6 +354,10 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 			DeleteClusterWaitName:     "wait-eks-delete",
 			TopologyNamespace:         topologyNamespace,
 			VerifyETCDSize:            true,
+			AdditionalTemplateVariables: map[string]string{
+				"AWS_CLUSTER_IDENTITY_NAME": credentialName,
+				"NAMESPACE":                 capiClusterNamespace,
+			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
 					Name:            "aws-cluster-class-rke2",
@@ -461,7 +497,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			ClusterTemplate:           e2e.CAPIvSphereKubeadmTopology,
 			TopologyNamespace:         topologyNamespace,
 			ClusterName:               "cluster-vsphere-kubeadm",
-			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
+			ControlPlaneMachineCount:  ptr.To(3), // minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,
@@ -517,7 +553,7 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			ClusterTemplate:           e2e.CAPIvSphereRKE2Topology,
 			TopologyNamespace:         topologyNamespace,
 			ClusterName:               "cluster-vsphere-rke2",
-			ControlPlaneMachineCount:  ptr.To(3), //minimum 3 replicas for CSI controller
+			ControlPlaneMachineCount:  ptr.To(3), // minimum 3 replicas for CSI controller
 			WorkerMachineCount:        ptr.To(1),
 			LabelNamespace:            true,
 			RancherServerURL:          hostName,

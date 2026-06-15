@@ -73,7 +73,7 @@ func SetDefaultProviderSpec(o operatorv1.GenericProvider) {
 	providerSpec := o.GetSpec()
 	providerNamespace := o.GetNamespace()
 
-	if providerSpec.ConfigSecret != nil && providerSpec.ConfigSecret.Namespace == "" {
+	if providerSpec.ConfigSecret != nil {
 		providerSpec.ConfigSecret.Namespace = providerNamespace
 	}
 
@@ -87,10 +87,9 @@ func SetDefaultProviderSpec(o operatorv1.GenericProvider) {
 	}
 
 	providerSpec.ConfigSecret = cmp.Or(providerSpec.ConfigSecret, &operatorv1.SecretReference{
-		Name: o.GetName(),
+		Name:      o.GetName(),
+		Namespace: providerNamespace,
 	})
-
-	providerSpec.ConfigSecret.Namespace = cmp.Or(providerSpec.ConfigSecret.Namespace, providerNamespace)
 
 	o.SetSpec(providerSpec)
 }

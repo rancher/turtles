@@ -64,6 +64,13 @@ type CreateUsingGitOpsSpecInput struct {
 	CAPIClusterCreateWaitName string
 	DeleteClusterWaitName     string
 
+	// Namespace defines the namespace where the test cluster will be created.
+	// If not specified, a random namespace will be created.
+	// This should only be used when the test case requires the cluster to be
+	// created in a know namespace, otherwise, it is recommended to let the test
+	// create a random namespace to avoid conflicts with other parallel tests.
+	Namespace string
+
 	// ControlPlaneMachineCount defines the number of control plane machines to be added to the workload cluster.
 	// If not specified, 1 will be used.
 	ControlPlaneMachineCount *int
@@ -140,7 +147,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		Expect(os.MkdirAll(input.ArtifactFolder, 0o750)).To(Succeed(), "Invalid argument. input.ArtifactFolder can't be created for %s spec", specName)
 
 		Expect(input.E2EConfig.Variables).To(HaveKey(e2e.KubernetesManagementVersionVar))
-		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
+		namespace, cancelWatches = e2e.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, input.Namespace)
 
 		capiClusterCreateWait = input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), input.CAPIClusterCreateWaitName)
 		Expect(capiClusterCreateWait).ToNot(BeNil(), "Failed to get wait intervals %s", input.CAPIClusterCreateWaitName)
