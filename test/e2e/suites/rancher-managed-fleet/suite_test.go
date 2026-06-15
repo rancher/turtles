@@ -99,6 +99,13 @@ var _ = SynchronizedBeforeSuite(
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
+		By("Enable Rancher Cloud Credential translation")
+		testenv.SetTurtlesFeatureGate(ctx, testenv.SetTurtlesFeatureGateInput{
+			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
+			FeatureName:           "rancher-credential-translation",
+			Enabled:               true,
+		})
+
 		By("Waiting for Rancher to be ready")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
@@ -120,7 +127,7 @@ var _ = SynchronizedBeforeSuite(
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
-			ProviderList:            "docker,rke2,azure,kubeadm",
+			ProviderList:            "docker,rke2,aws,azure,kubeadm",
 		})
 
 		data, err := json.Marshal(e2e.Setup{
