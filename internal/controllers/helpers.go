@@ -54,6 +54,13 @@ const (
 	fleetNamespaceMigrated    = "cluster-api.cattle.io/fleet-namespace-migrated"
 	fleetDisabledLabel        = "cluster-api.cattle.io/disable-fleet-auto-import"
 
+	rancherCredentialsNamespace = "cattle-global-data"
+
+	driverNameAnnotation = "provisioning.cattle.io/driver"
+
+	//nolint:gosec  // This is not a hardcoded credential, just an annotation key name.
+	cloudCredentialSecretAnnotation = "cluster-api.cattle.io/source-id"
+
 	defaultRequeueDuration = 1 * time.Minute
 	trueValue              = "true"
 )
@@ -380,4 +387,30 @@ func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeature
 	default:
 		return nil, fmt.Errorf("invalid agent-tls-mode setting value: %s", agentTLSModeValue)
 	}
+}
+
+func verifySecretOwnership(obj client.Object, sourceSecret *corev1.Secret) error {
+	if obj.GetResourceVersion() != "" {
+		annots := obj.GetAnnotations()
+		if annots == nil || annots[cloudCredentialSecretAnnotation] != string(sourceSecret.UID) {
+			return fmt.Errorf("security collision detected: target %s %s/%s already exists and is not related to the cloud credential",
+				obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName())
+		}
+	}
+
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+
+	annotations[cloudCredentialSecretAnnotation] = string(sourceSecret.UID)
+
+	obj.SetAnnotations(annotations)
+
+	return nil
+}
+
+func isObjectOwnedBySecret(obj client.Object, sourceSecret *corev1.Secret) bool {
+	annots := obj.GetAnnotations()
+	return annots != nil && annots[cloudCredentialSecretAnnotation] == string(sourceSecret.UID)
 }

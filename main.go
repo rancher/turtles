@@ -269,4 +269,20 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			os.Exit(1)
 		}
 	}
+
+	if feature.Gates.Enabled(feature.RancherCCTranslation) {
+		setupLog.Info("enabling Rancher Credential translation controller")
+
+		if err := (&controllers.RancherCredentialReconciler{
+			Client: mgr.GetClient(),
+			Translators: map[string]controllers.CredentialTranslator{
+				"aws": &controllers.AWSTranslator{},
+			},
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+		}); err != nil {
+			setupLog.Error(err, "unable to create Rancher Credential translation controller")
+			os.Exit(1)
+		}
+	}
 }
