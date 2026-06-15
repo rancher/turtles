@@ -74,3 +74,42 @@ var _ = Describe("[RancherManagedFleet] [Docker] [RKE2] Create and delete CAPI c
 		}
 	})
 })
+
+var _ = Describe("[RancherManagedFleet] [Azure] [RKE2] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-azure-rke2"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAzureRKE2Topology,
+			ClusterName:                    "cluster-azure-rke2",
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(1),
+			SkipDeletionTest:               false,
+			LabelNamespace:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
+			DeleteClusterWaitName:          "wait-aks-delete",
+			TopologyNamespace:              topologyNamespace,
+			VerifyETCDSize:                 true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "azure-cluster-class-rke2",
+					Paths:           []string{"examples/clusterclasses/azure/rke2"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})

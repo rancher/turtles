@@ -117,11 +117,10 @@ var _ = SynchronizedBeforeSuite(
 			}},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		// Currently only CAPD and CARKE2 are needed for this suite
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
-			ProviderList:            "docker,rke2",
+			ProviderList:            "docker,rke2,azure",
 		})
 
 		data, err := json.Marshal(e2e.Setup{
