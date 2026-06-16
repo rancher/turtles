@@ -114,7 +114,8 @@ func WranglerPatcher(objs []unstructured.Unstructured) ([]unstructured.Unstructu
 		}
 
 		// Filter Certificates and Issuers
-		if o.GetKind() != "Certificate" && o.GetKind() != "Issuer" {
+		if o.GetKind() != "Certificate" && //nolint:goconst
+			o.GetKind() != "Issuer" { //nolint:goconst
 			filteredObjs = append(filteredObjs, o)
 		}
 	}
