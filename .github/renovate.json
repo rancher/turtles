@@ -6,7 +6,9 @@
   "devbox": {
     "enabled": false
   },
+  "labels": ["area/dependency", "kind/chore"],
   "baseBranchPatterns": [
+    "release/v0.27",
     "release/v0.26",
     "release/v0.25"
   ],
@@ -16,6 +18,28 @@
       "matchPackageNames": ["rancher/turtles"],
       "matchDatasources": ["docker"],
       "enabled": false
+    },
+    {
+      "description": "release/v0.27: Align with core CAPI v1.13 dependencies",
+      "matchBaseBranches": ["release/v0.27"],
+      "matchPackageNames": [
+        "sigs.k8s.io/controller-runtime"
+      ],
+      "allowedVersions": "<0.24.0"
+    },
+    {
+      "description": "release/v0.27: Align with core CAPI v1.13 dependencies",
+      "matchBaseBranches": ["release/v0.27"],
+      "matchPackageNames": [
+        "k8s.io/**"
+      ],
+      "allowedVersions": "<0.36.0"
+    },
+    {
+      "description": "release/v0.27: Pin rancher/kuberlr-kubectl to version 8 (v8.x.x)",
+      "matchBaseBranches": ["release/v0.27"],
+      "matchPackageNames": ["rancher/kuberlr-kubectl"],
+      "allowedVersions": "<9.0.0"
     },
     {
       "description": "release/v0.26: Align with core CAPI v1.12 dependencies",
