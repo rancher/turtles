@@ -279,3 +279,41 @@ var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI c
 		}
 	})
 })
+
+var _ = Describe("[RancherManagedFleet] [vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-vsphere-rke2"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIvSphereRKE2Topology,
+			TopologyNamespace:              topologyNamespace,
+			ClusterName:                    "cluster-vsphere-rke2",
+			ControlPlaneMachineCount:       new(3), // minimum 3 replicas for CSI controller
+			WorkerMachineCount:             new(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
+			DeleteClusterWaitName:          "wait-vsphere-delete",
+			VerifyETCDSize:                 true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "vsphere-cluster-classes-rke2",
+					TargetNamespace: topologyNamespace,
+					Paths:           []string{"examples/clusterclasses/vsphere/rke2"},
+					ClusterProxy:    bootstrapClusterProxy,
+				},
+			},
+		}
+	})
+})

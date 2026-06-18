@@ -24,7 +24,6 @@ metadata:
   name: '${CLUSTER_NAME}'
   namespace: '${NAMESPACE}'
   labels:
-    cni: calico
     csi: vsphere
     cloud-provider: vsphere
 spec:
@@ -72,62 +71,139 @@ spec:
     - name: dockerAuthSecret
       value: '${CLUSTER_NAME}-docker-token'
 ---
-kind: Bundle
-apiVersion: fleet.cattle.io/v1alpha1
+### CPI CONFIG ###
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: vsphere-csi-config
-  namespace: '${NAMESPACE}'
-spec:
-  resources:
-  - content: |-
-      apiVersion: v1
-      kind: Secret
-      type: Opaque
-      metadata:
-        name: vsphere-config-secret
-        namespace: vmware-system-csi
-      stringData:
-        csi-vsphere.conf: |+
-          [Global]
-          thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
-
-          [VirtualCenter "${VSPHERE_SERVER}"]
-          user = "${VSPHERE_USERNAME}"
-          password = "${VSPHERE_PASSWORD}"
-          datacenters = "${VSPHERE_DATACENTER}"
-
-          [Network]
-          public-network = "${VSPHERE_NETWORK}"
-
-          [Labels]
-          region = ""
-          zone = ""
-  targets:
-  - clusterSelector:
-      matchLabels:
-        csi: vsphere
-        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: cloud-provider-vsphere
+  namespace: ${NAMESPACE}
+data:
+  cloud-provider-vsphere.yaml: |-
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChart
+    metadata:
+      name: vsphere-ccm
+      namespace: kube-system
+    spec:
+      repo: https://rke2-charts.rancher.io
+      chart: rancher-vsphere-cpi
+      bootstrap: true
+      targetNamespace: kube-system
+      version: "1.14.000"
+      valuesContent: |-
+        vCenter:
+          host: "${VSPHERE_SERVER}"
+          datacenters: "${VSPHERE_DATACENTER}"
+          credentialsSecret:
+            generate: false
+            name: cloud-provider-vsphere-credentials
 ---
-kind: Bundle
-apiVersion: fleet.cattle.io/v1alpha1
+apiVersion: v1
+kind: Secret
 metadata:
-  name: vsphere-cloud-credentials
-  namespace: '${NAMESPACE}'
+  name: cloud-provider-vsphere-credentials
+  namespace: ${NAMESPACE}
+type: addons.cluster.x-k8s.io/resource-set
+stringData:
+  cloud-provider-vsphere-credentials.yaml: |-
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: cloud-provider-vsphere-credentials
+      namespace: kube-system
+    stringData:
+      ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
+      ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta2
+kind: ClusterResourceSet
+metadata:
+  name: cloud-provider-vsphere
+  namespace: ${NAMESPACE}
 spec:
+  strategy: Reconcile
+  clusterSelector:
+    matchLabels:
+      cloud-provider: vsphere
   resources:
-  - content: |-
-      apiVersion: v1
+    - name: cloud-provider-vsphere
+      kind: ConfigMap
+    - name: cloud-provider-vsphere-credentials
       kind: Secret
-      type: Opaque
-      metadata:
-        name: vsphere-cloud-secret
-        namespace: kube-system
-      stringData:
-        ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
-        ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
-  targets:
-  - clusterSelector:
-      matchLabels:
-        cloud-provider: vsphere
-        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+### /CPI CONFIG ###
+---
+### CSI CONFIG ###
+apiVersion: v1
+kind: Secret
+metadata:
+  name: csi-vsphere-config
+  namespace: ${NAMESPACE}
+type: addons.cluster.x-k8s.io/resource-set
+stringData:
+  csi-vsphere-config.yaml: |-
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: vsphere-config-secret
+      namespace: vmware-system-csi
+    stringData:
+      csi-vsphere.conf: |+
+        [Global]
+        thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
+
+        [VirtualCenter "${VSPHERE_SERVER}"]
+        user = "${VSPHERE_USERNAME}"
+        password = "${VSPHERE_PASSWORD}"
+        datacenters = "${VSPHERE_DATACENTER}"
+
+        [Network]
+        public-network = "${VSPHERE_NETWORK}"
+
+        [Labels]
+        region = ""
+        zone = ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csi-vsphere
+  namespace: ${NAMESPACE}
+data:
+  csi-vsphere.yaml: |-
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChart
+    metadata:
+      name: vsphere-csi
+      namespace: kube-system
+    spec:
+      repo: https://rke2-charts.rancher.io
+      chart: rancher-vsphere-csi
+      bootstrap: true
+      targetNamespace: vmware-system-csi
+      createNamespace: true
+      version: "3.7.0-rancher100"
+      valuesContent: |-
+        vCenter:
+          configSecret:
+            generate: false
+            name: vsphere-config-secret
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta2
+kind: ClusterResourceSet
+metadata:
+  name: csi-vsphere
+  namespace: ${NAMESPACE}
+spec:
+  strategy: Reconcile
+  clusterSelector:
+    matchLabels:
+      csi: vsphere
+  resources:
+    - name: csi-vsphere
+      kind: ConfigMap
+    - name: csi-vsphere-config
+      kind: Secret
+###/ CSI CONFIG ###
 ---
