@@ -44,7 +44,7 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
     - name: Push community image to DockerHub
-      uses: rancher/ecm-distro-tools/actions/publish-image@c7c07fc1b7ca15c3a8fca06899a6a5657d34ac35
+      uses: rancher/ecm-distro-tools/actions/publish-image@b4bf5179bb17ee8b30270a08a2cbead208533eca
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -57,7 +57,7 @@ jobs:
         make-target: push-community-image
 
     - name: Push prime image to staging registry
-      uses: rancher/ecm-distro-tools/actions/publish-image@c7c07fc1b7ca15c3a8fca06899a6a5657d34ac35
+      uses: rancher/ecm-distro-tools/actions/publish-image@b4bf5179bb17ee8b30270a08a2cbead208533eca
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
