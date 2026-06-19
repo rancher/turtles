@@ -470,6 +470,13 @@ verify-gen: generate  ## Verify go generated files are up to date
 		echo "generated files are out of date, run make generate"; exit 1; \
 	fi
 
+.PHONY: verify-chart
+verify-chart: build-chart 
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "chart files are out of date, run make generate"; exit 1; \
+	fi
+
 ## --------------------------------------
 ## Hack / Tools
 ## --------------------------------------
