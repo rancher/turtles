@@ -58,34 +58,44 @@ jobs:
           rm -rf .cr-index
           mkdir -p .cr-index
 
-      - name: Run chart-releaser upload
-        run: cr upload --skip-existing -c "$(git rev-parse HEAD)" --generate-release-notes --release-name-template "${{ inputs.tag }}" --make-release-latest=false
+      - name: Create draft release
+        run: |
+          if gh release view "${{ inputs.tag }}" &>/dev/null; then
+            echo "Release '${{ inputs.tag }}' already exists, reusing."
+          else
+            gh release create "${{ inputs.tag }}" \
+              --draft \
+              --latest=false \
+              --generate-notes \
+              --title "${{ inputs.tag }}" \
+              --target "$(git rev-parse HEAD)"
+          fi
 
-      - name: Verify chart asset present (recover if missing)
+      - name: Upload chart asset
         run: |
           CHART_FILE=$(ls ${{ inputs.release_dir }}/*.tgz 2>/dev/null | head -1)
           if [ -z "${CHART_FILE}" ]; then
             echo "ERROR: No .tgz chart package found in ${{ inputs.release_dir }}"
             exit 1
           fi
+          gh release upload "${{ inputs.tag }}" "${CHART_FILE}" --clobber
+          echo "Uploaded $(basename ${CHART_FILE})"
+
+      - name: Verify chart asset present
+        run: |
+          CHART_FILE=$(ls ${{ inputs.release_dir }}/*.tgz | head -1)
           ASSET_NAME=$(basename "${CHART_FILE}")
-
-          if ! gh release view "${{ inputs.tag }}" > /dev/null 2>&1; then
-            echo "ERROR: Release '${{ inputs.tag }}' not found."
-            exit 1
-          fi
-
           FOUND=$(gh release view "${{ inputs.tag }}" \
             --json assets \
             --jq ".assets[] | select(.name == \"${ASSET_NAME}\") | .name")
-
           if [ -z "${FOUND}" ]; then
-            echo "Chart asset '${ASSET_NAME}' missing — uploading now..."
-            gh release upload "${{ inputs.tag }}" "${CHART_FILE}" --clobber
-            echo "Upload complete."
-          else
-            echo "Chart asset '${ASSET_NAME}' confirmed present."
+            echo "ERROR: Asset '${ASSET_NAME}' still missing after upload. Failing."
+            exit 1
           fi
+          echo "Asset '${ASSET_NAME}' confirmed present."
+
+      - name: Publish release
+        run: gh release edit "${{ inputs.tag }}" --draft=false --latest=false
 
       - name: Run chart-releaser index
         run: cr index --push --release-name-template "${{ inputs.tag }}"
