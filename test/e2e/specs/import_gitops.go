@@ -117,6 +117,10 @@ type CreateUsingGitOpsSpecInput struct {
 	// ValidateFleetAgentWasInstalled is used to indicate whether the test should also check that
 	// the fleet-agent has been installed on the downstream cluster.
 	ValidateFleetAgentWasInstalled bool
+
+	// AdditionalDownstreamTemplates contains a list of manifests that will be applied to the downstream Cluster
+	// as soon as the ControlPlane is initialized.
+	AdditionalDownstreamTemplates [][]byte
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -277,6 +281,14 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			return ptr.Deref(capiCluster.Status.Initialization.ControlPlaneInitialized, false)
 		}, capiClusterCreateWait...).Should(BeTrue())
 
+		By("Applying downstream manifests")
+		for _, template := range input.AdditionalDownstreamTemplates {
+			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+				Template: template,
+				Proxy:    input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name),
+			})).To(Succeed())
+		}
+
 		// Validate Rancher importing
 		rancherCluster = turtlesframework.ValidateRancherCluster(ctx, turtlesframework.ValidateRancherClusterInput{
 			BootstrapClusterProxy:   input.BootstrapClusterProxy,
@@ -390,6 +402,7 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				RancherServerURL:        input.RancherServerURL,
 				WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 				SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
+				RancherManagedFleet:     input.RancherManagedFleet,
 			})
 		}
 
