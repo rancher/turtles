@@ -127,7 +127,7 @@ var _ = SynchronizedBeforeSuite(
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
-			ProviderList:            "docker,rke2,aws,azure,kubeadm",
+			ProviderList:            "docker,rke2,aws,azure,kubeadm,gcp",
 		})
 
 		data, err := json.Marshal(e2e.Setup{

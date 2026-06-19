@@ -20,6 +20,7 @@ limitations under the License.
 package rancher_managed_fleet
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -226,6 +227,54 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
+			},
+		}
+	})
+})
+
+var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-gcp-kubeadm"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		const gcpImageFormat = "https://www.googleapis.com/compute/v1/projects/%s/global/images/%s"
+		gcpImageFormatted := fmt.Sprintf(gcpImageFormat, e2e.LoadE2EConfig().MustGetVariable(e2e.GCPProjectIDVar), e2e.LoadE2EConfig().MustGetVariable(e2e.GCPImageIDVar))
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIGCPKubeadmTopology,
+			ClusterName:                    "cluster-gcp-kubeadm",
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capg-create-cluster",
+			DeleteClusterWaitName:          "wait-gke-delete",
+			TopologyNamespace:              topologyNamespace,
+			VerifyETCDSize:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			AdditionalTemplateVariables: map[string]string{
+				e2e.GCPImageIDFormattedVar: gcpImageFormatted,
+				e2e.ClusterCIDRVar:         "192.168.0.0/16",
+			},
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "gcp-cluster-class-kubeadm",
+					Paths:           []string{"examples/clusterclasses/gcp/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+			AdditionalDownstreamTemplates: [][]byte{
+				e2e.CalicoManifest,
+				e2e.CloudProviderGCPManifest,
 			},
 		}
 	})

@@ -107,6 +107,9 @@ var (
 	//go:embed data/applications/calico.yaml
 	CalicoManifest []byte
 
+	//go:embed data/applications/cloud-provider-gcp.yaml
+	CloudProviderGCPManifest []byte
+
 	// CAPIProvider test data
 
 	//go:embed data/test-providers/capv-provider-no-ver.yaml
@@ -186,6 +189,8 @@ const (
 	GCPImageIDVar          = "GCP_IMAGE_ID"
 	GCPImageIDFormattedVar = "GCP_IMAGE_ID_FORMATTED"
 	GCPProjectIDVar        = "GCP_PROJECT"
+
+	ClusterCIDRVar = "CLUSTER_CIDR"
 )
 
 const (

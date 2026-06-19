@@ -1,16 +1,13 @@
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
-  labels:
-    cni: calico
-    cloud-provider: gcp
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
   clusterNetwork:
     pods:
       cidrBlocks: 
-      - 192.168.0.0/16
+      - ${CLUSTER_CIDR}
   topology:
     classRef:
       name: gcp-kubeadm-example
