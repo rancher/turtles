@@ -284,8 +284,9 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 		By("Applying downstream manifests")
 		for _, template := range input.AdditionalDownstreamTemplates {
 			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-				Template: template,
-				Proxy:    input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name),
+				Template:                      template,
+				AddtionalEnvironmentVariables: input.AdditionalTemplateVariables,
+				Proxy:                         input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name),
 			})).To(Succeed())
 		}
 

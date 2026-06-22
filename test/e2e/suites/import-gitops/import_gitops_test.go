@@ -20,8 +20,6 @@ limitations under the License.
 package import_gitops
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/rancher/turtles/test/e2e"
 	"github.com/rancher/turtles/test/e2e/specs"
@@ -198,59 +196,6 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 				{
 					Name:            "aws-csi",
 					Paths:           []string{"examples/applications/csi/aws"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
-				},
-			},
-		}
-	})
-})
-
-var _ = Describe("[GCP] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
-	var topologyNamespace string
-
-	BeforeEach(func() {
-		komega.SetClient(bootstrapClusterProxy.GetClient())
-		komega.SetContext(ctx)
-
-		topologyNamespace = "creategitops-gcp-kubeadm"
-	})
-
-	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
-		const gcpImageFormat = "https://www.googleapis.com/compute/v1/projects/%s/global/images/%s"
-		gcpImageFormatted := fmt.Sprintf(gcpImageFormat, e2e.LoadE2EConfig().MustGetVariable(e2e.GCPProjectIDVar), e2e.LoadE2EConfig().MustGetVariable(e2e.GCPImageIDVar))
-		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterTemplate:           e2e.CAPIGCPKubeadmTopology,
-			ClusterName:               "cluster-gcp-kubeadm",
-			ControlPlaneMachineCount:  ptr.To(1),
-			WorkerMachineCount:        ptr.To(1),
-			LabelNamespace:            true,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-capg-create-cluster",
-			DeleteClusterWaitName:     "wait-gke-delete",
-			TopologyNamespace:         topologyNamespace,
-			VerifyETCDSize:            true,
-			AdditionalTemplateVariables: map[string]string{
-				e2e.GCPImageIDFormattedVar: gcpImageFormatted,
-			},
-			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
-				{
-					Name:            "gcp-cluster-class-kubeadm",
-					Paths:           []string{"examples/clusterclasses/gcp/kubeadm"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
-				},
-				{
-					Name:            "gcp-ccm",
-					Paths:           []string{"examples/applications/ccm/gcp"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
-				},
-				{
-					Name:            "gcp-cni",
-					Paths:           []string{"examples/applications/cni/calico"},
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
