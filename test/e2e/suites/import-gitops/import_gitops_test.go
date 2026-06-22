@@ -64,55 +64,6 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 	})
 })
 
-var _ = Describe("[Azure] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
-	var topologyNamespace string
-
-	BeforeEach(func() {
-		komega.SetClient(bootstrapClusterProxy.GetClient())
-		komega.SetContext(ctx)
-
-		topologyNamespace = "creategitops-azure-kubeadm"
-	})
-
-	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
-		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                 e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:     bootstrapClusterProxy,
-			ClusterTemplate:           e2e.CAPIAzureKubeadmTopology,
-			ClusterName:               "cluster-azure-kubeadm",
-			ControlPlaneMachineCount:  ptr.To(1),
-			WorkerMachineCount:        ptr.To(1),
-			SkipDeletionTest:          false,
-			LabelNamespace:            true,
-			RancherServerURL:          hostName,
-			CAPIClusterCreateWaitName: "wait-capz-create-cluster",
-			DeleteClusterWaitName:     "wait-aks-delete",
-			TopologyNamespace:         topologyNamespace,
-			VerifyETCDSize:            true,
-			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
-				{
-					Name:            "azure-cluster-class-kubeadm",
-					Paths:           []string{"examples/clusterclasses/azure/kubeadm"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
-				},
-				{
-					Name:            "azure-ccm-regular",
-					Paths:           []string{"examples/applications/ccm/azure"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
-				},
-				{
-					Name:            "azure-cni",
-					Paths:           []string{"examples/applications/cni/calico"},
-					ClusterProxy:    bootstrapClusterProxy,
-					TargetNamespace: topologyNamespace,
-				},
-			},
-		}
-	})
-})
-
 var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
 	var topologyNamespace string
 

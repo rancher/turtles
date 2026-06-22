@@ -21,15 +21,13 @@ kind: Cluster
 metadata:
   labels:
     cluster-api.cattle.io/rancher-auto-import: "true"
-    cni: calico
-    cloud-provider: azure
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-        - 192.168.0.0/16
+        - ${CLUSTER_CIDR}
   topology:
     classRef:
       name: azure-kubeadm-example

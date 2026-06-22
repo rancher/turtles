@@ -110,6 +110,9 @@ var (
 	//go:embed data/applications/cloud-provider-gcp.yaml
 	CloudProviderGCPManifest []byte
 
+	//go:embed data/applications/cloud-provider-azure.yaml
+	CloudProviderAzureManifest []byte
+
 	// CAPIProvider test data
 
 	//go:embed data/test-providers/capv-provider-no-ver.yaml
