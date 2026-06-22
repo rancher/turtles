@@ -3,7 +3,6 @@ kind: Cluster
 metadata:
   labels:
     cloud-provider: aws
-    cni: calico
     csi: aws-ebs-csi-driver
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
@@ -28,7 +27,7 @@ spec:
       - name: amiID
         value: ${AWS_AMI_ID}
       - name: cni
-        value: none
+        value: calico
       - name: awsClusterIdentityName
         value: ${AWS_CLUSTER_IDENTITY_NAME}
     version: ${RKE2_KUBERNETES_VERSION}
@@ -37,3 +36,103 @@ spec:
         - class: default-worker
           name: md-0
           replicas: ${WORKER_MACHINE_COUNT}
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta2
+kind: ClusterResourceSet
+metadata:
+  name: cloud-provider-aws
+  namespace: ${NAMESPACE}
+spec:
+  strategy: Reconcile
+  clusterSelector:
+    matchLabels:
+      cloud-provider: aws
+  resources:
+    - name: cloud-provider-aws
+      kind: ConfigMap
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-provider-aws
+  namespace: ${NAMESPACE}
+data:
+  cloud-provider-aws.yaml: |-
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChart
+    metadata:
+      name: aws-cloud-controller-manager
+      namespace: kube-system
+    spec:
+      chart: aws-cloud-controller-manager
+      repo: https://kubernetes.github.io/cloud-provider-aws
+      version: 0.0.11
+      targetNamespace: kube-system
+      bootstrap: true
+      valuesContent: |-
+        hostNetworking: "true"
+        args:
+          - --v=2
+          - --cloud-provider=aws
+          - --use-service-account-credentials=true
+          - --configure-cloud-routes=false
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: "true"
+        clusterRoleRules:
+          - apiGroups:
+              - ""
+            resources:
+              - events
+              - nodes
+              - nodes/status
+              - services
+              - services/status
+              - serviceaccounts
+              - persistentvolumes
+              - configmaps
+              - serviceaccounts/token
+              - endpoints
+            verbs:
+              - "*"
+          - apiGroups:
+              - coordination.k8s.io
+            resources:
+              - leases
+            verbs:
+              - create
+              - get
+              - list
+              - watch
+              - update
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta2
+kind: ClusterResourceSet
+metadata:
+  name: aws-ebs-csi
+  namespace: ${NAMESPACE}
+spec:
+  strategy: Reconcile
+  clusterSelector:
+    matchLabels:
+      csi: aws-ebs-csi-driver
+  resources:
+    - name: aws-ebs-csi
+      kind: ConfigMap
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-ebs-csi
+  namespace: ${NAMESPACE}
+data:
+  aws-ebs-csi.yaml: |-
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChart
+    metadata:
+      name: aws-ebs-csi-driver
+      namespace: kube-system
+    spec:
+      chart: aws-ebs-csi-driver
+      repo: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+      version: 2.62.0
+      targetNamespace: kube-system
