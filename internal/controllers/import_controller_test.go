@@ -210,8 +210,16 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist, and set finalizers", func() {
 		ns.Labels = map[string]string{}
 		Expect(cl.Update(ctx, ns)).To(Succeed())
+
+		testLabel, testLabelVal := "expected-to-propagate", "true"
+		testCapiLabel, testCapiLabelVal := "cluster.x-k8s.io/cluster-name", "test-capi-cluster"
+		testRancherLabel, testRancherLabelVal := "cluster.cattle.io/cluster-name", "test-rancher-cluster"
+
 		capiCluster.Labels = map[string]string{
-			importLabelName: "true",
+			importLabelName:  "true",
+			testLabel:        testLabelVal,        // should be propagated to the rancher cluster
+			testCapiLabel:    testCapiLabelVal,    // should not be propagated to the rancher cluster
+			testRancherLabel: testRancherLabelVal, // should not be propagated to the rancher cluster
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)
@@ -255,6 +263,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
+			g.Expect(rancherClusters.Items[0].Labels).To(HaveKeyWithValue(testLabel, testLabelVal))
+			g.Expect(rancherClusters.Items[0].Labels).ToNot(HaveKey(testCapiLabel))
+			g.Expect(rancherClusters.Items[0].Labels).ToNot(HaveKey(testRancherLabel))
 			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.NoCreatorRBACAnnotation))
 			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.ImportedClusterVersionManagementAnnotation))
 			value := rancherClusters.Items[0].Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
