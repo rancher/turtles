@@ -107,6 +107,9 @@ var (
 	//go:embed data/applications/calico.yaml
 	CalicoManifest []byte
 
+	//go:embed data/applications/csi-aws-ebs.yaml
+	CSIAWSEBSManifest []byte
+
 	//go:embed data/applications/cloud-provider-gcp.yaml
 	CloudProviderGCPManifest []byte
 
@@ -118,6 +121,9 @@ var (
 
 	//go:embed data/applications/csi-vsphere.yaml
 	CSIvSphereManifest []byte
+
+	//go:embed data/applications/cloud-provider-aws.yaml
+	CloudProviderAWSManifest []byte
 
 	// CAPIProvider test data
 

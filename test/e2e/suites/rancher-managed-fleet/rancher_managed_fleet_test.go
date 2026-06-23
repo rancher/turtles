@@ -232,6 +232,50 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 	})
 })
 
+var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-aws-kubeadm"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAwsKubeadmTopology,
+			ClusterName:                    "cluster-aws-kubeadm",
+			ControlPlaneMachineCount:       ptr.To(3), // minimum 3 replicas for CSI controller
+			WorkerMachineCount:             ptr.To(1),
+			SkipDeletionTest:               false,
+			LabelNamespace:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
+			DeleteClusterWaitName:          "wait-eks-delete",
+			TopologyNamespace:              topologyNamespace,
+			VerifyETCDSize:                 true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "aws-cluster-classes-regular",
+					Paths:           []string{"examples/clusterclasses/aws/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+			AdditionalDownstreamTemplates: [][]byte{
+				e2e.CalicoManifest,
+				e2e.CloudProviderAWSManifest,
+				e2e.CSIAWSEBSManifest,
+			},
+		}
+	})
+})
+
 var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
