@@ -24,7 +24,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Docker login
-      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
@@ -47,7 +47,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Helm
-        uses: Azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+        uses: Azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5
         with:
           version: 3.8.0
       - name: Build Helm chart
