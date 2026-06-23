@@ -1,6 +1,6 @@
 module github.com/rancher/turtles/test
 
-go 1.25.11
+go 1.26
 
 replace github.com/rancher/turtles => ../
 
@@ -46,7 +46,7 @@ require (
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
-	code.gitea.io/sdk/gitea v0.23.2
+	code.gitea.io/sdk/gitea v0.25.1
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
