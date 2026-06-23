@@ -124,6 +124,12 @@ spec:
         openAPIV3Schema:
           description: The name of the secret containing docker.io credentials.
           type: string
+    - name: rke2CNI
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: ""
   patches:
     - name: infraCluster
       definitions:
@@ -331,6 +337,19 @@ spec:
             kind: RKE2ControlPlaneTemplate
             matchResources:
               controlPlane: true
+    - name: rke2CNI
+      enabledIf: '{{ ne .rke2CNI "" }}'
+      definitions:
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/serverConfig/cni
+              valueFrom:
+                variable: rke2CNI
     - name: rke2ConfigTemplate
       definitions:
         - jsonPatches:
@@ -394,7 +413,6 @@ spec:
       agentConfig:
         format: cloud-config
       serverConfig:
-        cni: none
         cloudProviderName: external
         disableComponents:
           kubernetesComponents:
