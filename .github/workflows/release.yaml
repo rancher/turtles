@@ -144,7 +144,7 @@ jobs:
 
     - name: Install slsactl
       if: ${{ matrix.image-type == 'prime' }}
-      uses: rancherlabs/slsactl/actions/install-slsactl@132f4c15b16537cf031aae50c788fdad1a8fe723 # v0.1.33
+      uses: rancherlabs/slsactl/actions/install-slsactl@16bb7e259b89956c7467fc0d3918e351317bb4cc # v0.1.34
 
     - name: Sign multi-platform image
       shell: bash
