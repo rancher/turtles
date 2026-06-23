@@ -28,7 +28,7 @@ jobs:
       TAG: ${{ github.ref_name }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       with:
         fetch-depth: 0
 
@@ -49,13 +49,13 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-stg-registry/credentials password | STAGE_REGISTRY_PASSWORD ;
 
     - name: Log into Docker Hub registry
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
       with:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
     - name: Log into Staging registry
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
       with:
         username: ${{ env.STAGE_REGISTRY_USERNAME }}
         password: ${{ env.STAGE_REGISTRY_PASSWORD }}
@@ -104,14 +104,14 @@ jobs:
 
     - name: Log into Docker Hub registry
       if: ${{ matrix.image-type == 'community' }}
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
       with:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
     - name: Log into Staging registry
       if: ${{ matrix.image-type == 'prime' }}
-      uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
       with:
         username: ${{ env.STAGE_REGISTRY_USERNAME }}
         password: ${{ env.STAGE_REGISTRY_PASSWORD }}
@@ -119,7 +119,7 @@ jobs:
 
     - name: Install Cosign
       if: ${{ matrix.image-type == 'prime' }}
-      uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
     - name: Install slsactl
       if: ${{ matrix.image-type == 'prime' }}
