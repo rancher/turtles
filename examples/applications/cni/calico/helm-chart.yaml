@@ -20,12 +20,6 @@ spec:
             - cidr: "${ $cidr }"
               encapsulation: VXLAN
             ${- end}
-        ${- range $variable := .ClusterValues.Cluster.spec.topology.variables }
-          ${- if eq $variable.name "imagePullSecret" }
-        imagePullSecrets:
-        - name: "${ $variable.value }"
-          ${- end}
-        ${- end } 
   diff:
     comparePatches:
     - apiVersion: operator.tigera.io/v1
@@ -44,5 +38,3 @@ spec:
         values:
           - docker-rke2-example
           - etcd-snapshot-restore
-          - vsphere-kubeadm-example
-          - vsphere-rke2-example

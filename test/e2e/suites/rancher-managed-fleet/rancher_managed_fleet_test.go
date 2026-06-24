@@ -363,3 +363,46 @@ var _ = Describe("[RancherManagedFleet] [Azure] [Kubeadm] Create and delete CAPI
 		}
 	})
 })
+
+var _ = Describe("[RancherManagedFleet] [vSphere] [Kubeadm] Create and delete CAPI cluster from cluster class", Label(e2e.VsphereTestLabel, e2e.KubeadmTestLabel, e2e.RancherManagedFleetLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-vsphere-kubeadm"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIvSphereKubeadmTopology,
+			TopologyNamespace:              topologyNamespace,
+			ClusterName:                    "cluster-vsphere-kubeadm",
+			ControlPlaneMachineCount:       new(3), // minimum 3 replicas for CSI controller
+			WorkerMachineCount:             new(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
+			DeleteClusterWaitName:          "wait-vsphere-delete",
+			VerifyETCDSize:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "vsphere-cluster-classes-kubeadm",
+					TargetNamespace: topologyNamespace,
+					Paths:           []string{"examples/clusterclasses/vsphere/kubeadm"},
+					ClusterProxy:    bootstrapClusterProxy,
+				},
+			},
+			AdditionalDownstreamTemplates: [][]byte{
+				e2e.CalicoManifest,
+				e2e.CloudProvidervSphereManifest,
+				e2e.CSIvSphereManifest,
+			},
+		}
+	})
+})

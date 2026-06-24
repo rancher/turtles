@@ -23,9 +23,6 @@ kind: Cluster
 metadata:
   name: '${CLUSTER_NAME}'
   namespace: '${NAMESPACE}'
-  labels:
-    csi: vsphere
-    cloud-provider: vsphere
 spec:
   clusterNetwork:
     pods:
@@ -125,7 +122,7 @@ spec:
   strategy: Reconcile
   clusterSelector:
     matchLabels:
-      cloud-provider: vsphere
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
     - name: cloud-provider-vsphere
       kind: ConfigMap
@@ -199,7 +196,7 @@ spec:
   strategy: Reconcile
   clusterSelector:
     matchLabels:
-      csi: vsphere
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
     - name: csi-vsphere
       kind: ConfigMap
