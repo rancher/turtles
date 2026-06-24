@@ -10,6 +10,10 @@
     "release/v0.26",
     "release/v0.25"
   ],
+  "labels": [
+        "kind/cleanup",
+        "area/dependency"
+    ],
   "packageRules": [
     {
       "description": "Disable rancher/turtles updates on dockerfiles. This avoids PRs that bump the version tag in Turtles Helm chart.",
