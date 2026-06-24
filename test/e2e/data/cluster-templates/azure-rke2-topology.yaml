@@ -21,7 +21,6 @@ kind: Cluster
 metadata:
   labels:
     cluster-api.cattle.io/rancher-auto-import: "true"
-    cloud-provider: azure
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
@@ -67,7 +66,7 @@ data:
       repo: https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo
       chart: cloud-provider-azure
       bootstrap: true
-      version: "1.36.0"
+      version: "${AZURE_CLOUD_PROVIDER_VERSION}"
       targetNamespace: kube-system
       valuesContent: |-
         infra:
@@ -84,7 +83,7 @@ spec:
   strategy: Reconcile
   clusterSelector:
     matchLabels:
-      cloud-provider: azure
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
     - name: cloud-provider-azure
       kind: ConfigMap
