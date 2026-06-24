@@ -160,3 +160,7 @@ variables:
   DOCKER_REGISTRY_CONFIG: ""
 
   VSPHERE_TEMPLATE: "turtles-ci/ubuntu-2404-kube-v1.36.1"
+  # vSphere RKE2 CPI Chart version: curl -s https://rke2-charts.rancher.io/index.yaml | yq .entries.rancher-vsphere-cpi[0].version
+  VSPHERE_RKE2_CPI_CHART_VERSION: "1.14.000"
+  # vSphere RKE2 CSI Chart version: curl -s https://rke2-charts.rancher.io/index.yaml | yq .entries.rancher-vsphere-csi[0].version
+  VSPHERE_RKE2_CSI_CHART_VERSION: "3.7.0-rancher100"

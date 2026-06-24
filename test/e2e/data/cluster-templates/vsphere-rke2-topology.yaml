@@ -89,7 +89,7 @@ data:
       chart: rancher-vsphere-cpi
       bootstrap: true
       targetNamespace: kube-system
-      version: "1.14.000"
+      version: "${VSPHERE_RKE2_CPI_CHART_VERSION}"
       valuesContent: |-
         vCenter:
           host: "${VSPHERE_SERVER}"
@@ -183,7 +183,7 @@ data:
       bootstrap: true
       targetNamespace: vmware-system-csi
       createNamespace: true
-      version: "3.7.0-rancher100"
+      version: "${VSPHERE_RKE2_CSI_CHART_VERSION}"
       valuesContent: |-
         vCenter:
           configSecret:
