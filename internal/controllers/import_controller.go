@@ -286,7 +286,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 				ownedLabelName:            "",
 			},
 			Annotations: map[string]string{
-				fleetNamespaceMigrated: "cattle-fleet-system",
+				fleetNamespaceMigrated: "cattle-fleet-system", //nolint:goconst
 			},
 			Finalizers: []string{
 				managementv3.CapiClusterFinalizer,

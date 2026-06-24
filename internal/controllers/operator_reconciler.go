@@ -188,7 +188,7 @@ func (r *CAPIProviderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 // If the provider references a secret without a namespace, it will assume the secret is in the same namespace as the provider.
 func newSecretToProviderFuncMapForProviderList(cl client.Client) handler.MapFunc {
 	return func(ctx context.Context, secret client.Object) []reconcile.Request {
-		log := ctrl.LoggerFrom(ctx).WithValues("secret", map[string]string{"name": secret.GetName(), "namespace": secret.GetNamespace()})
+		log := ctrl.LoggerFrom(ctx).WithValues("secret", map[string]string{"name": secret.GetName(), "namespace": secret.GetNamespace()}) //nolint:goconst
 
 		var requests []reconcile.Request
 
