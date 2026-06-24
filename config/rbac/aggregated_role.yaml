@@ -6,4 +6,3 @@ aggregationRule:
   clusterRoleSelectors:
   - matchLabels:
       rancher-turtles/aggregate-to-manager: "true"
-rules: []
