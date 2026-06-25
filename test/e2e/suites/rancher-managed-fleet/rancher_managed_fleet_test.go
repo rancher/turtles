@@ -79,7 +79,7 @@ var _ = Describe("[RancherManagedFleet] [Docker] [RKE2] Create and delete CAPI c
 	})
 })
 
-var _ = Describe("[RancherManagedFleet] [Azure] [RKE2] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
+var _ = Describe("[RancherManagedFleet] [Azure] [RKE2] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel, e2e.Rke2TestLabel, e2e.RancherManagedFleetLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
