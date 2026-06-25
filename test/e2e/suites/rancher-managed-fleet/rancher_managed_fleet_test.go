@@ -406,3 +406,118 @@ var _ = Describe("[RancherManagedFleet] [vSphere] [Kubeadm] Create and delete CA
 		}
 	})
 })
+
+var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-azure-aks"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAzureAKSTopology,
+			ClusterName:                    "cluster-aks",
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
+			DeleteClusterWaitName:          "wait-aks-delete",
+			TopologyNamespace:              topologyNamespace,
+			VerifyETCDSize:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "azure-cluster-classes-aks",
+					Paths:           []string{"examples/clusterclasses/azure/aks"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
+var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-aws-eks"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIAwsEKSTopology,
+			ClusterName:                    "cluster-eks",
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(1),
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
+			DeleteClusterWaitName:          "wait-eks-delete",
+			TopologyNamespace:              topologyNamespace,
+			VerifyETCDSize:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "aws-cluster-classes-eks",
+					Paths:           []string{"examples/clusterclasses/aws/eks"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
+var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-gcp-gke"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                      e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:          bootstrapClusterProxy,
+			ClusterTemplate:                e2e.CAPIGCPGKETopology,
+			ClusterName:                    "cluster-gke",
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(3), // GKE regional clusters (us-west1 has 3 zones) require machine pool replicas to be a multiple of the zone count (1 node per zone × 3 zones = 3 replicas minimum).
+			LabelNamespace:                 true,
+			RancherServerURL:               hostName,
+			CAPIClusterCreateWaitName:      "wait-capg-create-cluster",
+			DeleteClusterWaitName:          "wait-gke-delete",
+			TopologyNamespace:              topologyNamespace,
+			SkipClusterAvailableWait:       true, // GKE auto-upgrades cause non-empty Available condition message
+			VerifyETCDSize:                 true,
+			RancherManagedFleet:            true,
+			ValidateFleetAgentWasInstalled: true,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "gcp-cluster-classes-gke",
+					Paths:           []string{"examples/clusterclasses/gcp/gke"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
