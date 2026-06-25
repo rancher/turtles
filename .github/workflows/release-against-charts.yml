@@ -59,7 +59,7 @@ jobs:
           ref: "${{ env.TURTLES_REF }}"
           path: turtles
 
-      - uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
+      - uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89
         with:
           secrets: |
             github/token/rancher--charts--pull_requests--write token | GH_TOKEN
