@@ -113,6 +113,12 @@ var (
 	//go:embed data/applications/cloud-provider-azure.yaml
 	CloudProviderAzureManifest []byte
 
+	//go:embed data/applications/cloud-provider-vsphere.yaml
+	CloudProvidervSphereManifest []byte
+
+	//go:embed data/applications/csi-vsphere.yaml
+	CSIvSphereManifest []byte
+
 	// CAPIProvider test data
 
 	//go:embed data/test-providers/capv-provider-no-ver.yaml

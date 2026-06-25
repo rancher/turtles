@@ -13,10 +13,6 @@ kind: Cluster
 metadata:
   name: '${CLUSTER_NAME}'
   namespace: '${NAMESPACE}'
-  labels:
-    cni: calico
-    csi: vsphere
-    cloud-provider: vsphere
 spec:
   clusterNetwork:
     pods:
@@ -59,87 +55,100 @@ spec:
       value: 6443
     - name: kubeVIPInterface
       value: eth0
-    - name: imagePullSecret
-      value: docker-config
 ---
-kind: Bundle
-apiVersion: fleet.cattle.io/v1alpha1
+apiVersion: addons.cluster.x-k8s.io/v1beta2
+kind: ClusterResourceSet
 metadata:
-  name: docker-image-pull-secret
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-crs-0
   namespace: '${NAMESPACE}'
 spec:
+  strategy: Reconcile
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
-  - content: |-
-      apiVersion: v1
-      kind: Secret
-      type: kubernetes.io/dockerconfigjson
-      metadata:
-        name: docker-config
-        namespace: default
-      data:
-        .dockerconfigjson: "${DOCKER_REGISTRY_CONFIG}"
-  targets:
-  - clusterSelector:
-      matchLabels:
-        cni: calico
-        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  - kind: ConfigMap
+    name: vsphere-cloud-config
+  - kind: Secret
+    name: vsphere-config-secret
+  - kind: Secret
+    name: cloud-provider-vsphere-credentials
 ---
-kind: Bundle
-apiVersion: fleet.cattle.io/v1alpha1
+apiVersion: v1
+kind: Secret
 metadata:
-  name: vsphere-csi-config
+  name: vsphere-config-secret
   namespace: '${NAMESPACE}'
-spec:
-  resources:
-  - content: |-
-      apiVersion: v1
-      kind: Secret
-      type: Opaque
-      metadata:
-        name: vsphere-config-secret
-        namespace: vmware-system-csi
-      stringData:
-        csi-vsphere.conf: |+
-          [Global]
-          thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
+stringData:
+  data: |-
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: vsphere-config-secret
+      namespace: vmware-system-csi
+    stringData:
+      csi-vsphere.conf: |+
+        [Global]
+        thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
 
-          [VirtualCenter "${VSPHERE_SERVER}"]
-          user = "${VSPHERE_USERNAME}"
-          password = "${VSPHERE_PASSWORD}"
-          datacenters = "${VSPHERE_DATACENTER}"
+        [VirtualCenter "${VSPHERE_SERVER}"]
+        user = "${VSPHERE_USERNAME}"
+        password = "${VSPHERE_PASSWORD}"
+        datacenters = "${VSPHERE_DATACENTER}"
 
-          [Network]
-          public-network = "${VSPHERE_NETWORK}"
+        [Network]
+        public-network = "${VSPHERE_NETWORK}"
 
-          [Labels]
-          region = ""
-          zone = ""
-  targets:
-  - clusterSelector:
-      matchLabels:
-        csi: vsphere
-        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+        [Labels]
+        region = ""
+        zone = ""
+type: addons.cluster.x-k8s.io/resource-set
 ---
-kind: Bundle
-apiVersion: fleet.cattle.io/v1alpha1
+apiVersion: v1
+kind: Secret
 metadata:
-  name: vsphere-cloud-credentials
+  name: cloud-provider-vsphere-credentials
   namespace: '${NAMESPACE}'
-spec:
-  resources:
-  - content: |-
-      apiVersion: v1
-      kind: Secret
-      type: Opaque
-      metadata:
-        name: vsphere-cloud-secret
-        namespace: kube-system
-      stringData:
-        ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
-        ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
-  targets:
-  - clusterSelector:
-      matchLabels:
-        cloud-provider: vsphere
-        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+stringData:
+  data: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: secret
+      name: cloud-provider-vsphere-credentials
+      namespace: kube-system
+    stringData:
+      ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
+      ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
+    type: Opaque
+type: addons.cluster.x-k8s.io/resource-set
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vsphere-cloud-config
+  namespace: '${NAMESPACE}'
+data:
+  vsphere-cloud-config: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: cloud-config
+      namespace: kube-system
+    data:
+      vsphere.conf: |
+        global:
+          port: 443
+          secretName: cloud-provider-vsphere-credentials
+          secretNamespace: kube-system
+          thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+        vcenter:
+          ${VSPHERE_SERVER}:
+            datacenters:
+            - '${VSPHERE_DATACENTER}'
+            server: '${VSPHERE_SERVER}'
