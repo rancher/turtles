@@ -250,7 +250,10 @@ var _ = Describe("no-cert-manager feature verification", Ordered, Label(e2e.Shor
 	})
 
 	It("Should apply dummy resource that uses webhooks", func() {
-		Expect(framework.Apply(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
+		Eventually(func() error {
+			return framework.Apply(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)
+		}, e2e.LoadE2EConfig().GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...).
+			Should(Succeed())
 		// Early cleanup since it's not used
 		Expect(framework.Delete(ctx, bootstrapClusterProxy, e2e.CAPVDummyMachineTemplate)).Should(Succeed())
 	})
