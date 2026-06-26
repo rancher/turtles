@@ -56,7 +56,7 @@ jobs:
             fi
           fi
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: "${{ env.TURTLES_REF }}"
           path: turtles
@@ -67,7 +67,7 @@ jobs:
             github/token/rancher--rancher--pull_requests--write token | GH_TOKEN
 
       - name: Checkout rancher/rancher
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: ${{ github.repository_owner }}/rancher
           ref: "${{ env.RANCHER_REF }}"
@@ -85,7 +85,7 @@ jobs:
           charts_branch=$(grep '"chart-default-branch"' pkg/settings/setting.go | cut -d'"' -f4)
           echo "charts_branch=$charts_branch" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: ${{ github.repository_owner }}/charts
           ref: "${{ steps.find_charts_branch.outputs.charts_branch }}"
