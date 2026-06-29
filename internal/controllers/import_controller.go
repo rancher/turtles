@@ -324,6 +324,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	rancherCluster = cmp.Or(rancherCluster, updatedCluster)
 
 	r.optOutOfClusterOwner(ctx, rancherCluster)
+	r.propagateLabels(rancherCluster, capiCluster)
 	r.reconcileExternalFleetManagement(ctx, rancherCluster, capiCluster)
 
 	addedFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
@@ -530,6 +531,24 @@ func (r *CAPIImportReconciler) optOutOfClusterOwner(ctx context.Context, rancher
 		annotations[turtlesannotations.NoCreatorRBACAnnotation] = trueValue
 		rancherCluster.SetAnnotations(annotations)
 	}
+}
+
+// propogateLabels copies the labels from the CAPI cluster to the Rancher mgmt cluster.
+// It first fetches existing labels which will remain untouched.
+func (r *CAPIImportReconciler) propagateLabels(rancherCluster *managementv3.Cluster, capiCluster *clusterv1.Cluster) {
+	labels := rancherCluster.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	for key, value := range capiCluster.Labels {
+		// Rancher and CAPI labels are excluded from propagation
+		if !strings.Contains(key, "cattle.io") && !strings.Contains(key, "x-k8s.io") {
+			labels[key] = value
+		}
+	}
+
+	rancherCluster.SetLabels(labels)
 }
 
 // reconcileExternalFleetManagement adds or removes the `provisioning.cattle.io/externally-managed` annotation

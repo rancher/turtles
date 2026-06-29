@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -308,6 +309,9 @@ type ValidateRancherClusterInput struct {
 	// CAPIClusterAnnotations are the annotations belonging to the CAPI Cluster.
 	CAPIClusterAnnotations map[string]string
 
+	// CAPIClusterLabels are the labels belonging to the CAPI Cluster.
+	CAPIClusterLabels map[string]string
+
 	// WaitRancherIntervals defines the interval used to wait on Rancher checks.
 	WaitRancherIntervals []any
 
@@ -386,13 +390,26 @@ func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInp
 		}, input.WaitRancherIntervals...).Should(BeTrue())
 	}
 
-	if !input.SkipLatestFeatureChecks { // Can be removed after Turtles v0.26 is used a starter for the chart upgrade test.
-		By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")
-		Eventually(func() bool {
-			Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
-			value, found := rancherCluster.Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
-			return found && value == "false"
-		}, input.WaitRancherIntervals...).Should(BeTrue())
+	By("Rancher cluster should have the 'rancher.io/imported-cluster-version-management' annotation")
+	Eventually(func() bool {
+		Eventually(komega.Get(rancherCluster), input.WaitRancherIntervals...).Should(Succeed())
+		value, found := rancherCluster.Annotations[turtlesannotations.ImportedClusterVersionManagementAnnotation]
+		return found && value == "false"
+	}, input.WaitRancherIntervals...).Should(BeTrue())
+
+	if !input.SkipLatestFeatureChecks {
+		// Can be removed after Turtles v0.28 is used a starter for the chart upgrade test.
+		By("Rancher cluster should have the CAPI cluster labels")
+		for key, expectedValue := range input.CAPIClusterLabels {
+			if strings.Contains(key, "cattle.io") || strings.Contains(key, "x-k8s.io") {
+				continue
+			}
+
+			Expect(rancherCluster.Labels).To(
+				HaveKeyWithValue(key, expectedValue),
+				"Expected CAPI label '%s' to be propagated to the Rancher cluster", key,
+			)
+		}
 	}
 
 	By("Waiting for the CAPI cluster to be connectable using Rancher kubeconfig")
