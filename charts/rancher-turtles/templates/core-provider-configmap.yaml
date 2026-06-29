@@ -61,7 +61,7 @@ metadata:
   labels:
     provider.cluster.x-k8s.io/name: cluster-api
     provider.cluster.x-k8s.io/type: core
-    provider.cluster.x-k8s.io/version: v1.13.2
+    provider.cluster.x-k8s.io/version: v1.13.3
     managed-by.turtles.cattle.io: "true"
-  name: core-cluster-api-v1.13.2
+  name: core-cluster-api-v1.13.3
   namespace: cattle-capi-system
