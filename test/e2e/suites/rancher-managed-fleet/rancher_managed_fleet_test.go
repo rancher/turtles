@@ -160,7 +160,7 @@ var _ = Describe("[RancherManagedFleet] [Docker] [Kubeadm]  Create and delete CA
 	})
 })
 
-var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
+var _ = Describe("[RancherManagedFleet] [AWS] [EC2 RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
 	var topologyNamespace, capiClusterNamespace, credentialName string
 
 	BeforeEach(func() {
@@ -232,7 +232,7 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 	})
 })
 
-var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = Describe("[RancherManagedFleet] [AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
@@ -276,7 +276,7 @@ var _ = Describe("[AWS] [EC2 Kubeadm] Create and delete CAPI cluster functionali
 	})
 })
 
-var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel), func() {
+var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.KubeadmTestLabel, "foo"), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {

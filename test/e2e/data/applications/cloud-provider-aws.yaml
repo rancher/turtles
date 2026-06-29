@@ -118,6 +118,7 @@ spec:
       dnsPolicy: Default
       priorityClassName: system-node-critical
       serviceAccountName: cloud-controller-manager
+      hostNetwork: true
       securityContext:
         {}
       containers:
@@ -135,4 +136,3 @@ spec:
             []
           securityContext:
             {}
-

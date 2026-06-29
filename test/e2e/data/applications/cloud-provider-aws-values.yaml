@@ -3,6 +3,7 @@ args:
   - --cloud-provider=aws
   - --use-service-account-credentials=true
   - --configure-cloud-routes=false
+hostNetworking: true
 clusterRoleRules:
   - apiGroups:
       - ""
