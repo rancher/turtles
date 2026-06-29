@@ -280,7 +280,7 @@ var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI c
 	})
 })
 
-var _ = Describe("[RancherManagedFleet] [vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+var _ = Describe("[RancherManagedFleet] [vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel, e2e.RancherManagedFleetLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
