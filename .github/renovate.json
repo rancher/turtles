@@ -8,6 +8,7 @@
   },
   "labels": ["area/dependency", "kind/chore"],
   "baseBranchPatterns": [
+    "main",
     "release/v0.27",
     "release/v0.26",
     "release/v0.25"
@@ -18,6 +19,14 @@
       "matchPackageNames": ["rancher/turtles"],
       "matchDatasources": ["docker"],
       "enabled": false
+    },
+    {
+      "description": "Group testing framework dependencies",
+      "matchPackageNames": [
+        "github.com/onsi/ginkgo/v2",
+        "github.com/onsi/gomega"
+      ],
+      "groupName": "testing dependencies"
     },
     {
       "description": "release/v0.27: Align with core CAPI v1.13 dependencies",
