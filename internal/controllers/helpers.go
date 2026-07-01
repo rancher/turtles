@@ -197,7 +197,7 @@ func removeFleetNamespace(ctx context.Context, cl client.Client, cluster *manage
 
 	if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); apierrors.IsNotFound(err) {
 		ns = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: "cattle-fleet-system",
+			Name: "cattle-fleet-system", //nolint:goconst
 		}}
 
 		if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); err != nil {
@@ -354,7 +354,7 @@ func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeature
 	agentTLSModeSetting := &managementv3.Setting{}
 
 	if err := cl.Get(ctx, client.ObjectKey{
-		Name: "agent-tls-mode",
+		Name: "agent-tls-mode", //nolint:goconst
 	}, agentTLSModeSetting); err != nil {
 		return nil, fmt.Errorf("error getting agent-tls-mode setting: %w", err)
 	}
@@ -365,10 +365,10 @@ func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeature
 	}
 
 	switch agentTLSModeValue {
-	case "system-store":
+	case "system-store": //nolint:goconst
 		log.Info("using system store for CA certificates")
 		return nil, nil
-	case "strict":
+	case "strict": //nolint:goconst
 		log.Info("using strict mode for CA certificates")
 
 		caCertsSetting := &managementv3.Setting{}
