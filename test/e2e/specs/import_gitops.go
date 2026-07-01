@@ -283,11 +283,13 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		By("Applying downstream manifests")
 		for _, template := range input.AdditionalDownstreamTemplates {
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
-				Template:                      template,
-				AddtionalEnvironmentVariables: input.AdditionalTemplateVariables,
-				Proxy:                         input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name),
-			})).To(Succeed())
+			Eventually(func() error {
+				return turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+					Template:                      template,
+					AddtionalEnvironmentVariables: input.AdditionalTemplateVariables,
+					Proxy:                         input.BootstrapClusterProxy.GetWorkloadCluster(ctx, capiCluster.Namespace, capiCluster.Name),
+				})
+			}).WithTimeout(5 * time.Minute).WithPolling(30 * time.Second).Should(Succeed())
 		}
 
 		// Validate Rancher importing
