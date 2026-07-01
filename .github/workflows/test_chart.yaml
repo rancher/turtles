@@ -15,7 +15,7 @@ env:
   MANIFEST_IMG: controller
   CONTROLLER_IMG: controller
   PULL_POLICY: Never
-  RANCHER_VERSION: v2.15.0-alpha6
+  RANCHER_VERSION: v2.15.0-alpha14
   KUBERNETES_MANAGEMENT_VERSION: v1.36.1
 
 jobs:
