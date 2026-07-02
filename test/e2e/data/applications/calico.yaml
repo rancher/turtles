@@ -1,5 +1,17 @@
 ---
 # Source: https://raw.githubusercontent.com/projectcalico/calico/refs/tags/v3.31.5/manifests/calico.yaml
+# Notes:
+# 1. Disable IPIP and enable VXLAN:
+#   # Enable IPIP
+#   - name: CALICO_IPV4POOL_IPIP
+#     value: "Never"
+#   # Enable or Disable VXLAN on the default IP pool.
+#   - name: CALICO_IPV4POOL_VXLAN
+#     value: "Always"
+#   # Enable or Disable VXLAN on the default IPv6 IP pool.
+#   - name: CALICO_IPV6POOL_VXLAN
+#     value: "Always" 
+#
 # This manifest creates a Pod Disruption Budget for Controller to allow K8s Cluster Autoscaler to evict
 
 apiVersion: policy/v1
@@ -7208,13 +7220,13 @@ spec:
               value: "autodetect"
             # Enable IPIP
             - name: CALICO_IPV4POOL_IPIP
-              value: "Always"
+              value: "Never"
             # Enable or Disable VXLAN on the default IP pool.
             - name: CALICO_IPV4POOL_VXLAN
-              value: "Never"
+              value: "Always"
             # Enable or Disable VXLAN on the default IPv6 IP pool.
             - name: CALICO_IPV6POOL_VXLAN
-              value: "Never"
+              value: "Always"
             # Set MTU for tunnel device used if ipip is enabled
             - name: FELIX_IPINIPMTU
               valueFrom:
