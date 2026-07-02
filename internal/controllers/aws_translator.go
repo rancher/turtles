@@ -109,10 +109,10 @@ func (a *AWSTranslator) Cleanup(ctx context.Context, cl client.Client, credentia
 }
 
 // DriverName is the name of the provider in the Rancher Cloud Credential Secret.
-func (a *AWSTranslator) DriverName() string { return "aws" }
+func (a *AWSTranslator) DriverName() string { return "aws" } //nolint:goconst
 
 // ProviderName is the name of the CAPI provider.
-func (a *AWSTranslator) ProviderName() string { return "aws" }
+func (a *AWSTranslator) ProviderName() string { return "aws" } //nolint:goconst
 
 // ProviderNamespace is the namespace where the `CAPIProvider` is installed.
 func (a *AWSTranslator) ProviderNamespace() string { return "capa-system" }
@@ -124,9 +124,9 @@ func (a *AWSTranslator) Finalizer() string { return "cloudcredential.cattle.io/a
 func awsClusterStaticIdentity(name string) *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "infrastructure.cluster.x-k8s.io",
-		Version: "v1beta2",
-		Kind:    "AWSClusterStaticIdentity",
+		Group:   "infrastructure.cluster.x-k8s.io", //nolint:goconst
+		Version: "v1beta2",                         //nolint:goconst
+		Kind:    "AWSClusterStaticIdentity",        //nolint:goconst
 	})
 	obj.SetName(name)
 
