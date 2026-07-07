@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -63,6 +64,8 @@ const (
 
 	defaultRequeueDuration = 1 * time.Minute
 	trueValue              = "true"
+
+	tokenPlaceholder = "{token}"
 )
 
 func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string, cl client.Client,
@@ -93,13 +96,52 @@ func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace 
 		return "", nil
 	}
 
-	manifestData, err := downloadManifest(token.Status.ManifestURL, caCert, insecureSkipVerify)
+	manifestURL, err := resolveManifestURL(ctx, token, cl)
+	if err != nil {
+		return "", err
+	}
+
+	if manifestURL == "" {
+		return "", nil
+	}
+
+	manifestData, err := downloadManifest(manifestURL, caCert, insecureSkipVerify)
 	if err != nil {
 		log.Error(err, "failed downloading import manifest")
 		return "", err
 	}
 
 	return manifestData, nil
+}
+
+func resolveManifestURL(ctx context.Context, token *managementv3.ClusterRegistrationToken, cl client.Client) (string, error) {
+	manifestURL := token.Status.ManifestURL
+
+	if !strings.Contains(manifestURL, tokenPlaceholder) {
+		return manifestURL, nil
+	}
+
+	if token.Status.TokenSecretName == "" {
+		return "", nil
+	}
+
+	tokenSecret := &corev1.Secret{}
+	secretKey := client.ObjectKey{Namespace: token.Namespace, Name: token.Status.TokenSecretName}
+
+	if err := cl.Get(ctx, secretKey, tokenSecret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("error getting registration token secret %s/%s: %w", token.Namespace, token.Status.TokenSecretName, err)
+	}
+
+	tokenValue := string(tokenSecret.Data["token"])
+	if tokenValue == "" {
+		return "", fmt.Errorf("token not found in secret %s/%s", token.Namespace, token.Status.TokenSecretName)
+	}
+
+	return strings.ReplaceAll(manifestURL, tokenPlaceholder, tokenValue), nil
 }
 
 func namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Funcs, cl client.Client) handler.MapFunc {
