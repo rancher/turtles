@@ -40,6 +40,10 @@ type ClusterRegistrationTokenSpec struct {
 // ClusterRegistrationTokenStatus is the struct representing the status of a Rancher ClusterRegistrationToken.
 type ClusterRegistrationTokenStatus struct {
 	ManifestURL string `json:"manifestUrl"`
+	// TokenSecretName is the name of the secret, in the same namespace as the ClusterRegistrationToken,
+	// containing the actual registration token under the "token" data key. The ManifestURL may contain
+	// a "{token}" placeholder that must be substituted with this value before use.
+	TokenSecretName string `json:"tokenSecretName,omitempty"`
 }
 
 // ClusterRegistrationTokenList contains a list of ClusterRegistrationTokens.
