@@ -1025,6 +1025,35 @@ entries:
       catalog.cattle.io/scope: management
       catalog.cattle.io/type: cluster-tool
     apiVersion: v2
+    appVersion: 0.25.6-rc.1
+    created: "2026-07-09T13:55:51.97341066Z"
+    description: Rancher Turtles - Cluster API integration in Rancher.
+    digest: c4e8cd5925b092cb124445a71dab5c8ca9e698a68dc3c859a0300070eb23bbde
+    home: https://github.com/rancher/turtles/
+    icon: https://raw.githubusercontent.com/rancher/turtles/main/logos/capi.svg
+    keywords:
+    - rancher
+    - cluster-api
+    - capi
+    - provisioning
+    name: rancher-turtles
+    type: application
+    urls:
+    - https://github.com/rancher/turtles/releases/download/v0.25.6-rc.1/rancher-turtles-0.25.6-rc.1.tgz
+    version: 0.25.6-rc.1
+  - annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/display-name: Rancher Turtles
+      catalog.cattle.io/kube-version: '>= 1.31.4-0 < 1.35.0-0'
+      catalog.cattle.io/managed: "true"
+      catalog.cattle.io/namespace: cattle-turtles-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/permits-os: linux
+      catalog.cattle.io/rancher-version: '>= 2.13.0-0 < 2.14.0-0'
+      catalog.cattle.io/release-name: rancher-turtles
+      catalog.cattle.io/scope: management
+      catalog.cattle.io/type: cluster-tool
+    apiVersion: v2
     appVersion: 0.25.6-rc.0
     created: "2026-07-07T19:29:43.387517321Z"
     description: Rancher Turtles - Cluster API integration in Rancher.
@@ -3052,4 +3081,4 @@ entries:
     urls:
     - https://github.com/rancher-sandbox/rancher-turtles/releases/download/v0.1.0-rc1/rancher-turtles-0.1.0-rc1.tgz
     version: 0.1.0-rc1
-generated: "2026-07-09T13:48:18.664729964Z"
+generated: "2026-07-09T13:55:51.973890555Z"
