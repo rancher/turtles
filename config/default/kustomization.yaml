@@ -6,11 +6,6 @@ namespace: cattle-turtles-system
 # "wordpress" becomes "alices-wordpress".
 namePrefix: rancher-turtles-
 
-labels:
-- includeSelectors: true
-  pairs:
-    turtles-capi.cattle.io: "turtles"
-
 resources:
 - ../rbac
 - ../manager
