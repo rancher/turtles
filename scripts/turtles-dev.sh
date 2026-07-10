@@ -87,6 +87,8 @@ cleanup() {
     echo "Cleaning up background processes..."
     [ -n "$NGROK_PID" ] && kill $NGROK_PID 2>/dev/null && echo "Stopped ngrok (PID: $NGROK_PID)"
     [ -f "$NGROK_CONFIG_FILE" ] && rm -f "$NGROK_CONFIG_FILE" && echo "Removed ngrok config file"
+    echo "Deleting kind build node-image cache..."
+    rm -rf /tmp/k8s-tar-extract-*
 }
 trap cleanup EXIT INT TERM
 
