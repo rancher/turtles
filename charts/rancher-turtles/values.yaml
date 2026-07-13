@@ -44,16 +44,6 @@ features:
   rancher-credential-translation:
     # enabled: Turn on or off.
     enabled: false
-# volumes: Volumes for controller pods.
-volumes:
-  - name: clusterctl-config
-    configMap:
-      name: clusterctl-config
-# volumeMounts: Volume mounts for controller pods.
-volumeMounts:
-  manager:
-    - mountPath: /config
-      name: clusterctl-config
 
 # cluster-api-operator: Manages Cluster API components.
 cluster-api-operator:
@@ -74,7 +64,7 @@ cluster-api-operator:
       # namespace: Core component namespace.
       namespace: cattle-capi-system
       # version: Core ClusterAPI version.
-      version: ""
+      version: "v1.13.3"
       # enableAutomaticUpdate: Allow the provider to update automatically when a new Turtles version is installed.
       enableAutomaticUpdate: false
       # imageUrl: Custom image URL.

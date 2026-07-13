@@ -43,6 +43,7 @@ import (
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/feature"
+	"github.com/rancher/turtles/internal/controllers/clusterctl"
 	"github.com/rancher/turtles/internal/provider"
 	"github.com/rancher/turtles/internal/sync"
 )
@@ -121,6 +122,11 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		handler.EnqueueRequestsFromMapFunc(newCoreProviderToProviderFuncMapForProviderList(mgr.GetClient())),
 	)
 
+	builder = builder.Watches(
+		&turtlesv1.ClusterctlConfig{},
+		handler.EnqueueRequestsFromMapFunc(clusterctlConfigToCAPIProviders(mgr.GetClient())),
+	)
+
 	customAlterFuncs := []repository.ComponentsAlterFn{}
 
 	customAlterFuncs = append(customAlterFuncs, provider.AddClusterIndexedLabelFn)
@@ -129,6 +135,8 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		customAlterFuncs = append(customAlterFuncs, provider.WranglerPatcher)
 	}
 
+	clusterctlConfigReader := clusterctl.NewClusterctlConfigReader(mgr.GetClient())
+
 	rec := controller.NewPhaseReconciler(
 		r.GenericProviderReconciler, r.Provider, r.ProviderList,
 		controller.WithProviderConverter(getProvider),
@@ -136,10 +144,10 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		controller.WithProviderMapper(r.getGenericProvider),
 		controller.WithProviderTypeMapper(toClusterctlType),
 		controller.WithCustomAlterComponentsFuncs(customAlterFuncs),
+		controller.WithClusterctlConfigOverridesReader(clusterctlConfigReader),
 	)
 
 	r.ReconcilePhases = []controller.PhaseFn{
-		r.waitForClusterctlConfigUpdate,
 		r.setProviderSpec,
 		r.syncSecrets,
 	}
@@ -151,9 +159,9 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 	}
 
 	r.ReconcilePhases = append(r.ReconcilePhases, []controller.PhaseFn{
+		rec.InitializePhaseReconciler,
 		rec.ApplyFromCache,
 		rec.PreflightChecks,
-		rec.InitializePhaseReconciler,
 		rec.DownloadManifests,
 		rec.Load,
 		rec.Fetch,
@@ -166,7 +174,6 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 	}...)
 
 	r.DeletePhases = []controller.PhaseFn{
-		r.waitForClusterctlConfigUpdate,
 		rec.Delete,
 	}
 
@@ -252,6 +259,28 @@ func newCoreProviderToProviderFuncMapForProviderList(cl client.Client) handler.M
 				// Raise secondary events for the providers that fail PreflightCheck.
 				requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&provider)})
 			}
+		}
+
+		return requests
+	}
+}
+
+// clusterctlConfigToCAPIProviders lists and enqueue all providers.
+// This is used to trigger reconciliation on ClusterctlConfig mutations.
+func clusterctlConfigToCAPIProviders(cl client.Client) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		log := log.FromContext(ctx)
+		log.Info("Enqueueing CAPIProviders reconciliation from ClusterctlConfig")
+
+		requests := []reconcile.Request{}
+		providerList := &turtlesv1.CAPIProviderList{}
+		if err := cl.List(ctx, providerList); err != nil {
+			log.Error(err, "failed to list providers")
+			return nil
+		}
+
+		for _, provider := range providerList.Items {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&provider)})
 		}
 
 		return requests
@@ -503,8 +532,4 @@ func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.R
 	}
 
 	return &controller.Result{}, err
-}
-
-func (r *CAPIProviderReconciler) waitForClusterctlConfigUpdate(ctx context.Context) (*controller.Result, error) {
-	return provider.WaitForClusterctlConfigUpdate(ctx, r.Client)
 }

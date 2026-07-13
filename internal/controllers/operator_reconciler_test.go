@@ -97,7 +97,7 @@ var _ = Describe("Provider sync", func() {
 				Namespace: ns.Name,
 			},
 			Spec: turtlesv1.ClusterctlConfigSpec{
-				Providers: turtlesv1.ProviderList{{
+				Providers: []turtlesv1.Provider{{
 					Name: "custom-provider",
 					URL:  "https://github.com/org/repo/releases/v1.2.3/components.yaml",
 					Type: "InfrastructureProvider",

@@ -1,3 +1,4 @@
+# This job can be removed in Turtles 0.29 as the clusterctl-config ConfigMap is no longer used since 0.28.
 ---
 apiVersion: v1
 kind: ServiceAccount

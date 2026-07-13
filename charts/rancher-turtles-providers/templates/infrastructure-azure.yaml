@@ -64,4 +64,26 @@ spec:
     oci: {{ index .Values "providers" "infrastructureAzure" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "infrastructureAzure" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "infrastructureAzure" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.infrastructureAzure.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- if index .Values "extras" "infrastructureAzure" "azureServiceOperator" }}
+  additionalDeployments:
+    azureserviceoperator-controller-manager:
+      deployment:
+      {{- if index .Values "providers" "infrastructureAzure" "deployment" "containers" }}
+        containers:
+        {{- range .Values.extras.infrastructureAzure.azureServiceOperator.containers }}
+        - name: {{ .name }}
+          imageUrl: {{ .image.repository }}:{{ .image.tag }}
+        {{- end }}
+      {{- end }}
+{{- end }}
 {{- end }}

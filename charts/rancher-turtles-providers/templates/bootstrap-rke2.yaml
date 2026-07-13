@@ -56,6 +56,16 @@ spec:
     oci: {{ index .Values "providers" "bootstrapRKE2" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "bootstrapRKE2" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "bootstrapRKE2" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.bootstrapRKE2.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- if index .Values "providers" "infrastructureAzure" "enabled" }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1

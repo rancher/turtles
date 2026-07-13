@@ -64,4 +64,14 @@ spec:
     oci: {{ index .Values "providers" "infrastructureGCP" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "infrastructureGCP" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "infrastructureGCP" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.infrastructureGCP.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- end }}

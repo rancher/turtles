@@ -56,4 +56,14 @@ spec:
     oci: {{ index .Values "providers" "bootstrapKubeadm" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "bootstrapKubeadm" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "bootstrapKubeadm" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.bootstrapKubeadm.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- end }}

@@ -6,6 +6,8 @@ github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/adrg/xdg v0.5.3 h1:xRnxJXne7+oWDatRhR1JLnvuccuIeCoBu2rtuLqQB78=
 github.com/adrg/xdg v0.5.3/go.mod h1:nlTsY+NNiCBGCK2tpm09vRqfVzrc2fLmXGpBLF0zlTQ=
+github.com/anmazzotti/cluster-api-operator v0.0.0-20260713080300-51ac407b9e8d h1:yUvGhbIzdbiFAKuqlbHh1K49Bc0BR/L72RBGitVqgyQ=
+github.com/anmazzotti/cluster-api-operator v0.0.0-20260713080300-51ac407b9e8d/go.mod h1:mpPqZzMjpjW4lYku/Yzh2s2OV2HFP1MYdfbCE0LUKiw=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
@@ -238,8 +240,6 @@ oras.land/oras-go/v2 v2.6.1 h1:bonOEkjLfp8tt6qXWRRWP6p1F+9octchOf2EqnWB4Zs=
 oras.land/oras-go/v2 v2.6.1/go.mod h1:dhtFrFOuZuDtAVeZ9FUnaa5zfzplG3ZnFX9/uH1J/Yk=
 sigs.k8s.io/cluster-api v1.13.3 h1:BlNVnjg644NnlWnxIWHbkltleFLVQwm8FmjWCSB9wGY=
 sigs.k8s.io/cluster-api v1.13.3/go.mod h1:7xB2mYn7oOxSlUw7wk6TukNCjR2phn+MI0gRju3TKSk=
-sigs.k8s.io/cluster-api-operator v0.27.0 h1:UruTkqz7HQucHItKfFulQryvzKfCdX9TmqmeT1+956Q=
-sigs.k8s.io/cluster-api-operator v0.27.0/go.mod h1:mpPqZzMjpjW4lYku/Yzh2s2OV2HFP1MYdfbCE0LUKiw=
 sigs.k8s.io/controller-runtime v0.23.3 h1:VjB/vhoPoA9l1kEKZHBMnQF33tdCLQKJtydy4iqwZ80=
 sigs.k8s.io/controller-runtime v0.23.3/go.mod h1:B6COOxKptp+YaUT5q4l6LqUJTRpizbgf9KSRNdQGns0=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 h1:IpInykpT6ceI+QxKBbEflcR5EXP7sU1kvOlxwZh5txg=

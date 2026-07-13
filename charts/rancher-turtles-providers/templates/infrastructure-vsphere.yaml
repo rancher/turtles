@@ -64,4 +64,14 @@ spec:
     oci: {{ index .Values "providers" "infrastructureVSphere" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "infrastructureVSphere" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "infrastructureVSphere" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.infrastructureVSphere.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- end }}

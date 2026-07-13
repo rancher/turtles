@@ -7,6 +7,8 @@ ignore (
 	./out
 )
 
+replace sigs.k8s.io/cluster-api-operator => github.com/anmazzotti/cluster-api-operator v0.0.0-20260713080300-51ac407b9e8d
+
 require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-logr/logr v1.4.3

@@ -17,8 +17,20 @@ providers:
     namespace: fleet-addon-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    # version: Provider version
+    version: "v0.15.0"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-addon-provider-fleet"
+          # tag: Image tag override.
+          tag: "v0.15.0"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -32,8 +44,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/v0.15.0/addon-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -47,8 +59,20 @@ providers:
     namespace: capi-kubeadm-bootstrap-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    # version: Provider version
+    version: "v1.13.3"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/kubeadm-bootstrap-controller"
+          # tag: Image tag override.
+          tag: "v1.13.3"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -62,8 +86,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api/releases/v1.13.3/bootstrap-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -76,9 +100,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: rke2-bootstrap-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v0.25.0"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-provider-rke2-bootstrap"
+          # tag: Image tag override.
+          tag: "v0.25.0"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -92,8 +128,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/bootstrap-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -106,9 +142,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: capi-kubeadm-control-plane-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v1.13.3"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/kubeadm-control-plane-controller"
+          # tag: Image tag override.
+          tag: "v1.13.3"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -122,8 +170,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api/releases/v1.13.3/control-plane-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -136,9 +184,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: rke2-control-plane-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v0.25.0"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-provider-rke2-controlplane"
+          # tag: Image tag override.
+          tag: "v0.25.0"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -152,8 +212,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/control-plane-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -166,9 +226,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: capa-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v2.11.1"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-aws-controller"
+          # tag: Image tag override.
+          tag: "v2.11.1"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -200,9 +272,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: capz-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v1.23.2"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-azure-controller"
+          # tag: Image tag override.
+          tag: "v1.23.2"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -220,8 +304,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-azure/releases/v1.23.2/infrastructure-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -234,9 +318,9 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: capd-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v1.13.3"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -250,8 +334,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/kubernetes-sigs/cluster-api/releases/v1.13.3/infrastructure-components-development.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -264,9 +348,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: capg-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v1.11.2"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-gcp-controller"
+          # tag: Image tag override.
+          tag: "v1.11.2"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -285,8 +381,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-gcp/releases/v1.11.2/infrastructure-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -298,9 +394,21 @@ providers:
     # namespace: The namespace where the provider manifests will be applied.
     namespace: capv-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
+    enableAutomaticUpdate: false
+    # version: Provider version
+    version: "v1.16.1"
+    # deployment: Provider Deployment configuration.
+    deployment:
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/cluster-api-vsphere-controller"
+          # tag: Image tag override.
+          tag: "v1.16.1"
   # features: Optional feature flags for this provider.
   # features:
   #   machinePool: false
@@ -319,8 +427,8 @@ providers:
   #   name: ""
   #   namespace: ""
   # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-vsphere/releases/v1.16.1/infrastructure-components.yaml"
   #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
   # manager: Optional controller manager settings.
   # manager:
@@ -339,36 +447,17 @@ extras:
       fleetAgentMetricsAddress: ":18080"
       # fleetAgentHealthProbeAddress: sets the default fleet-agent health probe bind address
       fleetAgentHealthProbeAddress: ":18081"
-
-# These images are for documentation purposes only and are *not* used directly in the chart. They are used as input during a release for the purpose of creating a list of images necessary for airgapped installations.
-images:
-  addonFleet:
-    repository: rancher/cluster-api-addon-provider-fleet
-    tag: v0.15.0
-  bootstrapKubeadm:
-    repository: rancher/kubeadm-bootstrap-controller
-    tag: v1.13.3
-  bootstrapRKE2:
-    repository: rancher/cluster-api-provider-rke2-bootstrap
-    tag: v0.25.0
-  controlplaneKubeadm:
-    repository: rancher/kubeadm-control-plane-controller
-    tag: v1.13.3
-  controlplaneRKE2:
-    repository: rancher/cluster-api-provider-rke2-controlplane
-    tag: v0.25.0
-  infrastructureAWS:
-    repository: rancher/cluster-api-aws-controller
-    tag: v2.11.1
+  # infrastructureAzure: extra configuration for CAPZ.
   infrastructureAzure:
-    repository: rancher/cluster-api-azure-controller
-    tag: v1.23.2
+    # azureServiceOperator: Azure Service Operator overrides.
     azureServiceOperator:
-      repository: rancher/azureserviceoperator
-      tag: v2.13.0
-  infrastructureGCP:
-    repository: rancher/cluster-api-gcp-controller
-    tag: v1.11.2
-  infrastructureVSphere:
-    repository: rancher/cluster-api-vsphere-controller
-    tag: v1.16.1
+      # container: Provider containers configuration.
+      containers:
+        # name: Name of the container to override.
+      - name: manager
+        # image: Container image override.
+        image:
+          # repository: Image repository override.
+          repository: "registry.rancher.com/rancher/azureserviceoperator"
+          # tag: Image tag override.
+          tag: "v2.13.0"

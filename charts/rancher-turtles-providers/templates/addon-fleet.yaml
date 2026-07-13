@@ -125,4 +125,14 @@ spec:
     name: fleet-addon-config
     namespace: {{ index .Values "providers" "addonFleet" "namespace" }}
 {{- end }}
+{{- if index .Values "providers" "addonFleet" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "addonFleet" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.addonFleet.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- end }}

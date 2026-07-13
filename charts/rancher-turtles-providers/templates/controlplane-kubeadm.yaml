@@ -56,4 +56,14 @@ spec:
     oci: {{ index .Values "providers" "controlplaneKubeadm" "fetchConfig" "oci" }}
     {{- end }}
 {{- end }}
+{{- if index .Values "providers" "controlplaneKubeadm" "deployment" }}
+  deployment:
+  {{- if index .Values "providers" "controlplaneKubeadm" "deployment" "containers" }}
+    containers:
+    {{- range .Values.providers.controlplaneKubeadm.deployment.containers }}
+    - name: {{ .name }}
+      imageUrl: {{ .image.repository }}:{{ .image.tag }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- end }}

@@ -35,7 +35,7 @@ type ClusterctlConfigSpec struct {
 
 	// Provider overrides
 	// +optional
-	Providers ProviderList `json:"providers,omitempty"`
+	Providers []Provider `json:"providers,omitempty"`
 }
 
 // Provider allows to define providers with known URLs to pull the components.
@@ -53,9 +53,6 @@ type Provider struct {
 	// +kubebuilder:example=InfrastructureProvider
 	Type string `json:"type"`
 }
-
-// ProviderList is a list of providers.
-type ProviderList []Provider
 
 // Image allows to define transformations to apply to the image contained in the YAML manifests.
 type Image struct {

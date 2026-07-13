@@ -235,17 +235,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	setupLog.Info("enabling Clusterctl Config synchronization controller")
-
-	if err := (&controllers.ClusterctlConfigReconciler{
-		Client: mgr.GetClient(),
-	}).SetupWithManager(ctx, mgr, controller.Options{
-		MaxConcurrentReconciles: concurrencyNumber,
-	}); err != nil {
-		setupLog.Error(err, "unable to create ClusterctlConfig controller")
-		os.Exit(1)
-	}
-
 	setupLog.Info("enabling CAPI Operator synchronization controller")
 
 	if err := (&controllers.OperatorReconciler{}).SetupWithManager(ctx, mgr, controller.Options{

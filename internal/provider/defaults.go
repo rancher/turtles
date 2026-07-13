@@ -19,19 +19,14 @@ package provider
 import (
 	"cmp"
 	"context"
-	"fmt"
 	"maps"
 	"strconv"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
-	"sigs.k8s.io/cluster-api/util/conditions"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	"github.com/rancher/turtles/internal/controllers/clusterctl"
 )
 
 const (
@@ -46,9 +41,9 @@ const (
 func SetProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
 	SetDefaultProviderSpec(provider)
 
-	if err := setLatestVersion(ctx, cl, provider); err != nil {
-		return err
-	}
+	// if err := setLatestVersion(ctx, cl, provider); err != nil {
+	// 	return err
+	// }
 
 	switch provider.ProviderName() {
 	case AzureProvider:
@@ -94,70 +89,70 @@ func SetDefaultProviderSpec(o operatorv1.GenericProvider) {
 	o.SetSpec(providerSpec)
 }
 
-func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
-	log := log.FromContext(ctx)
+// func setLatestVersion(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) error {
+// 	log := log.FromContext(ctx)
 
-	config, err := clusterctl.ClusterConfig(ctx, cl)
-	if err != nil {
-		return err
-	}
+// 	config, err := clusterctl.ClusterConfig(ctx, cl)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	providerVersion, knownProvider := config.GetProviderVersion(ctx, provider.ProviderName(), provider.Spec.Type.ToKind())
+// 	providerVersion, knownProvider := config.GetProviderVersion(ctx, provider.ProviderName(), provider.Spec.Type.ToKind())
 
-	latest, err := config.IsLatestVersion(providerVersion, provider.Spec.Version)
-	if err != nil {
-		return err
-	}
+// 	latest, err := config.IsLatestVersion(providerVersion, provider.Spec.Version)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	switch {
-	case !knownProvider:
-		conditions.Set(provider, metav1.Condition{
-			Type:               string(turtlesv1.CheckLatestVersionTime),
-			Status:             metav1.ConditionUnknown,
-			Reason:             turtlesv1.CheckLatestProviderUnknownReason,
-			Message:            "Provider is unknown",
-			LastTransitionTime: metav1.Now(),
-		})
-	case latest:
-		conditions.Set(provider, metav1.Condition{
-			Type:               string(turtlesv1.CheckLatestVersionTime),
-			Status:             metav1.ConditionTrue,
-			Reason:             "LatestVersionSet",
-			Message:            "Latest version is set",
-			LastTransitionTime: metav1.Now(),
-		})
+// 	switch {
+// 	case !knownProvider:
+// 		conditions.Set(provider, metav1.Condition{
+// 			Type:               string(turtlesv1.CheckLatestVersionTime),
+// 			Status:             metav1.ConditionUnknown,
+// 			Reason:             turtlesv1.CheckLatestProviderUnknownReason,
+// 			Message:            "Provider is unknown",
+// 			LastTransitionTime: metav1.Now(),
+// 		})
+// 	case latest:
+// 		conditions.Set(provider, metav1.Condition{
+// 			Type:               string(turtlesv1.CheckLatestVersionTime),
+// 			Status:             metav1.ConditionTrue,
+// 			Reason:             "LatestVersionSet",
+// 			Message:            "Latest version is set",
+// 			LastTransitionTime: metav1.Now(),
+// 		})
 
-		provider.Spec.Version = providerVersion
+// 		provider.Spec.Version = providerVersion
 
-	case !latest && !provider.Spec.EnableAutomaticUpdate:
-		conditions.Set(provider, metav1.Condition{
-			Type:               string(turtlesv1.CheckLatestVersionTime),
-			Status:             metav1.ConditionFalse,
-			Reason:             turtlesv1.CheckLatestUpdateAvailableReason,
-			Message:            "Provider version update available. Current latest is " + providerVersion,
-			LastTransitionTime: metav1.Now(),
-		})
-	case !latest && provider.Spec.EnableAutomaticUpdate:
-		lastCheck := conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
-		updatedMessage := "Updated to latest " + providerVersion + " version"
+// 	case !latest && !provider.Spec.EnableAutomaticUpdate:
+// 		conditions.Set(provider, metav1.Condition{
+// 			Type:               string(turtlesv1.CheckLatestVersionTime),
+// 			Status:             metav1.ConditionFalse,
+// 			Reason:             turtlesv1.CheckLatestUpdateAvailableReason,
+// 			Message:            "Provider version update available. Current latest is " + providerVersion,
+// 			LastTransitionTime: metav1.Now(),
+// 		})
+// 	case !latest && provider.Spec.EnableAutomaticUpdate:
+// 		lastCheck := conditions.Get(provider, string(turtlesv1.CheckLatestVersionTime))
+// 		updatedMessage := "Updated to latest " + providerVersion + " version"
 
-		if lastCheck == nil || lastCheck.Message != updatedMessage {
-			log.Info(fmt.Sprintf("Version %s is beyond current latest, updated to %s", cmp.Or(provider.Spec.Version, "latest"), providerVersion))
+// 		if lastCheck == nil || lastCheck.Message != updatedMessage {
+// 			log.Info(fmt.Sprintf("Version %s is beyond current latest, updated to %s", cmp.Or(provider.Spec.Version, "latest"), providerVersion))
 
-			conditions.Set(provider, metav1.Condition{
-				Type:               string(turtlesv1.CheckLatestVersionTime),
-				Status:             metav1.ConditionTrue,
-				Reason:             "VersionUpdated",
-				Message:            updatedMessage,
-				LastTransitionTime: metav1.Now(),
-			})
-		}
+// 			conditions.Set(provider, metav1.Condition{
+// 				Type:               string(turtlesv1.CheckLatestVersionTime),
+// 				Status:             metav1.ConditionTrue,
+// 				Reason:             "VersionUpdated",
+// 				Message:            updatedMessage,
+// 				LastTransitionTime: metav1.Now(),
+// 			})
+// 		}
 
-		provider.Spec.Version = providerVersion
-	}
+// 		provider.Spec.Version = providerVersion
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func setVariables(capiProvider *turtlesv1.CAPIProvider) {
 	if capiProvider.Spec.Variables != nil {

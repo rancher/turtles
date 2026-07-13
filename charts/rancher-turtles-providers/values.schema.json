@@ -61,6 +61,48 @@
             }
           }
         },
+        "deployment": {
+          "type": "object",
+          "description": "Provider Deployment configuration.",
+          "properties": {
+            "containers": {
+              "type": "array",
+              "description": "Provider containers configuration.",
+              "items": {
+                "type": "object",
+                "description": "Provider container configuration.",
+                "required": [
+                  "name",
+                  "image"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the container to override."
+                  },
+                  "image": {
+                    "type": "object",
+                    "description": "Container image override.",
+                    "required": [
+                      "repository",
+                      "tag"
+                    ],
+                    "properties": {
+                      "repository": {
+                        "type": "string",
+                        "description": "Image repository override."
+                      },
+                      "tag": {
+                        "type": "string",
+                        "description": "Image tag override."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "features": {
           "type": "object",
           "description": "Optional feature flags for this provider.",
@@ -186,7 +228,7 @@
       "properties": {
         "addonFleet": {
           "type": "object",
-          "description": "Extra configuration for CAAPF",
+          "description": "Extra configuration for CAAPF.",
           "properties": {
             "config": {
               "type": "object",
@@ -203,6 +245,54 @@
                 "fleetAgentHealthProbeAddress": {
                   "type": "string",
                   "description": "Sets the default fleet-agent health probe bind address."
+                }
+              }
+            }
+          }
+        },
+        "infrastructureAzure": {
+          "type": "object",
+          "description": "Extra configuration for CAPZ.",
+          "properties": {
+            "azureServiceOperator": {
+              "type": "object",
+              "descrpiton": "Azure Service Operator overrides.",
+              "properties": {
+                "containers": {
+                  "type": "array",
+                  "description": "Provider containers configuration.",
+                  "items": {
+                    "type": "object",
+                    "description": "Provider container configuration.",
+                    "required": [
+                      "name",
+                      "image"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Name of the container to override."
+                      },
+                      "image": {
+                        "type": "object",
+                        "description": "Container image override.",
+                        "required": [
+                          "repository",
+                          "tag"
+                        ],
+                        "properties": {
+                          "repository": {
+                            "type": "string",
+                            "description": "Image repository override."
+                          },
+                          "tag": {
+                            "type": "string",
+                            "description": "Image tag override."
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
