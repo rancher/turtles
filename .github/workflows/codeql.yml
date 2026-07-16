@@ -23,9 +23,9 @@ jobs:
       security-events: write
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.3
     - name: setupGo
-      uses: actions/setup-go@v6.1.0
+      uses: actions/setup-go@v6.5.0
       with:
         go-version-file: go.mod
     - name: Initialize CodeQL
