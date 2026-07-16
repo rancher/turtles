@@ -1,6 +1,6 @@
 module github.com/rancher/turtles/test
 
-go 1.25.11
+go 1.25.12
 
 replace github.com/rancher/turtles => ../
 
@@ -140,7 +140,7 @@ require (
 	golang.org/x/mod v0.37.0
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
