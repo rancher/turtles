@@ -209,6 +209,10 @@ spec:
               fromPort: -1
               protocol: "4"
               toPort: 65535
+            - description: Calico VXLAN
+              fromPort: 4789
+              protocol: udp
+              toPort: 4789
             - description: Calico Typha
               fromPort: 5473
               protocol: tcp
