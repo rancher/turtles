@@ -21,8 +21,10 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -38,6 +40,7 @@ import (
 	configclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
 
+	"github.com/blang/semver/v4"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -160,6 +163,7 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 		rec.Store,
 		rec.Upgrade,
 		rec.Install,
+		r.addAzureServiceOperatorFix,
 		rec.ReportStatus,
 		r.setConditions,
 		rec.Finalize,
@@ -507,4 +511,114 @@ func (r *CAPIProviderReconciler) syncSecrets(ctx context.Context) (*controller.R
 
 func (r *CAPIProviderReconciler) waitForClusterctlConfigUpdate(ctx context.Context) (*controller.Result, error) {
 	return provider.WaitForClusterctlConfigUpdate(ctx, r.Client)
+}
+
+// addAzureServiceOperatorFix is a phase that applies a need-a-cert workaround to the azureserviceoperator-webhook-service Service.
+// The workaround is to apply the need-a-cert.cattle.io/ca-bundle-mode=ca-only annotation to the Service, in order to tell
+// wrangler to only include the CA cert and reduce the azureserviceoperator-mutating-webhook-configuration MutatingWebhookConfiguration
+// size on etcd. For more information see: https://github.com/rancher/turtles/issues/2452
+//
+// This fix needs to be applied from CAPZ version v1.24 to v1.26.
+// A solution upstream is expected in CAPZ v1.27 where ASO v2.19 is used, that brings in multiple smaller MutatingWebhookConfigurations.
+//
+// The addAzureServiceOperatorFix phase is meant to run post Install. This ensures that on a provider update (or first install) the fix is applied.
+//
+// Note that since cluster-api-operator will delete the provider resources (including Services) before upgrading to a new version,
+// this fix does not need to be removed upon v1.27 CAPZ installation. Simply the v1.27 installed ASO webhook Service will not have the
+// need-a-cert annotation applied, therefore it will use the default need-a-cert CA bundle behavior.
+//
+// This function can be removed in Turtles v0.29. Previous version users may still want to keep CAPZ to an affected version.
+// Consider the following compatibility matrix:
+//
+// Rancher v2.15.0 --> Turtles v0.27.0 --> CAPZ v1.23.2 (Not affected).
+// Rancher v2.15.1 --> Turtles v0.27.x --> CAPZ v1.26.x (Affected).
+// Rancher v2.16.0 --> Turtles v0.28.0 --> CAPZ v1.27.x (Not affected).
+func (r *CAPIProviderReconciler) addAzureServiceOperatorFix(ctx context.Context) (*controller.Result, error) {
+	const caBundleModeAnnotation = "need-a-cert.cattle.io/ca-bundle-mode"
+
+	const caBundleModeValue = "ca-only"
+
+	const targetASOWebhookServiceName = "azureserviceoperator-webhook-service"
+
+	log := ctrl.LoggerFrom(ctx)
+
+	if !feature.Gates.Enabled(feature.NoCertManager) {
+		// Wrangler is not in use. Nothing to do.
+		return &controller.Result{}, nil
+	}
+
+	capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider)
+	if !ok {
+		// Not a CAPIProvider, nothing to do.
+		return &controller.Result{}, nil
+	}
+
+	if capiProvider.ProviderName() != provider.AzureProvider {
+		// Not Azure Provider, nothing to do.
+		return &controller.Result{}, nil
+	}
+
+	// Check if the CAPZ version needs this fix. From v1.24 to v1.26.
+	installedVersionString, _ := strings.CutPrefix(capiProvider.Spec.Version, "v")
+
+	installedVersion, err := semver.Parse(installedVersionString)
+	if err != nil {
+		return &controller.Result{}, fmt.Errorf("parsing CAPIProvider version '%s': %w", installedVersionString, err)
+	}
+
+	firstAffectedVersion, err := semver.Make("1.24.0")
+	if err != nil {
+		return &controller.Result{}, fmt.Errorf("parsing first affected CAPZ version: %w", err)
+	}
+
+	firstFixedVersion, err := semver.Make("1.27.0")
+	if err != nil {
+		return &controller.Result{}, fmt.Errorf("parsing first fixed CAPZ version: %w", err)
+	}
+
+	if installedVersion.LT(firstAffectedVersion) || installedVersion.GE(firstFixedVersion) {
+		return &controller.Result{}, nil
+	}
+
+	// Fetch the ASO webhook Service.
+	asoService := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      targetASOWebhookServiceName,
+			Namespace: capiProvider.Namespace,
+		},
+	}
+	if err := r.Get(ctx, client.ObjectKeyFromObject(asoService), asoService); err != nil {
+		return &controller.Result{}, fmt.Errorf("fetching %s/%s Service: %w", capiProvider.Namespace, targetASOWebhookServiceName, err)
+	}
+
+	// Check if the annotation needs to be applied.
+	if asoService.Annotations != nil {
+		value, found := asoService.Annotations[caBundleModeAnnotation]
+		if found && value == caBundleModeValue {
+			// Annotation already applied, nothing to do.
+			return &controller.Result{}, nil
+		}
+	}
+
+	// Add the "need-a-cert.cattle.io/ca-bundle-mode: ca-only" annotation.
+	log.Info("Adding need-a-cert.cattle.io/ca-bundle-mode to ASO azureserviceoperator-webhook-service Service")
+
+	patchHelper, err := patch.NewHelper(asoService, r.Client)
+	if err != nil {
+		return &controller.Result{}, fmt.Errorf("initializing patch helper for ASO service: %w", err)
+	}
+
+	if asoService.Annotations == nil {
+		asoService.Annotations = map[string]string{}
+	}
+
+	asoService.Annotations[caBundleModeAnnotation] = caBundleModeValue
+
+	if err := patchHelper.Patch(ctx, asoService); err != nil {
+		return &controller.Result{}, fmt.Errorf("patching ASO Service: %w", err)
+	}
+
+	log.Info("ASO Service successfully patched")
+
+	return &controller.Result{}, nil
 }
