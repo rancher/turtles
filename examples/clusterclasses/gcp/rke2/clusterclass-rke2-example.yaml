@@ -1,0 +1,257 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: ClusterClass
+metadata:
+  name: gcp-rke2-example
+spec:
+  controlPlane:
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+      kind: RKE2ControlPlaneTemplate
+      name: gcp-rke2-example-control-plane
+    machineInfrastructure:
+      templateRef:
+        kind: GCPMachineTemplate
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        name: gcp-machine-control-plane
+  infrastructure:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: GCPClusterTemplate
+      name: gcp-rke2-example
+  workers:
+    machineDeployments:
+      - class: default-worker
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: RKE2ConfigTemplate
+            name: gcp-rke2-example-worker-bootstraptemplate
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPMachineTemplate
+            name: gcp-rke2-example-worker-machinetemplate
+  variables:
+    - name: gcpProject
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: region
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: us-west1
+    - name: clusterFailureDomains
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: array
+          items:
+            type: string
+    - name: gcpNetworkName
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: imageId
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+    - name: machineType
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: n1-standard-2
+    - name: rke2CNI
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: default
+          enum:
+          - default
+          - none
+          - calico
+          - canal
+          - cilium
+  patches:
+    - name: gcpProject
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/project
+              valueFrom:
+                variable: gcpProject
+    - name: region
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/region
+              valueFrom:
+                variable: region
+    - name: gcpNetworkName
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/network/name
+              valueFrom:
+                variable: gcpNetworkName
+    - name: clusterFailureDomains
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/failureDomains
+              valueFrom:
+                variable: clusterFailureDomains
+    - name: controlPlaneImageId
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPMachineTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/image
+              valueFrom:
+                variable: imageId
+    - name: workerImageId
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/image
+              valueFrom:
+                variable: imageId
+    - name: controlPlaneMachineType
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPMachineTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/instanceType
+              valueFrom:
+                variable: machineType
+    - name: workerMachineType
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/instanceType
+              valueFrom:
+                variable: machineType
+    - name: rke2CNI
+      enabledIf: '{{ ne .rke2CNI "default" }}'
+      definitions:
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/serverConfig/cni
+              valueFrom:
+                variable: rke2CNI
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPClusterTemplate
+metadata:
+  name: gcp-rke2-example
+spec:
+  template:
+    spec:
+      project: REPLACEME # this value is replaced by a patch
+      region: REPLACEME # this value is replaced by a patch
+      network:
+        name: REPLACEME # this value is replaced by a patch
+      failureDomains:
+        - REPLACEME # this value is replaced by a patch
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: RKE2ControlPlaneTemplate
+metadata:
+  name: gcp-rke2-example-control-plane
+spec:
+  template:
+    spec:
+      rolloutStrategy:
+        type: "RollingUpdate"
+        rollingUpdate:
+          maxSurge: 1
+      agentConfig: {}
+      serverConfig:
+        cloudProviderName: external
+        disableComponents:
+          kubernetesComponents:
+            - cloudController
+        kubeAPIServer:
+          extraArgs:
+            - --anonymous-auth=true
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPMachineTemplate
+metadata:
+  name: gcp-machine-control-plane
+spec:
+  template:
+    spec:
+      instanceType: REPLACEME
+      image: REPLACEME
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPMachineTemplate
+metadata:
+  name: gcp-rke2-example-worker-machinetemplate
+spec:
+  template:
+    spec:
+      instanceType: REPLACEME
+      image: REPLACEME
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: RKE2ConfigTemplate
+metadata:
+  name: gcp-rke2-example-worker-bootstraptemplate
+spec:
+  template:
+    spec: {}
