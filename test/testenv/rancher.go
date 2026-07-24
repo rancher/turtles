@@ -28,7 +28,6 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/rancher/turtles/test/e2e"
-	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/yaml"
 )
 
 // DeployRancherInput represents the input parameters for deploying Rancher.
