@@ -33,7 +33,7 @@ jobs:
         fetch-depth: 0
 
     - name: Read Vault secrets
-      uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
+      uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89
       with:
         secrets: |
           secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
@@ -44,7 +44,7 @@ jobs:
           secret/data/github/repo/${{ github.repository }}/rancher-prime-registry/credentials registry | PRIME_REGISTRY ;
 
     - name: Push community image to DockerHub
-      uses: rancher/ecm-distro-tools/actions/publish-image@016551c414f82e64af8c4c18315ea3093d10be7c
+      uses: rancher/ecm-distro-tools/actions/publish-image@616d48cee9244666a3fa09ee33bbed4fdd78ebe7
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -57,7 +57,7 @@ jobs:
         make-target: push-community-image
 
     - name: Push prime image to staging registry
-      uses: rancher/ecm-distro-tools/actions/publish-image@016551c414f82e64af8c4c18315ea3093d10be7c
+      uses: rancher/ecm-distro-tools/actions/publish-image@616d48cee9244666a3fa09ee33bbed4fdd78ebe7
       with:
         image: turtles
         tag: ${{ env.TAG }}-${{ matrix.tag-suffix }}
@@ -84,7 +84,7 @@ jobs:
     - release
     steps:
     - name: Read Vault secrets
-      uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
+      uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89
       with:
         secrets: |
           secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
@@ -96,14 +96,14 @@ jobs:
 
     - name: Log into Docker Hub registry
       if: ${{ matrix.image-type == 'community' }}
-      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+      uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
       with:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
     - name: Log into Staging registry
       if: ${{ matrix.image-type == 'prime' }}
-      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+      uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
       with:
         username: ${{ env.STAGE_REGISTRY_USERNAME }}
         password: ${{ env.STAGE_REGISTRY_PASSWORD }}
