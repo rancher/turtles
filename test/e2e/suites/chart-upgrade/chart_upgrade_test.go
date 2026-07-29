@@ -21,6 +21,7 @@ package chart_upgrade
 
 import (
 	_ "embed"
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -37,7 +38,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,19 +52,11 @@ const (
 	capiDeploymentName = "capi-controller-manager"
 	capiNamespace      = "cattle-capi-system"
 	capiProviderName   = "cluster-api"
+
+	// Environment constants
+	rancherInitialVersion = "2.15.0-rc3"
 )
 
-// This is the updated version of the chart-upgrade test for verifying updating from a Rancher version that
-// uses Turtles with CAPI v1.12 to a Rancher version that uses Turtles with CAPI v1.13.
-//   - Users that are bumping to v2.15 (CAPI v1.13) will always be on v2.14 as Rancher does not support skipping a minor.
-//     1. Install Rancher v2.14.1 which includes Turtles as system chart.
-//     2. Validate Rancher and Turtles are installed successfully.
-//     3. Install CAPI providers: for this test, only `docker,rke2`.
-//     4. Provisions and runs checks on workload cluster.
-//     5. `UpgradeInstallRancherWithGitea` and configure current version of Turtles -> this uses CAPI v1.13.
-//     6. Confirm that Turtles is rolled-out.
-//     7. Check providers after upgrade.
-//     8. Verify the workload cluster is still available and active.
 var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
 	var (
 		clusterName       string
@@ -80,11 +72,11 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		clusterName = "cluster-docker-rke2"
 	})
 
-	It("Should install Rancher 2.14.1, including Turtles v0.26.1 as system chart, and provision a workload cluster", func() {
-		By("Installing Rancher 2.14.1 (simulating existing Rancher installation)")
+	It(fmt.Sprintf("Should install Rancher %s, including Turtles as system chart, and provision a workload cluster", rancherInitialVersion), func() {
+		By(fmt.Sprintf("Installing Rancher %s (simulating existing Rancher installation)", rancherInitialVersion))
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			RancherVersion:        "2.14.1",
+			RancherVersion:        rancherInitialVersion,
 			RancherChartRepoName:  "rancher-latest",
 			RancherChartPath:      "rancher-latest/rancher",
 			RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
@@ -128,8 +120,8 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			BootstrapClusterProxy:          bootstrapClusterProxy,
 			ClusterTemplate:                e2e.CAPIDockerRKE2Topology,
 			ClusterName:                    clusterName,
-			ControlPlaneMachineCount:       ptr.To(1),
-			WorkerMachineCount:             ptr.To(1),
+			ControlPlaneMachineCount:       new(1),
+			WorkerMachineCount:             new(1),
 			LabelNamespace:                 true,
 			TestClusterReimport:            false,
 			RancherServerURL:               hostName,
@@ -163,7 +155,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		}
 	})
 
-	It("Should migrate to Rancher 2.15.x with zero-downtime", func() {
+	It("Should migrate to next Rancher version with zero-downtime", func() {
 		By("Verifying ETCD size before upgrade")
 		testenv.VerifyETCDSize(ctx, testenv.VerifyETCDSizeInput{
 			ClusterName:         bootstrapClusterProxy.GetName() + "-before",
@@ -174,7 +166,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		By("Deleting community providers")
 		framework.Delete(ctx, bootstrapClusterProxy, e2e.CommunityProviders)
 
-		By("Upgrading Rancher to 2.15.x with Gitea chart repository")
+		By("Upgrading Rancher with Gitea chart repository")
 		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
