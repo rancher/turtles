@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v7.0.0
 
       - name: Install Updatecli in the runner
-        uses: updatecli/updatecli-action@v2
+        uses: updatecli/updatecli-action@v3.4.0
 
       - name: Apply
         run: "updatecli apply --config ./updatecli/updatecli.d"
