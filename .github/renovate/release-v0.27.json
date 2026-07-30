@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Turtles-specific constraints for release/v0.27.",
+  "labels": ["area/dependency", "kind/chore"],
+  "packageRules": [
+    {
+      "description": "Align with core CAPI v1.13 dependencies",
+      "matchPackageNames": [
+        "sigs.k8s.io/controller-runtime"
+      ],
+      "allowedVersions": "<0.24.0"
+    },
+    {
+      "description": "Align with core CAPI v1.13 dependencies",
+      "matchPackageNames": [
+        "k8s.io/**"
+      ],
+      "allowedVersions": "<0.36.0"
+    },
+    {
+      "description": "Pin rancher/kuberlr-kubectl to version 8 (v8.x.x)",
+      "matchPackageNames": ["rancher/kuberlr-kubectl"],
+      "allowedVersions": "<9.0.0"
+    }
+  ]
+}
