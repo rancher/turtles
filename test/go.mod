@@ -14,7 +14,6 @@ require (
 	github.com/onsi/gomega v1.42.1
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
 	golang.org/x/mod v0.38.0
-	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver v0.35.4
 	k8s.io/apimachinery v0.35.4
@@ -146,6 +145,7 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.35.4 // indirect
 	k8s.io/cluster-bootstrap v0.35.4 // indirect
 	k8s.io/component-base v0.35.4 // indirect
