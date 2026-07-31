@@ -6,7 +6,7 @@ spec:
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: docker-rke2-clustertemplate
   controlPlane:
     templateRef:
@@ -15,7 +15,7 @@ spec:
       name: docker-rke2-control-plane
     machineInfrastructure:
       templateRef:
-        kind: DockerMachineTemplate
+        kind: DevMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: docker-rke2-control-plane
   workers:
@@ -29,7 +29,7 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: docker-rke2-worker-machinetemplate
   variables:
     - name: rke2CNI
@@ -66,7 +66,7 @@ spec:
       definitions:
         - selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             matchResources:
               controlPlane: true
               machineDeploymentClass:
@@ -74,7 +74,7 @@ spec:
                   - default-worker
           jsonPatches:
             - op: add
-              path: /spec/template/spec/customImage
+              path: /spec/template/spec/backend/docker/customImage
               valueFrom:
                 variable: dockerImage
     - name: dockerAuthSecret
@@ -118,15 +118,17 @@ spec:
                   {{- end }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerClusterTemplate
+kind: DevClusterTemplate
 metadata:
   name: docker-rke2-clustertemplate
 spec:
   template:
     spec:
-      loadBalancer:
-        customHAProxyConfigTemplateRef:
-          name: docker-rke2-lb-config
+      backend:
+        docker:
+          loadBalancer:
+            customHAProxyConfigTemplateRef:
+              name: docker-rke2-lb-config
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: RKE2ControlPlaneTemplate
@@ -158,22 +160,26 @@ spec:
           test: "true"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-rke2-control-plane
 spec:
   template:
     spec:
-      bootstrapTimeout: 15m
+      backend:
+        docker:
+          bootstrapTimeout: 15m
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-rke2-worker-machinetemplate
 spec:
   template:
     spec:
-      bootstrapTimeout: 15m
+      backend:
+        docker:
+          bootstrapTimeout: 15m
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate

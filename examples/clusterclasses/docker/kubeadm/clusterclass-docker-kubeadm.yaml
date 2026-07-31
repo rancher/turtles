@@ -16,7 +16,7 @@ spec:
     machineInfrastructure:
       templateRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        kind: DockerMachineTemplate
+        kind: DevMachineTemplate
         name: docker-kubeadm-control-plane
     templateRef:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -25,7 +25,7 @@ spec:
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: docker-kubeadm-clustertemplate
   workers:
     machineDeployments:
@@ -47,7 +47,7 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: docker-kubeadm-default-worker-machinetemplate
   patches:
     - definitions:
@@ -98,26 +98,26 @@ spec:
     - definitions:
         - jsonPatches:
             - op: add
-              path: /spec/template/spec/customImage
+              path: /spec/template/spec/backend/docker/customImage
               valueFrom:
                 template: |
                   kindest/node:{{ .builtin.machineDeployment.version | replace "+" "_" }}
           selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             matchResources:
               machineDeploymentClass:
                 names:
                   - default-worker
         - jsonPatches:
             - op: add
-              path: /spec/template/spec/customImage
+              path: /spec/template/spec/backend/docker/customImage
               valueFrom:
                 template: |
                   kindest/node:{{ .builtin.controlPlane.version | replace "+" "_" }}
           selector:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             matchResources:
               controlPlane: true
       description:
@@ -229,7 +229,7 @@ spec:
           type: object
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerClusterTemplate
+kind: DevClusterTemplate
 metadata:
   name: docker-kubeadm-clustertemplate
 spec:
@@ -257,26 +257,30 @@ spec:
                 value: "true"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-kubeadm-control-plane
 spec:
   template:
     spec:
-      extraMounts:
-        - containerPath: /var/run/docker.sock
-          hostPath: /var/run/docker.sock
+      backend:
+        docker:
+          extraMounts:
+            - containerPath: /var/run/docker.sock
+              hostPath: /var/run/docker.sock
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-kubeadm-default-worker-machinetemplate
 spec:
   template:
     spec:
-      extraMounts:
-        - containerPath: /var/run/docker.sock
-          hostPath: /var/run/docker.sock
+      backend:
+        docker:
+          extraMounts:
+            - containerPath: /var/run/docker.sock
+              hostPath: /var/run/docker.sock
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
