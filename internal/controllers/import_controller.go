@@ -301,7 +301,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 				ownedLabelName:            "",
 			},
 			Annotations: map[string]string{
-				fleetNamespaceMigrated: "cattle-fleet-system",
+				fleetNamespaceMigrated: rancherFleetNamespace,
 				turtlesannotations.ImportedClusterVersionManagementAnnotation: "false",
 			},
 			Finalizers: []string{
@@ -350,7 +350,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	}
 
 	annotations := rancherCluster.GetAnnotations()
-	fleetMigrated = annotations[fleetNamespaceMigrated] == "cattle-fleet-system" || fleetMigrated
+	fleetMigrated = annotations[fleetNamespaceMigrated] == rancherFleetNamespace || fleetMigrated
 
 	if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) && fleetMigrated {
 		log.Info("agent is ready, no action needed")

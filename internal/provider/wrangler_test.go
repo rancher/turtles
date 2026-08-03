@@ -29,7 +29,6 @@ import (
 )
 
 var _ = Describe("Alter component functions", func() {
-
 	It("Should patch provider manifest with certificate secret annotation on service", func() {
 		cert := unstructured.Unstructured{}
 		cert.SetKind("Certificate")

@@ -108,7 +108,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 					ownedLabelName:            "",
 				},
 				Annotations: map[string]string{
-					fleetNamespaceMigrated: "cattle-fleet-system",
+					fleetNamespaceMigrated: rancherFleetNamespace,
 					turtlesannotations.ImportedClusterVersionManagementAnnotation: "false",
 				},
 			},
@@ -118,10 +118,10 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		agentTlsModeSetting = &managementv3.Setting{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "agent-tls-mode",
+				Name: string(feature.AgentTLSMode),
 			},
-			Default: "strict",
-			Value:   "system-store",
+			Default: agentTLSModeStrict,
+			Value:   agentTLSModeSystemStore,
 		}
 
 		// Create the agent-tls-mode setting once for all tests since it's required by the AgentTLSMode feature gate

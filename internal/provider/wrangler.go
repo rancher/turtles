@@ -47,6 +47,9 @@ const (
 	// CertManagerInjectAnnotationKey is the annotation that triggers cert-manager managed certificates.
 	CertManagerInjectAnnotationKey = "cert-manager.io/inject-ca-from"
 
+	// CertificateKubernetesKind is the Certificate Kind.
+	CertificateKubernetesKind = "Certificate"
+
 	// MutatingWebhookConfigurationKind is the MutatingWebhookConfiguration Kind.
 	MutatingWebhookConfigurationKind = "MutatingWebhookConfiguration"
 	// ValidatingWebhookConfigurationKind is the ValidatingWebhookConfiguration Kind.
@@ -114,7 +117,7 @@ func WranglerPatcher(objs []unstructured.Unstructured) ([]unstructured.Unstructu
 		}
 
 		// Filter Certificates and Issuers
-		if o.GetKind() != "Certificate" && o.GetKind() != "Issuer" {
+		if o.GetKind() != CertificateKubernetesKind && o.GetKind() != "Issuer" {
 			filteredObjs = append(filteredObjs, o)
 		}
 	}
@@ -129,7 +132,7 @@ func getCertificates(objs []unstructured.Unstructured) (map[string]string, error
 	certificates := map[string]string{}
 
 	for _, o := range objs {
-		if o.GetKind() == "Certificate" {
+		if o.GetKind() == CertificateKubernetesKind {
 			key := fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
 
 			secretName, found, err := unstructured.NestedString(o.Object, "spec", "secretName")
@@ -262,7 +265,7 @@ func CleanupCertManagerResources(ctx context.Context, cl client.Client, provider
 	certs := schema.GroupVersionKind{
 		Group:   "cert-manager.io",
 		Version: "v1",
-		Kind:    "Certificate",
+		Kind:    CertificateKubernetesKind,
 	}
 
 	certList := &unstructured.UnstructuredList{}
