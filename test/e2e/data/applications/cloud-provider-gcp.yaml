@@ -1,7 +1,8 @@
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-gcp/refs/tags/v1.11.2/test/e2e/data/ccm/gce-cloud-controller-manager.yaml
+# Source: https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-gcp/refs/tags/v1.13.0/test/e2e/data/ccm/gce-cloud-controller-manager.yaml
 #
 # Notes: 
 # 1. Patch the DeamonSet command with the ${CLUSTER_CIDR} variable instead of a static value.
+# 2. Patch the DeamonSet command with the ${GCP_CCM_VERSION} variable: recommend using the same as upstream (see above link).
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -46,7 +47,7 @@ spec:
       serviceAccountName: cloud-controller-manager
       containers:
       - name: cloud-controller-manager
-        image: gcr.io/k8s-staging-cloud-provider-gcp/cloud-controller-manager:master
+        image: gcr.io/k8s-staging-cloud-provider-gcp/cloud-controller-manager:${GCP_CCM_VERSION}
         imagePullPolicy: IfNotPresent
         command:
         - /cloud-controller-manager

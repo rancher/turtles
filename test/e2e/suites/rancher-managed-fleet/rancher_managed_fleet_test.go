@@ -307,6 +307,7 @@ var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI c
 			AdditionalTemplateVariables: map[string]string{
 				e2e.GCPImageIDFormattedVar: gcpImageFormatted,
 				e2e.ClusterCIDRVar:         "192.168.0.0/16",
+				e2e.GCPCCMVersionVar:       "v35.1.3",
 			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
