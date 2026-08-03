@@ -51,9 +51,9 @@ func init() {
 // DefaultGates are the default settings for Turtles feature gates.
 var DefaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AgentTLSMode:              {Default: true, PreRelease: featuregate.Beta},
-	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
 	NoCertManager:             {Default: true, PreRelease: featuregate.Beta},
-	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Beta},
+	RancherCCTranslation:      {Default: true, PreRelease: featuregate.Beta},
+	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
 	UseCAAPF:                  {Default: false, PreRelease: featuregate.Alpha},
-	RancherCCTranslation:      {Default: false, PreRelease: featuregate.Alpha},
+	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Beta},
 }
