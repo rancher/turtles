@@ -24,7 +24,7 @@ jobs:
 
       - name: Generate Token
         id: generate-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ env.APPID }}
           private-key: ${{ env.PRIVATEKEY }}
@@ -87,7 +87,7 @@ jobs:
 
       - name: Checkout
         if: ${{ env.is_member == 'true' }} && ${{ env.milestone_exists == 'true' }} && ${{ env.target_branch_exists == 'true' }}
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.target_branch }}
           fetch-depth: '0'

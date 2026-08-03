@@ -33,11 +33,11 @@ jobs:
     runs-on: [self-hosted, vsphere]
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: setupGo
-        uses: actions/setup-go@v6.5.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
       - name: Display kind version
@@ -48,13 +48,13 @@ jobs:
         run: make test-e2e
       - name: Collect run artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: artifacts_vsphere
           path: _artifacts
       - name: Send failed status to slack
         if: failure()
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           webhook-type: incoming-webhook
           payload: |
