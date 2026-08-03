@@ -206,6 +206,8 @@ const (
 	GCPProjectIDVar        = "GCP_PROJECT"
 
 	ClusterCIDRVar = "CLUSTER_CIDR"
+
+	GCPCCMVersionVar = "GCP_CCM_VERSION"
 )
 
 const (
