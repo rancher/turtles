@@ -21,78 +21,28 @@
       "enabled": false
     },
     {
-      "description": "Group testing framework dependencies",
-      "matchPackageNames": [
-        "github.com/onsi/ginkgo/v2",
-        "github.com/onsi/gomega"
-      ],
-      "groupName": "testing dependencies"
-    },
-    {
-      "description": "release/v0.27: Align with core CAPI v1.13 dependencies",
+      "description": "release/v0.27 ships with Rancher 2.15. Limit updates to vulnerability fixes via the shared Rancher config, then apply Turtles-specific constraints.",
       "matchBaseBranches": ["release/v0.27"],
-      "matchPackageNames": [
-        "sigs.k8s.io/controller-runtime"
-      ],
-      "allowedVersions": "<0.24.0"
+      "extends": [
+        "github>rancher/renovate-config//rancher-2.15#release",
+        "local>rancher/turtles//.github/renovate/release-v0.27"
+      ]
     },
     {
-      "description": "release/v0.27: Align with core CAPI v1.13 dependencies",
-      "matchBaseBranches": ["release/v0.27"],
-      "matchPackageNames": [
-        "k8s.io/**"
-      ],
-      "allowedVersions": "<0.36.0"
-    },
-    {
-      "description": "release/v0.27: Pin rancher/kuberlr-kubectl to version 8 (v8.x.x)",
-      "matchBaseBranches": ["release/v0.27"],
-      "matchPackageNames": ["rancher/kuberlr-kubectl"],
-      "allowedVersions": "<9.0.0"
-    },
-    {
-      "description": "release/v0.26: Align with core CAPI v1.12 dependencies",
+      "description": "release/v0.26 ships with Rancher 2.14. Limit updates to vulnerability fixes via the shared Rancher config, then apply Turtles-specific constraints.",
       "matchBaseBranches": ["release/v0.26"],
-      "matchPackageNames": [
-        "sigs.k8s.io/controller-runtime"
-      ],
-      "allowedVersions": "<0.23.0"
+      "extends": [
+        "github>rancher/renovate-config//rancher-2.14#release",
+        "local>rancher/turtles//.github/renovate/release-v0.26"
+      ]
     },
     {
-      "description": "release/v0.26: Align with core CAPI v1.12 dependencies",
-      "matchBaseBranches": ["release/v0.26"],
-      "matchPackageNames": [
-        "k8s.io/**"
-      ],
-      "allowedVersions": "<0.35.0"
-    },
-    {
-      "description": "release/v0.26: Pin rancher/kuberlr-kubectl to version 7 (v7.x.x)",
-      "matchBaseBranches": ["release/v0.26"],
-      "matchPackageNames": ["rancher/kuberlr-kubectl"],
-      "allowedVersions": "<8.0.0"
-    },
-    {
-      "description": "release/v0.25: Align with core CAPI v1.10 dependencies",
+      "description": "release/v0.25 ships with Rancher 2.13. Limit updates to vulnerability fixes via the shared Rancher config, then apply Turtles-specific constraints.",
       "matchBaseBranches": ["release/v0.25"],
-      "matchPackageNames": [
-        "sigs.k8s.io/controller-runtime"
-      ],
-      "allowedVersions": "<0.21.0"
-    },
-    {
-      "description": "release/v0.25: Align with core CAPI v1.10 dependencies",
-      "matchBaseBranches": ["release/v0.25"],
-      "matchPackageNames": [
-        "k8s.io/**"
-      ],
-      "allowedVersions": "<0.33.0"
-    },
-    {
-      "description": "release/v0.25: Pin rancher/kuberlr-kubectl to version 6 (v6.x.x)",
-      "matchBaseBranches": ["release/v0.25"],
-      "matchPackageNames": ["rancher/kuberlr-kubectl"],
-      "allowedVersions": "<7.0.0"
+      "extends": [
+        "github>rancher/renovate-config//rancher-2.13#release",
+        "local>rancher/turtles//.github/renovate/release-v0.25"
+      ]
     }
   ]
 }
