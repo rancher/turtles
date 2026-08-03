@@ -99,13 +99,6 @@ var _ = SynchronizedBeforeSuite(
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
-		By("Enable Rancher Cloud Credential translation")
-		testenv.SetTurtlesFeatureGate(ctx, testenv.SetTurtlesFeatureGateInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			FeatureName:           "rancher-credential-translation",
-			Enabled:               true,
-		})
-
 		By("Waiting for Rancher to be ready")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
