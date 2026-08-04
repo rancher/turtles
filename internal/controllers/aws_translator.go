@@ -109,10 +109,10 @@ func (a *AWSTranslator) Cleanup(ctx context.Context, cl client.Client, credentia
 }
 
 // DriverName is the name of the provider in the Rancher Cloud Credential Secret.
-func (a *AWSTranslator) DriverName() string { return "aws" }
+func (a *AWSTranslator) DriverName() string { return driverAWSName }
 
 // ProviderName is the name of the CAPI provider.
-func (a *AWSTranslator) ProviderName() string { return "aws" }
+func (a *AWSTranslator) ProviderName() string { return driverAWSName }
 
 // ProviderNamespace is the namespace where the `CAPIProvider` is installed.
 func (a *AWSTranslator) ProviderNamespace() string { return "capa-system" }

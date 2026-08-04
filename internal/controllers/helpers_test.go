@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/rancher/turtles/feature"
 )
 
 var _ = Describe("getTrustedCAcert", func() {
@@ -49,9 +51,9 @@ var _ = Describe("getTrustedCAcert", func() {
 
 		agentTLSModeSetting = &managementv3.Setting{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "agent-tls-mode",
+				Name: string(feature.AgentTLSMode),
 			},
-			Value: "strict",
+			Value: agentTLSModeStrict,
 		}
 	})
 
@@ -62,7 +64,7 @@ var _ = Describe("getTrustedCAcert", func() {
 	})
 
 	It("should return nil when agent-tls-mode is set to system-store", func() {
-		agentTLSModeSetting.Value = "system-store"
+		agentTLSModeSetting.Value = agentTLSModeSystemStore
 		Expect(fakeClient.Create(ctx, agentTLSModeSetting)).To(Succeed())
 
 		result, err := getTrustedCAcert(ctx, fakeClient, true)
@@ -81,7 +83,7 @@ var _ = Describe("getTrustedCAcert", func() {
 
 	It("should use default agent-tls-mode when value is empty", func() {
 		agentTLSModeSetting.Value = ""
-		agentTLSModeSetting.Default = "strict"
+		agentTLSModeSetting.Default = agentTLSModeStrict
 		Expect(fakeClient.Create(ctx, agentTLSModeSetting)).To(Succeed())
 		Expect(fakeClient.Create(ctx, cacertsSetting)).To(Succeed())
 

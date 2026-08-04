@@ -57,7 +57,12 @@ const (
 
 	rancherCredentialsNamespace = "cattle-global-data"
 
+	rancherFleetNamespace = "cattle-fleet-system"
+
 	driverNameAnnotation = "provisioning.cattle.io/driver"
+
+	// driverAWSName is the name of the AWS driver in the Rancher Cloud Credential secret.
+	driverAWSName = "aws"
 
 	//nolint:gosec  // This is not a hardcoded credential, just an annotation key name.
 	cloudCredentialSecretAnnotation = "cluster-api.cattle.io/source-id"
@@ -66,6 +71,11 @@ const (
 	trueValue              = "true"
 
 	tokenPlaceholder = "{token}"
+
+	// agentTLSModeSystemStore indicates that the system store should be used for CA certificates.
+	agentTLSModeSystemStore = "system-store"
+	// agentTLSModeStrict indicates that strict mode should be used for CA certificates.
+	agentTLSModeStrict = "strict"
 )
 
 func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string, cl client.Client,
@@ -239,7 +249,7 @@ func removeFleetNamespace(ctx context.Context, cl client.Client, cluster *manage
 
 	if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); apierrors.IsNotFound(err) {
 		ns = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: "cattle-fleet-system",
+			Name: rancherFleetNamespace,
 		}}
 
 		if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); err != nil {
@@ -407,10 +417,10 @@ func getTrustedCAcert(ctx context.Context, cl client.Client, agentTLSModeFeature
 	}
 
 	switch agentTLSModeValue {
-	case "system-store":
+	case agentTLSModeSystemStore:
 		log.Info("using system store for CA certificates")
 		return nil, nil
-	case "strict":
+	case agentTLSModeStrict:
 		log.Info("using strict mode for CA certificates")
 
 		caCertsSetting := &managementv3.Setting{}
