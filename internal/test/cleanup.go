@@ -91,11 +91,7 @@ func cleanup(ctx context.Context, cl client.Client, objs ...client.Object) error
 		}
 
 		if err := cl.Get(ctx, client.ObjectKeyFromObject(o), copyObj); err != nil {
-			if apierrors.IsNotFound(err) {
-				continue
-			}
-
-			if o.GetName() == "" { // resource is being deleted
+			if apierrors.IsNotFound(err) || o.GetName() == "" {
 				continue
 			}
 
@@ -104,25 +100,42 @@ func cleanup(ctx context.Context, cl client.Client, objs ...client.Object) error
 			continue
 		}
 
-		// Remove finalizers from the object
-		if copyObj.GetFinalizers() != nil {
-			copyObj.SetFinalizers(nil)
-		}
-
-		err := cl.Update(ctx, copyObj)
-		if apierrors.IsNotFound(err) {
+		if err := clearFinalizers(ctx, cl, copyObj); err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
-		errs = append(errs, err)
-
-		err = cl.Delete(ctx, copyObj)
-		if apierrors.IsNotFound(err) {
-			continue
+		if err := cl.Delete(ctx, copyObj); err != nil && !apierrors.IsNotFound(err) {
+			errs = append(errs, err)
 		}
-
-		errs = append(errs, err)
 	}
 
 	return kerrors.NewAggregate(errs)
+}
+
+// clearFinalizers removes all finalizers from obj, retrying on conflict.
+// The cached client may return a stale resourceVersion causing a 409 Conflict on Update.
+// Re-fetching on each retry picks up the latest version so the Update can succeed.
+func clearFinalizers(ctx context.Context, cl client.Client, obj client.Object) error {
+	return wait.ExponentialBackoff(cacheSyncBackoff, func() (bool, error) {
+		if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
+			return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
+		}
+
+		if len(obj.GetFinalizers()) == 0 {
+			return true, nil
+		}
+
+		obj.SetFinalizers(nil)
+
+		if err := cl.Update(ctx, obj); err != nil {
+			if apierrors.IsConflict(err) {
+				return false, nil
+			}
+
+			return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
+		}
+
+		return true, nil
+	})
 }
