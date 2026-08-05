@@ -87,11 +87,16 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 			Namespace:    namespace.Name,
 		}, intervalsGetter(specName, "wait-delete-cluster")...)
 
-		turtlesframework.Byf("Deleting namespace used for hosting the %q test spec", specName)
-		framework.DeleteNamespace(ctx, framework.DeleteNamespaceInput{
-			Deleter: clusterProxy.GetClient(),
-			Name:    namespace.Name,
-		})
+		// Tests that use cloud credentials mapping will be constrained to the shared fleet-default namespace.
+		// Since all CAPI Clusters are imported into fleet-default namespace as well, we need to prevent deletion
+		// of this namespace to not disrupt other tests or other Rancher functionality.
+		if namespace.Name != "fleet-default" {
+			turtlesframework.Byf("Deleting namespace used for hosting the %q test spec", specName)
+			framework.DeleteNamespace(ctx, framework.DeleteNamespaceInput{
+				Deleter: clusterProxy.GetClient(),
+				Name:    namespace.Name,
+			})
+		}
 	}
 	cancelWatches()
 }
