@@ -362,10 +362,10 @@ images:
     tag: v2.11.1
   infrastructureAzure:
     repository: rancher/cluster-api-azure-controller
-    tag: v1.23.2
+    tag: v1.26.0
     azureServiceOperator:
       repository: rancher/azureserviceoperator
-      tag: v2.13.0
+      tag: v2.18.0
   infrastructureGCP:
     repository: rancher/cluster-api-gcp-controller
     tag: v1.13.0
