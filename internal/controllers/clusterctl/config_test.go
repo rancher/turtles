@@ -66,7 +66,7 @@ data:
         url: https://github.com/rancher/cluster-api/releases/v1.13.3/core-components.yaml
       - name: gcp
         type: InfrastructureProvider
-        url: https://github.com/rancher/cluster-api-provider-gcp/releases/v1.11.1/infrastructure-components.yaml
+        url: https://github.com/rancher/cluster-api-provider-gcp/releases/v1.13.0/infrastructure-components.yaml
       - name: rke2
         type: ControlPlaneProvider
         url: https://github.com/rancher/cluster-api-provider-rke2/releases/v0.25.0/control-plane-components.yaml
