@@ -1,4 +1,4 @@
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-gcp/refs/tags/v1.13.0/test/e2e/data/ccm/gce-cloud-controller-manager.yaml
+# Source: https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-gcp/refs/tags/v1.13.1/test/e2e/data/ccm/gce-cloud-controller-manager.yaml
 #
 # Notes: 
 # 1. Patch the DeamonSet command with the ${CLUSTER_CIDR} variable instead of a static value.
