@@ -95,7 +95,7 @@ func setFinalizers(obj client.Object) {
 func setOwnerReference(owner, obj client.Object) {
 	controller := true
 	obj.SetOwnerReferences([]metav1.OwnerReference{{
-		APIVersion:         turtlesv1.GroupVersion.String(),
+		APIVersion:         turtlesv1.SchemeGroupVersion.String(),
 		Kind:               turtlesv1.Kind,
 		Name:               owner.GetName(),
 		UID:                owner.GetUID(),

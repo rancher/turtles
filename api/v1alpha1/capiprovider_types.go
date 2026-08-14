@@ -154,7 +154,3 @@ type CAPIProviderList struct {
 
 	Items []CAPIProvider `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&CAPIProvider{}, &CAPIProviderList{})
-}

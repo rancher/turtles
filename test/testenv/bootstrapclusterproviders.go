@@ -82,6 +82,8 @@ func KindWithExtraPortMappingsBootstrapCluster(ctx context.Context, config *clus
 			{ContainerPort: 443, HostPort: 443, Protocol: v1alpha4.PortMappingProtocolTCP},
 			{ContainerPort: 30002, HostPort: 30002, Protocol: v1alpha4.PortMappingProtocolTCP}, // etcd nodeport
 		},
+		// TODO: https://github.com/rancher/turtles/issues/2743
+		DisableOwnerReferencesPermissionEnforcement: true,
 	})
 }
 

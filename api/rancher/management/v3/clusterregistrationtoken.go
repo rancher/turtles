@@ -54,7 +54,3 @@ type ClusterRegistrationTokenList struct {
 
 	Items []ClusterRegistrationToken `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&ClusterRegistrationToken{}, &ClusterRegistrationTokenList{})
-}

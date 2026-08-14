@@ -63,7 +63,3 @@ func (c *Cluster) GetConditions() []metav1.Condition {
 func (c *Cluster) SetConditions(conditions []metav1.Condition) {
 	c.Status.Conditions = conditions
 }
-
-func init() {
-	SchemeBuilder.Register(&Cluster{}, &ClusterList{})
-}

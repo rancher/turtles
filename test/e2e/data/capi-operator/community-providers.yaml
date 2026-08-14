@@ -50,7 +50,7 @@ metadata:
   namespace: capd-system
 spec:
   type: infrastructure
-  version: v1.13.3
+  version: v1.14.0
 # FIXME: https://github.com/rancher/turtles/issues/2352
 #  fetchConfig:
 #    oci: registry.rancher.com/rancher/cluster-api-controller-components:v1.12.2

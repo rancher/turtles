@@ -54,7 +54,7 @@ const (
 	capiProviderName   = "cluster-api"
 
 	// Environment constants
-	rancherInitialVersion = "2.15.0-rc3"
+	rancherInitialVersion = "2.15.0"
 )
 
 var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {

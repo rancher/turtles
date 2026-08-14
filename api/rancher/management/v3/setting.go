@@ -39,7 +39,3 @@ type SettingList struct {
 
 	Items []Setting `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Setting{}, &SettingList{})
-}

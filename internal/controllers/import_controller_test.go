@@ -40,7 +40,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,10 +78,10 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		)
 
 		r = &CAPIImportReconciler{
-			Client:             cl,
-			UncachedClient:     cl,
-			remoteClientGetter: remote.NewClusterClient,
-			Scheme:             testEnv.GetScheme(),
+			Client:         cl,
+			UncachedClient: cl,
+			ClusterCache:   clustercache.NewFakeEmptyClusterCache(),
+			Scheme:         testEnv.GetScheme(),
 		}
 
 		capiCluster = &clusterv1.Cluster{
@@ -400,6 +400,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		defer server.Close()
 
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		r.ClusterCache = clustercache.NewFakeClusterCache(cl, client.ObjectKeyFromObject(capiCluster))
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 
@@ -579,6 +580,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		defer server.Close()
 
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		r.ClusterCache = clustercache.NewFakeClusterCache(cl, client.ObjectKeyFromObject(capiCluster))
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
 

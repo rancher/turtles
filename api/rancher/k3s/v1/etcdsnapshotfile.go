@@ -77,7 +77,3 @@ type ETCDSnapshotFileList struct {
 
 	Items []ETCDSnapshotFile `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&ETCDSnapshotFile{}, &ETCDSnapshotFileList{})
-}

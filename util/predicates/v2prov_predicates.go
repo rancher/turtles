@@ -51,7 +51,7 @@ func processIfV2ProvOwned(logger logr.Logger, obj client.Object) bool {
 
 	ownerRefs := obj.GetOwnerReferences()
 	for _, ref := range ownerRefs {
-		if ref.APIVersion == provisioningv1.GroupVersion.Identifier() {
+		if ref.APIVersion == provisioningv1.SchemeGroupVersion.Identifier() {
 			if ref.Kind == "Cluster" {
 				log.V(4).Info("Object is owned by v2prov cluster, will attempt to map", "object", obj)
 				return true

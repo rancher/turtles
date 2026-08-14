@@ -93,7 +93,3 @@ type ClusterctlConfigList struct {
 
 	Items []CAPIProvider `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&ClusterctlConfig{}, &ClusterctlConfigList{})
-}
