@@ -389,28 +389,32 @@ func applyProviderSecrets(ctx context.Context, input DeployRancherTurtlesProvide
 		switch name {
 		case providerAzure:
 			By("Applying Azure identity secret")
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Eventually(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 				Proxy:    input.BootstrapClusterProxy,
 				Template: e2e.AzureIdentitySecret,
-			})).To(Succeed(), "Failed to apply Azure identity secret")
+			})).WithPolling(10*time.Second).WithTimeout(5*time.Minute).
+				Should(Succeed(), "Failed to apply Azure identity secret")
 		case providerAWS:
 			By("Applying AWS provider secret")
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Eventually(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 				Proxy:    input.BootstrapClusterProxy,
 				Template: e2e.AWSIdentitySecret,
-			})).To(Succeed(), "Failed to apply AWS provider secret")
+			})).WithPolling(10*time.Second).WithTimeout(5*time.Minute).
+				Should(Succeed(), "Failed to apply AWS provider secret")
 		case providerGCP:
 			By("Applying GCP provider secret")
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Eventually(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 				Proxy:    input.BootstrapClusterProxy,
 				Template: e2e.GCPProviderSecret,
-			})).To(Succeed(), "Failed to apply GCP provider secret")
+			})).WithPolling(10*time.Second).WithTimeout(5*time.Minute).
+				Should(Succeed(), "Failed to apply GCP provider secret")
 		case providerVSphere:
 			By("Applying vSphere provider secret")
-			Expect(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
+			Eventually(turtlesframework.ApplyFromTemplate(ctx, turtlesframework.ApplyFromTemplateInput{
 				Proxy:    input.BootstrapClusterProxy,
 				Template: e2e.VSphereProviderSecret,
-			})).To(Succeed(), "Failed to apply vSphere provider secret")
+			})).WithPolling(10*time.Second).WithTimeout(5*time.Minute).
+				Should(Succeed(), "Failed to apply vSphere provider secret")
 		}
 	}
 }
