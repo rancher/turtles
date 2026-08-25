@@ -8,7 +8,11 @@ metadata:
 acceleratedNetworking: false
 availabilitySet: highlander-e2e
 availabilityZone: ""
+clientId: ""
+clientSecret: ""
+customData: ""
 diskSize: "30"
+dns: ""
 dockerPort: "2376"
 enablePublicIpStandardSku: false
 environment: AzurePublicCloud
@@ -18,6 +22,8 @@ location: westus
 managedDisks: true
 noPublicIp: false
 nsg: rancher-managed-wpepXjvf
+plan: ""
+privateIpAddress: null
 openPort:
 - 6443/tcp
 - 2379/tcp
@@ -29,7 +35,6 @@ openPort:
 - 10250/tcp
 - 10251/tcp
 - 10252/tcp
-plan: ""
 resourceGroup: highlander-e2e
 size: Standard_D2_v2
 sshUser: docker-user
@@ -37,6 +42,9 @@ staticPublicIp: false
 storageType: Standard_LRS
 subnet: highlander-e2e
 subnetPrefix: 192.168.0.0/16
+subscriptionId: ""
+tags: null
+tenantId: ""
 updateDomainCount: "5"
 usePrivateIp: false
 vnet: highlander-e2e-vnet

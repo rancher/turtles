@@ -58,7 +58,7 @@ variables:
   # RKE2 specifics
   RKE2_KUBERNETES_VERSION: "v1.36.0+rke2r1"
   # Kubernetes version used for v2prov
-  V2PROV_RKE2_KUBERNETES_VERSION: "v1.36.0+rke2r1"
+  V2PROV_RKE2_KUBERNETES_VERSION: "v1.36.3+rke2r1"
   RKE2_CNI: "none"
 
   # Azure Configuration
