@@ -58,8 +58,6 @@ volumeMounts:
 
 # cluster-api-operator: Manages Cluster API components.
 cluster-api-operator:
-  # cleanup: Enable cleanup tasks.
-  cleanup: true
   # cluster-api: Cluster API component settings.
   cluster-api:
     # enabled: Turn on or off.
