@@ -23,3 +23,6 @@ annotations:
   catalog.cattle.io/release-name: rancher-turtles
   catalog.cattle.io/scope: management
   catalog.cattle.io/type: cluster-tool
+maintainers:
+  - name: Rancher Highlander Team
+    url: https://github.com/rancher/turtles
