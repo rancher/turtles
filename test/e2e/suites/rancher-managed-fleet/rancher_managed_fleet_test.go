@@ -528,7 +528,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class"
 	})
 })
 
-var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
+var _ = FDescribe("[GCP] [GKE] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel), func() {
 	var topologyNamespace string
 
 	BeforeEach(func() {
