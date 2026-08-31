@@ -27,6 +27,14 @@ The deletion workflow is structured as follows:
 
 **Cluster Annotation:** When deleting a Rancher cluster, the operator will annotate the corresponding CAPI cluster with the `ClusterImportedAnnotation` (`imported=“true”`) annotation. This annotation will prevent automatic re-import of the CAPI cluster after corresponding Rancher cluster deletion. The underlying infrastructure provisioned by CAPI is left intact.
 
+Amendment (2026-08): the annotation is only applied when the import of the
+deleted Rancher cluster had completed at least once (its record reached the
+`AgentDeployed` or `Ready` condition). A record that disappears before the
+agent was ever deployed, for example when it is replaced while the import is
+still settling, does not mark the CAPI cluster as imported: the next reconcile
+re-creates the record and the import proceeds. Without this restriction such a
+cluster could never be imported again without manual intervention.
+
 From an end-user perspective:
 
 * If user manually deletes CAPI cluster. Rancher turtles uses [Kubernetes owner references](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/) to track relationships between objects. These references are used for Kubernetes garbage collection, which is the basis of Rancher cluster deletion in Rancher turtles.

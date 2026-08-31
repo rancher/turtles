@@ -236,7 +236,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 		// Patch CAPI Cluster with:
 		// 1. `imported=true` annotation to prevent further-reimports.
 		// 2. Removed capicluster.turtles.cattle.io finalizer to allow deletion.
-		if err := r.reconcileDelete(ctx, capiCluster); err != nil {
+		if err := r.reconcileDelete(ctx, capiCluster, rancherCluster); err != nil {
 			log.Error(err, "Removing CAPI Cluster failed, retrying")
 			return ctrl.Result{}, err
 		}
@@ -471,9 +471,22 @@ func (r *CAPIImportReconciler) rancherV3ClusterToCapiCluster(ctx context.Context
 	}
 }
 
-func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster) error {
+func (r *CAPIImportReconciler) reconcileDelete(ctx context.Context, capiCluster *clusterv1.Cluster, rancherCluster *managementv3.Cluster) error {
 	log := log.FromContext(ctx)
 	log.Info("Reconciling rancher cluster deletion")
+
+	// Only mark the CAPI cluster as imported when the import had actually
+	// completed for the record being deleted. A record that vanishes before
+	// the agent was ever deployed (for example when it is replaced while the
+	// import is still settling) would otherwise permanently disable the
+	// import: the annotation short-circuits every future reconcile, so no new
+	// record is ever created and the agent never gets deployed.
+	if !conditions.IsTrue(rancherCluster, managementv3.ClusterConditionAgentDeployed) &&
+		!conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
+		log.Info("Rancher cluster is being removed before the import completed, allowing a re-import")
+
+		return nil
+	}
 
 	// If the Rancher Cluster was already imported, then annotate the CAPI cluster so that we don't auto-import again.
 	log.Info(fmt.Sprintf("Rancher cluster is being removed, annotating CAPI cluster %s with %s",

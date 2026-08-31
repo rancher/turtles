@@ -277,6 +277,144 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
+	It("should not mark the CAPI cluster imported when the rancher cluster is removed before the import completed", func() {
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		setControlPlaneReady(capiCluster)
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		// First reconcile creates the rancher cluster record.
+		Eventually(func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+
+		cluster := rancherClusters.Items[0]
+
+		// Hold the record with an extra finalizer and delete it before the
+		// import ever completed (no AgentDeployed or Ready condition), so the
+		// reconciler observes the record mid-deletion, the way a slow
+		// finalization on a loaded Rancher exposes it.
+		Eventually(func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)).To(Succeed())
+			cluster.Finalizers = append(cluster.Finalizers, "test.turtles.cattle.io/hold")
+			g.Expect(cl.Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+		Expect(cl.Delete(ctx, &cluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			// The reconcile may transiently fail while the cache still serves
+			// the record without its deletion timestamp; only the end state
+			// matters here.
+			_, _ = r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).To(Succeed())
+			g.Expect(turtlesannotations.HasClusterImportAnnotation(capiCluster)).To(BeFalse(),
+				"a record deleted before the import completed must not disable the import")
+
+			// The reconciler still releases its finalizer so the record can go away.
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)).To(Succeed())
+			g.Expect(cluster.Finalizers).ToNot(ContainElement(managementv3.CapiClusterFinalizer))
+		}).WithTimeout(30 * time.Second).WithPolling(250 * time.Millisecond).Should(Succeed())
+
+		// Release the hold so cleanup can proceed.
+		Eventually(func(g Gomega) {
+			if err := cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster); err != nil {
+				return
+			}
+			kept := []string{}
+			for _, f := range cluster.Finalizers {
+				if f != "test.turtles.cattle.io/hold" {
+					kept = append(kept, f)
+				}
+			}
+			cluster.Finalizers = kept
+			g.Expect(cl.Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+	})
+
+	It("should mark the CAPI cluster imported when an imported rancher cluster is removed", func() {
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		setControlPlaneReady(capiCluster)
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
+			g.Expect(rancherClusters.Items).To(HaveLen(1))
+		}).Should(Succeed())
+
+		cluster := rancherClusters.Items[0]
+
+		// Mark the record as having completed the import.
+		Eventually(func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)).To(Succeed())
+			conditions.Set(&cluster, metav1.Condition{
+				Type:               managementv3.ClusterConditionAgentDeployed,
+				Status:             metav1.ConditionTrue,
+				Reason:             "AgentDeployed",
+				LastTransitionTime: metav1.Now(),
+			})
+			g.Expect(cl.Status().Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+
+		// Unimport: hold and delete the record, as the Rancher unimport flow does.
+		Eventually(func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)).To(Succeed())
+			cluster.Finalizers = append(cluster.Finalizers, "test.turtles.cattle.io/hold")
+			g.Expect(cl.Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+		Expect(cl.Delete(ctx, &cluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			// The reconcile may transiently fail while the cache still serves
+			// the record without its deletion timestamp; only the end state
+			// matters here.
+			_, _ = r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster)).To(Succeed())
+			g.Expect(turtlesannotations.HasClusterImportAnnotation(capiCluster)).To(BeTrue(),
+				"unimporting a cluster whose import completed must keep preventing re-imports")
+		}).WithTimeout(30 * time.Second).WithPolling(250 * time.Millisecond).Should(Succeed())
+
+		// Release the hold so cleanup can proceed.
+		Eventually(func(g Gomega) {
+			if err := cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster); err != nil {
+				return
+			}
+			kept := []string{}
+			for _, f := range cluster.Finalizers {
+				if f != "test.turtles.cattle.io/hold" {
+					kept = append(kept, f)
+				}
+			}
+			cluster.Finalizers = kept
+			g.Expect(cl.Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+	})
+
 	It("should reconcile a CAPI cluster when rancher cluster doesn't exist and annotation is set on the namespace", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)
