@@ -77,8 +77,8 @@ jobs:
         run: |
           ARCH=amd64
           PLATFORM=$(uname -s)_$ARCH
-          EKSCTL_VERSION=0.225.0
-          EXPECTED_SHA256_AMD64=041ad321cafd82596b33562f1e95a8c1035a9e0b2e95e9f2bcd2ada7219def83 # immutable hash for v0.225.0 AMD64
+          EKSCTL_VERSION=0.230.0
+          EXPECTED_SHA256_AMD64=a2060956f117c3065abafda5c1f681679b9c3716675d70ce4ffff46033b02c35 # immutable hash for v0.230.0 AMD64
 
           curl -sLO "https://github.com/eksctl-io/eksctl/releases/download/v$EKSCTL_VERSION/eksctl_$PLATFORM.tar.gz"
           echo "$EXPECTED_SHA256_AMD64  eksctl_$PLATFORM.tar.gz" | sha256sum --check
@@ -88,8 +88,8 @@ jobs:
           sudo mv /tmp/eksctl /usr/local/bin
       - name: Install aws-iam-authenticator
         run: |
-          AWS_IAM_AUTHENTICATOR_VERSION=0.7.12
-          EXPECTED_SHA256_AMD64=73cca6175225ac72f4e0b8b23ca214043a98097ce6047d159b1bb3abde1bfce5 # immutable hash for v0.7.12 AMD64
+          AWS_IAM_AUTHENTICATOR_VERSION=0.7.20
+          EXPECTED_SHA256_AMD64=a60921d38d2b51bc998f37eb1eba81c92aed21d9315a35a01b283ac398c43f87 # immutable hash for v0.7.20 AMD64
 
           curl -L -o aws-iam-authenticator "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v$AWS_IAM_AUTHENTICATOR_VERSION/aws-iam-authenticator_${AWS_IAM_AUTHENTICATOR_VERSION}_linux_amd64"
           echo "$EXPECTED_SHA256_AMD64  aws-iam-authenticator" | sha256sum --check
