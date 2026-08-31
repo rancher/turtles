@@ -61,7 +61,7 @@ spec:
       required: false
       schema:
         openAPIV3Schema:
-          description: "Release channel to use for fetching Kubernetes version"
+          description: "Release channel to use for fetching Kubernetes version (default: regular)"
           type: string
   patches:
     - name: project
