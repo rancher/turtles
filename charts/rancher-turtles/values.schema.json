@@ -69,7 +69,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "configMap"],
+        "required": ["name"],
         "properties": {
           "name": { "type": "string" },
           "configMap": {
@@ -79,8 +79,24 @@
                 "type": "string"
               }
             }
+          },
+          "secret": {
+            "type": "object",
+            "properties": {
+              "secretName": {
+                "type": "string"
+              }
+            }
           }
-        }
+        },
+        "oneOf": [
+          {
+            "required": ["configMap"]
+          },
+                      {
+            "required": ["secret"]
+          }
+        ]
       }
     },
     "volumeMounts": {
