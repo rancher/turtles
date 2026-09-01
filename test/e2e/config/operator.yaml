@@ -86,7 +86,7 @@ variables:
   # To verify availability, you can run: aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.35/amazon-linux-2023/x86_64/standard/recommended/image_id
   # Recent versions will return a 'ParameterNotFound' error, preventing EKS from deploying.
   # NOTE: EKS only supports versions >v1.32 when using `NodeadmConfig` and `AmazonLinux2023`
-  AWS_EKS_KUBERNETES_VERSION: "v1.35.0"
+  AWS_EKS_KUBERNETES_VERSION: "v1.35.6"
   AWS_REGION: "eu-west-2"
   KUBERNETES_MANAGEMENT_AWS_REGION: "eu-west-2"
   AWS_CONTROL_PLANE_MACHINE_TYPE: "t3.large"

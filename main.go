@@ -42,6 +42,8 @@ import (
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
@@ -79,7 +81,6 @@ func init() {
 	utilruntime.Must(managementv3.AddToScheme(scheme))
 	utilruntime.Must(operatorv1.AddToScheme(scheme))
 	utilruntime.Must(turtlesv1.AddToScheme(scheme))
-	turtlesv1.AddKnownTypes(scheme)
 }
 
 // initFlags initializes the flags.
@@ -213,12 +214,25 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+		SecretClient:     uncachedClient,
+		WatchFilterValue: watchFilterValue,
+		Client: clustercache.ClientOptions{
+			UserAgent: remote.DefaultClusterAPIUserAgent("turtles"),
+		},
+	}, controller.Options{})
+	if err != nil {
+		setupLog.Error(err, "failed to create ClusterCache")
+		os.Exit(1)
+	}
+
 	if err := (&controllers.CAPIImportReconciler{
 		Client:             mgr.GetClient(),
 		Scheme:             mgr.GetScheme(),
 		UncachedClient:     uncachedClient,
 		WatchFilterValue:   watchFilterValue,
 		InsecureSkipVerify: insecureSkipVerify,
+		ClusterCache:       clusterCache,
 	}).SetupWithManager(ctx, mgr, controller.Options{
 		MaxConcurrentReconciles: concurrencyNumber,
 	}); err != nil {

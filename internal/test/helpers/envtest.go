@@ -147,7 +147,7 @@ func NewTestEnvironmentConfiguration(crdDirectoryPaths ...string) *TestEnvironme
 
 	resolvedCrdDirectoryPaths = append(
 		resolvedCrdDirectoryPaths,
-		getFilePathToAPI(root, "sigs.k8s.io", "cluster-api", "config/crd/bases"),
+		getFilePathToAPI(root, "sigs.k8s.io", "cluster-api", "core/config/crd/bases"),
 		getFilePathToAPI(root, "sigs.k8s.io", "cluster-api-operator", "config/crd/bases"),
 	)
 

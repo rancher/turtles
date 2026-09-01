@@ -19,6 +19,7 @@ package controllers
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -40,8 +41,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
@@ -67,17 +68,17 @@ type CAPIImportReconciler struct {
 	Scheme             *runtime.Scheme
 	InsecureSkipVerify bool
 
-	controller         controller.Controller
-	externalTracker    external.ObjectTracker
-	remoteClientGetter remote.ClusterClientGetter
+	controller      controller.Controller
+	externalTracker external.ObjectTracker
+	ClusterCache    clustercache.ClusterCache
 }
 
 // SetupWithManager sets up reconciler with manager.
 func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := log.FromContext(ctx)
 
-	if r.remoteClientGetter == nil {
-		r.remoteClientGetter = remote.NewClusterClient
+	if r.ClusterCache == nil {
+		return errors.New("clusterCache must be initialized")
 	}
 
 	capiPredicates := predicates.All(r.Scheme, log,
@@ -358,7 +359,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 		return ctrl.Result{}, nil
 	} else if conditions.IsTrue(rancherCluster, managementv3.ClusterConditionReady) {
 		// Delete old agent namespace on the downstream cluster
-		remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, client.ObjectKeyFromObject(capiCluster))
+		remoteClient, err := r.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(capiCluster))
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
 		}
@@ -391,7 +392,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 	log.Info("Creating import manifest")
 
-	remoteClient, err := r.remoteClientGetter(ctx, capiCluster.Name, r.Client, client.ObjectKeyFromObject(capiCluster))
+	remoteClient, err := r.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(capiCluster))
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting remote cluster client: %w", err)
 	}

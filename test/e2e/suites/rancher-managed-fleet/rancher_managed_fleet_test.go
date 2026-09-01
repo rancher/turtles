@@ -513,6 +513,7 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class"
 			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
 			DeleteClusterWaitName:          "wait-eks-delete",
 			TopologyNamespace:              topologyNamespace,
+			SkipClusterAvailableWait:       true, // EKS kubelet reports version with -eks-<build> suffix, so TopologyReconciled/MachinesUpToDate never report an empty message
 			VerifyETCDSize:                 true,
 			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,

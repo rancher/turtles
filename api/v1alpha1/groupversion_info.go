@@ -21,61 +21,43 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 )
 
 var (
-	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "turtles-capi.cattle.io", Version: "v1alpha1"}
-
+	// SchemeGroupVersion is group version used to register these objects.
+	SchemeGroupVersion = schema.GroupVersion{Group: "turtles-capi.cattle.io", Version: "v1alpha1"}
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
-
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
+)
 
-	// Providers is a list of registered CAPI Operator resources satisfying Provider interface.
-	Providers = []operatorv1.GenericProvider{
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&CAPIProvider{},
+		&CAPIProviderList{},
+		&ClusterctlConfig{},
+		&ClusterctlConfigList{},
 		&operatorv1.CoreProvider{},
 		&operatorv1.BootstrapProvider{},
 		&operatorv1.ControlPlaneProvider{},
 		&operatorv1.InfrastructureProvider{},
 		&operatorv1.AddonProvider{},
 		&operatorv1.IPAMProvider{},
-	}
-
-	// ProviderLists is a list of registered CAPI Operator resources satisfying ProviderList interface.
-	ProviderLists = []operatorv1.GenericProviderList{
 		&operatorv1.CoreProviderList{},
 		&operatorv1.BootstrapProviderList{},
 		&operatorv1.ControlPlaneProviderList{},
 		&operatorv1.InfrastructureProviderList{},
 		&operatorv1.AddonProviderList{},
 		&operatorv1.IPAMProviderList{},
-	}
-)
+	)
 
-// AddKnownTypes adds the list of known types to api.Scheme.
-func AddKnownTypes(scheme *runtime.Scheme) {
-	scheme.AddKnownTypes(GroupVersion, &CAPIProvider{}, &CAPIProviderList{})
-	scheme.AddKnownTypes(GroupVersion, &ClusterctlConfig{}, &ClusterctlConfigList{})
-
-	for _, provider := range Providers {
-		if provider, ok := provider.(runtime.Object); ok {
-			scheme.AddKnownTypes(operatorv1.GroupVersion, provider)
-		}
-	}
-
-	for _, providerList := range ProviderLists {
-		if providerList, ok := providerList.(runtime.Object); ok {
-			scheme.AddKnownTypes(operatorv1.GroupVersion, providerList)
-		}
-	}
-
-	metav1.AddToGroupVersion(scheme, GroupVersion)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	metav1.AddToGroupVersion(scheme, operatorv1.GroupVersion)
+
+	return nil
 }
