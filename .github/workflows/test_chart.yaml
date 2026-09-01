@@ -106,6 +106,31 @@ jobs:
       - name: Run chart-testing (un-install)
         run: helm uninstall rancher-turtles -n rancher-turtles-system --cascade foreground --wait --debug --timeout=10m
 
+      - name: Verify deleted resources
+        run: |
+          set -euo pipefail
+
+          fail=0
+
+          assert_absent() {
+            local found
+            found=$(kubectl get "$@" --ignore-not-found -o name)
+            if [[ -n "${found}" ]]; then
+              echo "::error::still present after uninstall: $*"
+              echo "${found}"
+              fail=1
+            else
+              echo "ok: absent: $*"
+            fi
+          }
+
+          assert_absent mutatingwebhookconfigurations capi-mutating-webhook-configuration
+          assert_absent validatingwebhookconfigurations capi-validating-webhook-configuration
+          assert_absent deployments.apps capi-controller-manager -n cattle-capi-system
+          assert_absent configmaps -n cattle-capi-system -l managed-by.turtles.cattle.io=true
+
+          exit "${fail}"
+
       - name: Run chart re-install
         run: helm install rancher-turtles out/charts/rancher-turtles/ -n rancher-turtles-system --set namespace=rancher-turtles-system --create-namespace --wait --debug
 
@@ -193,6 +218,34 @@ jobs:
             echo "capi-controller-manager does not use rancher/cluster-api-controller based image"
             exit 1
           fi
+
+      - name: Uninstall rancher-turtles chart
+        run: helm uninstall rancher-turtles -n rancher-turtles-system --cascade foreground --wait --debug --timeout=10m
+
+      - name: Verify deleted resources
+        run: |
+          set -euo pipefail
+
+          fail=0
+
+          assert_absent() {
+            local found
+            found=$(kubectl get "$@" --ignore-not-found -o name)
+            if [[ -n "${found}" ]]; then
+              echo "::error::still present after uninstall: $*"
+              echo "${found}"
+              fail=1
+            else
+              echo "ok: absent: $*"
+            fi
+          }
+
+          assert_absent mutatingwebhookconfigurations capi-mutating-webhook-configuration
+          assert_absent validatingwebhookconfigurations capi-validating-webhook-configuration
+          assert_absent deployments.apps capi-controller-manager -n cattle-capi-system
+          assert_absent configmaps -n cattle-capi-system -l managed-by.turtles.cattle.io=true
+
+          exit "${fail}"
 
       - name: Run crust-gather
         if: always()

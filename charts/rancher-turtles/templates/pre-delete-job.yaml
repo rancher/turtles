@@ -64,16 +64,17 @@ spec:
       serviceAccountName: pre-delete-job
       containers:
       - name: rancher-capiprovider-cleanup
-        image: '{{ template "system_default_registry" . }}{{ .Values.shellImage.image.repository }}:{{ .Values.shellImage.image.tag }}'
-        command: ["kubectl"]
+        {{- if (contains "sha256:" .Values.image.tag) }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.image.repository }}@{{ .Values.image.tag }}'
+        {{- else }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+        {{- end}}
+        imagePullPolicy: '{{ .Values.image.imagePullPolicy }}'
+        command: ["/manager"]
         args:
-        - delete
-        - capiprovider
-        - cluster-api
-        - -n
-        - {{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
-        - --ignore-not-found=true
-        - --cascade=foreground
+        - cleanup
+        - --capiprovider-name=cluster-api
+        - --capiprovider-namespace={{ index .Values "cluster-api-operator" "cluster-api" "core" "namespace" }}
         securityContext:
           seccompProfile:
             type: RuntimeDefault
@@ -82,7 +83,7 @@ spec:
             drop:
             - ALL
           runAsNonRoot: true
-          runAsUser: 1000
+          runAsUser: 65532
       restartPolicy: Never
 ---
 apiVersion: batch/v1
@@ -106,14 +107,16 @@ spec:
       serviceAccountName: pre-delete-job
       containers:
       - name: rancher-clusterctlconfig-cleanup
-        image: '{{ template "system_default_registry" . }}{{ .Values.shellImage.image.repository }}:{{ .Values.shellImage.image.tag }}'
-        command: ["kubectl"]
+        {{- if (contains "sha256:" .Values.image.tag) }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.image.repository }}@{{ .Values.image.tag }}'
+        {{- else }}
+        image: '{{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+        {{- end}}
+        imagePullPolicy: '{{ .Values.image.imagePullPolicy }}'
+        command: ["/manager"]
         args:
-        - delete
-        - clusterctlconfigs.turtles-capi.cattle.io
-        - --all
-        - --all-namespaces
-        - --ignore-not-found=true
+        - cleanup
+        - --all-clusterctlconfigs
         securityContext:
           seccompProfile:
             type: RuntimeDefault
@@ -122,5 +125,5 @@ spec:
             drop:
             - ALL
           runAsNonRoot: true
-          runAsUser: 1000
+          runAsUser: 65532
       restartPolicy: Never
