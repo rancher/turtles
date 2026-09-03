@@ -149,3 +149,50 @@ func processIfClusterOrNamespaceWithImportLabel(ctx context.Context, logger logr
 
 	return shouldImport
 }
+
+// ClustersWithTopologyVariables returns a predicate that returns true only if the provided resource is a cluster
+// created from a ClusterClass that defines variables in its topology.
+func ClustersWithTopologyVariables(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "update"), e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "create"), e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "delete"), e.Object)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "generic"), e.Object)
+		},
+	}
+}
+
+// processIfClusterWithTopologyVariables returns true if the provided object is a cluster created from a
+// ClusterClass that defines variables in its topology.
+func processIfClusterWithTopologyVariables(logger logr.Logger, obj client.Object) bool {
+	cluster, ok := obj.(*clusterv1.Cluster)
+	if !ok {
+		logger.V(4).Info("Expected a Cluster but got a different object, will not attempt to map resource", "object", obj)
+		return false
+	}
+
+	if !cluster.Spec.Topology.IsDefined() {
+		logger.V(4).Info("Cluster is not created from a ClusterClass, will not attempt to map resource")
+		return false
+	}
+
+	if len(cluster.Spec.Topology.Variables) == 0 {
+		logger.V(4).Info("Cluster topology does not define any variables, will not attempt to map resource")
+		return false
+	}
+
+	logger.V(6).Info("Cluster topology defines variables, will attempt to map resource")
+
+	return true
+}
