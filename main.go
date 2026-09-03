@@ -252,15 +252,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.CAPICleanupReconciler{
-		Client: mgr.GetClient(),
-	}).SetupWithManager(ctx, mgr, controller.Options{
-		MaxConcurrentReconciles: concurrencyNumber,
-	}); err != nil {
-		setupLog.Error(err, "unable to create rancher management v3 cleanup controller")
-		os.Exit(1)
-	}
-
 	setupLog.Info("enabling Clusterctl Config synchronization controller")
 
 	if err := (&controllers.ClusterctlConfigReconciler{
