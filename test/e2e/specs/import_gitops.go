@@ -121,6 +121,10 @@ type CreateUsingGitOpsSpecInput struct {
 	// AdditionalDownstreamTemplates contains a list of manifests that will be applied to the downstream Cluster
 	// as soon as the ControlPlane is initialized.
 	AdditionalDownstreamTemplates [][]byte
+
+	// ValidateFleetClusterTemplateValues is used to indicate whether the test should also check that
+	// the templateValues field of the Fleet cluster has been populated correctly.
+	ValidateFleetClusterTemplateValues bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -320,6 +324,16 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 				return slices.Contains(capiCluster.GetFinalizers(), "fleet.addons.cluster.x-k8s.io")
 			}, capiClusterCreateWait...).Should(BeFalse(), "Failed to detect that 'fleet.addons.cluster.x-k8s.io' finalizer was removed from CAPI cluster")
+		}
+
+		if input.ValidateFleetClusterTemplateValues {
+			By("Validating the Fleet cluster templateValues field was populated correctly")
+			turtlesframework.ValidateFleetClusterTemplateValues(ctx,
+				turtlesframework.ValidateFleetClusterTemplateValuesInput{
+					ClusterProxy: input.BootstrapClusterProxy,
+					Name:         rancherCluster.Name,
+					Namespace:    rancherCluster.Spec.FleetWorkspaceName,
+				})
 		}
 
 		if !input.SkipClusterAvailableWait {

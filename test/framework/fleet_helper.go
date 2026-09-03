@@ -19,6 +19,7 @@ package framework
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -32,10 +33,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
 )
 
 var gvkGitRepo = schema.GroupVersionKind{Group: "fleet.cattle.io", Version: "v1alpha1", Kind: "GitRepo"}
@@ -313,3 +317,55 @@ const fleetTemplate = `
 namespace: {{ .Namespace }}
 defaultNamespace: {{ .Namespace }}
 `
+
+type ValidateFleetClusterTemplateValuesInput struct {
+	// ClusterProxy is the management cluster proxy.
+	ClusterProxy framework.ClusterProxy
+	// Name is the name of the Fleet cluster.
+	Name string
+	// Namespace is the namespace of the Fleet cluster.
+	Namespace string
+}
+
+// ValidateFleetClusterTemplateValues checks that the Fleet cluster `spec.templateValues` was populated correctly.
+func ValidateFleetClusterTemplateValues(ctx context.Context, input ValidateFleetClusterTemplateValuesInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for ValidateFleetClusterTemplateValues")
+	Expect(input.ClusterProxy).NotTo(BeNil(), "ClusterProxy is required for ValidateFleetClusterTemplateValues")
+	Expect(input.Name).NotTo(BeEmpty(), "Name is required for ValidateFleetClusterTemplateValues")
+	Expect(input.Namespace).NotTo(BeEmpty(), "Namespace is required for ValidateFleetClusterTemplateValues")
+
+	Byf("Waiting for Fleet cluster %s/%s spec.templateValues to be populated", input.Namespace, input.Name)
+
+	fleetCluster := &fleetv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+		Name:      input.Name,
+		Namespace: input.Namespace,
+	}}
+
+	Eventually(func() error {
+		Expect(input.ClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(fleetCluster), fleetCluster)).To(Succeed(),
+			"Failed to get Fleet cluster")
+
+		Expect(fleetCluster.Spec.TemplateValues).To(HaveKey("Cluster"),
+			"Fleet cluster spec.templateValues does not contain the 'Cluster' key")
+
+		By("Validating the templated CAPI Cluster")
+
+		templatedCluster := &clusterv1.Cluster{}
+		Expect(json.Unmarshal(fleetCluster.Spec.TemplateValues["Cluster"].Raw, templatedCluster)).To(Succeed(),
+			"Failed to decode the CAPI Cluster from Fleet cluster spec.templateValues")
+
+		Expect(templatedCluster.Status).To(Equal(clusterv1.ClusterStatus{}), "Templated CAPI Cluster status was not stripped")
+		Expect(templatedCluster.GetManagedFields()).To(BeEmpty(), "Templated CAPI Cluster managed fields were not stripped")
+		Expect(templatedCluster.GetResourceVersion()).To(BeEmpty(), "Templated CAPI Cluster resource version was not stripped")
+
+		By("Validating the templated CAPI Cluster matches the CAPI Cluster in the management cluster")
+
+		capiCluster := &clusterv1.Cluster{}
+		Expect(input.ClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(templatedCluster), capiCluster)).To(Succeed(),
+			"Failed to get the CAPI Cluster referenced by Fleet cluster spec.templateValues")
+
+		Expect(templatedCluster.Spec).To(Equal(capiCluster.Spec), "Templated CAPI Cluster spec is out of date")
+
+		return nil
+	}, "5m", "1m").Should(Succeed())
+}
