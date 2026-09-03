@@ -274,9 +274,9 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	setupLog.Info("enabling UI installation controller")
-
 	if feature.Gates.Enabled(feature.UIPlugin) {
+		setupLog.Info("enabling UI installation controller")
+
 		if err := (&controllers.UIPluginReconciler{
 			Client:         mgr.GetClient(),
 			Scheme:         scheme,

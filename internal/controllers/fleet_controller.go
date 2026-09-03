@@ -18,11 +18,14 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/external"
 
 	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
@@ -130,6 +134,7 @@ func (r *FleetReconciler) CAPIClusterToFleetCluster(ctx context.Context, obj cli
 // +kubebuilder:rbac:groups=management.cattle.io,resources=clusters,verbs=get;list
 // +kubebuilder:rbac:groups=fleet.cattle.io,resources=clusters,verbs=get;list;patch;watch
 // +kubebuilder:rbac:groups=fleet.cattle.io,resources=bundlenamespacemappings,verbs=get;create;patch;delete
+// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=*,verbs=get;list;watch
 
 // Reconcile reconciles the Fleet Cluster.
 func (r *FleetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -245,7 +250,10 @@ func (r *FleetReconciler) ReconcileNormal(ctx context.Context, fleetCluster *fle
 
 	fleetClusterPatchBase := client.MergeFromWithOptions(fleetCluster.DeepCopy(), client.MergeFromWithOptimisticLock{})
 
-	// Propagate CAPI Cluster in Fleet Cluster templateValues
+	// Reconcile template values
+	if err := r.ReconcileTemplateValues(ctx, &capiCluster, fleetCluster); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling Template Values: %w", err)
+	}
 
 	// Reconcile CAPI ClusterClass
 	if capiCluster.Spec.Topology.IsDefined() && len(capiCluster.Spec.Topology.ClassRef.Name) > 0 {
@@ -373,4 +381,70 @@ func (r *FleetReconciler) ReconcileBundleNamespaceMapping(ctx context.Context, s
 	}
 
 	return nil
+}
+
+// ReconcileTemplateValues propagates the CAPI Cluster, ControlPlane and InfrastructureCluster in Fleet Cluster .spec.templateValues.
+func (r *FleetReconciler) ReconcileTemplateValues(ctx context.Context, capiCluster *clusterv1.Cluster, fleetCluster *fleetv1.Cluster) error {
+	cluster := capiCluster.DeepCopy()
+	// Strip .status, managed fields and resource version
+	cluster.Status = clusterv1.ClusterStatus{}
+	cluster.SetManagedFields(nil)
+	cluster.SetResourceVersion("")
+
+	clusterJSON, err := json.Marshal(&cluster)
+	if err != nil {
+		return fmt.Errorf("json encoding CAPI Cluster: %w", err)
+	}
+
+	templateValues := map[string]apiextensionsv1.JSON{
+		"Cluster": {Raw: clusterJSON},
+	}
+
+	controlPlaneJSON, err := r.resolveTemplateValue(ctx, capiCluster, capiCluster.Spec.ControlPlaneRef)
+	if err != nil {
+		return fmt.Errorf("resolving ControlPlane: %w", err)
+	}
+
+	if controlPlaneJSON != nil {
+		templateValues["ControlPlane"] = *controlPlaneJSON
+	}
+
+	infrastructureClusterJSON, err := r.resolveTemplateValue(ctx, capiCluster, capiCluster.Spec.InfrastructureRef)
+	if err != nil {
+		return fmt.Errorf("resolving InfrastructureCluster: %w", err)
+	}
+
+	if infrastructureClusterJSON != nil {
+		templateValues["InfrastructureCluster"] = *infrastructureClusterJSON
+	}
+
+	fleetCluster.Spec.TemplateValues = templateValues
+
+	return nil
+}
+
+// resolveTemplateValue fetches the object referenced by a CAPI contract-versioned reference.
+func (r *FleetReconciler) resolveTemplateValue(
+	ctx context.Context, capiCluster *clusterv1.Cluster, ref clusterv1.ContractVersionedObjectReference,
+) (*apiextensionsv1.JSON, error) {
+	if !ref.IsDefined() {
+		//nolint:nilnil
+		return nil, nil
+	}
+
+	obj, err := external.GetObjectFromContractVersionedRef(ctx, r.Client, ref, capiCluster.Namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	unstructured.RemoveNestedField(obj.Object, "status")
+	obj.SetManagedFields(nil)
+	obj.SetResourceVersion("")
+
+	objJSON, err := json.Marshal(obj)
+	if err != nil {
+		return nil, fmt.Errorf("json encoding %s: %w", ref.Kind, err)
+	}
+
+	return &apiextensionsv1.JSON{Raw: objJSON}, nil
 }
