@@ -57,6 +57,12 @@ spec:
         openAPIV3Schema:
           description: "The GCP network name"
           type: string
+    - name: releaseChannel
+      required: false
+      schema:
+        openAPIV3Schema:
+          description: "Release channel to use for fetching Kubernetes version (default: regular)"
+          type: string
   patches:
     - name: project
       definitions:
@@ -118,6 +124,18 @@ spec:
               path: /spec/template/spec/network/name
               valueFrom:
                 variable: networkName
+    - name: releaseChannelControlPlane
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPManagedControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/releaseChannel
+              valueFrom:
+                variable: releaseChannel
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPManagedClusterTemplate
