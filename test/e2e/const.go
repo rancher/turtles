@@ -87,6 +87,9 @@ var (
 	//go:embed data/cluster-templates/gcp-kubeadm-topology.yaml
 	CAPIGCPKubeadmTopology []byte
 
+	//go:embed data/cluster-templates/gcp-rke2-topology.yaml
+	CAPIGCPRKE2Topology []byte
+
 	//go:embed data/cluster-templates/azure-aks-topology.yaml
 	CAPIAzureAKSTopology []byte
 
