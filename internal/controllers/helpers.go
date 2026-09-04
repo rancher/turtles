@@ -43,17 +43,15 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
 
+	"github.com/go-logr/logr"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/util"
 )
 
 const (
-	importLabelName           = "cluster-api.cattle.io/rancher-auto-import"
-	ownedLabelName            = "cluster-api.cattle.io/owned"
-	capiClusterOwner          = "cluster-api.cattle.io/capi-cluster-owner"
-	capiClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
-	fleetNamespaceMigrated    = "cluster-api.cattle.io/fleet-namespace-migrated"
-	fleetDisabledLabel        = "cluster-api.cattle.io/disable-fleet-auto-import"
+	fleetNamespaceMigrated = "cluster-api.cattle.io/fleet-namespace-migrated"
+	fleetDisabledLabel     = "cluster-api.cattle.io/disable-fleet-auto-import"
 
 	rancherCredentialsNamespace = "cattle-global-data"
 
@@ -76,6 +74,14 @@ const (
 	agentTLSModeSystemStore = "system-store"
 	// agentTLSModeStrict indicates that strict mode should be used for CA certificates.
 	agentTLSModeStrict = "strict"
+)
+
+// Common Errors.
+var (
+	// ErrEnqueueing is returned whenever there is an error enqueueing additional resources.
+	ErrEnqueueing = errors.New("enqueueing error")
+	// ErrMultipleRancherClusters is returned when multiple Rancher Management Clusters are associated to a single CAPI Cluster.
+	ErrMultipleRancherClusters = errors.New("multiple management.cattle.io Clusters found")
 )
 
 func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace string, cl client.Client,
@@ -164,7 +170,7 @@ func namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Fun
 			return nil
 		}
 
-		if _, autoImport := util.ShouldImport(ns, importLabelName); !autoImport {
+		if _, autoImport := util.ShouldImport(ns, turtlesv1.LabelRancherAutoImport); !autoImport {
 			log.V(2).Info("Namespace doesn't have import annotation label with a true value, skipping")
 			return nil
 		}
@@ -465,4 +471,23 @@ func verifySecretOwnership(obj client.Object, sourceSecret *corev1.Secret) error
 func isObjectOwnedBySecret(obj client.Object, sourceSecret *corev1.Secret) bool {
 	annots := obj.GetAnnotations()
 	return annots != nil && annots[cloudCredentialSecretAnnotation] == string(sourceSecret.UID)
+}
+
+// resolveMultipleRancherManagementClusters consistently resolves conflicts with multiple Rancher Management Clusters associated to a single CAPI Cluster.
+func resolveMultipleRancherManagementClusters(logger logr.Logger, clusterList managementv3.ClusterList) *managementv3.Cluster {
+	if len(clusterList.Items) != 0 {
+		// If more than one Rancher Management Cluster has been found, alert the user with an error and consistently select the first.
+		if len(clusterList.Items) > 1 {
+			clusterNames := []string{}
+			for _, cluster := range clusterList.Items {
+				clusterNames = append(clusterNames, cluster.Name)
+			}
+			logger.Error(ErrMultipleRancherClusters, fmt.Sprintf("Multiple Rancher Clusters found: %s. Defaulting to: %s", strings.Join(clusterNames, ","), clusterList.Items[0].Name))
+		}
+
+		// TODO: actually sort and pick the oldest by creation date instead of the first one in this list.
+
+		return &clusterList.Items[0]
+	}
+	return nil
 }
