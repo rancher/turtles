@@ -21,16 +21,29 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/predicates"
 
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/util"
 	"github.com/rancher/turtles/util/annotations"
 )
+
+// TurtlesManagedClusterPredicates returns the predicates to reconcile a CAPI Cluster managed by Turtles and ready for import.
+func TurtlesManagedClusterPredicates(ctx context.Context, logger logr.Logger, cl client.Client, scheme *runtime.Scheme, watchFilterValue string) predicate.Funcs {
+	return predicates.All(scheme, logger,
+		predicates.ResourceHasFilterLabel(scheme, logger, watchFilterValue),
+		ClusterWithoutImportedAnnotation(logger),
+		ClusterWithReadyControlPlane(logger),
+		ClusterOrNamespaceWithImportLabel(ctx, logger, cl, turtlesv1.LabelRancherAutoImport),
+	)
+}
 
 // ClusterWithoutImportedAnnotation returns a predicate that returns true only if the provided resource does not contain
 // "clusterImportedAnnotation" annotation. When annotation is present on the resource, controller will skip reconciliation.

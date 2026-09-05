@@ -44,9 +44,9 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/predicates"
 
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/util"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
@@ -81,12 +81,7 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return errors.New("clusterCache must be initialized")
 	}
 
-	capiPredicates := predicates.All(r.Scheme, log,
-		predicates.ResourceHasFilterLabel(r.Scheme, log, r.WatchFilterValue),
-		turtlespredicates.ClusterWithoutImportedAnnotation(log),
-		turtlespredicates.ClusterWithReadyControlPlane(log),
-		turtlespredicates.ClusterOrNamespaceWithImportLabel(ctx, log, r.Client, importLabelName),
-	)
+	capiPredicates := turtlespredicates.TurtlesManagedClusterPredicates(ctx, log, r.Client, r.Scheme, r.WatchFilterValue)
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&clusterv1.Cluster{}).
@@ -207,9 +202,9 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 	log := log.FromContext(ctx)
 
 	labels := map[string]string{
-		capiClusterOwner:          capiCluster.Name,
-		capiClusterOwnerNamespace: capiCluster.Namespace,
-		ownedLabelName:            "",
+		turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+		turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
+		turtlesv1.LabelCAPIClusterOwned:          "",
 	}
 
 	var rancherCluster *managementv3.Cluster
@@ -220,7 +215,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 	}
 
 	if err := r.Client.List(ctx, rancherClusterList, selectors...); client.IgnoreNotFound(err) != nil {
-		log.Error(err, fmt.Sprintf("Unable to fetch rancher cluster %s", client.ObjectKeyFromObject(rancherCluster)))
+		log.Error(err, "Unable to list Rancher Management Clusters")
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, err
 	}
 
@@ -297,9 +292,9 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			Namespace:    capiCluster.Namespace,
 			GenerateName: "c-",
 			Labels: map[string]string{
-				capiClusterOwner:          capiCluster.Name,
-				capiClusterOwnerNamespace: capiCluster.Namespace,
-				ownedLabelName:            "",
+				turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+				turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
+				turtlesv1.LabelCAPIClusterOwned:          "",
 			},
 			Annotations: map[string]string{
 				fleetNamespaceMigrated: rancherFleetNamespace,
@@ -420,7 +415,7 @@ func (r *CAPIImportReconciler) shouldAutoImportUncached(ctx context.Context, cap
 		return false, client.IgnoreNotFound(err)
 	}
 
-	if shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName); err != nil {
+	if shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, turtlesv1.LabelRancherAutoImport); err != nil {
 		return false, err
 	} else if !shouldImport {
 		log.Info("not auto importing cluster as namespace or cluster isn't marked auto import")
@@ -436,24 +431,24 @@ func (r *CAPIImportReconciler) rancherV3ClusterToCapiCluster(ctx context.Context
 
 	return func(_ context.Context, cluster client.Object) []ctrl.Request {
 		labels := cluster.GetLabels()
-		if _, ok := labels[ownedLabelName]; !ok { // Ignore clusters that are not owned by turtles
-			log.V(5).Info(missingLabelMsg+ownedLabelName, "cluster", cluster.GetName())
+		if _, ok := labels[turtlesv1.LabelCAPIClusterOwned]; !ok { // Ignore clusters that are not owned by turtles
+			log.V(5).Info(missingLabelMsg+turtlesv1.LabelCAPIClusterOwned, "cluster", cluster.GetName())
 			return nil
 		}
 
-		if _, ok := labels[capiClusterOwner]; !ok {
-			log.V(5).Info(missingLabelMsg+capiClusterOwner, "cluster", cluster.GetName())
+		if _, ok := labels[turtlesv1.LabelCAPIClusterOwnerName]; !ok {
+			log.V(5).Info(missingLabelMsg+turtlesv1.LabelCAPIClusterOwnerName, "cluster", cluster.GetName())
 			return nil
 		}
 
-		if _, ok := labels[capiClusterOwnerNamespace]; !ok {
-			log.V(5).Info(missingLabelMsg+capiClusterOwnerNamespace, "cluster", cluster.GetName())
+		if _, ok := labels[turtlesv1.LabelCAPIClusterOwnerNamespace]; !ok {
+			log.V(5).Info(missingLabelMsg+turtlesv1.LabelCAPIClusterOwnerNamespace, "cluster", cluster.GetName())
 			return nil
 		}
 
 		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Name:      labels[capiClusterOwner],
-			Namespace: labels[capiClusterOwnerNamespace],
+			Name:      labels[turtlesv1.LabelCAPIClusterOwnerName],
+			Namespace: labels[turtlesv1.LabelCAPIClusterOwnerNamespace],
 		}}
 
 		if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
@@ -505,9 +500,9 @@ func (r *CAPIImportReconciler) deleteDependentRancherCluster(ctx context.Context
 
 	selectors := []client.DeleteAllOfOption{
 		client.MatchingLabels{
-			capiClusterOwner:          capiCluster.Name,
-			capiClusterOwnerNamespace: capiCluster.Namespace,
-			ownedLabelName:            "",
+			turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+			turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
+			turtlesv1.LabelCAPIClusterOwned:          "",
 		},
 	}
 

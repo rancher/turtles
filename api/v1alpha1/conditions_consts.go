@@ -17,6 +17,17 @@ limitations under the License.
 package v1alpha1
 
 const (
+	// LabelRancherAutoImport is the label applied to CAPI Clusters enabling Rancher import.
+	LabelRancherAutoImport = "cluster-api.cattle.io/rancher-auto-import"
+	// LabelCAPIClusterOwned is the label applied to Rancher Management Clusters signaling they are managed by Turtles.
+	LabelCAPIClusterOwned = "cluster-api.cattle.io/owned"
+	// LabelCAPIClusterOwnerName is the label applied to Rancher Management Clusters to reference the imported CAPI Cluster name.
+	LabelCAPIClusterOwnerName = "cluster-api.cattle.io/capi-cluster-owner"
+	// LabelCAPIClusterOwnerNamespace is the label applied to Rancher Management Clusters to reference the imported CAPI Cluster namespace.
+	LabelCAPIClusterOwnerNamespace = "cluster-api.cattle.io/capi-cluster-owner-ns"
+)
+
+const (
 	// RancherCredentialsSecretCondition provides information on Rancher credentials secret mapping result.
 	RancherCredentialsSecretCondition = "RancherCredentialsSecretMapped"
 

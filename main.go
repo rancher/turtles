@@ -302,4 +302,17 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 			os.Exit(1)
 		}
 	}
+
+	// TODO: feature flag?
+	setupLog.Info("enabling Fleet controller")
+	if err := (&controllers.FleetReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           scheme,
+		WatchFilterValue: watchFilterValue,
+	}).SetupWithManager(ctx, mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+	}); err != nil {
+		setupLog.Error(err, "unable to create Fleet controller")
+		os.Exit(1)
+	}
 }
