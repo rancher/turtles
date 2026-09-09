@@ -13,7 +13,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.43.0
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
-	golang.org/x/mod v0.40.0
+	golang.org/x/mod v0.41.0
 	k8s.io/api v0.36.3
 	k8s.io/apiextensions-apiserver v0.36.3
 	k8s.io/apimachinery v0.36.3
