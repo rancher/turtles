@@ -73,6 +73,13 @@ cluster-api-operator:
       enableAutomaticUpdate: false
       # imageUrl: Custom image URL.
       imageUrl: ""
+      # replicas: Number of capi-controller-manager pods (CAPIProvider.spec.deployment.replicas).
+      # Increase for HA when nodes may be drained or recycled by automation. Defaults to 1.
+      replicas: 1
+      # Optional scheduling settings passed to CAPIProvider.spec.deployment.
+      # nodeSelector: {}
+      # tolerations: []
+      # affinity: {}
       # fetchConfig: Config fetching settings.
       fetchConfig:
         # url: Config fetch URL.
