@@ -3569,6 +3569,24 @@ rules:
   - get
   - update
 - apiGroups:
+  - fleet.cattle.io
+  resources:
+  - bundlenamespacemappings
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+- apiGroups:
+  - fleet.cattle.io
+  resources:
+  - clusters
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
   - '*'
