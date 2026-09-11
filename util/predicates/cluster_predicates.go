@@ -21,16 +21,37 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/predicates"
 
+	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/util"
 	"github.com/rancher/turtles/util/annotations"
 )
+
+// TurtlesManagedClusterPredicates returns the predicates to reconcile a CAPI Cluster managed by Turtles and ready for import.
+func TurtlesManagedClusterPredicates(
+	ctx context.Context,
+	logger logr.Logger,
+	cl client.Client,
+	scheme *runtime.Scheme,
+	watchFilterValue string,
+) predicate.Funcs {
+	return predicates.All(scheme, logger,
+		predicates.ResourceHasFilterLabel(scheme, logger, watchFilterValue),
+		ClusterWithoutImportedAnnotation(logger),
+		ClusterWithReadyControlPlane(logger),
+		ClusterOrNamespaceWithImportLabel(ctx, logger, cl, turtlesv1.LabelRancherAutoImport),
+	)
+}
 
 // ClusterWithoutImportedAnnotation returns a predicate that returns true only if the provided resource does not contain
 // "clusterImportedAnnotation" annotation. When annotation is present on the resource, controller will skip reconciliation.
@@ -148,4 +169,124 @@ func processIfClusterOrNamespaceWithImportLabel(ctx context.Context, logger logr
 	}
 
 	return shouldImport
+}
+
+// RancherClusterManagedByTurtles returns a predicate that returns true only if the provided Rancher Management Cluster is managed by Turtles.
+func RancherClusterManagedByTurtles(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfRancherManagementClusterIsManagedByTurtles(
+				logger.WithValues("predicate", "RancherClusterManagedByTurtles", "eventType", "update"), e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfRancherManagementClusterIsManagedByTurtles(
+				logger.WithValues("predicate", "RancherClusterManagedByTurtles", "eventType", "create"), e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfRancherManagementClusterIsManagedByTurtles(
+				logger.WithValues("predicate", "RancherClusterManagedByTurtles", "eventType", "delete"), e.Object)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfRancherManagementClusterIsManagedByTurtles(
+				logger.WithValues("predicate", "RancherClusterManagedByTurtles", "eventType", "generic"), e.Object)
+		},
+	}
+}
+
+// processIfRancherManagementClusterIsManagedByTurtles returns true if the provided object is a management.cattle.io Cluster
+// and it's managed by Turtles.
+func processIfRancherManagementClusterIsManagedByTurtles(logger logr.Logger, obj client.Object) bool {
+	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+	log := logger.WithValues("namespace", obj.GetNamespace(), kind, obj.GetName())
+
+	rancherCluster, ok := obj.(*managementv3.Cluster)
+	if !ok {
+		log.V(4).Info("Expected a Rancher Management Cluster but got a different object, will not attempt to map resource", "object", obj)
+		return false
+	}
+
+	return util.IsClusterManagedByTurtles(*rancherCluster)
+}
+
+// FleetClusterOwnedByRancherCluster returns a predicate that returns true only if the provided Fleet Cluster is managed by Rancher.
+func FleetClusterOwnedByRancherCluster(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfFleetClusterOwnedByRancherCluster(
+				logger.WithValues("predicate", "FleetClusterOwnedByRancherCluster", "eventType", "update"), e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfFleetClusterOwnedByRancherCluster(
+				logger.WithValues("predicate", "FleetClusterOwnedByRancherCluster", "eventType", "create"), e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfFleetClusterOwnedByRancherCluster(
+				logger.WithValues("predicate", "FleetClusterOwnedByRancherCluster", "eventType", "delete"), e.Object)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfFleetClusterOwnedByRancherCluster(
+				logger.WithValues("predicate", "FleetClusterOwnedByRancherCluster", "eventType", "generic"), e.Object)
+		},
+	}
+}
+
+// processIfFleetClusterOwnedByRancherCluster returns true if the provided Fleet Cluster is owned by .
+func processIfFleetClusterOwnedByRancherCluster(logger logr.Logger, obj client.Object) bool {
+	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+	log := logger.WithValues("namespace", obj.GetNamespace(), kind, obj.GetName())
+
+	fleetCluster, ok := obj.(*fleetv1.Cluster)
+	if !ok {
+		log.V(4).Info("Expected a Rancher Management Cluster but got a different object, will not attempt to map resource", "object", obj)
+		return false
+	}
+
+	return util.IsFleetClusterManagedByRancher(*fleetCluster)
+}
+
+// ClustersWithTopologyVariables returns a predicate that returns true only if the provided resource is a cluster
+// created from a ClusterClass that defines variables in its topology.
+func ClustersWithTopologyVariables(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "update"), e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "create"), e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "delete"), e.Object)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfClusterWithTopologyVariables(
+				logger.WithValues("predicate", "ClusterWithTopologyVariables", "eventType", "generic"), e.Object)
+		},
+	}
+}
+
+// processIfClusterWithTopologyVariables returns true if the provided object is a cluster created from a
+// ClusterClass that defines variables in its topology.
+func processIfClusterWithTopologyVariables(logger logr.Logger, obj client.Object) bool {
+	cluster, ok := obj.(*clusterv1.Cluster)
+	if !ok {
+		logger.V(4).Info("Expected a Cluster but got a different object, will not attempt to map resource", "object", obj)
+		return false
+	}
+
+	if !cluster.Spec.Topology.IsDefined() {
+		logger.V(4).Info("Cluster is not created from a ClusterClass, will not attempt to map resource")
+		return false
+	}
+
+	if len(cluster.Spec.Topology.Variables) == 0 {
+		logger.V(4).Info("Cluster topology does not define any variables, will not attempt to map resource")
+		return false
+	}
+
+	logger.V(6).Info("Cluster topology defines variables, will attempt to map resource")
+
+	return true
 }

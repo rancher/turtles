@@ -47,6 +47,14 @@
             }
           }
         }
+      },
+      "fleet-integration": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "volumes": {

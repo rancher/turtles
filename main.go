@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 
+	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
@@ -82,6 +83,7 @@ func init() {
 	utilruntime.Must(managementv3.AddToScheme(scheme))
 	utilruntime.Must(operatorv1.AddToScheme(scheme))
 	utilruntime.Must(turtlesv1.AddToScheme(scheme))
+	utilruntime.Must(fleetv1.AddToScheme(scheme))
 }
 
 // initFlags initializes the flags.
@@ -272,9 +274,24 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	setupLog.Info("enabling UI installation controller")
+	if feature.Gates.Enabled(feature.FleetIntegration) {
+		setupLog.Info("enabling Fleet controller")
+
+		if err := (&controllers.FleetReconciler{
+			Client:           mgr.GetClient(),
+			Scheme:           scheme,
+			WatchFilterValue: watchFilterValue,
+		}).SetupWithManager(ctx, mgr, controller.Options{
+			MaxConcurrentReconciles: concurrencyNumber,
+		}); err != nil {
+			setupLog.Error(err, "unable to create Fleet controller")
+			os.Exit(1)
+		}
+	}
 
 	if feature.Gates.Enabled(feature.UIPlugin) {
+		setupLog.Info("enabling UI installation controller")
+
 		if err := (&controllers.UIPluginReconciler{
 			Client:         mgr.GetClient(),
 			Scheme:         scheme,
