@@ -35,18 +35,34 @@ spec:
     {{- else if index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" }}
     selector: {{ index .Values "cluster-api-operator" "cluster-api" "core" "fetchConfig" "selector" | toYaml | nindent 6 }}
     {{- end }}
-{{- if or (index .Values "cluster-api-operator" "cluster-api" "core" "imageUrl") .Values.imagePullSecrets }}
+{{- $core := index .Values "cluster-api-operator" "cluster-api" "core" }}
+{{- if or $core.imageUrl $core.replicas $core.nodeSelector $core.tolerations $core.affinity .Values.imagePullSecrets }}
   deployment:
+{{- if hasKey $core "replicas" }}
+    replicas: {{ $core.replicas }}
+{{- end }}
 {{- if .Values.imagePullSecrets }}
     imagePullSecrets:
 {{- range .Values.imagePullSecrets }}
       - name: {{ . }}
 {{- end }}
 {{- end }}
-{{- if index .Values "cluster-api-operator" "cluster-api" "core" "imageUrl" }}
+{{- if $core.nodeSelector }}
+    nodeSelector:
+{{ toYaml $core.nodeSelector | nindent 6 }}
+{{- end }}
+{{- if $core.tolerations }}
+    tolerations:
+{{ toYaml $core.tolerations | nindent 6 }}
+{{- end }}
+{{- if $core.affinity }}
+    affinity:
+{{ toYaml $core.affinity | nindent 6 }}
+{{- end }}
+{{- if $core.imageUrl }}
     containers:
       - name: manager
-        imageUrl: {{ index .Values "cluster-api-operator" "cluster-api" "core" "imageUrl" }}
+        imageUrl: {{ $core.imageUrl }}
 {{- end }}
 {{- end }}
 ---
