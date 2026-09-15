@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	CAPIVersion = "v1.14.0"
+	CAPIVersion = "v1.14.2"
 )
 
 var _ = Describe("Provider sync", func() {
