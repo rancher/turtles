@@ -28,22 +28,6 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "shellImage": {
-      "type": "object",
-      "properties": {
-        "image": { 
-        "type": "object",
-        "properties": {
-            "repository": {
-              "type": "string"
-            },
-            "tag": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
     "features": {
       "type": "object",
       "properties": {
