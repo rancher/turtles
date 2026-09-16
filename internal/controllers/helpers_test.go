@@ -17,16 +17,21 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"log"
+	"time"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/stdr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	"github.com/rancher/turtles/feature"
 )
 
@@ -123,4 +128,88 @@ var _ = Describe("getTrustedCAcert", func() {
 		Expect(err.Error()).To(ContainSubstring("invalid agent-tls-mode setting value"))
 		Expect(result).To(BeNil())
 	})
+})
+
+var _ = Describe("resolveMultipleRancherManagementClusters", func() {
+	var (
+		clusterList *managementv3.ClusterList
+		logBuffer   bytes.Buffer
+		fakeLogger  logr.Logger
+	)
+
+	BeforeEach(func() {
+		stdLogger := log.New(&logBuffer, "", 0)
+		fakeLogger = stdr.New(stdLogger)
+	})
+
+	It("Should return nil if list is empty", func() {
+		Expect(resolveMultipleRancherManagementClusters(fakeLogger, clusterList)).Should(BeNil())
+		Expect(logBuffer.String()).Should(BeEmpty())
+	})
+
+	It("Should return one Cluster if list contains one element", func() {
+		expectedCluster := managementv3.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"}}
+		clusterList = &managementv3.ClusterList{
+			Items: []managementv3.Cluster{expectedCluster},
+		}
+
+		resolvedCluster := resolveMultipleRancherManagementClusters(fakeLogger, clusterList)
+		Expect(logBuffer.String()).Should(BeEmpty())
+		Expect(resolvedCluster).ShouldNot(BeNil())
+		Expect(resolvedCluster.Name).Should(Equal(expectedCluster.Name))
+	})
+
+	It("Should return oldest Cluster if list contains multiple items", func() {
+		now := time.Now()
+		expectedCluster := managementv3.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "test-cluster",
+				CreationTimestamp: metav1.Time{Time: now},
+			},
+		}
+
+		otherCluster := managementv3.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "other-cluster",
+				CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Second)},
+			},
+		}
+
+		clusterList = &managementv3.ClusterList{
+			Items: []managementv3.Cluster{otherCluster, expectedCluster},
+		}
+
+		resolvedCluster := resolveMultipleRancherManagementClusters(fakeLogger, clusterList)
+		Expect(logBuffer.String()).ShouldNot(BeEmpty())
+		Expect(resolvedCluster).ShouldNot(BeNil())
+		Expect(resolvedCluster.Name).Should(Equal(expectedCluster.Name))
+	})
+
+	It("Should print logs if list contains multiple items", func() {
+		now := time.Now()
+		expectedCluster := managementv3.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "test-cluster",
+				CreationTimestamp: metav1.Time{Time: now},
+			},
+		}
+
+		otherCluster := managementv3.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "other-cluster",
+				CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Second)},
+			},
+		}
+
+		clusterList = &managementv3.ClusterList{
+			Items: []managementv3.Cluster{otherCluster, expectedCluster},
+		}
+
+		resolveMultipleRancherManagementClusters(fakeLogger, clusterList)
+		logs := logBuffer.String()
+		Expect(logs).ShouldNot(BeEmpty())
+		Expect(logs).Should(ContainSubstring("Defaulting to: test-cluster"))
+		Expect(logs).Should(ContainSubstring("other-cluster"), "Logs should contain name of other found clusters.")
+	})
+
 })

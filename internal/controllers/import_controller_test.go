@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/feature"
 	"github.com/rancher/turtles/internal/controllers/testdata"
 	"github.com/rancher/turtles/internal/test"
@@ -68,7 +69,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		ns, err = testEnv.CreateNamespace(ctx, "commonns")
 		Expect(err).ToNot(HaveOccurred())
 		ns.Labels = map[string]string{
-			importLabelName: "true",
+			turtlesv1.LabelRancherAutoImport: "true",
 		}
 		Expect(cl.Update(ctx, ns)).To(Succeed())
 
@@ -103,9 +104,9 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 				Namespace:    capiCluster.Namespace,
 				GenerateName: "c-",
 				Labels: map[string]string{
-					capiClusterOwner:          capiCluster.Name,
-					capiClusterOwnerNamespace: capiCluster.Namespace,
-					ownedLabelName:            "",
+					turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+					turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
+					turtlesv1.LabelCAPIClusterOwned:          "",
 				},
 				Annotations: map[string]string{
 					fleetNamespaceMigrated: rancherFleetNamespace,
@@ -129,8 +130,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		selectors = []client.ListOption{
 			client.MatchingLabels{
-				capiClusterOwner:          capiCluster.Name,
-				capiClusterOwnerNamespace: capiCluster.Namespace,
+				turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+				turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
 			},
 		}
 
@@ -216,10 +217,10 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		testRancherLabel, testRancherLabelVal := "cluster.cattle.io/cluster-name", "test-rancher-cluster"
 
 		capiCluster.Labels = map[string]string{
-			importLabelName:  "true",
-			testLabel:        testLabelVal,        // should be propagated to the rancher cluster
-			testCapiLabel:    testCapiLabelVal,    // should not be propagated to the rancher cluster
-			testRancherLabel: testRancherLabelVal, // should not be propagated to the rancher cluster
+			turtlesv1.LabelRancherAutoImport: "true",
+			testLabel:                        testLabelVal,        // should be propagated to the rancher cluster
+			testCapiLabel:                    testCapiLabelVal,    // should not be propagated to the rancher cluster
+			testRancherLabel:                 testRancherLabelVal, // should not be propagated to the rancher cluster
 		}
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)

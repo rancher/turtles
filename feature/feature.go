@@ -42,6 +42,10 @@ const (
 	// into CAPI-specific static identity objects (`AWSClusterStaticIdentity`).
 	// NOTE: currently this feature is only available for CAPA and `AWSClusterStaticIdentity`.
 	RancherCCTranslation featuregate.Feature = "rancher-credential-translation"
+
+	// FleetIntegration if enabled Turtles will integrate with the Rancher managed Fleet resources,
+	// by propagating CAPI metadata and adding support for CAPI ClusterClasses.
+	FleetIntegration featuregate.Feature = "fleet-integration"
 )
 
 func init() {
@@ -56,4 +60,5 @@ var DefaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
 	UseCAAPF:                  {Default: false, PreRelease: featuregate.Alpha},
 	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Beta},
+	FleetIntegration:          {Default: false, PreRelease: featuregate.Alpha},
 }

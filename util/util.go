@@ -27,6 +27,9 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
+	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
+	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 )
 
@@ -75,4 +78,56 @@ func ShouldAutoImport(ctx context.Context, logger logr.Logger, cl client.Client,
 	_, autoImport = ShouldImport(ns, label)
 
 	return autoImport, nil
+}
+
+// IsClusterManagedByTurtles returns true if the management.cattle.io Cluster is managed by Turtles.
+// Rancher Management Clusters created by Turtles will carry the following labels:
+//
+//	cluster-api.cattle.io/capi-cluster-owner: my-cluster-name
+//	cluster-api.cattle.io/capi-cluster-owner-ns: my-cluster-namespace
+//	cluster-api.cattle.io/owned: ""
+func IsClusterManagedByTurtles(rancherCluster managementv3.Cluster) bool {
+	if rancherCluster.Labels == nil {
+		return false
+	}
+
+	if _, found := rancherCluster.Labels[turtlesv1.LabelCAPIClusterOwned]; !found {
+		return false
+	}
+
+	if _, found := rancherCluster.Labels[turtlesv1.LabelCAPIClusterOwnerName]; !found {
+		return false
+	}
+
+	if _, found := rancherCluster.Labels[turtlesv1.LabelCAPIClusterOwnerNamespace]; !found {
+		return false
+	}
+
+	return true
+}
+
+// RancherClusterManagedLabels returns the labels used to filter a management.cattle.io Cluster for
+// a certain CAPI Cluster.
+func RancherClusterManagedLabels(capiCluster clusterv1.Cluster) map[string]string {
+	return map[string]string{
+		turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+		turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
+		turtlesv1.LabelCAPIClusterOwned:          "",
+	}
+}
+
+// IsFleetClusterManagedByRancher returns true if the fleet.cattle.io Cluster is managed by Rancher.
+// Fleet Clusters created by Turtles will carry the following label:
+//
+//	management.cattle.io/cluster-name: c-bkcp2
+func IsFleetClusterManagedByRancher(fleetCluster fleetv1.Cluster) bool {
+	if fleetCluster.Labels == nil {
+		return false
+	}
+
+	if _, found := fleetCluster.Labels[managementv3.LabelRancherOwnerName]; !found {
+		return false
+	}
+
+	return true
 }
