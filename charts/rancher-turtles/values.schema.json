@@ -104,9 +104,6 @@
     "cluster-api-operator": {
       "type": "object",
       "properties": {
-        "cleanup": {
-          "type": "boolean"
-        },
         "cluster-api": {
           "type": "object",
           "properties": {
