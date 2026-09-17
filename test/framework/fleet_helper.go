@@ -19,6 +19,7 @@ package framework
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -32,10 +33,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
 )
 
 var gvkGitRepo = schema.GroupVersionKind{Group: "fleet.cattle.io", Version: "v1alpha1", Kind: "GitRepo"}
@@ -313,3 +317,90 @@ const fleetTemplate = `
 namespace: {{ .Namespace }}
 defaultNamespace: {{ .Namespace }}
 `
+
+type ValidateFleetClusterTemplateValuesInput struct {
+	// ClusterProxy is the management cluster proxy.
+	ClusterProxy framework.ClusterProxy
+	// Name is the name of the Fleet cluster.
+	Name string
+	// Namespace is the namespace of the Fleet cluster.
+	Namespace string
+}
+
+// ValidateFleetClusterTemplateValues checks that the Fleet cluster `spec.templateValues` was populated correctly.
+func ValidateFleetClusterTemplateValues(ctx context.Context, input ValidateFleetClusterTemplateValuesInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for ValidateFleetClusterTemplateValues")
+	Expect(input.ClusterProxy).NotTo(BeNil(), "ClusterProxy is required for ValidateFleetClusterTemplateValues")
+	Expect(input.Name).NotTo(BeEmpty(), "Name is required for ValidateFleetClusterTemplateValues")
+	Expect(input.Namespace).NotTo(BeEmpty(), "Namespace is required for ValidateFleetClusterTemplateValues")
+
+	Byf("Waiting for Fleet cluster %s/%s spec.templateValues to be populated", input.Namespace, input.Name)
+
+	fleetCluster := &fleetv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+		Name:      input.Name,
+		Namespace: input.Namespace,
+	}}
+
+	Eventually(func(g Gomega) {
+		g.Expect(input.ClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(fleetCluster), fleetCluster)).To(Succeed(),
+			"Failed to get Fleet cluster")
+
+		g.Expect(fleetCluster.Spec.TemplateValues).To(HaveKey("Cluster"),
+			"Fleet cluster spec.templateValues does not contain the 'Cluster' key")
+
+		By("Validating the templated CAPI Cluster")
+
+		templatedCluster := &clusterv1.Cluster{}
+		g.Expect(json.Unmarshal(fleetCluster.Spec.TemplateValues["Cluster"].Raw, templatedCluster)).To(Succeed(),
+			"Failed to decode the CAPI Cluster from Fleet cluster spec.templateValues")
+
+		g.Expect(templatedCluster.Status).To(Equal(clusterv1.ClusterStatus{}), "Templated CAPI Cluster status was not stripped")
+		g.Expect(templatedCluster.GetManagedFields()).To(BeEmpty(), "Templated CAPI Cluster managed fields were not stripped")
+		g.Expect(templatedCluster.GetResourceVersion()).To(BeEmpty(), "Templated CAPI Cluster resource version was not stripped")
+
+		By("Validating the templated CAPI Cluster matches the CAPI Cluster in the management cluster")
+
+		capiCluster := &clusterv1.Cluster{}
+		g.Expect(input.ClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(templatedCluster), capiCluster)).To(Succeed(),
+			"Failed to get the CAPI Cluster referenced by Fleet cluster spec.templateValues")
+
+		g.Expect(templatedCluster.Spec).To(Equal(capiCluster.Spec), "Templated CAPI Cluster spec is out of date")
+
+		// validateTemplatedContractVersionedObject checks that the Fleet cluster spec.templateValues contains a copy
+		// of the object referenced by a CAPI Cluster's ControlPlaneRef or InfrastructureRef, stored under the given key.
+		validateTemplatedContractVersionedObject := func(key string, ref clusterv1.ContractVersionedObjectReference) {
+			if !ref.IsDefined() {
+				return
+			}
+
+			Byf("Validating the templated %s", key)
+
+			g.Expect(fleetCluster.Spec.TemplateValues).To(HaveKey(key), fmt.Sprintf("Fleet cluster spec.templateValues does not contain the '%s' key", key))
+
+			templatedObj := &unstructured.Unstructured{}
+			g.Expect(json.Unmarshal(fleetCluster.Spec.TemplateValues[key].Raw, templatedObj)).To(Succeed(),
+				fmt.Sprintf("Failed to decode the %s from Fleet cluster spec.templateValues", key))
+
+			g.Expect(templatedObj.GetKind()).To(Equal(ref.Kind), fmt.Sprintf("Templated %s kind does not match the reference", key))
+			g.Expect(templatedObj.GetName()).To(Equal(ref.Name), fmt.Sprintf("Templated %s name does not match the reference", key))
+
+			_, foundStatus, err := unstructured.NestedFieldNoCopy(templatedObj.Object, "status")
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(foundStatus).To(BeFalse(), fmt.Sprintf("Templated %s status was not stripped", key))
+			g.Expect(templatedObj.GetManagedFields()).To(BeEmpty(), fmt.Sprintf("Templated %s managed fields were not stripped", key))
+			g.Expect(templatedObj.GetResourceVersion()).To(BeEmpty(), fmt.Sprintf("Templated %s resource version was not stripped", key))
+
+			Byf("Validating the templated %s matches the %s in the management cluster", key, key)
+
+			liveObj := &unstructured.Unstructured{}
+			liveObj.SetGroupVersionKind(templatedObj.GroupVersionKind())
+			g.Expect(input.ClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(templatedObj), liveObj)).To(Succeed(),
+				fmt.Sprintf("Failed to get the %s referenced by Fleet cluster spec.templateValues", key))
+
+			g.Expect(templatedObj.Object["spec"]).To(Equal(liveObj.Object["spec"]), fmt.Sprintf("Templated %s spec is out of date", key))
+		}
+
+		validateTemplatedContractVersionedObject("ControlPlane", capiCluster.Spec.ControlPlaneRef)
+		validateTemplatedContractVersionedObject("InfrastructureCluster", capiCluster.Spec.InfrastructureRef)
+	}, "5m", "1m").Should(Succeed())
+}

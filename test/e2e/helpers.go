@@ -43,6 +43,7 @@ import (
 
 	networkingv1 "k8s.io/api/networking/v1"
 
+	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
@@ -110,6 +111,7 @@ func InitScheme() *runtime.Scheme {
 	Expect(provisioningv1.AddToScheme(scheme)).To(Succeed())
 	Expect(managementv3.AddToScheme(scheme)).To(Succeed())
 	Expect(networkingv1.AddToScheme(scheme)).To(Succeed())
+	Expect(fleetv1.AddToScheme(scheme)).To(Succeed())
 	return scheme
 }
 
