@@ -1,4 +1,4 @@
-# Source: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/v1.16.1/packaging/flavorgen/cloudprovider/csi
+# Source: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/v1.17.0/packaging/flavorgen/cloudprovider/csi
 ---
 apiVersion: v1
 kind: Namespace
@@ -355,7 +355,7 @@ spec:
           imagePullPolicy: "Always"
           ports:
             - containerPort: 2113
-              name: prometheus
+              name: prometheus-sync
               protocol: TCP
           env:
             - name: FULL_SYNC_INTERVAL_MINUTES

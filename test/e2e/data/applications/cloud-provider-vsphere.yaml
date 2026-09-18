@@ -1,4 +1,4 @@
-# Source: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/v1.16.1/packaging/flavorgen/cloudprovider/cpi
+# Source: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/v1.17.0/packaging/flavorgen/cloudprovider/cpi
 ---
 # Source: vsphere-cpi/templates/service-account.yaml
 apiVersion: v1
@@ -86,6 +86,14 @@ rules:
       - watch
       - update
   - apiGroups:
+      - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - ""
     resources:
       - secrets
@@ -160,7 +168,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
       - name: vsphere-cpi
-        image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.36.0
+        image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.37.0
         imagePullPolicy: IfNotPresent
         args:
           - --cloud-provider=vsphere
