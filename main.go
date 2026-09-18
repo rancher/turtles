@@ -47,6 +47,7 @@ import (
 	provisioningv1 "github.com/rancher/turtles/api/rancher/provisioning/v1"
 	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	"github.com/rancher/turtles/feature"
+	"github.com/rancher/turtles/internal/cleanup"
 	"github.com/rancher/turtles/internal/controllers"
 )
 
@@ -123,6 +124,17 @@ func initFlags(fs *pflag.FlagSet) {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "cleanup" {
+		ctrl.SetLogger(textlogger.NewLogger(textlogger.NewConfig()))
+
+		if err := cleanup.Run(ctrl.SetupSignalHandler(), os.Args[2:], scheme); err != nil {
+			setupLog.Error(err, "cleanup failed")
+			os.Exit(1)
+		}
+
+		return
+	}
+
 	initFlags(pflag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
