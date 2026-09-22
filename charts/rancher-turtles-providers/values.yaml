@@ -371,4 +371,4 @@ images:
     tag: v1.13.1
   infrastructureVSphere:
     repository: rancher/cluster-api-vsphere-controller
-    tag: v1.16.1
+    tag: v1.17.0
