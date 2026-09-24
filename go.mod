@@ -10,11 +10,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/text v0.41.0
-	k8s.io/api v0.34.8
-	k8s.io/apiextensions-apiserver v0.34.8
-	k8s.io/apimachinery v0.34.9
-	k8s.io/client-go v0.34.8
-	k8s.io/component-base v0.34.8
+	k8s.io/api v0.34.11
+	k8s.io/apiextensions-apiserver v0.34.11
+	k8s.io/apimachinery v0.34.12
+	k8s.io/client-go v0.34.11
+	k8s.io/component-base v0.34.11
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/cluster-api v1.12.7
 	sigs.k8s.io/cluster-api-operator v0.27.0
@@ -92,11 +92,11 @@ require (
 	golang.org/x/time v0.9.0 // indirect
 	golang.org/x/tools v0.49.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.34.8 // indirect
+	k8s.io/apiserver v0.34.11 // indirect
 	k8s.io/cluster-bootstrap v0.34.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
