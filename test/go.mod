@@ -13,9 +13,9 @@ require (
 	github.com/onsi/gomega v1.38.3
 	github.com/rancher/turtles v0.0.0-00010101000000-000000000000
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.32.7
-	k8s.io/apimachinery v0.32.7
-	k8s.io/client-go v0.32.7
+	k8s.io/api v0.32.13
+	k8s.io/apimachinery v0.32.13
+	k8s.io/client-go v0.32.13
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 	sigs.k8s.io/cluster-api v1.10.6
@@ -166,10 +166,10 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/apiextensions-apiserver v0.32.7 // indirect
-	k8s.io/apiserver v0.32.7 // indirect
+	k8s.io/apiextensions-apiserver v0.32.13 // indirect
+	k8s.io/apiserver v0.32.13 // indirect
 	k8s.io/cluster-bootstrap v0.32.3 // indirect
-	k8s.io/component-base v0.32.7 // indirect
+	k8s.io/component-base v0.32.13 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
