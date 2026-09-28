@@ -420,21 +420,6 @@ func PushRancherChartsToGitea(ctx context.Context, input PushRancherChartsToGite
 	}
 }
 
-// EnableCAAPFInput represents the input for EnableCAAPF.
-type EnableCAAPFInput struct {
-	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
-	BootstrapClusterProxy framework.ClusterProxy
-}
-
-// EnableCAAPF patches the rancher-config configmap to set the feature flag UseCAAPF to true.
-func EnableCAAPF(ctx context.Context, input EnableCAAPFInput) {
-	SetTurtlesFeatureGate(ctx, SetTurtlesFeatureGateInput{
-		BootstrapClusterProxy: input.BootstrapClusterProxy,
-		FeatureName:           "use-caapf",
-		Enabled:               true,
-	})
-}
-
 // SetTurtlesFeatureGateInput represents the input for SetTurtlesFeatureGate.
 type SetTurtlesFeatureGateInput struct {
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
