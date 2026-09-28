@@ -35,9 +35,6 @@ const (
 	// UseRancherDefaultRegistry if enabled Turtles will use the Rancher default registry for pulling provider images.
 	UseRancherDefaultRegistry featuregate.Feature = "use-rancher-default-registry"
 
-	// UseCAAPF if enabled Turtles will rely on CAAPF to install CNI and other dependencies on CAPI workload clusters.
-	UseCAAPF featuregate.Feature = "use-caapf"
-
 	// RancherCCTranslation if enabled Turtles will translate Rancher AWS Cloud Credentials
 	// into CAPI-specific static identity objects (`AWSClusterStaticIdentity`).
 	// NOTE: currently this feature is only available for CAPA and `AWSClusterStaticIdentity`.
@@ -58,7 +55,6 @@ var DefaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	NoCertManager:             {Default: true, PreRelease: featuregate.Beta},
 	RancherCCTranslation:      {Default: true, PreRelease: featuregate.Beta},
 	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
-	UseCAAPF:                  {Default: false, PreRelease: featuregate.Alpha},
 	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Beta},
 	FleetIntegration:          {Default: false, PreRelease: featuregate.Alpha},
 }
