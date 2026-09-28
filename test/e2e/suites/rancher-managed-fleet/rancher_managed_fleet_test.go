@@ -52,7 +52,6 @@ var _ = Describe("[RancherManagedFleet] [Docker] [RKE2] Create and delete CAPI c
 			WorkerMachineCount:                 ptr.To(1),
 			LabelNamespace:                     true,
 			TestClusterReimport:                false,
-			RancherManagedFleet:                true,
 			ValidateFleetClusterTemplateValues: true,
 			ValidateFleetAgentWasInstalled:     true,
 			RancherServerURL:                   hostName,
@@ -100,7 +99,6 @@ var _ = Describe("[RancherManagedFleet] [Azure] [RKE2] Create and delete CAPI cl
 			WorkerMachineCount:             new(1),
 			SkipDeletionTest:               false,
 			LabelNamespace:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			RancherServerURL:               hostName,
 			CAPIClusterCreateWaitName:      "wait-capz-create-cluster",
@@ -139,7 +137,6 @@ var _ = Describe("[RancherManagedFleet] [Docker] [Kubeadm]  Create and delete CA
 			WorkerMachineCount:                 new(1),
 			LabelNamespace:                     true,
 			TestClusterReimport:                true,
-			RancherManagedFleet:                true,
 			ValidateFleetClusterTemplateValues: true,
 			ValidateFleetAgentWasInstalled:     true,
 			RancherServerURL:                   hostName,
@@ -211,7 +208,6 @@ var _ = Describe("[RancherManagedFleet] [AWS] [EC2 RKE2] Create and delete CAPI 
 			ControlPlaneMachineCount:       ptr.To(3), // minimum 3 replicas for CSI controller
 			WorkerMachineCount:             ptr.To(1),
 			LabelNamespace:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			RancherServerURL:               hostName,
 			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
@@ -254,7 +250,6 @@ var _ = Describe("[RancherManagedFleet] [AWS] [EC2 Kubeadm] Create and delete CA
 			WorkerMachineCount:             ptr.To(1),
 			SkipDeletionTest:               false,
 			LabelNamespace:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			RancherServerURL:               hostName,
 			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
@@ -304,7 +299,6 @@ var _ = Describe("[RancherManagedFleet] [GCP] [Kubeadm] Create and delete CAPI c
 			DeleteClusterWaitName:          "wait-gke-delete",
 			TopologyNamespace:              topologyNamespace,
 			VerifyETCDSize:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalTemplateVariables: map[string]string{
 				e2e.GCPImageIDFormattedVar: gcpImageFormatted,
@@ -348,7 +342,6 @@ var _ = Describe("[RancherManagedFleet] [vSphere] [RKE2] Create and delete CAPI 
 			WorkerMachineCount:             new(1),
 			LabelNamespace:                 true,
 			RancherServerURL:               hostName,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
 			DeleteClusterWaitName:          "wait-vsphere-delete",
@@ -390,7 +383,6 @@ var _ = Describe("[RancherManagedFleet] [Azure] [Kubeadm] Create and delete CAPI
 			DeleteClusterWaitName:          "wait-aks-delete",
 			TopologyNamespace:              topologyNamespace,
 			VerifyETCDSize:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
@@ -435,7 +427,6 @@ var _ = Describe("[RancherManagedFleet] [vSphere] [Kubeadm] Create and delete CA
 			CAPIClusterCreateWaitName:      "wait-capv-create-cluster",
 			DeleteClusterWaitName:          "wait-vsphere-delete",
 			VerifyETCDSize:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
@@ -478,7 +469,6 @@ var _ = Describe("[Azure] [AKS] Create and delete CAPI cluster from cluster clas
 			DeleteClusterWaitName:          "wait-aks-delete",
 			TopologyNamespace:              topologyNamespace,
 			VerifyETCDSize:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
@@ -517,7 +507,6 @@ var _ = Describe("[AWS] [EKS] Create and delete CAPI cluster from cluster class"
 			TopologyNamespace:              topologyNamespace,
 			SkipClusterAvailableWait:       true, // EKS kubelet reports version with -eks-<build> suffix, so TopologyReconciled/MachinesUpToDate never report an empty message
 			VerifyETCDSize:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
@@ -556,7 +545,6 @@ var _ = Describe("[GCP] [GKE] Create and delete CAPI cluster functionality shoul
 			TopologyNamespace:              topologyNamespace,
 			SkipClusterAvailableWait:       true, // GKE auto-upgrades cause non-empty Available condition message
 			VerifyETCDSize:                 true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{

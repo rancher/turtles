@@ -47,11 +47,6 @@ data:
       url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.0-rc.1/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
 
-    # Addon providers
-    - name:         "rancher-fleet"
-      url:          "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/v0.15.0/addon-components.yaml"
-      type:         "AddonProvider"
-
     # Image overrides
     images:
       cluster-api:
@@ -71,6 +66,4 @@ data:
       infrastructure-gcp:
         repository: "registry.rancher.com/rancher"
       infrastructure-vsphere:
-        repository: "registry.rancher.com/rancher"
-      addon-rancher-fleet:
         repository: "registry.rancher.com/rancher"
