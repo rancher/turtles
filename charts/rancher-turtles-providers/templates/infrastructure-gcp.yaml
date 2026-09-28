@@ -4,6 +4,17 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ index .Values "providers" "infrastructureGCP" "namespace" }}
+  {{- if .Values.rancherNamespaces.enabled }}
+  {{- with .Values.rancherNamespaces.labels }}
+  labels:
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+  annotations:
+    cattle.io/managed-namespace: "true"
+  {{- with .Values.rancherNamespaces.annotations }}
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
 ---
 apiVersion: turtles-capi.cattle.io/v1alpha1
 kind: CAPIProvider
