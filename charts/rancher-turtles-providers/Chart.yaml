@@ -23,8 +23,6 @@ annotations:
   catalog.cattle.io/scope: management
   catalog.cattle.io/type: cluster-tool
   helm.sh/images: |
-    - name: cluster-api-addon-provider-fleet
-      image: rancher/cluster-api-addon-provider-fleet:v0.15.0
     - name: kubeadm-bootstrap-controller
       image: rancher/kubeadm-bootstrap-controller:v1.14.2
     - name: cluster-api-provider-rke2-bootstrap
