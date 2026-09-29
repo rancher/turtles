@@ -141,6 +141,20 @@
                 "imageUrl": {
                   "type": "string"
                 },
+                "replicas": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "nodeSelector": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                },
+                "tolerations": {
+                  "type": "array"
+                },
+                "affinity": {
+                  "type": "object"
+                },
                 "fetchConfig": {
                   "type": "object",
                   "properties": {
