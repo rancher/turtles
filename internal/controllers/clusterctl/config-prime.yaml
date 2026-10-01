@@ -52,6 +52,11 @@ data:
       url:          "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/v0.15.0/addon-components.yaml"
       type:         "AddonProvider"
 
+    # Runtime extensions
+    - name:         "rke2"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.0-rc.1/runtime-extension-components.yaml"
+      type:         "RuntimeExtensionProvider"
+
     # Image overrides
     images:
       cluster-api:

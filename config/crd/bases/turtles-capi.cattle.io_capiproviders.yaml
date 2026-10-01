@@ -2879,6 +2879,10 @@ spec:
                     description: ClusterTopology if set to true will enable the clusterclass
                       feature.
                     type: boolean
+                  inPlaceUpdates:
+                    description: InPlaceUpdates if set to true will enable the in-place
+                      updates feature.
+                    type: boolean
                   machinePool:
                     description: MachinePool if set to true will enable the machine
                       pool feature.
