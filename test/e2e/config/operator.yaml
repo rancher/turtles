@@ -42,7 +42,7 @@ variables:
 
   # KUBERNETES_VERSION is the Kubernetes version used by default in Kubeadm tests.
   # It ill trigger a `kind build node-image` first to ensure version exists.
-  KUBERNETES_VERSION: "v1.36.1"
+  KUBERNETES_VERSION: "v1.37.1"
   # KUBERNETES_MANAGEMENT_VERSION is the Kubernetes version used for the Rancher/CAPI management cluster
   # It ill trigger a `kind build node-image` first to ensure version exists.
   KUBERNETES_MANAGEMENT_VERSION: "v1.36.1"
