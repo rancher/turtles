@@ -255,6 +255,56 @@ var _ = Describe("Provider sync", func() {
 		}).Should(Succeed())
 	})
 
+	It("Should sync core spec", func() {
+		origin := capiProviderCore.DeepCopy()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
+		r := &CAPIProviderReconciler{
+			Client: fakeClient,
+			GenericProviderReconciler: controller.GenericProviderReconciler{
+				Provider: origin,
+				Client:   fakeClient,
+			},
+		}
+
+		res, err := r.setProviderSpec(ctx)
+		Expect(err).To(Succeed())
+		Expect(res.IsZero()).To(BeTrue())
+
+		Expect(origin.Status.Variables["EXP_RUNTIME_SDK"]).To(Equal("true"))
+		Expect(origin.Status.Variables["EXP_IN_PLACE_UPDATES"]).To(Equal("true"))
+	})
+
+	It("Should enable in-place updates on non-core providers only when requested in features", func() {
+		disabled := capiProvider.DeepCopy()
+		// The CRD default is not applied by the fake client.
+		disabled.Status.Variables = map[string]string{}
+
+		enabled := disabled.DeepCopy()
+		enabled.Name = "test-in-place"
+		enabled.Spec.Features = &turtlesv1.Features{InPlaceUpdates: true}
+
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(disabled, enabled, setting).Build()
+
+		for _, origin := range []*turtlesv1.CAPIProvider{disabled, enabled} {
+			r := &CAPIProviderReconciler{
+				Client: fakeClient,
+				GenericProviderReconciler: controller.GenericProviderReconciler{
+					Provider: origin,
+					Client:   fakeClient,
+				},
+			}
+
+			res, err := r.setProviderSpec(ctx)
+			Expect(err).To(Succeed())
+			Expect(res.IsZero()).To(BeTrue())
+		}
+
+		Expect(disabled.Status.Variables).NotTo(HaveKey("EXP_IN_PLACE_UPDATES"))
+		Expect(disabled.Status.Variables).NotTo(HaveKey("EXP_RUNTIME_SDK"))
+		Expect(enabled.Status.Variables["EXP_IN_PLACE_UPDATES"]).To(Equal("true"))
+		Expect(enabled.Status.Variables).NotTo(HaveKey("EXP_RUNTIME_SDK"))
+	})
+
 	It("Should sync azure spec", func() {
 		origin := capiProviderAzure.DeepCopy()
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()

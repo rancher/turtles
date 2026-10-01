@@ -76,6 +76,9 @@ type Features struct {
 
 	// ClusterTopology if set to true will enable the clusterclass feature.
 	ClusterTopology bool `json:"clusterTopology,omitempty"`
+
+	// InPlaceUpdates if set to true will enable the in-place updates feature.
+	InPlaceUpdates bool `json:"inPlaceUpdates,omitempty"`
 }
 
 // Credentials defines the external credentials information for the provider.

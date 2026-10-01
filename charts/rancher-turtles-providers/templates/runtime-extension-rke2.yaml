@@ -1,0 +1,65 @@
+{{- $controlplane := index .Values "providers" "controlplaneRKE2" }}
+{{- $extension := default (dict) $controlplane.runtimeExtension }}
+{{- /* The extension is installed only when in-place updates are enabled on the RKE2 control plane provider. */}}
+{{- if and $controlplane.enabled (dig "features" "inPlaceUpdates" false $controlplane) }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  {{- /* The namespace is fixed: the extension's ExtensionConfig references its Service and CA Secret in this namespace,
+  and these references are not rewritten when the provider is installed in a different namespace. */}}
+  name: rke2-extension-system
+  {{- if .Values.rancherNamespaces.enabled }}
+  {{- with .Values.rancherNamespaces.labels }}
+  labels:
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+  annotations:
+    cattle.io/managed-namespace: "true"
+  {{- with .Values.rancherNamespaces.annotations }}
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: rke2-extension
+  namespace: rke2-extension-system
+spec:
+  name: rke2
+  type: runtimeextension
+{{- /* The extension is released together with the RKE2 control plane provider, so it always follows its version. */}}
+{{- with $controlplane.version }}
+  version: {{ . }}
+{{- end }}
+{{- if $controlplane.enableAutomaticUpdate }}
+  enableAutomaticUpdate: {{ $controlplane.enableAutomaticUpdate }}
+{{- end }}
+{{- with $extension.variables }}
+  variables:
+  {{- range $key, $val := . }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- with $extension.manager }}
+  manager:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
+{{- with $extension.fetchConfig }}
+  fetchConfig:
+    {{- if .url }}
+    url: {{ .url }}
+    {{- end }}
+    {{- if .oci }}
+    oci: {{ .oci }}
+    {{- end }}
+{{- end }}
+{{- end }}

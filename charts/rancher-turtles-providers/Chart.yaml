@@ -43,6 +43,8 @@ annotations:
       image: rancher/cluster-api-gcp-controller:v1.13.1
     - name: cluster-api-vsphere-controller
       image: rancher/cluster-api-vsphere-controller:v1.17.0
+    - name: cluster-api-provider-rke2-extension
+      image: rancher/cluster-api-provider-rke2-extension:v0.27.0-rc.1
 maintainers:
   - name: Rancher Highlander Team
     url: https://github.com/rancher/turtles
