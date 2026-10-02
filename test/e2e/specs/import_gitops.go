@@ -110,10 +110,6 @@ type CreateUsingGitOpsSpecInput struct {
 	// collect debug data.
 	VerifyETCDSize bool
 
-	// RancherManagedFleet is used to determine whether the `provisioning.cattle.io/externally-managed`
-	// annotation should be present or not in an imported test cluster.
-	RancherManagedFleet bool
-
 	// ValidateFleetAgentWasInstalled is used to indicate whether the test should also check that
 	// the fleet-agent has been installed on the downstream cluster.
 	ValidateFleetAgentWasInstalled bool
@@ -306,25 +302,22 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 			WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 			WaitKubeconfigIntervals: input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-kubeconfig"),
 			SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
-			RancherManagedFleet:     input.RancherManagedFleet,
 		})
 
-		// Validate that CAPI cluster does not have CAAPF finalizer, when CAAPF is disabled
-		if input.RancherManagedFleet {
-			By("CAPI cluster should not have the 'fleet.addons.cluster.x-k8s.io' finalizer")
-			Eventually(func() bool {
-				capiCluster := framework.GetClusterByName(
-					ctx,
-					framework.GetClusterByNameInput{
-						Getter:    input.BootstrapClusterProxy.GetClient(),
-						Name:      input.ClusterName,
-						Namespace: namespace.Name,
-					},
-				)
+		// Validate that CAPI cluster does not have CAAPF finalizer
+		By("CAPI cluster should not have the 'fleet.addons.cluster.x-k8s.io' finalizer")
+		Eventually(func() bool {
+			capiCluster := framework.GetClusterByName(
+				ctx,
+				framework.GetClusterByNameInput{
+					Getter:    input.BootstrapClusterProxy.GetClient(),
+					Name:      input.ClusterName,
+					Namespace: namespace.Name,
+				},
+			)
 
-				return slices.Contains(capiCluster.GetFinalizers(), "fleet.addons.cluster.x-k8s.io")
-			}, capiClusterCreateWait...).Should(BeFalse(), "Failed to detect that 'fleet.addons.cluster.x-k8s.io' finalizer was removed from CAPI cluster")
-		}
+			return slices.Contains(capiCluster.GetFinalizers(), "fleet.addons.cluster.x-k8s.io")
+		}, capiClusterCreateWait...).Should(BeFalse(), "Failed to detect that 'fleet.addons.cluster.x-k8s.io' finalizer was removed from CAPI cluster")
 
 		if input.ValidateFleetClusterTemplateValues {
 			By("Validating the Fleet cluster templateValues field was populated correctly")
@@ -421,7 +414,6 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 				RancherServerURL:        input.RancherServerURL,
 				WaitRancherIntervals:    input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-rancher"),
 				SkipLatestFeatureChecks: input.SkipLatestFeatureChecks,
-				RancherManagedFleet:     input.RancherManagedFleet,
 			})
 		}
 

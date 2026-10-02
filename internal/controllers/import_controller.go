@@ -238,7 +238,11 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 			return ctrl.Result{}, fmt.Errorf("error deleting associated managementv3.Cluster resources: %w", err)
 		}
 
-		if controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
+		removedTurtlesFinalizer := controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer)
+		// CAAPF is no longer deployed, so its legacy finalizer must be removed here to unblock deletion.
+		removedFleetAddonFinalizer := controllerutil.RemoveFinalizer(capiCluster, FleetAddonFinalizer)
+
+		if removedTurtlesFinalizer || removedFleetAddonFinalizer {
 			if err := r.Client.Update(ctx, capiCluster); err != nil {
 				return ctrl.Result{}, fmt.Errorf("error removing finalizer from CAPI Cluster: %w", err)
 			}
@@ -533,8 +537,7 @@ func (r *CAPIImportReconciler) propagateLabels(rancherCluster *managementv3.Clus
 	rancherCluster.SetLabels(labels)
 }
 
-// reconcileExternalFleetManagement adds or removes the `provisioning.cattle.io/externally-managed` annotation
-// based on the feature gate `use-caapf`.
+// reconcileExternalFleetManagement removes the `provisioning.cattle.io/externally-managed` annotation.
 func (r *CAPIImportReconciler) reconcileExternalFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster,
 	capiCluster *clusterv1.Cluster,
 ) {
@@ -543,24 +546,9 @@ func (r *CAPIImportReconciler) reconcileExternalFleetManagement(ctx context.Cont
 		annotations = map[string]string{}
 	}
 
-	if feature.Gates.Enabled(feature.UseCAAPF) {
-		addFleetAnnotation(ctx, annotations, rancherCluster)
-	} else {
-		removeFleetAnnotation(ctx, annotations, rancherCluster)
+	removeFleetAnnotation(ctx, annotations, rancherCluster)
 
-		controllerutil.RemoveFinalizer(capiCluster, FleetAddonFinalizer)
-	}
-}
-
-func addFleetAnnotation(ctx context.Context, annotations map[string]string, rancherCluster *managementv3.Cluster) {
-	log := log.FromContext(ctx)
-
-	if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; !found {
-		annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
-		rancherCluster.SetAnnotations(annotations)
-
-		log.Info("Added fleet annotation to Rancher cluster")
-	}
+	controllerutil.RemoveFinalizer(capiCluster, FleetAddonFinalizer)
 }
 
 func removeFleetAnnotation(ctx context.Context, annotations map[string]string, rancherCluster *managementv3.Cluster) {
