@@ -25,7 +25,7 @@ require (
 	sigs.k8s.io/cluster-api-operator/test v0.29.0
 	sigs.k8s.io/cluster-api/api v1.14.2
 	sigs.k8s.io/cluster-api/test v1.14.2
-	sigs.k8s.io/controller-runtime v0.24.1
+	sigs.k8s.io/controller-runtime v0.25.1
 	sigs.k8s.io/kind v0.33.0
 	sigs.k8s.io/yaml v1.6.0
 )
