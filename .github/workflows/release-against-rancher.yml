@@ -80,9 +80,9 @@ jobs:
         id: find_charts_branch
         run: |
           cd rancher
-          # Extract dev-v2.12 out of the following line:
-          #     ChartDefaultBranch                  = NewSetting("chart-default-branch", "dev-v2.12")
-          charts_branch=$(grep '"chart-default-branch"' pkg/settings/setting.go | cut -d'"' -f4)
+          # Extract dev-v2.16 out of the following line in build.yaml:
+          #   chartDefaultBranch: dev-v2.16
+          charts_branch=$(grep '^chartDefaultBranch:' build.yaml | awk -F': ' '{print $2}')
           echo "charts_branch=$charts_branch" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
