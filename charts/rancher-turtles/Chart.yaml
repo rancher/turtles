@@ -23,6 +23,11 @@ annotations:
   catalog.cattle.io/release-name: rancher-turtles
   catalog.cattle.io/scope: management
   catalog.cattle.io/type: cluster-tool
+  helm.sh/images: |
+    - name: turtles
+      image: rancher/turtles:v0.0.0
+    - name: cluster-api-controller
+      image: rancher/cluster-api-controller:v0.0.0
 maintainers:
   - name: Rancher Highlander Team
     url: https://github.com/rancher/turtles
