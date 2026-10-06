@@ -48,6 +48,7 @@ var _ = Describe("Provider sync", func() {
 		capiProvider        *turtlesv1.CAPIProvider
 		customCAPIProvider  *turtlesv1.CAPIProvider
 		unknownCAPIProvider *turtlesv1.CAPIProvider
+		capiProviderCore    *turtlesv1.CAPIProvider
 		capiProviderAzure   *turtlesv1.CAPIProvider
 		capiProviderGCP     *turtlesv1.CAPIProvider
 		clusterctlconfig    *turtlesv1.ClusterctlConfig
@@ -74,6 +75,10 @@ var _ = Describe("Provider sync", func() {
 			Name: "docker",
 			Type: turtlesv1.Infrastructure,
 		}}
+
+		capiProviderCore = capiProvider.DeepCopy()
+		capiProviderCore.Spec.Name = provider.CoreProvider
+		capiProviderCore.Name = provider.CoreProvider
 
 		capiProviderAzure = capiProvider.DeepCopy()
 		capiProviderAzure.Spec.Name = provider.AzureProvider
@@ -266,6 +271,25 @@ var _ = Describe("Provider sync", func() {
 		Expect(res.IsZero()).To(BeTrue())
 
 		Expect(origin.Status.Variables["EXP_AKS_RESOURCE_HEALTH"]).To(Equal("true"))
+	})
+
+	It("Should sync core spec", func() {
+		origin := capiProviderCore.DeepCopy()
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(origin, setting).Build()
+		r := &CAPIProviderReconciler{
+			Client: fakeClient,
+			GenericProviderReconciler: controller.GenericProviderReconciler{
+				Provider: origin,
+				Client:   fakeClient,
+			},
+		}
+
+		res, err := r.setProviderSpec(ctx)
+		Expect(err).To(Succeed())
+		Expect(res.IsZero()).To(BeTrue())
+
+		Expect(origin.Status.Variables["EXP_RUNTIME_SDK"]).To(Equal("true"))
+		Expect(origin.Status.Variables["EXP_IN_PLACE_UPDATES"]).To(Equal("true"))
 	})
 
 	It("Should sync gcp spec", func() {
