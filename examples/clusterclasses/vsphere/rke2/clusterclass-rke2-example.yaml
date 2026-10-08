@@ -116,7 +116,7 @@ spec:
       required: false
       schema:
         openAPIV3Schema:
-          description: The SUSE Linux Micro 6.1 product key to register the nodes with.
+          description: The SUSE Linux Micro 6.2 product key to register the nodes with.
           type: string
     - name: dockerAuthSecret
       required: false
@@ -313,9 +313,9 @@ spec:
               valueFrom:
                 template: |-
                   {{- if .productKey }}
-                  # Register SL Micro 6.1 and add the SL Micro Extras repository
+                  # Register SL Micro 6.2 and add the SL Micro Extras repository
                   - transactional-update register -r {{ .productKey }}
-                  - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+                  - transactional-update register -p SL-Micro-Extras/6.2/x86_64
                   {{- end }}
             - op: add
               path: /spec/template/spec/privateRegistriesConfig
@@ -351,9 +351,9 @@ spec:
               valueFrom:
                 template: |-
                   {{- if .productKey }}
-                  # Register SL Micro 6.1 and add the SL Micro Extras repository
+                  # Register SL Micro 6.2 and add the SL Micro Extras repository
                   - transactional-update register -r {{ .productKey }}
-                  - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+                  - transactional-update register -p SL-Micro-Extras/6.2/x86_64
                   {{- end }}
             - op: add
               path: /spec/template/spec/privateRegistriesConfig
