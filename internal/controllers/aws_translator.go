@@ -22,7 +22,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -136,10 +135,8 @@ func awsClusterStaticIdentity(name string) *unstructured.Unstructured {
 // createOrUpdateCredentialSecret creates or updates the credentials Secret in the CAPA system namespace.
 func createOrUpdateCredentialSecret(ctx context.Context, cl client.Client, sourceSecret *corev1.Secret, accessKey, secretKey, ns string) error {
 	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      sourceSecret.Name,
-			Namespace: ns,
-		},
+		Name:      sourceSecret.Name,
+		Namespace: ns,
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, cl, credSecret, func() error {
