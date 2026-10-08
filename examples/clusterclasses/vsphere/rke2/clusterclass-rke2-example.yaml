@@ -117,7 +117,7 @@ spec:
     required: false
     schema:
       openAPIV3Schema:
-        description: The SUSE Linux Micro 6.1 product key to register the nodes with.
+        description: The SUSE Linux Micro 6.2 product key to register the nodes with.
         type: string
   - name: dockerAuthSecret
     required: false
@@ -181,7 +181,7 @@ spec:
         kind: VSphereMachineTemplate
         matchResources:
           controlPlane: true
-    - jsonPatches:  
+    - jsonPatches:
       - op: add
         path: /spec/template/spec
         valueFrom:
@@ -208,7 +208,7 @@ spec:
         kind: VSphereMachineTemplate
         matchResources:
           machineDeploymentClass:
-            names: 
+            names:
             - vsphere-rke2-example-worker
   - name: rke2ControlPlaneTemplate
     definitions:
@@ -314,9 +314,9 @@ spec:
         valueFrom:
           template: |-
             {{- if .productKey }}
-            # Register SL Micro 6.1 and add the SL Micro Extras repository
+            # Register SL Micro 6.2 and add the SL Micro Extras repository
             - transactional-update register -r {{ .productKey }}
-            - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+            - transactional-update register -p SL-Micro-Extras/6.2/x86_64
             {{- end }}
       - op: add
         path: /spec/template/spec/privateRegistriesConfig/configs
@@ -351,9 +351,9 @@ spec:
         valueFrom:
           template: |-
             {{- if .productKey }}
-            # Register SL Micro 6.1 and add the SL Micro Extras repository
+            # Register SL Micro 6.2 and add the SL Micro Extras repository
             - transactional-update register -r {{ .productKey }}
-            - transactional-update register -p SL-Micro-Extras/6.1/x86_64
+            - transactional-update register -p SL-Micro-Extras/6.2/x86_64
             {{- end }}
       - op: add
         path: /spec/template/spec/privateRegistriesConfig/configs
@@ -407,7 +407,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: vsphere-rke2-example-worker
-spec: 
+spec:
   template:
     spec:
       agentConfig:
