@@ -132,10 +132,17 @@ var _ = SynchronizedBeforeSuite(
 			}},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
+		providersValues := map[string]string{}
+		if e2eConfig.GetVariableOrEmpty(e2e.RKE2InPlaceUpdatesVar) == "true" {
+			// Enables in-place updates in CAPRKE2, which also installs the RKE2 runtime extension.
+			providersValues["providers.controlplaneRKE2.features.inPlaceUpdates"] = "true"
+		}
+
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
 			ProviderList:            "docker,rke2,aws,azure,kubeadm,gcp,vsphere",
+			AdditionalValues:        providersValues,
 		})
 
 		data, err := json.Marshal(e2e.Setup{

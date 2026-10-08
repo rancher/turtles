@@ -43,13 +43,23 @@ var _ = Describe("[RancherManagedFleet] [Docker] [RKE2] Create and delete CAPI c
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		e2eConfig := e2e.LoadE2EConfig()
+		validateInPlaceUpdate := e2eConfig.GetVariableOrEmpty(e2e.RKE2InPlaceUpdatesVar) == "true"
+
+		// CAPRKE2 only updates control plane machines in-place with maxSurge 0, which requires at least 3 replicas.
+		controlPlaneMachineCount := 1
+		if validateInPlaceUpdate {
+			controlPlaneMachineCount = 3
+		}
+
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                          e2e.LoadE2EConfig(),
+			E2EConfig:                          e2eConfig,
 			BootstrapClusterProxy:              bootstrapClusterProxy,
 			ClusterTemplate:                    e2e.CAPIDockerRKE2Topology,
 			ClusterName:                        "cluster-docker-rke2",
-			ControlPlaneMachineCount:           ptr.To(1),
+			ControlPlaneMachineCount:           ptr.To(controlPlaneMachineCount),
 			WorkerMachineCount:                 ptr.To(1),
+			ValidateInPlaceUpdate:              validateInPlaceUpdate,
 			LabelNamespace:                     true,
 			TestClusterReimport:                false,
 			RancherManagedFleet:                true,

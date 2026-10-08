@@ -26,6 +26,7 @@ intervals:
   default/wait-vsphere-delete: ["20m", "30s"]
   default/wait-turtles-uninstall: ["10m", "30s"]
   default/wait-capiprovider-update: ["5m", "10s"]
+  default/wait-k8s-version-update: ["20m", "30s"]
   default/wait-kubeconfig: ["5m", "30s"]
 
 variables:
@@ -56,7 +57,13 @@ variables:
   KUBERNETES_VERSION_CHART_UPGRADE: "v1.36.1"
 
   # RKE2 specifics
-  RKE2_KUBERNETES_VERSION: "v1.36.0+rke2r1"
+  # Note that this cannot be the latest available patch if we're validating k8s version updates in-place.
+  RKE2_KUBERNETES_VERSION: "v1.37.0+rke2r1"
+  # RKE2_IN_PLACE_UPDATES enables in-place updates in CAPRKE2 (installing the RKE2 runtime extension) and the
+  # in-place update validation of the Docker RKE2 test. Enable it once the runtime extension artifact is released.
+  RKE2_IN_PLACE_UPDATES: "true"
+  # RKE2_KUBERNETES_VERSION_UPGRADE is the version RKE2_KUBERNETES_VERSION is upgraded to in-place.
+  RKE2_KUBERNETES_VERSION_UPGRADE: "v1.37.1+rke2r1"
   # Kubernetes version used for v2prov
   V2PROV_RKE2_KUBERNETES_VERSION: "v1.36.3+rke2r1"
   RKE2_CNI: "none"

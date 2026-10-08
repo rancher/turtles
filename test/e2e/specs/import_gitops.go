@@ -125,6 +125,11 @@ type CreateUsingGitOpsSpecInput struct {
 	// ValidateFleetClusterTemplateValues is used to indicate whether the test should also check that
 	// the templateValues field of the Fleet cluster has been populated correctly.
 	ValidateFleetClusterTemplateValues bool
+
+	// ValidateInPlaceUpdate is used to indicate whether the test should also update the cluster to the
+	// RKE2_KUBERNETES_VERSION_UPGRADE version and validate that all machines are updated in-place.
+	// Only supported for CAPRKE2 clusters using the Docker RKE2 example ClusterClass, with at least 3 control plane machines.
+	ValidateInPlaceUpdate bool
 }
 
 // CreateUsingGitOpsSpec implements a spec that will create a cluster via Fleet and test that it
@@ -356,6 +361,17 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 					Namespace: "cattle-fleet-system",
 				}},
 			}, input.E2EConfig.GetIntervals(input.BootstrapClusterProxy.GetName(), "wait-controllers")...)
+		}
+
+		if input.ValidateInPlaceUpdate {
+			turtlesframework.ValidateInPlaceUpdate(ctx, turtlesframework.ValidateInPlaceUpdateInput{
+				ClusterProxy:      input.BootstrapClusterProxy,
+				ClusterKey:        capiClusterKey,
+				KubernetesVersion: input.E2EConfig.MustGetVariable(e2e.RKE2VersionUpgradeVar),
+				WaitIntervals:     capiClusterCreateWait,
+				SystemUpgradeControllerWaitIntervals: input.E2EConfig.GetIntervals(
+					input.BootstrapClusterProxy.GetName(), "wait-k8s-version-update"),
+			})
 		}
 
 		if input.TestClusterReimport {
