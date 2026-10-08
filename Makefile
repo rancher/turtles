@@ -599,6 +599,7 @@ build-chart: $(HELM) $(KUSTOMIZE) $(RELEASE_DIR) $(CHART_RELEASE_DIR) $(CHART_PA
 	yq -i '.image.tag="${RELEASE_TAG}"' $(CHART_RELEASE_DIR)/values.yaml
 	yq -i '.image.imagePullPolicy="${PULL_POLICY}"' $(CHART_RELEASE_DIR)/values.yaml
 	yq -i '.image.repository="${CONTROLLER_IMG}"' $(CHART_RELEASE_DIR)/values.yaml
+	./hack/chart-images.sh $(CHART_RELEASE_DIR)
 
 	cd $(CHART_RELEASE_DIR) && $(HELM) dependency update
 	$(HELM) package $(CHART_RELEASE_DIR) --app-version=$(HELM_CHART_TAG) --version=$(HELM_CHART_TAG) --destination=$(CHART_PACKAGE_DIR)
