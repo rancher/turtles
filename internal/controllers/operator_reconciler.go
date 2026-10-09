@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctr "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -39,8 +39,6 @@ import (
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	configclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
-
-	"github.com/blang/semver/v4"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -582,10 +580,8 @@ func (r *CAPIProviderReconciler) addAzureServiceOperatorFix(ctx context.Context)
 
 	// Fetch the ASO webhook Service.
 	asoService := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      targetASOWebhookServiceName,
-			Namespace: capiProvider.Namespace,
-		},
+		Name:      targetASOWebhookServiceName,
+		Namespace: capiProvider.Namespace,
 	}
 	if err := r.Get(ctx, client.ObjectKeyFromObject(asoService), asoService); err != nil {
 		return &controller.Result{}, fmt.Errorf("fetching %s/%s Service: %w", capiProvider.Namespace, targetASOWebhookServiceName, err)
