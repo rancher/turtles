@@ -35,11 +35,11 @@ import (
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -346,9 +346,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
-	It("should set the external fleet annotation when feature gate is set", func() {
-		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
-
+	It("should clear the external fleet annotation and CAAPF finalizer", func() {
+		capiCluster.Finalizers = append(capiCluster.Finalizers, FleetAddonFinalizer)
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
@@ -376,7 +375,17 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		_, err = testEnv.CreateNamespaceWithName(ctx, cluster.Name)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Continue with further reconciliation to check fleet annotation
+		// Simulate a cluster previously managed by CAAPF
+		Eventually(func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)).To(Succeed())
+			if cluster.Annotations == nil {
+				cluster.Annotations = map[string]string{}
+			}
+			cluster.Annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
+			g.Expect(cl.Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+
+		// Continue with further reconciliation to check fleet annotation and finalizer are removed
 		Eventually(func(g Gomega) {
 			_, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -389,7 +398,34 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
-			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
+			g.Expect(rancherClusters.Items[0].Annotations).To(Not(HaveKey(turtlesannotations.ExternalFleetAnnotation)))
+
+			updatedCAPICluster := &clusterv1.Cluster{}
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), updatedCAPICluster)).To(Succeed())
+			g.Expect(updatedCAPICluster.Finalizers).ToNot(ContainElement(FleetAddonFinalizer))
+		}).Should(Succeed())
+	})
+
+	It("should remove the CAAPF finalizer when the CAPI cluster is being deleted", func() {
+		// Simulate a cluster previously managed by CAAPF
+		capiCluster.Finalizers = []string{managementv3.CapiClusterFinalizer, FleetAddonFinalizer}
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		setControlPlaneReady(capiCluster)
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		Expect(cl.Delete(ctx, capiCluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			// The error is ignored as patching the already deleted CAPI cluster can fail.
+			_, _ = r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+
+			err := cl.Get(ctx, client.ObjectKeyFromObject(capiCluster), &clusterv1.Cluster{})
+			g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "CAPI cluster should be deleted")
 		}).Should(Succeed())
 	})
 
@@ -571,9 +607,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
-	It("should set the external fleet annotation when feature gate is set on an already imported cluster", func() {
-		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
-
+	It("should clear the external fleet annotation on an already imported cluster", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(sampleTemplate))
@@ -587,6 +621,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
+		// Simulate a cluster previously managed by CAAPF
+		rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
@@ -594,6 +630,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
 		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
 
 		clusterRegistrationToken.Name = cluster.Name
 		clusterRegistrationToken.Namespace = cluster.Name
@@ -615,7 +652,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 			rancherCluster := cluster.DeepCopy()
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), rancherCluster)).To(Succeed())
-			g.Expect(rancherCluster.Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
+			g.Expect(rancherCluster.Annotations).To(Not(HaveKey(turtlesannotations.ExternalFleetAnnotation)))
 		}, 5*time.Second).Should(Succeed())
 	})
 

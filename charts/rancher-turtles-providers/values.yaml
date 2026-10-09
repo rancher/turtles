@@ -9,36 +9,6 @@ imagePullSecrets: []
 
 # providers: Providers configuration.
 providers:
-  # addonFleet: Cluster API Add-on Provider for Fleet (CAAPF).
-  addonFleet:
-    # enabled: Enables the installation of this provider.
-    enabled: false
-    # namespace: The namespace where the provider manifests will be applied.
-    namespace: fleet-addon-system
-    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
-    enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
-  # features: Optional feature flags for this provider.
-  # features:
-  #   machinePool: false
-  #   clusterResourceSet: false
-  #   clusterTopology: false
-  # variables: Optional environment variables exposed to the controller manager.
-  # variables:
-  #   ENV_VAR: "value"
-  # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
-  # configSecret:
-  #   name: ""
-  #   namespace: ""
-  # fetchConfig: Override default artifact source via URL or OCI (specify one).
-  # fetchConfig:
-  #   url: "https://github.com/<org>/<repo>/releases"
-  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
-  # manager: Optional controller manager settings.
-  # manager:
-  #   syncPeriod: "5m"
-  #   verbosity: 5
   # bootstrapKubeadm: Kubeadm Bootstrap Provider.
   bootstrapKubeadm:
     # enabled: Enables the installation of this provider.
@@ -327,24 +297,8 @@ providers:
   #   syncPeriod: "5m"
   #   verbosity: 5
 
-# extras: extra providers configuration
-extras:
-  # addonFleet: extra configuration for CAAPF 
-  addonFleet:
-    # config: configure the embedded FleetAddonConfig
-    config:
-      # enabled: enable the embedded FleetAddonConfig
-      enabled: true
-      # fleetAgentMetricsAddress: sets the default fleet-agent metrics bind address
-      fleetAgentMetricsAddress: ":18080"
-      # fleetAgentHealthProbeAddress: sets the default fleet-agent health probe bind address
-      fleetAgentHealthProbeAddress: ":18081"
-
 # These images are for documentation purposes only and are *not* used directly in the chart. They are used as input during a release for the purpose of creating a list of images necessary for airgapped installations.
 images:
-  addonFleet:
-    repository: rancher/cluster-api-addon-provider-fleet
-    tag: v0.15.0
   bootstrapKubeadm:
     repository: rancher/kubeadm-bootstrap-controller
     tag: v1.14.2
