@@ -18,14 +18,17 @@ package provider
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	admissionv1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -54,6 +57,13 @@ const (
 	MutatingWebhookConfigurationKind = "MutatingWebhookConfiguration"
 	// ValidatingWebhookConfigurationKind is the ValidatingWebhookConfiguration Kind.
 	ValidatingWebhookConfigurationKind = "ValidatingWebhookConfiguration"
+
+	// ExtensionConfigKind is the CAPI runtime ExtensionConfig Kind.
+	ExtensionConfigKind = "ExtensionConfig"
+	// RuntimeInjectCAFromSecretAnnotationKey is the annotation used by CAPI to inject the caBundle of an ExtensionConfig
+	// from the "ca.crt" key of a Secret. Wrangler managed secrets have no "ca.crt" key, so the caBundle is injected by
+	// Turtles instead (see InjectExtensionConfigCABundle).
+	RuntimeInjectCAFromSecretAnnotationKey = "runtime.cluster.x-k8s.io/inject-ca-from-secret"
 
 	// CAPIProviderLabel is the label identifying all resources applied for a provider.
 	CAPIProviderLabel = "cluster.x-k8s.io/provider"
@@ -109,10 +119,11 @@ func WranglerPatcher(objs []unstructured.Unstructured) ([]unstructured.Unstructu
 	filteredObjs := []unstructured.Unstructured{}
 	// Step 4: Cleanup
 	for _, o := range objs {
-		// Delete cert-manager inject annotation from any object
+		// Delete cert-manager and CAPI runtime inject annotations from any object
 		annotations := o.GetAnnotations()
 		if annotations != nil {
 			delete(annotations, CertManagerInjectAnnotationKey)
+			delete(annotations, RuntimeInjectCAFromSecretAnnotationKey)
 			o.SetAnnotations(annotations)
 		}
 
@@ -151,9 +162,11 @@ func getCertificates(objs []unstructured.Unstructured) (map[string]string, error
 	return certificates, nil
 }
 
-// getServices returns a map containing all parsed Services linked to Validating or Mutating webhooks.
+// getServices returns a map containing all parsed Services linked to Validating or Mutating webhooks, or to
+// ExtensionConfigs.
 // The cert-manager.io/inject-ca-from annotation value is also matched against parsed Certificates, to extract
-// the Certificate's secretName.
+// the Certificate's secretName. For ExtensionConfigs, the secret name is read from the
+// runtime.cluster.x-k8s.io/inject-ca-from-secret annotation instead.
 //
 // The map key is the Service "namespace/name".
 func getServices(objs []unstructured.Unstructured, certificates map[string]string) (map[string]service, error) {
@@ -162,6 +175,14 @@ func getServices(objs []unstructured.Unstructured, certificates map[string]strin
 	for _, o := range objs {
 		// Skip the object if the cert-manager inject annotation is not found.
 		if o.GetAnnotations() == nil {
+			continue
+		}
+
+		if o.GetKind() == ExtensionConfigKind {
+			if err := addExtensionConfigService(o, services); err != nil {
+				return nil, fmt.Errorf("evaluating ExtensionConfig %s: %w", o.GetName(), err)
+			}
+
 			continue
 		}
 
@@ -242,6 +263,127 @@ func addValidatingWebhookServices(object unstructured.Unstructured, services map
 	}
 
 	return nil
+}
+
+func addExtensionConfigService(object unstructured.Unstructured, services map[string]service) error {
+	injectCAFromSecretValue, found := object.GetAnnotations()[RuntimeInjectCAFromSecretAnnotationKey]
+	if !found {
+		return nil
+	}
+
+	parts := strings.Split(injectCAFromSecretValue, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return fmt.Errorf("invalid %s annotation value %q, expected <namespace>/<name>",
+			RuntimeInjectCAFromSecretAnnotationKey, injectCAFromSecretValue)
+	}
+
+	secretName := parts[1]
+
+	serviceName, found, err := unstructured.NestedString(object.Object, "spec", "clientConfig", "service", "name")
+	if err != nil {
+		return fmt.Errorf("parsing spec.clientConfig.service.name: %w", err)
+	}
+
+	if !found {
+		return nil
+	}
+
+	serviceNamespace, _, err := unstructured.NestedString(object.Object, "spec", "clientConfig", "service", "namespace")
+	if err != nil {
+		return fmt.Errorf("parsing spec.clientConfig.service.namespace: %w", err)
+	}
+
+	key := fmt.Sprintf("%s/%s", serviceNamespace, serviceName)
+	services[key] = service{
+		Name:                  serviceName,
+		Namespace:             serviceNamespace,
+		CertificateSecretName: secretName,
+	}
+
+	return nil
+}
+
+// InjectExtensionConfigCABundle sets the caBundle of the ExtensionConfigs deployed by a runtime extension provider,
+// using the wrangler managed certificate of the Service each ExtensionConfig points to.
+// This replaces the CAPI runtime.cluster.x-k8s.io/inject-ca-from-secret annotation, which requires a "ca.crt" key
+// that wrangler managed secrets do not provide.
+func InjectExtensionConfigCABundle(ctx context.Context, cl client.Client, provider *turtlesv1.CAPIProvider) (*controller.Result, error) {
+	log := log.FromContext(ctx)
+
+	if provider.Spec.Type != turtlesv1.RuntimeExtension {
+		return &controller.Result{}, nil
+	}
+
+	selector, err := getLabelSelector(provider)
+	if err != nil {
+		return &controller.Result{}, fmt.Errorf("getting selector: %w", err)
+	}
+
+	extensionConfigList := &unstructured.UnstructuredList{}
+	extensionConfigList.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "runtime.cluster.x-k8s.io",
+		Version: "v1beta2",
+		Kind:    ExtensionConfigKind + "List",
+	})
+
+	// ExtensionConfigs are cluster scoped, so they are only filtered by label.
+	if err := cl.List(ctx, extensionConfigList, selector); err != nil {
+		return &controller.Result{}, fmt.Errorf("listing ExtensionConfigs: %w", err)
+	}
+
+	for i := range extensionConfigList.Items {
+		extensionConfig := &extensionConfigList.Items[i]
+
+		serviceName, found, err := unstructured.NestedString(extensionConfig.Object, "spec", "clientConfig", "service", "name")
+		if err != nil || !found {
+			continue
+		}
+
+		serviceNamespace, _, err := unstructured.NestedString(extensionConfig.Object, "spec", "clientConfig", "service", "namespace")
+		if err != nil {
+			continue
+		}
+
+		service := &corev1.Service{}
+		if err := cl.Get(ctx, client.ObjectKey{Namespace: serviceNamespace, Name: serviceName}, service); err != nil {
+			return &controller.Result{}, fmt.Errorf("getting Service %s/%s: %w", serviceNamespace, serviceName, err)
+		}
+
+		secretName, found := service.GetAnnotations()[CertificateAnnotationKey]
+		if !found {
+			continue
+		}
+
+		secret := &corev1.Secret{}
+		if err := cl.Get(ctx, client.ObjectKey{Namespace: serviceNamespace, Name: secretName}, secret); err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Info("Waiting for wrangler to generate the ExtensionConfig certificate", "secretName", secretName)
+
+				return &controller.Result{RequeueAfter: 10 * time.Second}, nil
+			}
+
+			return &controller.Result{}, fmt.Errorf("getting Secret %s/%s: %w", serviceNamespace, secretName, err)
+		}
+
+		caBundle := base64.StdEncoding.EncodeToString(secret.Data[corev1.TLSCertKey])
+
+		currentCABundle, _, _ := unstructured.NestedString(extensionConfig.Object, "spec", "clientConfig", "caBundle")
+		if currentCABundle == caBundle {
+			continue
+		}
+
+		if err := unstructured.SetNestedField(extensionConfig.Object, caBundle, "spec", "clientConfig", "caBundle"); err != nil {
+			return &controller.Result{}, fmt.Errorf("setting caBundle: %w", err)
+		}
+
+		if err := cl.Update(ctx, extensionConfig); err != nil {
+			return &controller.Result{}, fmt.Errorf("updating ExtensionConfig %s: %w", extensionConfig.GetName(), err)
+		}
+
+		log.Info("Injected caBundle into ExtensionConfig", "extensionConfigName", extensionConfig.GetName())
+	}
+
+	return &controller.Result{}, nil
 }
 
 // CleanupCertManagerResources will delete all Certificate and Issuer resources associated with a CAPI provider.
@@ -468,6 +610,18 @@ func providerDeploymentRestart(ctx context.Context, cl client.Client, provider *
 }
 
 func getSelector(provider *turtlesv1.CAPIProvider) ([]client.ListOption, error) {
+	selector, err := getLabelSelector(provider)
+	if err != nil {
+		return nil, err
+	}
+
+	return []client.ListOption{
+		client.InNamespace(provider.GetNamespace()),
+		selector,
+	}, nil
+}
+
+func getLabelSelector(provider *turtlesv1.CAPIProvider) (client.MatchingLabelsSelector, error) {
 	var matchingLabels []string
 	if provider.Spec.Name != "" {
 		matchingLabels = []string{
@@ -483,16 +637,11 @@ func getSelector(provider *turtlesv1.CAPIProvider) ([]client.ListOption, error) 
 
 	requirement, err := labels.NewRequirement(CAPIProviderLabel, selection.In, matchingLabels)
 	if err != nil {
-		return nil, fmt.Errorf("creating labels requirement: %w", err)
+		return client.MatchingLabelsSelector{}, fmt.Errorf("creating labels requirement: %w", err)
 	}
 
-	selector := client.MatchingLabelsSelector{
+	return client.MatchingLabelsSelector{
 		Selector: labels.NewSelector().
 			Add(*requirement),
-	}
-
-	return []client.ListOption{
-		client.InNamespace(provider.GetNamespace()),
-		selector,
 	}, nil
 }

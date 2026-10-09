@@ -48,7 +48,25 @@ spec:
         openAPIV3Schema:
           description: The name of the secret containing docker.io credentials.
           type: string
+    - name: inPlaceUpdates
+      required: false
+      schema:
+        openAPIV3Schema:
+          description: Sets the control plane maxSurge to 0, so control plane machines are updated in-place instead of being replaced. Requires at least 3 control plane replicas.
+          type: boolean
   patches:
+    - name: inPlaceUpdates
+      enabledIf: '{{ .inPlaceUpdates }}'
+      definitions:
+        - selector:
+            apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+            kind: RKE2ControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/rolloutStrategy/rollingUpdate/maxSurge
+              value: 0
     - name: rke2CNI
       enabledIf: '{{ ne .rke2CNI "" }}'
       definitions:
