@@ -148,7 +148,9 @@ func (r *CAPIProviderReconciler) BuildWithManager(ctx context.Context, mgr ctrl.
 	}
 
 	if feature.Gates.Enabled(feature.NoCertManager) {
-		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupCertManagerResources)
+		// injectExtensionConfigCABundle runs before ApplyFromCache, which completes the reconciliation once the
+		// provider is installed. The ExtensionConfig is picked up on the reconcile following the first install.
+		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupCertManagerResources, r.injectExtensionConfigCABundle)
 	} else {
 		r.ReconcilePhases = append(r.ReconcilePhases, r.cleanupWranglerResources)
 	}
@@ -312,6 +314,14 @@ func (r *CAPIProviderReconciler) setConditions(_ context.Context) (*controller.R
 func (r *CAPIProviderReconciler) cleanupCertManagerResources(ctx context.Context) (*controller.Result, error) {
 	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
 		return provider.CleanupCertManagerResources(ctx, r.Client, capiProvider)
+	}
+
+	return &controller.Result{}, nil
+}
+
+func (r *CAPIProviderReconciler) injectExtensionConfigCABundle(ctx context.Context) (*controller.Result, error) {
+	if capiProvider, ok := r.Provider.(*turtlesv1.CAPIProvider); ok {
+		return provider.InjectExtensionConfigCABundle(ctx, r.Client, capiProvider)
 	}
 
 	return &controller.Result{}, nil

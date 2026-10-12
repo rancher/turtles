@@ -30,11 +30,10 @@ spec:
 {{- if index .Values  "providers" "controlplaneRKE2" "enableAutomaticUpdate" }}
   enableAutomaticUpdate: {{ index .Values "providers" "controlplaneRKE2" "enableAutomaticUpdate" }}
 {{- end }}
-{{- if index .Values  "providers" "controlplaneRKE2" "features" }}
+{{- /* Only the feature keys set by the user are rendered: empty values would be sent as null and rejected by the CRD. */}}
+{{- with index .Values "providers" "controlplaneRKE2" "features" }}
   features:
-    machinePool: {{ index .Values "providers" "controlplaneRKE2" "features" "machinePool" }}
-    clusterResourceSet: {{ index .Values "providers" "controlplaneRKE2" "features" "clusterResourceSet" }}
-    clusterTopology: {{ index .Values "providers" "controlplaneRKE2" "features" "clusterTopology" }}
+    {{- toYaml . | nindent 4 }}
 {{- end }}
 {{- if index .Values  "providers" "controlplaneRKE2" "variables" }}
   variables:

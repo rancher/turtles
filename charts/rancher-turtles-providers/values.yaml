@@ -137,13 +137,17 @@ providers:
     namespace: rke2-control-plane-system
     # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
     enableAutomaticUpdate: true
-  # version: Optional provider version
-  # version: ""
-  # features: Optional feature flags for this provider.
+  # features: Optional feature flags for this provider. Features that are not set are disabled once any feature is set.
   # features:
+  #   # inPlaceUpdates: Enables in-place updates of machines (disabled by default). When enabled, the RKE2 runtime
+  #   # extension is installed in the rke2-extension-system namespace, using the same version and
+  #   # enableAutomaticUpdate as this provider. To disable it again, set it to false rather than removing it.
+  #   inPlaceUpdates: true
   #   machinePool: false
   #   clusterResourceSet: false
   #   clusterTopology: false
+  # version: Optional provider version
+  # version: ""
   # variables: Optional environment variables exposed to the controller manager.
   # variables:
   #   ENV_VAR: "value"
@@ -159,6 +163,19 @@ providers:
   # manager:
   #   syncPeriod: "5m"
   #   verbosity: 5
+  # runtimeExtension: Optional settings for the RKE2 runtime extension, implementing in-place updates via Rancher
+  # system-agent. Only used when features.inPlaceUpdates is enabled.
+  # runtimeExtension:
+  #   # variables: Optional environment variables exposed to the extension manager.
+  #   variables:
+  #     ENV_VAR: "value"
+  #   # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  #   fetchConfig:
+  #     url: "https://github.com/<org>/<repo>/releases"
+  #     # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  #   # manager: Optional manager settings.
+  #   manager:
+  #     verbosity: 5
   # infrastructureAWS: AWS Infrastructure Provider (CAPA).
   infrastructureAWS:
     # enabled: Enables the installation of this provider.

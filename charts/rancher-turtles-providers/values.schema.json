@@ -76,6 +76,10 @@
             "clusterTopology": {
               "type": "boolean",
               "description": "Enables CAPI ClusterClass support."
+            },
+            "inPlaceUpdates": {
+              "type": "boolean",
+              "description": "Enables CAPI InPlaceUpdates support."
             }
           }
         },
@@ -161,7 +165,31 @@
           "$ref": "#/$defs/providerSchema"
         },
         "controlplaneRKE2": {
-          "$ref": "#/$defs/providerSchema"
+          "allOf": [
+            {
+              "$ref": "#/$defs/providerSchema"
+            },
+            {
+              "properties": {
+                "runtimeExtension": {
+                  "type": "object",
+                  "description": "RKE2 runtime extension settings, used when features.inPlaceUpdates is enabled. The extension always uses the version and enableAutomaticUpdate of this provider.",
+                  "additionalProperties": false,
+                  "properties": {
+                    "variables": {
+                      "$ref": "#/$defs/providerSchema/properties/variables"
+                    },
+                    "manager": {
+                      "$ref": "#/$defs/providerSchema/properties/manager"
+                    },
+                    "fetchConfig": {
+                      "$ref": "#/$defs/providerSchema/properties/fetchConfig"
+                    }
+                  }
+                }
+              }
+            }
+          ]
         },
         "infrastructureAWS": {
           "$ref": "#/$defs/providerSchema"

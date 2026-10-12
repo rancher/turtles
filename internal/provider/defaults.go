@@ -35,6 +35,8 @@ import (
 )
 
 const (
+	// CoreProvider is the default core CAPI provider name.
+	CoreProvider = "cluster-api"
 	// AzureProvider is the default capz provider name.
 	AzureProvider = "azure"
 	// GCPProvider is the default capg provider name.
@@ -51,6 +53,13 @@ func SetProviderSpec(ctx context.Context, cl client.Client, provider *turtlesv1.
 	}
 
 	switch provider.ProviderName() {
+	case CoreProvider:
+		if provider.Status.Variables == nil {
+			provider.Status.Variables = map[string]string{}
+		}
+
+		provider.Status.Variables["EXP_RUNTIME_SDK"] = trueValue
+		provider.Status.Variables["EXP_IN_PLACE_UPDATES"] = trueValue
 	case AzureProvider:
 		if provider.Status.Variables == nil {
 			provider.Status.Variables = map[string]string{}
@@ -173,5 +182,6 @@ func setFeatures(capiProvider *turtlesv1.CAPIProvider) {
 		variables["EXP_CLUSTER_RESOURCE_SET"] = strconv.FormatBool(features.ClusterResourceSet)
 		variables["CLUSTER_TOPOLOGY"] = strconv.FormatBool(features.ClusterTopology)
 		variables["EXP_MACHINE_POOL"] = strconv.FormatBool(features.MachinePool)
+		variables["EXP_IN_PLACE_UPDATES"] = strconv.FormatBool(features.InPlaceUpdates)
 	}
 }
