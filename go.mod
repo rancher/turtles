@@ -1,6 +1,6 @@
 module github.com/rancher/turtles
 
-go 1.26.8
+go 1.26.9
 
 ignore (
 	./hack/tools/krew
