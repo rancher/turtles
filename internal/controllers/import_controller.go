@@ -25,7 +25,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	errorutils "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/events"
@@ -274,21 +273,19 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 	clusterMissing := rancherCluster == nil
 
 	updatedCluster := &managementv3.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    capiCluster.Namespace,
-			GenerateName: "c-",
-			Labels: map[string]string{
-				turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
-				turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
-				turtlesv1.LabelCAPIClusterOwned:          "",
-			},
-			Annotations: map[string]string{
-				fleetNamespaceMigrated: rancherFleetNamespace,
-				turtlesannotations.ImportedClusterVersionManagementAnnotation: "false",
-			},
-			Finalizers: []string{
-				managementv3.CapiClusterFinalizer,
-			},
+		Namespace:    capiCluster.Namespace,
+		GenerateName: "c-",
+		Labels: map[string]string{
+			turtlesv1.LabelCAPIClusterOwnerName:      capiCluster.Name,
+			turtlesv1.LabelCAPIClusterOwnerNamespace: capiCluster.Namespace,
+			turtlesv1.LabelCAPIClusterOwned:          "",
+		},
+		Annotations: map[string]string{
+			fleetNamespaceMigrated: rancherFleetNamespace,
+			turtlesannotations.ImportedClusterVersionManagementAnnotation: "false",
+		},
+		Finalizers: []string{
+			managementv3.CapiClusterFinalizer,
 		},
 		Spec: managementv3.ClusterSpec{
 			DisplayName: capiCluster.Name,
@@ -432,10 +429,10 @@ func (r *CAPIImportReconciler) rancherV3ClusterToCapiCluster(ctx context.Context
 			return nil
 		}
 
-		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
+		capiCluster := &clusterv1.Cluster{
 			Name:      labels[turtlesv1.LabelCAPIClusterOwnerName],
 			Namespace: labels[turtlesv1.LabelCAPIClusterOwnerNamespace],
-		}}
+		}
 
 		if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {
 			if !apierrors.IsNotFound(err) {
@@ -449,7 +446,7 @@ func (r *CAPIImportReconciler) rancherV3ClusterToCapiCluster(ctx context.Context
 			return nil
 		}
 
-		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: capiCluster.Namespace, Name: capiCluster.Name}}}
+		return []ctrl.Request{{Namespace: capiCluster.Namespace, Name: capiCluster.Name}}
 	}
 }
 

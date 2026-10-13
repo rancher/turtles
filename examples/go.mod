@@ -1,6 +1,6 @@
 module github.com/rancher/turtles/examples
 
-go 1.26.7
+go 1.27.0
 
 require (
 	github.com/agnivade/levenshtein v1.2.1

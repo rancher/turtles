@@ -33,7 +33,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,10 +90,8 @@ func getClusterRegistrationManifest(ctx context.Context, clusterName, namespace 
 	log := log.FromContext(ctx)
 
 	token := &managementv3.ClusterRegistrationToken{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
-			Namespace: namespace,
-		},
+		Name:      clusterName,
+		Namespace: namespace,
 		Spec: managementv3.ClusterRegistrationTokenSpec{
 			ClusterName: clusterName,
 		},
@@ -195,10 +192,8 @@ func namespaceToCapiClusters(ctx context.Context, clusterPredicate predicate.Fun
 			}
 
 			reqs = append(reqs, ctrl.Request{
-				NamespacedName: client.ObjectKey{
-					Namespace: cluster.Namespace,
-					Name:      cluster.Name,
-				},
+				Namespace: cluster.Namespace,
+				Name:      cluster.Name,
 			})
 		}
 
@@ -242,9 +237,9 @@ func downloadManifest(url string, caCert []byte, insecureSkipVerify bool) (strin
 // removeFleetNamespace cleans up previous namespace of the deployed agent on the downstream cluster.
 func removeFleetNamespace(ctx context.Context, cl client.Client, cluster *managementv3.Cluster) (bool, error) {
 	log := log.FromContext(ctx)
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+	ns := &corev1.Namespace{
 		Name: "fleet-addon-agent",
-	}}
+	}
 
 	if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); client.IgnoreNotFound(err) != nil {
 		return true, fmt.Errorf("unable to check fleet agent namespace on downstream cluster: %w", err)
@@ -255,9 +250,9 @@ func removeFleetNamespace(ctx context.Context, cl client.Client, cluster *manage
 	}
 
 	if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); apierrors.IsNotFound(err) {
-		ns = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+		ns = &corev1.Namespace{
 			Name: rancherFleetNamespace,
-		}}
+		}
 
 		if err := cl.Get(ctx, client.ObjectKeyFromObject(ns), ns); err != nil {
 			return true, fmt.Errorf("cattle-fleet-system namespace is not present yet: %w", err)

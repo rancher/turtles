@@ -143,10 +143,8 @@ func (r *FleetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	// Fetch the Fleet Cluster
 	fleetCluster := &fleetv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      req.Name,
-			Namespace: req.Namespace,
-		},
+		Name:      req.Name,
+		Namespace: req.Namespace,
 	}
 
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(fleetCluster), fleetCluster); err != nil {
@@ -196,9 +194,7 @@ func (r *FleetReconciler) ReconcileNormal(ctx context.Context, fleetCluster *fle
 	}
 
 	rancherCluster := managementv3.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: rancherClusterName,
-		},
+		Name: rancherClusterName,
 	}
 
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(&rancherCluster), &rancherCluster); err != nil {
@@ -234,10 +230,8 @@ func (r *FleetReconciler) ReconcileNormal(ctx context.Context, fleetCluster *fle
 	log.V(5).Info("Fetching associated CAPI Cluster.")
 
 	capiCluster := clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      capiClusterName,
-			Namespace: capiClusterNamespace,
-		},
+		Name:      capiClusterName,
+		Namespace: capiClusterNamespace,
 	}
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(&capiCluster), &capiCluster); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -295,10 +289,8 @@ func (r *FleetReconciler) ReconcileDelete(ctx context.Context, fleetCluster *fle
 			log.V(5).Info("Removing orphan BundleNamespaceMapping")
 
 			bundleNamespaceMapping := &fleetv1.BundleNamespaceMapping{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fleetCluster.Namespace,
-					Namespace: clusterClassNamespace,
-				},
+				Name:      fleetCluster.Namespace,
+				Namespace: clusterClassNamespace,
 			}
 
 			if err := r.Client.Delete(ctx, bundleNamespaceMapping); err != nil {
@@ -357,10 +349,8 @@ func (r *FleetReconciler) ReconcileClusterClass(ctx context.Context, capiCluster
 // ReconcileBundleNamespaceMapping reconciles the CAPI ClusterClass.
 func (r *FleetReconciler) ReconcileBundleNamespaceMapping(ctx context.Context, sourceNamespace string, targetNamespace string) error {
 	bundleNamespaceMapping := &fleetv1.BundleNamespaceMapping{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      targetNamespace,
-			Namespace: sourceNamespace,
-		},
+		Name:      targetNamespace,
+		Namespace: sourceNamespace,
 	}
 
 	if _, err := controllerutil.CreateOrPatch(ctx, r.Client, bundleNamespaceMapping, func() error {

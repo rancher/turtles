@@ -32,7 +32,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -106,11 +105,9 @@ func (t *TestEnvironment) Cleanup(ctx context.Context, objs ...client.Object) er
 // CreateNamespace creates a new namespace with a generated name.
 func (t *TestEnvironment) CreateNamespace(ctx context.Context, generateName string) (*corev1.Namespace, error) {
 	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: generateName + "-",
-			Labels: map[string]string{
-				"testenv/original-name": generateName,
-			},
+		GenerateName: generateName + "-",
+		Labels: map[string]string{
+			"testenv/original-name": generateName,
 		},
 	}
 	if err := t.Create(ctx, ns); err != nil {
@@ -123,9 +120,7 @@ func (t *TestEnvironment) CreateNamespace(ctx context.Context, generateName stri
 // CreateNamespaceWithName creates a new namespace with a given name.
 func (t *TestEnvironment) CreateNamespaceWithName(ctx context.Context, name string) (*corev1.Namespace, error) {
 	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 	}
 	if err := t.Create(ctx, ns); err != nil {
 		return nil, err

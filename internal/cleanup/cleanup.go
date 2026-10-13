@@ -83,10 +83,10 @@ func Run(ctx context.Context, args []string, scheme *runtime.Scheme) error {
 	if capiProviderName != "" {
 		log.Info("Deleting CAPIProvider", "name", capiProviderName, "namespace", capiProviderNamespace)
 
-		provider := &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
+		provider := &turtlesv1.CAPIProvider{
 			Name:      capiProviderName,
 			Namespace: capiProviderNamespace,
-		}}
+		}
 
 		if err := deleteAndWait(ctx, cl, provider); err != nil {
 			return fmt.Errorf("failed to delete CAPIProvider %s/%s: %w", capiProviderNamespace, capiProviderName, err)
@@ -112,10 +112,10 @@ func Run(ctx context.Context, args []string, scheme *runtime.Scheme) error {
 	if configMapName != "" {
 		log.Info("Deleting ConfigMap", "name", configMapName, "namespace", configMapNamespace)
 
-		configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		configMap := &corev1.ConfigMap{
 			Name:      configMapName,
 			Namespace: configMapNamespace,
-		}}
+		}
 
 		if err := cl.Delete(ctx, configMap); client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("failed to delete ConfigMap %s/%s: %w", configMapNamespace, configMapName, err)
