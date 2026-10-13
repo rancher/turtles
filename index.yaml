@@ -13,6 +13,43 @@ entries:
       catalog.cattle.io/release-name: rancher-turtles
       catalog.cattle.io/scope: management
       catalog.cattle.io/type: cluster-tool
+      helm.sh/images: |
+        - name: turtles
+          image: rancher/turtles:v0.28.0-rc.1
+        - name: cluster-api-controller
+          image: rancher/cluster-api-controller:v1.14.2
+    apiVersion: v2
+    appVersion: 0.28.0-rc.1
+    created: "2026-10-13T12:55:30.107045885Z"
+    description: Rancher Turtles - Cluster API integration in Rancher.
+    digest: a7a2be67e1f20e23262dc140a768631aeb8056ab83131b758cd543c2468e7867
+    home: https://github.com/rancher/turtles/
+    icon: https://raw.githubusercontent.com/rancher/turtles/main/logos/capi.svg
+    keywords:
+    - rancher
+    - cluster-api
+    - capi
+    - provisioning
+    maintainers:
+    - name: Rancher Highlander Team
+      url: https://github.com/rancher/turtles
+    name: rancher-turtles
+    type: application
+    urls:
+    - https://github.com/rancher/turtles/releases/download/v0.28.0-rc.1/rancher-turtles-0.28.0-rc.1.tgz
+    version: 0.28.0-rc.1
+  - annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/display-name: Rancher Turtles
+      catalog.cattle.io/kube-version: '>= 1.35.0-0 < 1.38.0-0'
+      catalog.cattle.io/managed: "true"
+      catalog.cattle.io/namespace: cattle-turtles-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/permits-os: linux
+      catalog.cattle.io/rancher-version: '>= 2.15.0-0 < 2.17.0-0'
+      catalog.cattle.io/release-name: rancher-turtles
+      catalog.cattle.io/scope: management
+      catalog.cattle.io/type: cluster-tool
     apiVersion: v2
     appVersion: 0.28.0-rc.0
     created: "2026-10-05T11:46:03.741372729Z"
@@ -3780,4 +3817,4 @@ entries:
     urls:
     - https://github.com/rancher-sandbox/rancher-turtles/releases/download/v0.1.0-rc1/rancher-turtles-0.1.0-rc1.tgz
     version: 0.1.0-rc1
-generated: "2026-10-13T12:47:37.948889884Z"
+generated: "2026-10-13T12:55:30.107393118Z"
