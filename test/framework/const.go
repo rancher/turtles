@@ -19,10 +19,6 @@ package framework
 const (
 	// DefaultNamespace is the name of the default Kubernetes namespace.
 	DefaultNamespace = "default"
-	// DefaultBranchName is the name of the default git branch.
-	DefaultBranchName = "main"
-	// FleetLocalNamespace is the name of the namespace used for local cluster by Fleet.
-	FleetLocalNamespace = "fleet-local"
 	// MagicDNS is the dns name to use in isolated mode
 	MagicDNS = "sslip.io"
 )

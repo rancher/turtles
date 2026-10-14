@@ -69,18 +69,12 @@ type RancherGetClusterKubeconfigInput struct {
 	// RancherServerURL is the URL of the Rancher server.
 	RancherServerURL string
 
-	// WriteToTempFile indicates whether to write the kubeconfig to a temporary file.
-	WriteToTempFile bool
-
 	// WaitInterval is the interval to wait for the secret to be available.
 	WaitInterval []interface{}
 }
 
 // RancherGetClusterKubeconfigResult represents the result of getting the kubeconfig for a Rancher cluster.
 type RancherGetClusterKubeconfigResult struct {
-	// KubeconfigData contains the kubeconfig data as a byte array.
-	KubeconfigData []byte
-
 	// TempFilePath is the temporary file path where the kubeconfig is stored.
 	TempFilePath string
 }
@@ -122,15 +116,6 @@ func RancherGetClusterKubeconfig(ctx context.Context, input RancherGetClusterKub
 
 	serverURL.Host = input.RancherServerURL
 	cluster.Server = serverURL.String()
-
-	content, err = clientcmd.Write(*cfg)
-	Expect(err).NotTo(HaveOccurred(), "Failed to save updated kubeconfig")
-
-	result.KubeconfigData = content
-
-	if !input.WriteToTempFile {
-		return result
-	}
 
 	tempFile, err := os.CreateTemp("", "kubeconfig")
 	Expect(err).NotTo(HaveOccurred(), "Failed to create temp file for kubeconfig")
@@ -174,15 +159,6 @@ func RancherGetOriginalKubeconfig(ctx context.Context, input RancherGetClusterKu
 	// by using localhost:load-balancer-host-port instead of the address used in the docker network.
 	if runtime.GOOS == "darwin" && input.isDockerCluster(ctx) {
 		fixConfig(ctx, input.SecretName, cfg)
-	}
-
-	content, err = clientcmd.Write(*cfg)
-	Expect(err).NotTo(HaveOccurred(), "Failed to save original kubeconfig")
-
-	result.KubeconfigData = content
-
-	if !input.WriteToTempFile {
-		return result
 	}
 
 	tempFile, err := os.CreateTemp("", "kubeconfig-original")
@@ -418,7 +394,6 @@ func ValidateRancherCluster(ctx context.Context, input ValidateRancherClusterInp
 		SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
 		Namespace:        rancherCluster.Spec.FleetWorkspaceName,
 		RancherServerURL: input.RancherServerURL,
-		WriteToTempFile:  true,
 		WaitInterval:     input.WaitRancherIntervals,
 	})
 

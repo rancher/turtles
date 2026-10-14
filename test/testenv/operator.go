@@ -28,18 +28,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
 	turtlesframework "github.com/rancher/turtles/test/framework"
 )
 
 // CAPIOperatorDeployProviderInput represents the input parameters for deploying a CAPI operator provider.
 type CAPIOperatorDeployProviderInput struct {
-	// E2EConfig is the configuration for end-to-end testing.
-	E2EConfig *clusterctl.E2EConfig
-
 	// BootstrapClusterProxy is the proxy for the bootstrap cluster.
 	BootstrapClusterProxy framework.ClusterProxy
 
@@ -57,26 +52,6 @@ type CAPIOperatorDeployProviderInput struct {
 
 	// CustomWaiter is a slice of functions for custom waiting logic.
 	CustomWaiter []func(ctx context.Context)
-}
-
-// ProviderTemplateData contains variables used for templating
-type ProviderTemplateData struct {
-	// ProviderVersion is the version of the provider
-	ProviderVersion string
-}
-
-// Provider represents a cluster-api provider with version
-type Provider struct {
-	Name    string `yaml:"name"`
-	Type    string `yaml:"type"`
-	URL     string `yaml:"url"`
-	Version string // Parsed from URL
-}
-
-// ClusterctlConfig represents the structure of clusterctl.yaml
-type ClusterctlConfig struct {
-	Images    map[string]interface{} `yaml:"images"`
-	Providers []Provider             `yaml:"providers"`
 }
 
 // CAPIOperatorDeployProvider deploys the CAPI operator providers.
@@ -138,30 +113,4 @@ func CAPIOperatorDeployProvider(ctx context.Context, input CAPIOperatorDeployPro
 			}
 		}
 	}
-}
-
-type RemoveCAPIProviderInput struct {
-	BootstrapClusterProxy framework.ClusterProxy
-	ProviderName          string
-	ProviderNamespace     string
-}
-
-func RemoveCAPIProvider(ctx context.Context, input RemoveCAPIProviderInput) {
-	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
-
-	Expect(ctx).NotTo(BeNil(), "ctx is required for RemoveCAPIProvider")
-	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for RemoveCAPIProvider")
-	Expect(input.ProviderName).ToNot(BeEmpty(), "ProviderName is required for RemoveCAPIProvider")
-	Expect(input.ProviderNamespace).ToNot(BeEmpty(), "ProviderNamespace is required for RemoveCAPIProvider")
-
-	By("Removing CAPI Operator provider: " + input.ProviderName)
-
-	err := input.BootstrapClusterProxy.GetClient().Delete(ctx, &turtlesv1.CAPIProvider{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      input.ProviderName,
-			Namespace: input.ProviderNamespace,
-		},
-	})
-
-	Expect(err).ToNot(HaveOccurred(), "Failed to delete CAPI operator provider: "+input.ProviderName)
 }

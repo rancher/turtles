@@ -283,40 +283,6 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 	return result
 }
 
-// UninstallGiteaInput represents the input parameters for uninstalling Gitea.
-type UninstallGiteaInput struct {
-	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
-	BootstrapClusterProxy framework.ClusterProxy
-
-	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
-
-	// DeleteWaitInterval is the interval to wait between deleting resources.
-	DeleteWaitInterval []interface{} `envDefault:"10m,10s"`
-}
-
-// UninstallGitea uninstalls Gitea by removing the Gitea Helm Chart.
-// It expects the required input parameters to be non-nil.
-func UninstallGitea(ctx context.Context, input UninstallGiteaInput) {
-	Expect(turtlesframework.Parse(&input)).To(Succeed(), "Failed to parse environment variables")
-
-	Expect(ctx).NotTo(BeNil(), "ctx is required for UninstallGitea")
-	Expect(input.BootstrapClusterProxy).ToNot(BeNil(), "BootstrapClusterProxy is required for UninstallGitea")
-	Expect(input.HelmBinaryPath).ToNot(BeEmpty(), "HelmBinaryPath is required for UninstallGitea")
-	Expect(input.DeleteWaitInterval).ToNot(BeNil(), "DeleteWaitInterval is required for UninstallGitea")
-
-	By("Removing Gitea Helm Chart")
-	removeChart := &opframework.HelmChart{
-		BinaryPath:      input.HelmBinaryPath,
-		Name:            "gitea",
-		Commands:        opframework.Commands(opframework.Uninstall),
-		Kubeconfig:      input.BootstrapClusterProxy.GetKubeconfigPath(),
-		AdditionalFlags: opframework.Flags("--wait"),
-	}
-	_, err := removeChart.Run(nil)
-	Expect(err).ToNot(HaveOccurred())
-}
-
 // PreGiteaInstallHook is a function that sets the service type for the Gitea input based on the management cluster environment type.
 // It expects the required input parameters to be non-nil.
 func PreGiteaInstallHook(giteaInput *DeployGiteaInput) {

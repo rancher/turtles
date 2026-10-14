@@ -38,9 +38,6 @@ type CleanupTestClusterInput struct {
 	// SetupTestClusterResult contains the result of setting up the test cluster.
 	SetupTestClusterResult
 
-	// SkipCleanup indicates whether to skip the cleanup process.
-	SkipCleanup bool `env:"SKIP_RESOURCE_CLEANUP"`
-
 	// ArtifactFolder specifies the folder where artifacts are stored.
 	ArtifactFolder string `env:"ARTIFACTS_FOLDER"`
 }

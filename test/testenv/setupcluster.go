@@ -65,9 +65,6 @@ type SetupTestClusterInput struct {
 	// KubernetesVersion is the version of Kubernetes to use for the downstream Clusters.
 	KubernetesVersion string `env:"KUBERNETES_VERSION"`
 
-	// HelmBinaryPath is the path to the Helm binary.
-	HelmBinaryPath string `env:"HELM_BINARY_PATH"`
-
 	// CustomClusterProvider is a custom cluster provider.
 	CustomClusterProvider CustomClusterProvider
 }

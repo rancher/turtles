@@ -25,96 +25,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2"
 
-	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-type WaitForCAPIProviderRolloutInput struct {
-	capiframework.Getter
-	Deployment                      *appsv1.Deployment
-	Name, Namespace, Version, Image string
-}
-
-func WaitForCAPIProviderRollout(ctx context.Context, input WaitForCAPIProviderRolloutInput, intervals ...interface{}) {
-	capiProvider := &turtlesv1.CAPIProvider{}
-	key := types.NamespacedName{
-		Name:      input.Name,
-		Namespace: input.Namespace,
-	}
-
-	if input.Version != "" {
-		Byf("Waiting for CAPIProvider %s to be at version %s", key.String(), input.Version)
-		Eventually(func(g Gomega) {
-			g.Expect(input.Getter.Get(ctx, key, capiProvider)).To(Succeed())
-			g.Expect(capiProvider.Status.InstalledVersion).ToNot(BeNil())
-			g.Expect(*capiProvider.Status.InstalledVersion).To(Equal(input.Version))
-		}, intervals...).Should(Succeed(),
-			"Failed to get CAPIProvider %s with version %s. Last observed: %s",
-			key.String(), input.Version, klog.KObj(capiProvider))
-	}
-
-	if input.Deployment != nil && input.Image != "" {
-		Byf("Waiting for Deployment %s to contain image %s", client.ObjectKeyFromObject(input.Deployment).String(), input.Image)
-		Eventually(func(g Gomega) {
-			g.Expect(input.Getter.Get(ctx, client.ObjectKeyFromObject(input.Deployment), input.Deployment)).To(Succeed())
-			found := false
-			for _, container := range input.Deployment.Spec.Template.Spec.Containers {
-				if strings.HasPrefix(container.Image, input.Image) {
-					found = true
-				}
-			}
-			g.Expect(found).To(BeTrue())
-		}, intervals...).Should(Succeed(),
-			"Failed to get Deployment %s with image %s. Last observed: %s",
-			client.ObjectKeyFromObject(input.Deployment).String(), input.Image, klog.KObj(input.Deployment))
-	}
-}
-
-// WaitForDeploymentsRemovedInput is the input for WaitForDeploymentsRemoved.
-type WaitForDeploymentsRemovedInput = capiframework.WaitForDeploymentsAvailableInput
-
-// WaitForDeploymentsRemoved waits until the Deployment is removed.
-func WaitForDeploymentsRemoved(ctx context.Context, input WaitForDeploymentsRemovedInput, intervals ...interface{}) {
-	Byf("Waiting for deployment %s to be removed", klog.KObj(input.Deployment))
-	deployment := &appsv1.Deployment{}
-	Eventually(func() bool {
-		key := client.ObjectKey{
-			Namespace: input.Deployment.GetNamespace(),
-			Name:      input.Deployment.GetName(),
-		}
-		if err := input.Getter.Get(ctx, key, deployment); err == nil {
-			return false
-		} else if apierrors.IsNotFound(err) {
-			return true
-		}
-
-		return false
-	}, intervals...).Should(BeTrue(), func() string { return capiframework.DescribeFailedDeployment(input, deployment) })
-}
-
-type VerifyCustomResourceHasBeenRemovedInput struct {
-	capiframework.Lister
-	GroupVersionKind schema.GroupVersionKind
-}
-
-func VerifyCustomResourceHasBeenRemoved(ctx context.Context, input VerifyCustomResourceHasBeenRemovedInput) {
-	Byf("Verifying that custom resource %q has been removed", input.GroupVersionKind.String())
-	list := &unstructured.UnstructuredList{}
-	list.SetGroupVersionKind(input.GroupVersionKind)
-	err := input.Lister.List(ctx, list, &client.ListOptions{})
-	Expect(err).NotTo(HaveOccurred(), "Failed to list custom resource %q: %v", input.GroupVersionKind.String(), err)
-	Expect(list.Items).To(BeEmpty(), "Custom resource %q should have been removed, but found %d items", input.GroupVersionKind.String(), len(list.Items))
-}
 
 type VerifyClusterInput struct {
 	BootstrapClusterProxy   capiframework.ClusterProxy
