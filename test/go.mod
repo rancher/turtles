@@ -20,11 +20,11 @@ require (
 	k8s.io/client-go v0.37.1
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
-	sigs.k8s.io/cluster-api v1.14.2
+	sigs.k8s.io/cluster-api v1.14.3
 	sigs.k8s.io/cluster-api-operator v0.29.0
 	sigs.k8s.io/cluster-api-operator/test v0.29.0
-	sigs.k8s.io/cluster-api/api v1.14.2
-	sigs.k8s.io/cluster-api/test v1.14.2
+	sigs.k8s.io/cluster-api/api v1.14.3
+	sigs.k8s.io/cluster-api/test v1.14.3
 	sigs.k8s.io/controller-runtime v0.25.2
 	sigs.k8s.io/kind v0.33.0
 	sigs.k8s.io/yaml v1.6.0
@@ -135,9 +135,9 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel/metric v1.45.0 // indirect
+	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
