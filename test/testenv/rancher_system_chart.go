@@ -71,6 +71,7 @@ type UpgradeInstallRancherWithGiteaInput struct {
 	RancherPatches [][]byte
 
 	// RancherVersion is the version to upgrade to.
+	// If empty, the latest Rancher head version supported by Turtles is resolved from RancherChartURL.
 	RancherVersion string `env:"RANCHER_VERSION"`
 
 	// ChartRepoURL is the URL of the Gitea chart repository (e.g., http://gitea.address/git/charts).
@@ -107,11 +108,16 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 	Expect(input.RancherChartURL).NotTo(BeEmpty(), "RancherChartURL is required")
 	Expect(input.RancherHostname).NotTo(BeEmpty(), "RancherHostname is required")
 	Expect(input.RancherNamespace).NotTo(BeEmpty(), "RancherNamespace is required")
-	Expect(input.RancherVersion).NotTo(BeEmpty(), "RancherVersion is required")
 	Expect(input.ChartRepoURL).NotTo(BeEmpty(), "ChartRepoURL is required")
 	Expect(input.ChartRepoBranch).NotTo(BeEmpty(), "ChartRepoBranch is required")
 	Expect(input.ChartVersion).NotTo(BeEmpty(), "ChartVersion is required")
 	Expect(input.RancherWaitInterval).NotTo(BeNil(), "RancherWaitInterval is required")
+
+	if input.RancherVersion == "" {
+		input.RancherVersion = ResolveRancherHeadVersion(ctx, ResolveRancherHeadVersionInput{
+			RancherChartURL: input.RancherChartURL,
+		})
+	}
 
 	By("Adding Rancher chart repo")
 	addChart := &opframework.HelmChart{
@@ -190,13 +196,19 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 
 	// Optionally configure image overrides via rancher-config ConfigMap for e2e tests with preloaded images
 	if input.TurtlesImageRepo != "" && input.TurtlesImageTag != "" {
-		patch := fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag)
+		// Rancher prime (head) chart sets systemDefaultRegistry, which will be added to the turtles e2e image repo.
+		// Must clear `global.cattle.systemDefaultRegistry` on Turtles to use the locally built version.
+		// `use-rancher-default-registry` is disabled so provider images are not pulled from the staging registry, which
+		// may not have mirrored them yet.
+		values := fmt.Sprintf(`image:\n  repository: %s\n  tag: %s\nglobal:\n  cattle:\n    systemDefaultRegistry: \"\"\nfeatures:\n  use-rancher-default-registry:\n    enabled: false\n`, input.TurtlesImageRepo, input.TurtlesImageTag)
 
 		// regcred is needed on EKS to pull the e2e test image.
 		// See: framework.CreateDockerRegistrySecret
 		if input.EnvironmentType == e2e.ManagementClusterEnvironmentEKS {
-			patch = fmt.Sprintf(`{"data":{"rancher-turtles": "image:\n  repository: %s\n  tag: %s\nimagePullSecrets:\n- regcred\n"}}`, input.TurtlesImageRepo, input.TurtlesImageTag)
+			values += `imagePullSecrets:\n- regcred\n`
 		}
+
+		patch := fmt.Sprintf(`{"data":{"rancher-turtles": "%s"}}`, values)
 
 		By("Patching rancher-config ConfigMap to override Turtles image")
 		patchCmd := exec.Command(
