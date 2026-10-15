@@ -59,6 +59,7 @@ type DeployRancherInput struct {
 	RancherChartPath string `env:"RANCHER_PATH"`
 
 	// RancherVersion is the version of Rancher.
+	// If both RancherVersion and RancherImageTag are empty, the latest Rancher head version supported by Turtles is resolved from RancherChartURL.
 	RancherVersion string `env:"RANCHER_VERSION"`
 
 	// RancherImageTag is the image tag for Rancher.
@@ -145,7 +146,9 @@ func DeployRancher(ctx context.Context, input DeployRancherInput) PreRancherInst
 	})
 
 	if input.RancherVersion == "" && input.RancherImageTag == "" {
-		Fail("RancherVersion or RancherImageTag is required")
+		input.RancherVersion = ResolveRancherHeadVersion(ctx, ResolveRancherHeadVersionInput{
+			RancherChartURL: input.RancherChartURL,
+		})
 	}
 	if input.RancherVersion != "" && input.RancherImageTag != "" {
 		Fail("Only one of RancherVersion or RancherImageTag cen be used")

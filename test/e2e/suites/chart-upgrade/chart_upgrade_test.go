@@ -21,6 +21,7 @@ package chart_upgrade
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -47,14 +48,12 @@ import (
 const (
 	// Turtles-specific constants
 	turtlesDeploymentName = "rancher-turtles-controller-manager"
+	turtlesReleaseName    = "rancher-turtles"
 
 	// CAPI-specific constants
 	capiDeploymentName = "capi-controller-manager"
 	capiNamespace      = "cattle-capi-system"
 	capiProviderName   = "cluster-api"
-
-	// Environment constants
-	rancherInitialVersion = "2.15.0"
 )
 
 var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
@@ -72,14 +71,16 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		clusterName = "cluster-docker-rke2"
 	})
 
-	It(fmt.Sprintf("Should install Rancher %s, including Turtles as system chart, and provision a workload cluster", rancherInitialVersion), func() {
+	It("Should install the latest stable Rancher Prime of the previous minor, including Turtles as system chart and the providers chart, and provision a workload cluster", func() {
+		rancherInitialVersion := testenv.ResolveRancherPreviousStableVersion(ctx, testenv.ResolveRancherPreviousStableVersionInput{})
+
 		By(fmt.Sprintf("Installing Rancher %s (simulating existing Rancher installation)", rancherInitialVersion))
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			RancherVersion:        rancherInitialVersion,
-			RancherChartRepoName:  "rancher-latest",
-			RancherChartPath:      "rancher-latest/rancher",
-			RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
+			RancherChartRepoName:  e2eConfig.GetVariableOrEmpty(e2e.RancherStableRepoNameVar),
+			RancherChartPath:      e2eConfig.GetVariableOrEmpty(e2e.RancherStablePathVar),
+			RancherChartURL:       e2eConfig.GetVariableOrEmpty(e2e.RancherStableURLVar),
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 		hostName = rancherHookResult.Hostname
@@ -105,8 +106,31 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		Expect(toBeUpdatedTurtlesPod).ShouldNot(BeNil(), "Turtles must have a controller manager pod running")
 		GinkgoWriter.Printf("Found Turtles controller pod: %s\n", toBeUpdatedTurtlesPod.GetName())
 
-		By("Installing community providers")
-		framework.Apply(ctx, bootstrapClusterProxy, e2e.CommunityProviders)
+		By("Getting the Turtles chart version installed by Rancher")
+		result := framework.RunCommand(ctx, framework.RunCommandInput{
+			Command: e2eConfig.GetVariableOrEmpty(e2e.HelmBinaryPathVar),
+			Args: []string{
+				"get", "metadata", turtlesReleaseName,
+				"--namespace", e2e.RancherTurtlesNamespace,
+				"--kubeconfig", bootstrapClusterProxy.GetKubeconfigPath(),
+				"--output", "json",
+			},
+		})
+		Expect(result.Error).ToNot(HaveOccurred(), "Failed to get Turtles release metadata: %s", string(result.Stderr))
+		turtlesRelease := struct {
+			Version string `json:"version"`
+		}{}
+		Expect(json.Unmarshal(result.Stdout, &turtlesRelease)).To(Succeed())
+		Expect(turtlesRelease.Version).ToNot(BeEmpty(), "Turtles release must have a chart version")
+
+		By(fmt.Sprintf("Installing Prime providers chart %s", turtlesRelease.Version))
+		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
+			BootstrapClusterProxy:   bootstrapClusterProxy,
+			ProvidersChartPath:      e2eConfig.GetVariableOrEmpty(e2e.TurtlesProvidersStablePathVar),
+			Version:                 turtlesRelease.Version,
+			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
+			ProviderList:            "docker,rke2",
+		})
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
@@ -161,9 +185,6 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			ContainerName:       bootstrapClusterProxy.GetName() + "-control-plane",
 			ETCDEndpointAddress: testenv.GetInternalAddress(ctx, bootstrapClusterProxy),
 		})
-
-		By("Deleting community providers")
-		framework.Delete(ctx, bootstrapClusterProxy, e2e.CommunityProviders)
 
 		By("Upgrading Rancher with Gitea chart repository")
 		testenv.UpgradeInstallRancherWithGitea(ctx, testenv.UpgradeInstallRancherWithGiteaInput{
@@ -226,7 +247,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			}},
 		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		By("Installing Providers from chart")
+		By("Upgrading Providers chart")
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
