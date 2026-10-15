@@ -1,4 +1,5 @@
 ---
+# NOTE: this workflow is currently disabled (see `if: false`)
 name: "Updatecli"
 
 on:
@@ -12,6 +13,9 @@ permissions:
 
 jobs:
   updatecli:
+    # disable this workflow temporarily until we optimize its configuration
+    # currently, we tend to ignore the majority of PRs it creates and end up applying the changes manually
+    if: false
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout
