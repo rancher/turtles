@@ -171,6 +171,7 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 		"--set", "ingress.tls.source=secret",
 		"--set", "privateCA=true",
 		"--wait",
+		"--timeout", fmt.Sprint(input.RancherWaitInterval[0]),
 	}
 
 	if rancherHookResult.IngressClassName != "" {

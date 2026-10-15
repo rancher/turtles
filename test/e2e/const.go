@@ -24,9 +24,6 @@ import (
 )
 
 var (
-	//go:embed data/capi-operator/community-providers.yaml
-	CommunityProviders []byte
-
 	//go:embed data/capi-operator/capa-identity-secret.yaml
 	AWSIdentitySecret []byte
 
@@ -174,6 +171,12 @@ const (
 	BootstrapClusterNameVar = "BOOTSTRAP_CLUSTER_NAME"
 
 	RancherHostnameVar = "RANCHER_HOSTNAME"
+
+	RancherStableRepoNameVar = "RANCHER_STABLE_REPO_NAME"
+	RancherStablePathVar     = "RANCHER_STABLE_PATH"
+	RancherStableURLVar      = "RANCHER_STABLE_URL"
+
+	TurtlesProvidersStablePathVar = "TURTLES_PROVIDERS_STABLE_PATH"
 
 	ArtifactsFolderVar     = "ARTIFACTS_FOLDER"
 	UseExistingClusterVar  = "USE_EXISTING_CLUSTER"
