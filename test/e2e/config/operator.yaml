@@ -111,10 +111,17 @@ variables:
   HELM_EXTRA_VALUES_FOLDER: "/tmp"
 
   # Rancher Configuration
-  RANCHER_VERSION: "v2.15.1-alpha1"
-  RANCHER_REPO_NAME: "rancher-alpha"
-  RANCHER_PATH: "rancher-alpha/rancher"
-  RANCHER_URL: "https://releases.rancher.com/server-charts/alpha"
+  # When empty, RANCHER_VERSION is resolved at runtime to the newest Rancher head chart in RANCHER_URL that satisfies
+  # the catalog.cattle.io/rancher-version annotation in charts/rancher-turtles/Chart.yaml. Set it to pin a version.
+  RANCHER_VERSION: ""
+  RANCHER_REPO_NAME: "rancher-head"
+  RANCHER_PATH: "rancher-head/rancher"
+  RANCHER_URL: "https://charts.optimus.rancher.io/server-charts/latest"
+  # Stable Rancher repository used by the chart upgrade test, which installs the latest stable patch release of the
+  # minor preceding the resolved Rancher head version.
+  RANCHER_STABLE_REPO_NAME: "rancher-latest"
+  RANCHER_STABLE_PATH: "rancher-latest/rancher"
+  RANCHER_STABLE_URL: "https://releases.rancher.com/server-charts/latest"
   RANCHER_HOSTNAME: "localhost"
   RANCHER_REPLICAS: 1
   RANCHER_PASSWORD: "rancheradmin"
