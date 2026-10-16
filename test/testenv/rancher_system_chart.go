@@ -38,79 +38,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// UpdateRancherDeploymentWithChartConfigInput represents the input for UpdateRancherDeploymentWithChartConfig.
-type UpdateRancherDeploymentWithChartConfigInput struct {
-	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
-	BootstrapClusterProxy framework.ClusterProxy
-
-	// ChartRepoURL is the URL of the chart repository (e.g., http://gitea.address/git/charts).
-	ChartRepoURL string
-
-	// ChartRepoBranch is the branch to use from the chart repository.
-	ChartRepoBranch string
-
-	// ChartVersion is the version of the chart to install (e.g., "108.0.0+up99.99.99").
-	ChartVersion string
-}
-
-// UpdateRancherDeploymentWithChartConfig updates the Rancher deployment to add environment variables
-// for the system chart controller. This is used to test migration from helm-based installation
-// to system chart controller based installation.
-func UpdateRancherDeploymentWithChartConfig(ctx context.Context, input UpdateRancherDeploymentWithChartConfigInput) {
-	Expect(ctx).NotTo(BeNil(), "ctx is required for UpdateRancherDeploymentWithChartConfig")
-	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "BootstrapClusterProxy is required")
-	Expect(input.ChartRepoURL).NotTo(BeEmpty(), "ChartRepoURL is required")
-	Expect(input.ChartRepoBranch).NotTo(BeEmpty(), "ChartRepoBranch is required")
-	Expect(input.ChartVersion).NotTo(BeEmpty(), "ChartVersion is required")
-
-	By("Patching Rancher deployment to enable system chart controller")
-
-	// Get the Rancher deployment
-	deployment := &appsv1.Deployment{}
-	Expect(input.BootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
-		Name:      "rancher",
-		Namespace: e2e.RancherNamespace,
-	}, deployment)).To(Succeed())
-
-	// Add environment variables for system chart controller
-	envVars := []corev1.EnvVar{
-		{
-			Name:  "CATTLE_CHART_DEFAULT_URL",
-			Value: input.ChartRepoURL,
-		},
-		{
-			Name:  "CATTLE_CHART_DEFAULT_BRANCH",
-			Value: input.ChartRepoBranch,
-		},
-		{
-			Name:  "CATTLE_RANCHER_TURTLES_VERSION",
-			Value: input.ChartVersion,
-		},
-	}
-
-	// Find the rancher container and add/update env vars
-	for i := range deployment.Spec.Template.Spec.Containers {
-		if deployment.Spec.Template.Spec.Containers[i].Name == "rancher" {
-			existingEnv := deployment.Spec.Template.Spec.Containers[i].Env
-			// Remove existing chart config env vars if any
-			filteredEnv := []corev1.EnvVar{}
-			for _, env := range existingEnv {
-				if env.Name != "CATTLE_CHART_DEFAULT_URL" &&
-					env.Name != "CATTLE_CHART_DEFAULT_BRANCH" &&
-					env.Name != "CATTLE_RANCHER_TURTLES_VERSION" {
-					filteredEnv = append(filteredEnv, env)
-				}
-			}
-			// Add the new env vars
-			deployment.Spec.Template.Spec.Containers[i].Env = append(filteredEnv, envVars...)
-			break
-		}
-	}
-
-	// Update the deployment
-	Expect(input.BootstrapClusterProxy.GetClient().Update(ctx, deployment)).To(Succeed())
-}
-
 // UpgradeInstallRancherWithGiteaInput represents the input for UpgradeInstallRancherWithGitea.
 type UpgradeInstallRancherWithGiteaInput struct {
 	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
@@ -335,9 +262,6 @@ type PushRancherChartsToGiteaResult struct {
 	// ChartRepoHTTPURL is the HTTP URL for Rancher to use (format: http://host:port/git/charts).
 	ChartRepoHTTPURL string
 
-	// LocalRepoDir is the local directory where the chart repo was built.
-	LocalRepoDir string
-
 	// Branch is the branch name used in the charts repo.
 	Branch string
 
@@ -414,25 +338,9 @@ func PushRancherChartsToGitea(ctx context.Context, input PushRancherChartsToGite
 	return &PushRancherChartsToGiteaResult{
 		ChartRepoURL:     repoURL,
 		ChartRepoHTTPURL: httpURL,
-		LocalRepoDir:     input.RancherChartsRepoDir,
 		Branch:           input.RancherChartsBaseBranch,
 		ChartVersion:     input.ChartVersion,
 	}
-}
-
-// EnableCAAPFInput represents the input for EnableCAAPF.
-type EnableCAAPFInput struct {
-	// BootstrapClusterProxy is the cluster proxy for the bootstrap cluster.
-	BootstrapClusterProxy framework.ClusterProxy
-}
-
-// EnableCAAPF patches the rancher-config configmap to set the feature flag UseCAAPF to true.
-func EnableCAAPF(ctx context.Context, input EnableCAAPFInput) {
-	SetTurtlesFeatureGate(ctx, SetTurtlesFeatureGateInput{
-		BootstrapClusterProxy: input.BootstrapClusterProxy,
-		FeatureName:           "use-caapf",
-		Enabled:               true,
-	})
 }
 
 // SetTurtlesFeatureGateInput represents the input for SetTurtlesFeatureGate.

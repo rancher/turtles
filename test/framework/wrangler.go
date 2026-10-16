@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func VerifyCertificatesInNamespace(ctx context.Context, cl client.Client, namespace string) {
+func VerifyCertificatesCRDNotInstalled(ctx context.Context, cl client.Client) {
 	Byf("Verifying no certificates.cert-manager.io CRD is installed")
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -42,7 +42,7 @@ func VerifyCertificatesInNamespace(ctx context.Context, cl client.Client, namesp
 	Expect(apierrors.IsNotFound(err)).Should(BeTrue(), "certificates.cert-manager.io CRD should not be installed")
 }
 
-func VerifyIssuersInNamespace(ctx context.Context, cl client.Client, namespace string) {
+func VerifyIssuersCRDNotInstalled(ctx context.Context, cl client.Client) {
 	Byf("Verifying no issuers.cert-manager.io CRD is installed")
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

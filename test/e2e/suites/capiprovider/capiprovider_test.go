@@ -216,8 +216,8 @@ var _ = Describe("no-cert-manager feature verification", Ordered, Label(e2e.Shor
 	})
 
 	It("Should test no-cert-manager conversion", func() {
-		framework.VerifyCertificatesInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
-		framework.VerifyIssuersInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
+		framework.VerifyCertificatesCRDNotInstalled(ctx, bootstrapClusterProxy.GetClient())
+		framework.VerifyIssuersCRDNotInstalled(ctx, bootstrapClusterProxy.GetClient())
 		framework.VerifyCertManagerAnnotationsForProvider(ctx, bootstrapClusterProxy.GetClient(), "infrastructure-vsphere")
 		framework.VerifyWranglerAnnotationsInNamespace(ctx, bootstrapClusterProxy.GetClient(), capvNamespace)
 	})

@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -39,6 +40,18 @@ const (
 	// workload clusters, which the RKE2 runtime extension relies on to update machines in-place.
 	systemUpgradeControllerNamespace = "cattle-system"
 	systemUpgradeControllerName      = "system-upgrade-controller"
+
+	// machineAgentHealthyCondition and machineEtcdMemberHealthyCondition are the control plane Machine conditions
+	// CAPRKE2 checks before updating a Machine in-place.
+	machineAgentHealthyCondition      = "AgentHealthy"
+	machineEtcdMemberHealthyCondition = "EtcdMemberHealthy"
+
+	// machinePlanSecretType and the machinePlan*Label labels identify the machine-plan Secret Rancher creates for each
+	// Machine, which the RKE2 runtime extension requires to update the Machine in-place.
+	machinePlanSecretType = "rke.cattle.io/machine-plan"
+	machinePlanGroupLabel = "plan.cattle.io/machine-group"
+	machinePlanKindLabel  = "plan.cattle.io/machine-kind"
+	machinePlanNameLabel  = "plan.cattle.io/machine-name"
 )
 
 // ValidateInPlaceUpdateInput represents the input parameters for validating an in-place update.
@@ -56,7 +69,7 @@ type ValidateInPlaceUpdateInput struct {
 	WaitIntervals []interface{}
 
 	// SystemUpgradeControllerWaitIntervals are the intervals used when waiting for the system-upgrade-controller
-	// to be available in the workload cluster, before triggering the update.
+	// to be available in the workload cluster, and for the Machines to be ready, before triggering the update.
 	SystemUpgradeControllerWaitIntervals []interface{}
 }
 
@@ -91,6 +104,24 @@ func ValidateInPlaceUpdate(ctx context.Context, input ValidateInPlaceUpdateInput
 	}, input.SystemUpgradeControllerWaitIntervals...).Should(Succeed(),
 		"Deployment %s/%s is not available in the workload cluster: in-place updates cannot run",
 		systemUpgradeControllerNamespace, systemUpgradeControllerName)
+
+	// CAPRKE2 deletes a control plane Machine instead of updating it in-place when the Machine fails its preflight
+	// checks, and the runtime extension declines Machines without a machine-plan Secret.
+	By("Waiting for all Machines to be ready for an in-place update")
+	Eventually(func() error {
+		machines, err := listClusterMachines(ctx, cl, input.ClusterKey)
+		if err != nil {
+			return err
+		}
+
+		for i := range machines {
+			if err := machineReadyForInPlaceUpdate(ctx, cl, &machines[i]); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}, input.SystemUpgradeControllerWaitIntervals...).Should(Succeed(), "Machines are not ready for an in-place update")
 
 	By("Recording the Machines before the in-place update")
 	originalMachines, err := listClusterMachines(ctx, cl, input.ClusterKey)
@@ -188,6 +219,40 @@ func listClusterMachines(ctx context.Context, cl client.Client, clusterKey types
 	}
 
 	return machines.Items, nil
+}
+
+func machineReadyForInPlaceUpdate(ctx context.Context, cl client.Client, machine *clusterv1.Machine) error {
+	if !machine.DeletionTimestamp.IsZero() {
+		return fmt.Errorf("machine %s is being deleted", machine.Name)
+	}
+
+	if _, ok := machine.Labels[clusterv1.MachineControlPlaneLabel]; ok {
+		for _, condition := range []string{machineAgentHealthyCondition, machineEtcdMemberHealthyCondition} {
+			if !conditions.IsTrue(machine, condition) {
+				return fmt.Errorf("machine %s does not have condition %s set to true", machine.Name, condition)
+			}
+		}
+	}
+
+	secrets := &corev1.SecretList{}
+	if err := cl.List(ctx, secrets,
+		client.InNamespace(machine.Namespace),
+		client.MatchingLabels{
+			machinePlanGroupLabel: clusterv1.GroupVersion.Group,
+			machinePlanKindLabel:  "Machine",
+			machinePlanNameLabel:  machine.Name,
+		},
+	); err != nil {
+		return err
+	}
+
+	for _, secret := range secrets.Items {
+		if secret.Type == machinePlanSecretType {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("machine-plan Secret for machine %s not found", machine.Name)
 }
 
 func setClusterVariable(cluster *clusterv1.Cluster, name, rawValue string) {

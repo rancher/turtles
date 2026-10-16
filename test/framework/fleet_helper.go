@@ -21,8 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
 	"text/template"
 	"time"
 
@@ -37,7 +35,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	fleetv1 "github.com/rancher/turtles/api/fleet/v1alpha1"
 )
@@ -70,9 +67,6 @@ type FleetCreateGitRepoInput struct {
 	// Branch is the branch of the Git repository to use.
 	Branch string `envDefault:"main"`
 
-	// Revision is the specific commit in the Git repository to use.
-	Revision string
-
 	// Paths are the paths within the Git repository to sync.
 	Paths []string
 
@@ -81,9 +75,6 @@ type FleetCreateGitRepoInput struct {
 
 	// ClientSecretName is the name of the client secret to use for authentication.
 	ClientSecretName string `envDefault:"basic-auth-secret"`
-
-	// ClusterSelectors is a list of optional target selectors. These will override the default target.
-	ClusterSelectors []*metav1.LabelSelector
 
 	// ClusterProxy is the ClusterProxy instance for interacting with the cluster.
 	ClusterProxy framework.ClusterProxy
@@ -108,17 +99,7 @@ func FleetCreateAndWaitGitRepo(ctx context.Context, input FleetCreateGitRepoInpu
 
 	Byf("Ensuring uniqueness of GitRepo by naming it %s with path %s", input.Name, input.Paths[0])
 
-	t := template.New("fleet-repo-template").Funcs(template.FuncMap{
-		"toYaml": func(v any) (string, error) {
-			data, err := yaml.Marshal(v)
-			return string(data), err
-		},
-		"nindent": func(spaces int, v string) string {
-			pad := strings.Repeat(" ", spaces)
-			return "\n" + pad + strings.Replace(v, "\n", "\n"+pad, -1)
-		},
-	})
-	t, err := t.Parse(gitRepoTemplate)
+	t, err := template.New("fleet-repo-template").Parse(gitRepoTemplate)
 	Expect(err).ShouldNot(HaveOccurred(), "Failed to pass GitRepo template")
 
 	var renderedTemplate bytes.Buffer
@@ -245,36 +226,6 @@ func FleetDeleteGitRepo(ctx context.Context, input FleetDeleteGitRepoInput) {
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to delete GitRepo")
 }
 
-// FleetCreateFleetFileInput represents the input parameters for creating a fleet file.
-type FleetCreateFleetFileInput struct {
-	// Namespace is the namespace in which the fleet file will be created.
-	Namespace string
-
-	// FilePath is the file path of the fleet file.
-	FilePath string
-}
-
-// FleetCreateFleetFile will create a fleet.yaml file in the given location.
-// See the Fleet docs for further information: https://fleet.rancher.io/ref-fleet-yaml
-func FleetCreateFleetFile(ctx context.Context, input FleetCreateFleetFileInput) {
-	Expect(ctx).NotTo(BeNil(), "ctx is required for FleetCreateFleetFile")
-	Expect(input.FilePath).ToNot(BeEmpty(), "Invalid argument. input.Filepath can't be empty when calling FleetCreateFleetFile")
-
-	if input.Namespace == "" {
-		input.Namespace = DefaultNamespace
-	}
-
-	t := template.New("fleet-file-template")
-	t, err := t.Parse(fleetTemplate)
-	Expect(err).ShouldNot(HaveOccurred(), "Failed to pass fleet file template")
-
-	f, err := os.OpenFile(input.FilePath, os.O_WRONLY|os.O_CREATE, os.ModePerm)
-	Expect(err).ShouldNot(HaveOccurred(), "Failed to create writer for file")
-
-	err = t.Execute(f, input)
-	Expect(err).NotTo(HaveOccurred(), "Failed to execute template")
-}
-
 const gitRepoTemplate = `
 kind: GitRepo
 apiVersion: fleet.cattle.io/v1alpha1
@@ -286,9 +237,6 @@ spec:
   {{- if .Branch }}
   branch: {{ .Branch }}
   {{ end -}}
-  {{- if .Revision }}
-  revision: {{ .Revision }}
-  {{ end -}}
 
   forceSyncGeneration: {{ .FleetGeneration }}
 
@@ -296,13 +244,6 @@ spec:
   {{ range .Paths }}
   - {{.}}
   {{ end }}
-
-  {{- if .ClusterSelectors }}
-  targets:
-  {{ range .ClusterSelectors }}
-  - clusterSelector: {{ . | toYaml | nindent 6 }}
-  {{- end }}
-  {{- end }}
 
   {{- if .ClientSecretName }}
   clientSecretName: {{ .ClientSecretName }}
@@ -312,11 +253,6 @@ spec:
   targetNamespace: {{ .TargetNamespace }}
   {{ end -}}
   `
-
-const fleetTemplate = `
-namespace: {{ .Namespace }}
-defaultNamespace: {{ .Namespace }}
-`
 
 type ValidateFleetClusterTemplateValuesInput struct {
 	// ClusterProxy is the management cluster proxy.

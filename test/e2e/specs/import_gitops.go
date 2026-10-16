@@ -269,11 +269,10 @@ func CreateUsingGitOpsSpec(ctx context.Context, inputGetter func() CreateUsingGi
 
 		By("Storing the original CAPI cluster kubeconfig")
 		originalKubeconfig = turtlesframework.RancherGetOriginalKubeconfig(ctx, turtlesframework.RancherGetClusterKubeconfigInput{
-			ClusterProxy:    input.BootstrapClusterProxy,
-			SecretName:      fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
-			ClusterName:     capiClusterKey.Name,
-			Namespace:       capiClusterKey.Namespace,
-			WriteToTempFile: true,
+			ClusterProxy: input.BootstrapClusterProxy,
+			SecretName:   fmt.Sprintf("%s-kubeconfig", capiCluster.Name),
+			ClusterName:  capiClusterKey.Name,
+			Namespace:    capiClusterKey.Namespace,
 		})
 
 		By("Waiting for cluster control plane to be Ready")

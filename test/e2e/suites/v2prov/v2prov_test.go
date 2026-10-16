@@ -146,7 +146,6 @@ var _ = Describe("[v2prov] [Azure] Creating a cluster with v2prov should still w
 			SecretName:       fmt.Sprintf("%s-kubeconfig", rancherCluster.Name),
 			Namespace:        rancherCluster.Namespace,
 			RancherServerURL: hostName,
-			WriteToTempFile:  true,
 			WaitInterval:     e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher"),
 		})
 

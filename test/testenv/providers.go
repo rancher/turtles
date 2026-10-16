@@ -53,8 +53,6 @@ const (
 	vspherePath             = "providers.infrastructureVSphere."
 	fleetPath               = "providers.addonFleet."
 
-	defaultOCIRegistry = "registry.rancher.com/rancher/cluster-api-controller-components"
-
 	providerKubeadmBootstrap    = "kubeadm-bootstrap"
 	providerKubeadmControlPlane = "kubeadm-control-plane"
 	providerDocker              = "docker"
@@ -223,7 +221,7 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 	By(fmt.Sprintf("Enabled CAPI providers: %s", enabledProviders))
 
 	providerWaiters := []func(ctx context.Context){}
-	configureProviderDefaults(ctx, input, values, enabledProviders)
+	configureProviderDefaults(values, enabledProviders)
 
 	command := []string{
 		"upgrade", e2e.ProvidersChartName, chartPath,
@@ -283,21 +281,6 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		By("Executing provider-specific custom waiter function")
 		waiter(ctx)
 	}
-}
-
-// UninstallRancherTurtlesProviders uninstalls the rancher-turtles-providers chart.
-func UninstallRancherTurtlesProviders(ctx context.Context, namespace string, clusterProxy framework.ClusterProxy) {
-	cmdResult := turtlesframework.RunCommand(ctx, turtlesframework.RunCommandInput{
-		Command: "helm",
-		Args: []string{
-			"uninstall", e2e.ProvidersChartName,
-			"-n", namespace,
-			"--kubeconfig", clusterProxy.GetKubeconfigPath(),
-			"--wait",
-		},
-	})
-	Expect(cmdResult.Error).NotTo(HaveOccurred(), "Failed to uninstall providers chart. Stderr: %s", cmdResult.Stderr)
-	Expect(cmdResult.ExitCode).To(Equal(0), "Uninstalling providers chart returned non-zero exit code. Stderr: %s", cmdResult.Stderr)
 }
 
 func enableAllProviders(values map[string]string) {
@@ -372,7 +355,7 @@ func getDeploymentsForEnabledProviders(enabled []string) []types.NamespacedName 
 	return deployments
 }
 
-func configureProviderDefaults(ctx context.Context, input DeployRancherTurtlesProvidersInput, values map[string]string, enabled []string) {
+func configureProviderDefaults(values map[string]string, enabled []string) {
 	for _, name := range enabled {
 		switch name {
 		case providerAWS:
