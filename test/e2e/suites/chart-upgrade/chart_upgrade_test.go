@@ -131,7 +131,6 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			SkipCleanup:                    true, // Keep cluster running during upgrade
 			SkipDeletionTest:               true,
 			SkipLatestFeatureChecks:        true,
-			RancherManagedFleet:            true,
 			ValidateFleetAgentWasInstalled: true,
 			AdditionalTemplateVariables: map[string]string{
 				"RKE2_CNI":                `""`,

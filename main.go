@@ -254,6 +254,17 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	if err := (&controllers.CAAPFFinalizerReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		WatchFilterValue: watchFilterValue,
+	}).SetupWithManager(ctx, mgr, controller.Options{
+		MaxConcurrentReconciles: concurrencyNumber,
+	}); err != nil {
+		setupLog.Error(err, "unable to create CAAPF finalizer controller")
+		os.Exit(1)
+	}
+
 	setupLog.Info("enabling Clusterctl Config synchronization controller")
 
 	if err := (&controllers.ClusterctlConfigReconciler{
