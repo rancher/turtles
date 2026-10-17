@@ -175,6 +175,10 @@ const (
 
 	RancherHostnameVar = "RANCHER_HOSTNAME"
 
+	RancherStableRepoNameVar = "RANCHER_STABLE_REPO_NAME"
+	RancherStablePathVar     = "RANCHER_STABLE_PATH"
+	RancherStableURLVar      = "RANCHER_STABLE_URL"
+
 	ArtifactsFolderVar     = "ARTIFACTS_FOLDER"
 	UseExistingClusterVar  = "USE_EXISTING_CLUSTER"
 	HelmBinaryPathVar      = "HELM_BINARY_PATH"
