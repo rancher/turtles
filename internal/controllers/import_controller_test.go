@@ -35,6 +35,7 @@ import (
 	turtlesannotations "github.com/rancher/turtles/util/annotations"
 	turtlesnaming "github.com/rancher/turtles/util/naming"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -717,6 +718,33 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Spec.Description).To(Equal(description))
+		}).Should(Succeed())
+	})
+
+	It("should remove the rancher cluster finalizer when the CAPI cluster is already marked as imported", func() {
+		// simulate that the CAPI cluster was annotated but the Rancher cluster's finalizer failed to be removed.
+		capiCluster.Annotations = map[string]string{
+			turtlesannotations.ClusterImportedAnnotation: trueValue,
+		}
+		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
+		setControlPlaneReady(capiCluster)
+		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
+
+		rancherCluster.Finalizers = []string{managementv3.CapiClusterFinalizer}
+		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
+		Expect(cl.Delete(ctx, rancherCluster)).To(Succeed())
+
+		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)).ToNot(HaveOccurred())
+
+		Eventually(func(g Gomega) {
+			_, err := r.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: capiCluster.Namespace,
+					Name:      capiCluster.Name,
+				},
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(apierrors.IsNotFound(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster))).To(BeTrue())
 		}).Should(Succeed())
 	})
 })

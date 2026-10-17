@@ -171,11 +171,6 @@ func (r *CAPIImportReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: defaultRequeueDuration}, nil
 	}
 
-	if turtlesannotations.HasClusterImportAnnotation(capiCluster) {
-		log.Info("cluster was imported already and has imported=true annotation set, skipping re-import")
-		return ctrl.Result{}, nil
-	}
-
 	// Collect errors as an aggregate to return together after all patches have been performed.
 	var errs []error
 
@@ -228,6 +223,12 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 			}
 		}
 
+		return ctrl.Result{}, nil
+	}
+
+	// Checked after the ManagementV3 Cluster deletion so a failed finalizer removal above is retried.
+	if turtlesannotations.HasClusterImportAnnotation(capiCluster) {
+		log.Info("cluster was imported already and has imported=true annotation set, skipping re-import")
 		return ctrl.Result{}, nil
 	}
 
