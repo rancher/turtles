@@ -40,7 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -347,9 +346,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
-	It("should set the external fleet annotation when feature gate is set", func() {
-		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
-
+	It("should clear the external fleet annotation", func() {
 		Expect(cl.Create(ctx, capiCluster)).To(Succeed())
 		setControlPlaneReady(capiCluster)
 		Expect(cl.Status().Update(ctx, capiCluster)).To(Succeed())
@@ -377,7 +374,17 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		_, err = testEnv.CreateNamespaceWithName(ctx, cluster.Name)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Continue with further reconciliation to check fleet annotation
+		// Simulate a cluster previously managed by CAAPF
+		Eventually(func(g Gomega) {
+			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)).To(Succeed())
+			if cluster.Annotations == nil {
+				cluster.Annotations = map[string]string{}
+			}
+			cluster.Annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
+			g.Expect(cl.Update(ctx, &cluster)).To(Succeed())
+		}).Should(Succeed())
+
+		// Continue with further reconciliation to check fleet annotation is removed
 		Eventually(func(g Gomega) {
 			_, err := r.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -390,7 +397,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
 			g.Expect(rancherClusters.Items).To(HaveLen(1))
 			g.Expect(rancherClusters.Items[0].Name).To(ContainSubstring("c-"))
-			g.Expect(rancherClusters.Items[0].Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
+			g.Expect(rancherClusters.Items[0].Annotations).To(Not(HaveKey(turtlesannotations.ExternalFleetAnnotation)))
 		}).Should(Succeed())
 	})
 
@@ -572,9 +579,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 	})
 
-	It("should set the external fleet annotation when feature gate is set on an already imported cluster", func() {
-		featuregatetesting.SetFeatureGateDuringTest(GinkgoT(), feature.MutableGates, feature.UseCAAPF, true)
-
+	It("should clear the external fleet annotation on an already imported cluster", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(sampleTemplate))
@@ -588,6 +593,8 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		Expect(cl.Create(ctx, capiKubeconfigSecret)).To(Succeed())
 
+		// Simulate a cluster previously managed by CAAPF
+		rancherCluster.Annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
 		Expect(cl.Create(ctx, rancherCluster)).To(Succeed())
 		Eventually(ctx, func(g Gomega) {
 			g.Expect(cl.List(ctx, rancherClusters, selectors...)).ToNot(HaveOccurred())
@@ -595,6 +602,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 		}).Should(Succeed())
 		cluster := rancherClusters.Items[0]
 		Expect(cluster.Name).To(ContainSubstring("c-"))
+		Expect(cluster.Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
 
 		clusterRegistrationToken.Name = cluster.Name
 		clusterRegistrationToken.Namespace = cluster.Name
@@ -616,7 +624,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 			rancherCluster := cluster.DeepCopy()
 			g.Expect(cl.Get(ctx, client.ObjectKeyFromObject(&cluster), rancherCluster)).To(Succeed())
-			g.Expect(rancherCluster.Annotations).To(HaveKey(turtlesannotations.ExternalFleetAnnotation))
+			g.Expect(rancherCluster.Annotations).To(Not(HaveKey(turtlesannotations.ExternalFleetAnnotation)))
 		}, 5*time.Second).Should(Succeed())
 	})
 

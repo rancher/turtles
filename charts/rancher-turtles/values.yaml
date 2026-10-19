@@ -32,10 +32,6 @@ features:
   rancher-credential-translation:
     # enabled: Turn on or off.
     enabled: true
-  # use-caapf: Alpha feature to make Turtles rely on CAAPF to install Fleet in CAPI workload clusters.
-  use-caapf:
-    # enabled: Turn on or off.
-    enabled: false
   # use-rancher-default-registry: Alpha feature to use Rancher's default registry for provider images.
   use-rancher-default-registry:
     # enabled: Turn on or off.
