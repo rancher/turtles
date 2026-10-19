@@ -232,6 +232,91 @@ var _ = Describe("CAAPFFinalizerReconciler", func() {
 		Expect(getCAPICluster(c).Finalizers).ToNot(ContainElement(FleetAddonFinalizer))
 	})
 
+	Context("CAAPF BundleNamespaceMapping cleanup", func() {
+		const classNamespace = "capi-classes"
+
+		withClassNamespace := func(cluster *clusterv1.Cluster, ns string) *clusterv1.Cluster {
+			cluster.Spec.Topology.ClassRef = clusterv1.ClusterClassRef{Name: "quick-start", Namespace: ns}
+
+			return cluster
+		}
+
+		sibling := func(name string, finalizers ...string) *clusterv1.Cluster {
+			return withClassNamespace(&clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, Finalizers: finalizers},
+			}, classNamespace)
+		}
+
+		mapping := func(ns string) *fleetv1.BundleNamespaceMapping {
+			return &fleetv1.BundleNamespaceMapping{Name: namespace, Namespace: ns}
+		}
+
+		mappingExists := func(c client.Client, ns string) bool {
+			err := c.Get(ctx, client.ObjectKeyFromObject(mapping(ns)), &fleetv1.BundleNamespaceMapping{})
+			if apierrors.IsNotFound(err) {
+				return false
+			}
+			Expect(err).ToNot(HaveOccurred())
+
+			return true
+		}
+
+		deleteAndReconcile := func(objs ...client.Object) client.Client {
+			r, c := newReconciler(objs...)
+			Expect(c.Delete(ctx, capiCluster)).To(Succeed())
+
+			_, err := r.Reconcile(ctx, request)
+			Expect(err).ToNot(HaveOccurred())
+
+			return c
+		}
+
+		BeforeEach(func() {
+			withClassNamespace(capiCluster, classNamespace)
+		})
+
+		It("should delete the mapping of the last CAAPF-managed cluster being deleted", func() {
+			c := deleteAndReconcile(capiCluster, mapping(classNamespace), fleetClusterOwnedBy(namespace, capiOwnerRef(clusterName), nil))
+			Expect(mappingExists(c, classNamespace)).To(BeFalse())
+		})
+
+		It("should keep the mapping while another CAAPF-managed cluster uses it", func() {
+			c := deleteAndReconcile(capiCluster, mapping(classNamespace), sibling("cluster2", FleetAddonFinalizer))
+			Expect(mappingExists(c, classNamespace)).To(BeTrue())
+		})
+
+		It("should delete the mapping when the other clusters do not use it", func() {
+			beingDeleted := sibling("deleting", FleetAddonFinalizer)
+			beingDeleted.DeletionTimestamp = new(metav1.Now())
+			otherClassNamespace := withClassNamespace(sibling("other-class-ns", FleetAddonFinalizer), "other")
+
+			c := deleteAndReconcile(capiCluster, mapping(classNamespace), beingDeleted, otherClassNamespace,
+				sibling("not-caapf-managed"))
+			Expect(mappingExists(c, classNamespace)).To(BeFalse())
+		})
+
+		It("should not delete a mapping for a ClusterClass in the cluster namespace", func() {
+			withClassNamespace(capiCluster, namespace)
+			c := deleteAndReconcile(capiCluster, mapping(namespace))
+			Expect(mappingExists(c, namespace)).To(BeTrue())
+		})
+
+		It("should unblock deletion when the mapping is already gone", func() {
+			c := deleteAndReconcile(capiCluster)
+
+			err := c.Get(ctx, request.NamespacedName, &clusterv1.Cluster{})
+			Expect(apierrors.IsNotFound(err)).To(BeTrue(), "CAPI cluster should be deleted")
+		})
+
+		It("should not delete the mapping of a cluster that is not being deleted", func() {
+			r, c := newReconciler(capiCluster, mapping(classNamespace))
+
+			_, err := r.Reconcile(ctx, request)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mappingExists(c, classNamespace)).To(BeTrue())
+		})
+	})
+
 	It("should ignore a CAPI cluster that no longer exists", func() {
 		r, _ := newReconciler()
 

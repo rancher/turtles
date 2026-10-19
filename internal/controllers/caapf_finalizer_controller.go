@@ -98,6 +98,7 @@ func (r *CAAPFFinalizerReconciler) SetupWithManager(ctx context.Context, mgr ctr
 
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=fleet.cattle.io,resources=clusters,verbs=get;list;watch
+// +kubebuilder:rbac:groups=fleet.cattle.io,resources=bundlenamespacemappings,verbs=delete
 
 // Reconcile removes the CAAPF finalizer from a CAPI cluster whose CAAPF migration is complete or that is
 // being deleted.
@@ -134,6 +135,8 @@ func (r *CAAPFFinalizerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// The Fleet cluster watch triggers a new reconcile once it is removed.
 			return ctrl.Result{}, nil
 		}
+	} else if err := r.cleanupBundleNamespaceMapping(ctx, capiCluster); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	removed := false
@@ -186,6 +189,50 @@ func (r *CAAPFFinalizerReconciler) caapfOwnedFleetCluster(
 	}
 
 	return client.ObjectKey{}, false, nil
+}
+
+// cleanupBundleNamespaceMapping deletes the BundleNamespaceMapping that CAAPF created for a cross-namespace
+// ClusterClass, as CAAPF did on cluster deletion. It is shared per cluster namespace, so it is kept while
+// another CAAPF-managed cluster (one still carrying the finalizer) uses it.
+func (r *CAAPFFinalizerReconciler) cleanupBundleNamespaceMapping(ctx context.Context, capiCluster *clusterv1.Cluster) error {
+	log := log.FromContext(ctx)
+
+	classNamespace := capiCluster.Spec.Topology.ClassRef.Namespace
+	if classNamespace == "" || classNamespace == capiCluster.Namespace {
+		return nil
+	}
+
+	capiClusters := &clusterv1.ClusterList{}
+	if err := r.Client.List(ctx, capiClusters, client.InNamespace(capiCluster.Namespace)); err != nil {
+		return fmt.Errorf("listing CAPI clusters: %w", err)
+	}
+
+	// Iterate through all non-deleting clusters in the same namespace that contain the finalizer
+	// and skip BNM deletion if it's still being used by any of them.
+	for i := range capiClusters.Items {
+		other := &capiClusters.Items[i]
+		if other.DeletionTimestamp.IsZero() && controllerutil.ContainsFinalizer(other, FleetAddonFinalizer) &&
+			other.Spec.Topology.ClassRef.Namespace == classNamespace {
+			log.V(5).Info("Keeping CAAPF BundleNamespaceMapping still used by another CAPI cluster", "cluster", other.Name)
+
+			return nil
+		}
+	}
+
+	mapping := &fleetv1.BundleNamespaceMapping{Name: capiCluster.Namespace, Namespace: classNamespace}
+	mappingKey := client.ObjectKeyFromObject(mapping)
+
+	if err := r.Client.Delete(ctx, mapping); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return fmt.Errorf("deleting CAAPF BundleNamespaceMapping %s: %w", mappingKey, err)
+	}
+
+	log.Info("Deleted CAAPF BundleNamespaceMapping", "bundleNamespaceMapping", mappingKey)
+
+	return nil
 }
 
 // fleetClusterOwnerChanged filters out Fleet cluster updates that leave its CAPI cluster owner as it
