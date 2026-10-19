@@ -54,8 +54,6 @@ import (
 
 const (
 	missingLabelMsg = "missing label"
-	// FleetAddonFinalizer is the finalizer added by CAAPF to guard cleanup.
-	FleetAddonFinalizer = "fleet.addons.cluster.x-k8s.io"
 )
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
@@ -238,6 +236,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 			return ctrl.Result{}, fmt.Errorf("error deleting associated managementv3.Cluster resources: %w", err)
 		}
 
+		// The CAAPF finalizer is handled by CAAPFFinalizerReconciler.
 		if controllerutil.RemoveFinalizer(capiCluster, managementv3.CapiClusterFinalizer) {
 			if err := r.Client.Update(ctx, capiCluster); err != nil {
 				return ctrl.Result{}, fmt.Errorf("error removing finalizer from CAPI Cluster: %w", err)
@@ -305,7 +304,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 
 	r.optOutOfClusterOwner(ctx, rancherCluster)
 	r.propagateLabels(rancherCluster, capiCluster)
-	r.reconcileExternalFleetManagement(ctx, rancherCluster, capiCluster)
+	r.removeExternalFleetAnnotation(ctx, rancherCluster)
 
 	addedFinalizer := controllerutil.AddFinalizer(rancherCluster, managementv3.CapiClusterFinalizer)
 	if addedFinalizer {
@@ -531,39 +530,13 @@ func (r *CAPIImportReconciler) propagateLabels(rancherCluster *managementv3.Clus
 	rancherCluster.SetLabels(labels)
 }
 
-// reconcileExternalFleetManagement adds or removes the `provisioning.cattle.io/externally-managed` annotation
-// based on the feature gate `use-caapf`.
-func (r *CAPIImportReconciler) reconcileExternalFleetManagement(ctx context.Context, rancherCluster *managementv3.Cluster,
-	capiCluster *clusterv1.Cluster,
-) {
+// removeExternalFleetAnnotation removes the `provisioning.cattle.io/externally-managed` annotation
+// left behind on Rancher clusters previously managed by CAAPF. With the CAAPF removal, there should
+// be nothing that requires this and can be cleaned up.
+func (r *CAPIImportReconciler) removeExternalFleetAnnotation(ctx context.Context, rancherCluster *managementv3.Cluster) {
+	log := log.FromContext(ctx)
+
 	annotations := rancherCluster.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-
-	if feature.Gates.Enabled(feature.UseCAAPF) {
-		addFleetAnnotation(ctx, annotations, rancherCluster)
-	} else {
-		removeFleetAnnotation(ctx, annotations, rancherCluster)
-
-		controllerutil.RemoveFinalizer(capiCluster, FleetAddonFinalizer)
-	}
-}
-
-func addFleetAnnotation(ctx context.Context, annotations map[string]string, rancherCluster *managementv3.Cluster) {
-	log := log.FromContext(ctx)
-
-	if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; !found {
-		annotations[turtlesannotations.ExternalFleetAnnotation] = trueValue
-		rancherCluster.SetAnnotations(annotations)
-
-		log.Info("Added fleet annotation to Rancher cluster")
-	}
-}
-
-func removeFleetAnnotation(ctx context.Context, annotations map[string]string, rancherCluster *managementv3.Cluster) {
-	log := log.FromContext(ctx)
-
 	if _, found := annotations[turtlesannotations.ExternalFleetAnnotation]; found {
 		delete(annotations, turtlesannotations.ExternalFleetAnnotation)
 		rancherCluster.SetAnnotations(annotations)

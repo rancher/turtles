@@ -76,16 +76,6 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
-  capifleetrelease:
-    kind: githubrelease
-    name: Get the latest CAPI add-on provider Fleet release
-    spec:
-      owner: "rancher"
-      repository: "cluster-api-addon-provider-fleet"
-      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
-      typeFilter:
-        latest: true
 
 # update config.yaml accordingly
 targets:
@@ -179,15 +169,6 @@ targets:
       replacepattern: 'https://github.com/rancher/cluster-api-provider-vsphere/releases/{{ source "capvrelease" }}/'
     scmid: turtles
     sourceid: capvrelease # Will be ignored as `replacepattern` is specified
-  bumpcapifleet:
-    name: bump capi fleet addon provider
-    kind: file
-    spec:
-      file: ./internal/controllers/clusterctl/config-prime.yaml
-      matchpattern: "https://github.com/rancher/cluster-api-addon-provider-fleet/releases/(.*)/"
-      replacepattern: 'https://github.com/rancher/cluster-api-addon-provider-fleet/releases/{{ source "capifleetrelease" }}/'
-    scmid: turtles
-    sourceid: capifleetrelease # Will be ignored as `replacepattern` is specified
 
 # create a pr with the changes
 actions:
