@@ -56,5 +56,5 @@ var DefaultGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	RancherCCTranslation:      {Default: true, PreRelease: featuregate.Beta},
 	UIPlugin:                  {Default: false, PreRelease: featuregate.Alpha},
 	UseRancherDefaultRegistry: {Default: true, PreRelease: featuregate.Beta},
-	FleetIntegration:          {Default: false, PreRelease: featuregate.Alpha},
+	FleetIntegration:          {Default: true, PreRelease: featuregate.Beta},
 }
