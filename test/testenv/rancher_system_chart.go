@@ -356,6 +356,8 @@ type SetTurtlesFeatureGateInput struct {
 }
 
 // SetTurtlesFeatureGate patches the rancher-config configmap to set a feature flag for Turtles.
+//
+// NOTE: this function is currently not used, but it's kept here for future feature gates.
 func SetTurtlesFeatureGate(ctx context.Context, input SetTurtlesFeatureGateInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for SetTurtlesFeatureGate")
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "BootstrapClusterProxy is required")
