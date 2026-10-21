@@ -117,21 +117,6 @@ var _ = SynchronizedBeforeSuite(
 			}},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
-		testenv.SetTurtlesFeatureGate(ctx, testenv.SetTurtlesFeatureGateInput{
-			BootstrapClusterProxy: setupClusterResult.BootstrapClusterProxy,
-			FeatureName:           "fleet-integration",
-			Enabled:               true,
-		})
-
-		By("Waiting for Turtles controller to restart with Fleet integration enabled")
-		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "rancher-turtles-controller-manager",
-				Namespace: e2e.RancherTurtlesNamespace,
-			}},
-		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
-
 		providersValues := map[string]string{}
 		if e2eConfig.GetVariableOrEmpty(e2e.RKE2InPlaceUpdatesVar) == "true" {
 			// Enables in-place updates in CAPRKE2, which also installs the RKE2 runtime extension.
