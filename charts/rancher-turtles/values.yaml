@@ -39,7 +39,7 @@ features:
   # fleet-integration: Beta feature to enable CAPI integration with Rancher managed Fleet resources.
   fleet-integration:
     # enabled: Turn on or off.
-    enabled: false
+    enabled: true
 # volumes: Volumes for controller pods.
 volumes:
   - name: clusterctl-config
