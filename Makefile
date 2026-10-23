@@ -62,7 +62,7 @@ $(TOOLS_BIN_DIR):
 
 export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
 
-# Configure krew root directory to tools dir 
+# Configure krew root directory to tools dir
 export KREW_ROOT := $(abspath $(TOOLS_DIR))/krew
 export PATH := $(KREW_ROOT)/bin:$(PATH)
 
@@ -135,8 +135,8 @@ ENVSUBST := $(abspath $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER))
 ENVSUBST_PKG := github.com/drone/envsubst/v2/cmd/envsubst
 
 GINKGO_BIN := ginkgo
-GINGKO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
-GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
+GINKGO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
+GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER))
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
 HELM_VER := v4.2.0
@@ -250,7 +250,7 @@ manifests: generate
 .PHONY: generate-manifests-external
 generate-manifests-external: vendor controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) crd paths="./api/rancher/..." output:crd:artifacts:config=hack/crd/bases
-	$(CONTROLLER_GEN) crd paths="./api/fleet/..." output:crd:artifacts:config=hack/crd/bases 
+	$(CONTROLLER_GEN) crd paths="./api/fleet/..." output:crd:artifacts:config=hack/crd/bases
 	$(CONTROLLER_GEN) crd paths="./vendor/sigs.k8s.io/cluster-api/..." output:crd:artifacts:config=hack/crd/bases
 	# Vendor is only required for pulling latest CRDs from the dependencies
 	$(MAKE) vendor-clean
@@ -270,7 +270,7 @@ generate-modules: ## Run go mod tidy to ensure modules are up to date
 generate-go-deepcopy:  ## Run deepcopy generation
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt \
-		paths=./api/... 
+		paths=./api/...
 
 # Run go mod
 .PHONY: vendor
@@ -472,7 +472,7 @@ verify-gen: generate  ## Verify go generated files are up to date
 	fi
 
 .PHONY: verify-chart
-verify-chart: build-chart 
+verify-chart: build-chart
 	@if !(git diff --quiet HEAD); then \
 		git diff; \
 		echo "chart files are out of date, run make generate"; exit 1; \
@@ -522,7 +522,7 @@ $(SETUP_ENVTEST): # Build setup-envtest from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(SETUP_ENVTEST_PKG) $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
 
 $(GINKGO): # Build ginkgo from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINGKO_VER)
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINKGO_VER)
 
 $(GOLANGCI_LINT): # Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOLANGCI_LINT_PKG) $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
@@ -550,7 +550,7 @@ $(HELM): ## Put helm into tools folder.
 $(CLUSTERCTL): $(TOOLS_BIN_DIR) ## Download and install clusterctl
 	curl --retry $(CURL_RETRIES) -fsSL -o $(CLUSTERCTL) $(CAPI_UPSTREAM_RELEASES)/download/$(CLUSTERCTL_VER)/clusterctl-linux-amd64
 	echo "${CLUSTERCTL_VER_SHA256}  $(CLUSTERCTL)" | sha256sum --check
-	chmod +x $(CLUSTERCTL) 
+	chmod +x $(CLUSTERCTL)
 
 install-etcd-tools: $(TOOLS_BIN_DIR) ## Download and install etcdctl
 	mkdir -p /tmp/etcd-tools-unpack

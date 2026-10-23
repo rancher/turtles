@@ -45,8 +45,8 @@ const (
 	capvDeploymentName  = "capv-controller-manager"
 	capvNamespace       = "capv-system"
 	capvProviderName    = "vsphere"
-	capvInitialVersion  = "v1.14.0" //see test/e2e/data/test-providers/clusterctlconfig.yaml
-	capvUpgradedVersion = "v1.15.0" //see test/e2e/data/test-providers/clusterctlconfig-updated.yaml
+	capvInitialVersion  = "v1.16.1" //see test/e2e/data/test-providers/clusterctlconfig.yaml
+	capvUpgradedVersion = "v1.17.0" //see test/e2e/data/test-providers/clusterctlconfig-updated.yaml
 
 	// vCluster is used as an uknown provider.
 	// Uknown in this context means this provider is not certified and not known by clusterctl upstream.
