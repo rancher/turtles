@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	neturl "net/url"
 	"sort"
 	"strings"
 	"time"
@@ -222,6 +223,11 @@ func downloadManifest(url string, caCert []byte, insecureSkipVerify bool) (strin
 
 	resp, err := client.Get(url) //nolint:gosec,noctx
 	if err != nil {
+		// Drop the URL from the error, as it may contain the registration token
+		if urlErr, ok := errors.AsType[*neturl.Error](err); ok {
+			err = urlErr.Err
+		}
+
 		return "", fmt.Errorf("downloading manifest: %w", err)
 	}
 	defer resp.Body.Close()
