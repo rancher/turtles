@@ -52,9 +52,6 @@ const (
 	capiDeploymentName = "capi-controller-manager"
 	capiNamespace      = "cattle-capi-system"
 	capiProviderName   = "cluster-api"
-
-	// Environment constants
-	rancherInitialVersion = "2.15.0"
 )
 
 var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.ShortTestLabel), func() {
@@ -72,14 +69,16 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		clusterName = "cluster-docker-rke2"
 	})
 
-	It(fmt.Sprintf("Should install Rancher %s, including Turtles as system chart, and provision a workload cluster", rancherInitialVersion), func() {
+	It("Should install the latest stable Rancher of the previous minor, including Turtles as system chart, and provision a workload cluster", func() {
+		rancherInitialVersion := testenv.ResolveRancherPreviousStableVersion(ctx, testenv.ResolveRancherPreviousStableVersionInput{})
+
 		By(fmt.Sprintf("Installing Rancher %s (simulating existing Rancher installation)", rancherInitialVersion))
 		rancherHookResult := testenv.DeployRancher(ctx, testenv.DeployRancherInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			RancherVersion:        rancherInitialVersion,
-			RancherChartRepoName:  "rancher-latest",
-			RancherChartPath:      "rancher-latest/rancher",
-			RancherChartURL:       "https://releases.rancher.com/server-charts/latest",
+			RancherChartRepoName:  e2eConfig.GetVariableOrEmpty(e2e.RancherStableRepoNameVar),
+			RancherChartPath:      e2eConfig.GetVariableOrEmpty(e2e.RancherStablePathVar),
+			RancherChartURL:       e2eConfig.GetVariableOrEmpty(e2e.RancherStableURLVar),
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 		hostName = rancherHookResult.Hostname

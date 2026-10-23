@@ -162,7 +162,7 @@ Most notable ones:
 
 ```yaml
 variables:
-  RANCHER_VERSION: "v2.15.1-alpha1" # Default rancher version to install
+  RANCHER_VERSION: "" # Rancher version to install. When empty, the newest head chart in RANCHER_URL supported by charts/rancher-turtles/Chart.yaml is used
   RANCHER_HOSTNAME: "localhost" # Your ngrok domain
   NGROK_API_KEY: "" # Key and token values for establishing ingress
   NGROK_AUTHTOKEN: ""
@@ -172,6 +172,14 @@ variables:
   ARTIFACTS_FOLDER: "_artifacts" # Folder for the e2e run artifacts collection with crust-gather.
   SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPG_ENCODED_CREDS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,VSPHERE_KUBE_VIP_IP_KUBEADM,VSPHERE_KUBE_VIP_IP_RKE2,DOCKER_REGISTRY_TOKEN,DOCKER_REGISTRY_USERNAME,DOCKER_REGISTRY_CONFIG" # Is a list of environment variable keys, values of which would be excluded from collected artifacts data.
 ```
+
+### Rancher version
+
+By default, the test suites install the newest Rancher head chart available in `RANCHER_URL` (`https://charts.optimus.rancher.io/server-charts/latest`) that satisfies the `catalog.cattle.io/rancher-version` annotation of `charts/rancher-turtles/Chart.yaml`. This keeps every branch on the Rancher head build of the versions it supports, e.g. `main` may run on Rancher `v2.16.x` head while a release branch whose chart only supports up to `v2.15` keeps using Rancher `v2.15.x` head. Head builds are ranked by release version first and then by chart creation date.
+
+The chart upgrade test installs the latest stable patch release of the previous Rancher minor from `RANCHER_STABLE_URL` (e.g. `v2.15.x` when the resolved head is `v2.16.x`) and then upgrades to the resolved Rancher head version.
+
+The Turtles `Chart.yaml` is located through `ROOT_DIR`, which is set by the `Makefile`. Set `TURTLES_CHART_METADATA_PATH` to override its location, or set `RANCHER_VERSION` to pin a specific Rancher version.
 
 ## Artifacts collection
 
