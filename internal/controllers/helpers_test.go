@@ -17,8 +17,12 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"log"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/stdr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	managementv3 "github.com/rancher/turtles/api/rancher/management/v3"
@@ -120,5 +124,24 @@ var _ = Describe("getTrustedCAcert", func() {
 		Expect(err).To(HaveOccurred(), "Should not make assumptions on default agent-tls-mode value")
 		Expect(err.Error()).To(ContainSubstring("invalid agent-tls-mode setting value"))
 		Expect(result).To(BeNil())
+	})
+})
+
+var _ = Describe("getClusterRegistrationManifest", func() {
+	It("should not leak the manifest URL when the download fails", func() {
+		var logBuffer bytes.Buffer
+		ctx := logr.NewContext(context.TODO(), stdr.New(log.New(&logBuffer, "", 0)))
+
+		manifestURL := "https://127.0.0.1:1/v3/import/secret-token.yaml"
+		token := &managementv3.ClusterRegistrationToken{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "test-cluster"},
+			Status:     managementv3.ClusterRegistrationTokenStatus{ManifestURL: manifestURL},
+		}
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(token).Build()
+
+		_, err := getClusterRegistrationManifest(ctx, "test-cluster", "test-cluster", fakeClient, nil, false)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).NotTo(ContainSubstring(manifestURL))
+		Expect(logBuffer.String()).NotTo(ContainSubstring(manifestURL))
 	})
 })
