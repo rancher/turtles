@@ -36,7 +36,7 @@ data:
       url:          "https://github.com/rancher/cluster-api/releases/v1.14.3/bootstrap-components.yaml"
       type:         "BootstrapProvider"
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.0/bootstrap-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.1/bootstrap-components.yaml"
       type:         "BootstrapProvider"
 
     # ControlPlane providers
@@ -44,12 +44,12 @@ data:
       url:          "https://github.com/rancher/cluster-api/releases/v1.14.3/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.0/control-plane-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.1/control-plane-components.yaml"
       type:         "ControlPlaneProvider"
 
     # Runtime extensions
     - name:         "rke2"
-      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.0/runtime-extension-components.yaml"
+      url:          "https://github.com/rancher/cluster-api-provider-rke2/releases/v0.27.1/runtime-extension-components.yaml"
       type:         "RuntimeExtensionProvider"
 
     # Image overrides
