@@ -3,14 +3,14 @@ name: rancher-turtles-providers
 description: This chart installs the Rancher Turtles certified providers.
 home: https://turtles.docs.rancher.com/turtles/stable/en/overview/certified.html
 icon: https://raw.githubusercontent.com/rancher/turtles/main/logos/capi.svg
-version: 0.25.9
-appVersion: "0.25.9"
+version: 0.25.10-rc.0
+appVersion: "0.25.10-rc.0"
 keywords:
-- rancher
-- cluster-api
-- capi
-- provisioning
-- provider
+  - rancher
+  - cluster-api
+  - capi
+  - provisioning
+  - provider
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Rancher Turtles Certified Providers
