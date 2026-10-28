@@ -16,7 +16,16 @@ env:
 
 jobs:
   e2e:
+    name: ${{ matrix.name }}
     runs-on: runs-on,runner=4cpu-linux-x64,run-id=${{ github.run_id }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Generic
+            suites: test/e2e/suites/chart-upgrade test/e2e/suites/capiprovider
+          - name: Provisioning
+            suites: test/e2e/suites/rancher-managed-fleet
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,10 +38,10 @@ jobs:
       - name: Display docker version
         run: docker version
       - name: Run e2e tests
-        run: make test-e2e
+        run: make test-e2e GINKGO_TESTS="${{ matrix.suites }}"
       - name: Collect run artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: artifacts
+          name: artifacts_${{ matrix.name }}
           path: _artifacts
