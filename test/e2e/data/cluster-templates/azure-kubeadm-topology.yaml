@@ -38,7 +38,7 @@ spec:
       - name: subscriptionID
         value: ${AZURE_SUBSCRIPTION_ID}
       - name: location
-        value: germanywestcentral
+        value: ${AZURE_LOCATION}
       - name: resourceGroup
         value: highlander-e2e-azure-kubeadm
       - name: azureClusterIdentityName
@@ -49,4 +49,3 @@ spec:
         - class: kubeadm-default-worker
           name: md-0
           replicas: 1
-
