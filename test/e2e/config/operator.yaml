@@ -73,6 +73,11 @@ variables:
   AZURE_RKE2_KUBERNETES_VERSION: "v1.36.0+rke2r1"
   # For AKS available versions, run: az aks get-versions --location westeurope
   AZURE_AKS_KUBERNETES_VERSION: "v1.36.0"
+  # Azure may temporarily block new AKS clusters in a region (AKSCapacityHeavyUsage). See: https://aka.ms/aks/regions
+  # "swedencentral" is reported to be less saturated than other european options.
+  AZURE_AKS_LOCATION: "swedencentral"
+  # the image used for self-managed cluster provisioning is not available in "swedencentral"
+  AZURE_LOCATION: "germanywestcentral"
   # Name of the Kubernetes Secret used by ASO to authenticate with Azure (defaults to ASO's own default name)
   AZURE_ASO_CREDENTIAL_SECRET_NAME: "aso-credential-secret"
   # The version of the Azure Cloud Provider chart. See: https://github.com/kubernetes-sigs/cloud-provider-azure/releases
@@ -122,7 +127,6 @@ variables:
 
   # Turtles Configuration
   TURTLES_VERSION: "v0.0.1"
-
 
   TURTLES_IMAGE: "ghcr.io/rancher/turtles-e2e"
 
