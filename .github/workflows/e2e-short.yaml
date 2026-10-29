@@ -25,7 +25,7 @@ jobs:
           - name: Generic
             suites: test/e2e/suites/chart-upgrade test/e2e/suites/capiprovider
           - name: Provisioning
-            suites: test/e2e/suites/rancher-managed-fleet
+            suites: test/e2e/suites/rancher-managed-fleet test/e2e/suites/import-gitops
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
