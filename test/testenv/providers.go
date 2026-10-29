@@ -227,7 +227,8 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 		"-n", input.RancherTurtlesNamespace,
 		"--create-namespace",
 		"--wait",
-		"--reuse-values",
+		// Keep values from a previous release while picking up defaults added in newer chart versions.
+		"--reset-then-reuse-values",
 		"--timeout", "10m",
 		"--kubeconfig", input.BootstrapClusterProxy.GetKubeconfigPath(),
 	}
