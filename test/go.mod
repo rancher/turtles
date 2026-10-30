@@ -7,7 +7,7 @@ replace github.com/rancher/turtles => ../
 require (
 	code.gitea.io/sdk/gitea v0.25.1
 	dario.cat/mergo v1.0.2
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/go-git/go-git/v5 v5.19.3
