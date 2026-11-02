@@ -25,9 +25,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -62,7 +60,7 @@ type ValidateInPlaceUpdateInput struct {
 
 // ValidateInPlaceUpdate bumps the Kubernetes version of a ClusterClass based Cluster and validates that all Machines
 // are updated in-place: no Machine is created or deleted, and all Machines and Nodes end up on the new version.
-// The Cluster's class must provide the inPlaceUpdates variable, which sets the control plane maxSurge to 0.
+// The Cluster must be created with maxSurge 0 for the control plane (inPlaceUpdates variable) and MachineDeployments.
 func ValidateInPlaceUpdate(ctx context.Context, input ValidateInPlaceUpdateInput) {
 	Expect(ctx).NotTo(BeNil(), "ctx is required for ValidateInPlaceUpdate")
 	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling ValidateInPlaceUpdate")
@@ -111,19 +109,6 @@ func ValidateInPlaceUpdate(ctx context.Context, input ValidateInPlaceUpdateInput
 
 		patchBase := client.MergeFrom(cluster.DeepCopy())
 		cluster.Spec.Topology.Version = input.KubernetesVersion
-		setClusterVariable(cluster, "inPlaceUpdates", "true")
-
-		// Without allowing one unavailable Machine, CAPI creates an additional Machine during in-place updates.
-		for i := range cluster.Spec.Topology.Workers.MachineDeployments {
-			cluster.Spec.Topology.Workers.MachineDeployments[i].Rollout.Strategy = clusterv1.MachineDeploymentTopologyRolloutStrategy{
-				Type: clusterv1.RollingUpdateMachineDeploymentStrategyType,
-				RollingUpdate: clusterv1.MachineDeploymentTopologyRolloutStrategyRollingUpdate{
-					MaxSurge:       new(intstr.FromInt32(0)),
-					MaxUnavailable: new(intstr.FromInt32(1)),
-				},
-			}
-		}
-
 		return cl.Patch(ctx, cluster, patchBase)
 	}).Should(Succeed(), "Failed to update Cluster %s", input.ClusterKey)
 
@@ -188,19 +173,4 @@ func listClusterMachines(ctx context.Context, cl client.Client, clusterKey types
 	}
 
 	return machines.Items, nil
-}
-
-func setClusterVariable(cluster *clusterv1.Cluster, name, rawValue string) {
-	for i := range cluster.Spec.Topology.Variables {
-		if cluster.Spec.Topology.Variables[i].Name == name {
-			cluster.Spec.Topology.Variables[i].Value = apiextensionsv1.JSON{Raw: []byte(rawValue)}
-
-			return
-		}
-	}
-
-	cluster.Spec.Topology.Variables = append(cluster.Spec.Topology.Variables, clusterv1.ClusterVariable{
-		Name:  name,
-		Value: apiextensionsv1.JSON{Raw: []byte(rawValue)},
-	})
 }
