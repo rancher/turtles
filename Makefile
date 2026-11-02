@@ -188,7 +188,7 @@ PROVIDERS_CHART_RELEASE_DIR ?= $(RELEASE_DIR)/$(PROVIDERS_CHART_DIR)
 # Rancher charts testing
 export RANCHER_CHARTS_REPO_DIR ?=  $(abspath $(RELEASE_DIR)/rancher-charts)
 export RANCHER_CHART_DEV_VERSION ?= 110.0.0+up99.99.99
-export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.15
+export RANCHER_CHARTS_BASE_BRANCH ?= dev-v2.16
 
 # Rancher Private CA setup
 CREATE_RANCHER_CERTS_SCRIPT_PATH ?= $(ROOT_DIR)/scripts/create-rancher-certs.sh
