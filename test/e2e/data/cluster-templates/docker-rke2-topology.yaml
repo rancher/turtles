@@ -40,9 +40,18 @@ spec:
       value: kindest/node:${KUBERNETES_VERSION}
     - name: dockerAuthSecret
       value: '${CLUSTER_NAME}-docker-token'
+    - name: inPlaceUpdates
+      value: ${IN_PLACE_UPDATES:=false}
     version: ${RKE2_KUBERNETES_VERSION}
     workers:
       machineDeployments:
       - class: default-worker
         name: md-0
+        # Allows updating the worker in-place without creating an additional Machine.
+        rollout:
+          strategy:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 1
         replicas: ${WORKER_MACHINE_COUNT}
