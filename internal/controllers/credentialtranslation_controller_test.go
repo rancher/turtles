@@ -17,641 +17,290 @@ limitations under the License.
 package controllers
 
 import (
-	"time"
+	"context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
-	"github.com/rancher/turtles/internal/test"
-	turtlesannotations "github.com/rancher/turtles/util/annotations"
+
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	turtlesv1 "github.com/rancher/turtles/api/v1alpha1"
+	turtlesannotations "github.com/rancher/turtles/util/annotations"
 )
 
 var _ = Describe("Rancher Cloud Credentials Translation", func() {
 	var (
-		r                           *RancherCredentialReconciler
-		awsClusterStaticIdentityCRD *apiextensionsv1.CustomResourceDefinition
-		providerTemplate            *turtlesv1.CAPIProvider
-		rancherAWSSecret            *corev1.Secret
-		rancherAzureSecret          *corev1.Secret
-		translatedSecret            *corev1.Secret
-		existingSecret              *corev1.Secret
-		capaNs                      *corev1.Namespace
-		translatedIdentity          *unstructured.Unstructured
+		ctx        context.Context
+		fakeClient client.Client
+		scheme     *runtime.Scheme
+
+		credentialReconciler RancherCredentialReconciler
+		request              ctrl.Request
+		provider             *turtlesv1.CAPIProvider
+		rancherAWSSecret     *corev1.Secret
+		translatedSecret     *corev1.Secret
+		existingSecret       *corev1.Secret
+		translatedIdentity   *unstructured.Unstructured
 	)
 
 	BeforeEach(func() {
-		SetClient(testEnv)
-		SetContext(ctx)
+		ctx = context.TODO()
+		scheme = runtime.NewScheme()
 
-		r = &RancherCredentialReconciler{
-			Client: cl,
-			Translators: map[string]CredentialTranslator{
-				"aws": &AWSTranslator{},
-			},
-		}
+		Expect(corev1.AddToScheme(scheme)).To(Succeed())
+		Expect(turtlesv1.AddToScheme(scheme)).To(Succeed())
 
-		awsClusterStaticIdentityCRD = &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "awsclusterstaticidentities.infrastructure.cluster.x-k8s.io",
-			},
-			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: "infrastructure.cluster.x-k8s.io",
-				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{
-						Name:    "v1beta2",
-						Served:  true,
-						Storage: true,
-						Schema: &apiextensionsv1.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-								Type: "object",
-								Properties: map[string]apiextensionsv1.JSONSchemaProps{
-									"spec": {
-										Type: "object",
-										Properties: map[string]apiextensionsv1.JSONSchemaProps{
-											"secretRef": {Type: "string"},
-											"allowedNamespaces": {
-												Type: "object",
-												Properties: map[string]apiextensionsv1.JSONSchemaProps{
-													"list": {
-														Type: "array",
-														Items: &apiextensionsv1.JSONSchemaPropsOrArray{
-															Schema: &apiextensionsv1.JSONSchemaProps{
-																Type: "string",
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Scope: apiextensionsv1.ClusterScoped,
-				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Plural:   "awsclusterstaticidentities",
-					Singular: "awsclusterstaticidentity",
-					Kind:     "AWSClusterStaticIdentity",
-					ListKind: "AWSClusterStaticIdentityList",
-				},
-			},
-		}
-		if apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(awsClusterStaticIdentityCRD), &apiextensionsv1.CustomResourceDefinition{})) {
-			Expect(testEnv.Create(ctx, awsClusterStaticIdentityCRD)).ToNot(HaveOccurred())
+		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
+
+		aws := &AWSTranslator{}
+		credentialReconciler = RancherCredentialReconciler{
+			Client:      fakeClient,
+			Translators: map[string]CredentialTranslator{"aws": aws},
 		}
 
-		globalDataNs := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: rancherCredentialsNamespace,
-			},
-		}
-		if apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(globalDataNs), &corev1.Namespace{})) {
-			Expect(testEnv.Create(ctx, globalDataNs)).ToNot(HaveOccurred())
-		}
-
-		capaNs = &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: r.Translators["aws"].ProviderNamespace(),
-			},
-		}
-		if apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(capaNs), &corev1.Namespace{})) {
-			Expect(testEnv.Create(ctx, capaNs)).ToNot(HaveOccurred())
-		}
-
-		providerTemplate = &turtlesv1.CAPIProvider{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      r.Translators["aws"].ProviderName(),
-				Namespace: capaNs.Name,
-			},
+		provider = &turtlesv1.CAPIProvider{
+			Name:      aws.ProviderName(),
+			Namespace: aws.ProviderNamespace(),
 			Spec: turtlesv1.CAPIProviderSpec{
 				Type: turtlesv1.Infrastructure,
 			},
+			Status: turtlesv1.CAPIProviderStatus{
+				Phase: turtlesv1.Ready,
+			},
 		}
 
+		// The fake client neither assigns UIDs nor converts StringData, so both are set explicitly.
 		rancherAWSSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:         "cctest",
-				GenerateName: "cc-",
-				Namespace:    rancherCredentialsNamespace,
-				Annotations: map[string]string{
-					"field.cattle.io/name": "aws-cred",
-					driverNameAnnotation:   "aws",
-				},
+			Name:      "cctest",
+			Namespace: rancherCredentialsNamespace,
+			UID:       "cctest-uid",
+			Annotations: map[string]string{
+				"field.cattle.io/name": "aws-cred",
+				driverNameAnnotation:   "aws",
 			},
-			StringData: map[string]string{
-				rancherAWSAccessKeyField: "access-key",
-				rancherAWSSecretKeyField: "secret-key",
+			Data: map[string][]byte{
+				rancherAWSAccessKeyField: []byte("access-key"),
+				rancherAWSSecretKeyField: []byte("secret-key"),
 			},
 		}
-		if apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(rancherAWSSecret), &corev1.Secret{})) {
-			Expect(testEnv.Create(ctx, rancherAWSSecret)).ToNot(HaveOccurred())
-		}
+		Expect(fakeClient.Create(ctx, rancherAWSSecret)).Should(Succeed())
 
-		rancherAzureSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:         "cctest-azure",
-				GenerateName: "cc-",
-				Namespace:    rancherCredentialsNamespace,
-			},
-		}
+		request = ctrl.Request{NamespacedName: client.ObjectKeyFromObject(rancherAWSSecret)}
 
 		translatedSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: capaNs.Name,
-			},
+			Name:      rancherAWSSecret.Name,
+			Namespace: aws.ProviderNamespace(),
 		}
 
 		existingSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: capaNs.Name,
-			},
-			StringData: map[string]string{
-				"testData": "test-unchanged-data",
+			Name:      rancherAWSSecret.Name,
+			Namespace: aws.ProviderNamespace(),
+			Data: map[string][]byte{
+				"testData": []byte("test-unchanged-data"),
 			},
 		}
 
+		// Built independently of the translator so a wrong GVK in the controller code is caught.
 		translatedIdentity = &unstructured.Unstructured{}
 		translatedIdentity.SetGroupVersionKind(schema.GroupVersionKind{
 			Group:   "infrastructure.cluster.x-k8s.io",
 			Version: "v1beta2",
 			Kind:    "AWSClusterStaticIdentity",
 		})
-	})
-
-	AfterEach(func() {
-		providerKey := client.ObjectKey{
-			Name:      r.Translators["aws"].ProviderName(),
-			Namespace: r.Translators["aws"].ProviderNamespace(),
-		}
-
-		capaProvider := &turtlesv1.CAPIProvider{}
-		Expect(client.IgnoreNotFound(cl.Get(ctx, providerKey, capaProvider))).NotTo(HaveOccurred())
-
-		clientObjs := []client.Object{
-			capaProvider,
-			rancherAWSSecret,
-			translatedSecret,
-			existingSecret,
-			translatedIdentity,
-		}
-		Expect(test.CleanupAndWait(ctx, cl, clientObjs...)).To(Succeed())
+		translatedIdentity.SetName(rancherAWSSecret.Name)
 	})
 
 	It("Should reconcile and translate Rancher Cloud Credential secret when CAPA is installed and becomes ready", func() {
-		provider := providerTemplate.DeepCopy()
-
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
+		provider.Status.Phase = ""
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
 
 		// provider is not yet ready, controller should requeue.
-		Eventually(ctx, func(g Gomega) {
-			res, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(res.RequeueAfter).ToNot(BeZero())
+		result, err := credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result.RequeueAfter).ShouldNot(BeZero())
 
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
-		}
-
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
+		provider.Status.Phase = turtlesv1.Ready
+		Expect(fakeClient.Update(ctx, provider)).Should(Succeed())
 
 		// provider is now ready, controller should translate credentials.
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
+		result, err = credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result.RequeueAfter).Should(BeZero())
 
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAWSSecret.GetName(),
-			}, translatedIdentity)).ToNot(HaveOccurred())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)).Should(Succeed())
+		Expect(translatedIdentity.GetAnnotations()).Should(HaveKeyWithValue(cloudCredentialSecretAnnotation, string(rancherAWSSecret.UID)))
 
-			g.Expect(translatedIdentity.GetAnnotations()).To(HaveKeyWithValue(
-				cloudCredentialSecretAnnotation, string(rancherAWSSecret.UID)))
+		secretRef, found, err := unstructured.NestedString(translatedIdentity.Object, "spec", "secretRef")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(found).Should(BeTrue(), "secretRef field should exist")
+		Expect(secretRef).Should(Equal(rancherAWSSecret.Name))
 
-			secretRef, found, err := unstructured.NestedString(translatedIdentity.Object, "spec", "secretRef")
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(found).To(BeTrue(), "secretRef field should exist")
+		allowedNs, found, err := unstructured.NestedStringSlice(translatedIdentity.Object, "spec", "allowedNamespaces", "list")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(found).Should(BeTrue(), "allowedNamespaces field should exist")
+		Expect(allowedNs).Should(ContainElement("fleet-default"))
 
-			g.Expect(secretRef).To(Equal(rancherAWSSecret.GetName()))
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)).Should(Succeed())
+		Expect(translatedSecret.Data).Should(HaveKeyWithValue("AccessKeyID", rancherAWSSecret.Data[rancherAWSAccessKeyField]))
+		Expect(translatedSecret.Data).Should(HaveKeyWithValue("SecretAccessKey", rancherAWSSecret.Data[rancherAWSSecretKeyField]))
+		Expect(translatedSecret.GetAnnotations()).Should(HaveKeyWithValue(cloudCredentialSecretAnnotation, string(rancherAWSSecret.UID)))
 
-			allowedNs, found, err := unstructured.NestedMap(translatedIdentity.Object, "spec", "allowedNamespaces")
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(found).To(BeTrue(), "allowedNamespaces field should exist")
-
-			Expect(allowedNs).To(HaveKeyWithValue(
-				"list",
-				ContainElement("fleet-default"),
-			))
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret)).ToNot(HaveOccurred())
-
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
-				"AccessKeyID", rancherAWSSecret.Data[rancherAWSAccessKeyField]))
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
-				"SecretAccessKey", rancherAWSSecret.Data[rancherAWSSecretKeyField]))
-			g.Expect(translatedSecret.GetAnnotations()).To(HaveKeyWithValue(
-				cloudCredentialSecretAnnotation, string(rancherAWSSecret.UID)))
-
-			updatedRancherSecret := &corev1.Secret{}
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: rancherAWSSecret.GetNamespace(),
-			}, updatedRancherSecret)).ToNot(HaveOccurred())
-
-			g.Expect(updatedRancherSecret.GetAnnotations()[turtlesannotations.CAPIIdentityRefAnnotation]).To(Equal(translatedIdentity.GetName()))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(rancherAWSSecret), rancherAWSSecret)).Should(Succeed())
+		Expect(rancherAWSSecret.GetAnnotations()[turtlesannotations.CAPIIdentityRefAnnotation]).Should(Equal(translatedIdentity.GetName()))
 	})
 
 	It("Should delete translated CAPI identity when Rancher Cloud Credential is removed", func() {
-		provider := providerTemplate.DeepCopy()
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
 
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
-		}
+		_, err := credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
+		Expect(fakeClient.Delete(ctx, rancherAWSSecret)).Should(Succeed())
 
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAWSSecret.GetName(),
-			}, translatedIdentity)).ToNot(HaveOccurred())
+		_, err = credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret)).ToNot(HaveOccurred())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-		err = cl.Delete(ctx, rancherAWSSecret)
-		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
-
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAWSSecret.GetName(),
-			}, translatedIdentity))).To(BeTrue())
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 	})
 
 	It("Should not delete existing secret when a collision is detected and Rancher Cloud Credential is removed", func() {
-		provider := providerTemplate.DeepCopy()
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
+		Expect(fakeClient.Create(ctx, existingSecret)).Should(Succeed())
 
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
-		}
+		_, err := credentialReconciler.Reconcile(ctx, request)
+		Expect(err).Should(MatchError(ContainSubstring("collision detected")))
 
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(fakeClient.Delete(ctx, rancherAWSSecret)).Should(Succeed())
 
-		Expect(cl.Create(ctx, existingSecret)).ToNot(HaveOccurred())
+		_, err = credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).To(HaveOccurred())
-			g.Expect(err.Error()).To(ContainSubstring("collision detected"))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(rancherAWSSecret), rancherAWSSecret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-		err = cl.Delete(ctx, rancherAWSSecret)
-		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
-
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-
-			updatedRancherSecret := &corev1.Secret{}
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Namespace: rancherAWSSecret.Namespace,
-				Name:      rancherAWSSecret.Name,
-			}, updatedRancherSecret))).To(BeTrue())
-
-			updatedExistingSecret := &corev1.Secret{}
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      existingSecret.GetName(),
-				Namespace: existingSecret.GetNamespace(),
-			}, updatedExistingSecret)).ToNot(HaveOccurred())
-			g.Expect(updatedExistingSecret.Data).To(HaveKeyWithValue(
-				"testData", []byte("test-unchanged-data")))
-
-			g.Expect(updatedExistingSecret.GetAnnotations()).ToNot(HaveKey(cloudCredentialSecretAnnotation))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(existingSecret), existingSecret)).Should(Succeed())
+		Expect(existingSecret.Data).Should(HaveKeyWithValue("testData", []byte("test-unchanged-data")))
+		Expect(existingSecret.GetAnnotations()).ShouldNot(HaveKey(cloudCredentialSecretAnnotation))
 	})
 
 	It("Should update AWSClusterStaticIdentity when AWS Cloud Credential changes", func() {
-		provider := providerTemplate.DeepCopy()
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
 
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
-		}
+		_, err := credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)).Should(Succeed())
 
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)).Should(Succeed())
+		Expect(translatedSecret.Data).Should(HaveKeyWithValue("AccessKeyID", rancherAWSSecret.Data[rancherAWSAccessKeyField]))
+		Expect(translatedSecret.Data).Should(HaveKeyWithValue("SecretAccessKey", rancherAWSSecret.Data[rancherAWSSecretKeyField]))
 
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAWSSecret.GetName(),
-			}, translatedIdentity)).ToNot(HaveOccurred())
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret)).ToNot(HaveOccurred())
-
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
-				"AccessKeyID", rancherAWSSecret.Data[rancherAWSAccessKeyField]))
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
-				"SecretAccessKey", rancherAWSSecret.Data[rancherAWSSecretKeyField]))
-
-			updatedRancherSecret := &corev1.Secret{}
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: rancherAWSSecret.GetNamespace(),
-			}, updatedRancherSecret)).ToNot(HaveOccurred())
-
-			g.Expect(updatedRancherSecret.GetAnnotations()[turtlesannotations.CAPIIdentityRefAnnotation]).To(Equal(translatedIdentity.GetName()))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(rancherAWSSecret), rancherAWSSecret)).Should(Succeed())
+		Expect(rancherAWSSecret.GetAnnotations()[turtlesannotations.CAPIIdentityRefAnnotation]).Should(Equal(translatedIdentity.GetName()))
 
 		// update existing Cloud Credentials Secret
-		updatedRancherSecret := &corev1.Secret{}
-		Expect(cl.Get(ctx, types.NamespacedName{
-			Name:      rancherAWSSecret.GetName(),
-			Namespace: rancherAWSSecret.GetNamespace(),
-		}, updatedRancherSecret)).ToNot(HaveOccurred())
-
-		patchRancherSecret := client.MergeFrom(updatedRancherSecret.DeepCopy())
-
-		updatedRancherSecret.StringData = map[string]string{
-			rancherAWSAccessKeyField: "new-access-key",
-			rancherAWSSecretKeyField: "new-secret-key",
+		rancherAWSSecret.Data = map[string][]byte{
+			rancherAWSAccessKeyField: []byte("new-access-key"),
+			rancherAWSSecretKeyField: []byte("new-secret-key"),
 		}
+		Expect(fakeClient.Update(ctx, rancherAWSSecret)).Should(Succeed())
 
-		Expect(cl.Patch(ctx, updatedRancherSecret, patchRancherSecret)).To(Succeed())
+		_, err = credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret)).ToNot(HaveOccurred())
-
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
-				"AccessKeyID", updatedRancherSecret.Data[rancherAWSAccessKeyField]))
-			g.Expect(translatedSecret.Data).To(HaveKeyWithValue(
-				"SecretAccessKey", updatedRancherSecret.Data[rancherAWSSecretKeyField]))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)).Should(Succeed())
+		Expect(translatedSecret.Data).Should(HaveKeyWithValue("AccessKeyID", []byte("new-access-key")))
+		Expect(translatedSecret.Data).Should(HaveKeyWithValue("SecretAccessKey", []byte("new-secret-key")))
 	})
 
 	It("Should not translate Rancher Cloud Credential secret when a collision is detected (a secret with the same name already exists)", func() {
-		provider := providerTemplate.DeepCopy()
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
+		Expect(fakeClient.Create(ctx, existingSecret)).Should(Succeed())
 
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
-		}
+		_, err := credentialReconciler.Reconcile(ctx, request)
+		Expect(err).Should(MatchError(ContainSubstring("collision detected")))
 
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-		Expect(cl.Create(ctx, existingSecret)).ToNot(HaveOccurred())
-
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).To(HaveOccurred())
-			g.Expect(err.Error()).To(ContainSubstring("collision detected"))
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAWSSecret.GetName(),
-			}, translatedIdentity))).To(BeTrue())
-
-			updatedExistingSecret := &corev1.Secret{}
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      existingSecret.GetName(),
-				Namespace: existingSecret.GetNamespace(),
-			}, updatedExistingSecret)).ToNot(HaveOccurred())
-
-			g.Expect(updatedExistingSecret.Data).To(HaveKeyWithValue(
-				"testData", []byte("test-unchanged-data")))
-
-			g.Expect(updatedExistingSecret.GetAnnotations()).ToNot(HaveKey(cloudCredentialSecretAnnotation))
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(existingSecret), existingSecret)).Should(Succeed())
+		Expect(existingSecret.Data).Should(HaveKeyWithValue("testData", []byte("test-unchanged-data")))
+		Expect(existingSecret.GetAnnotations()).ShouldNot(HaveKey(cloudCredentialSecretAnnotation))
 	})
 
 	It("Should not error when CAPA is not installed (Cloud Credentials are not translated) and not requeue", func() {
-		capaProvider := &turtlesv1.CAPIProvider{}
-		Eventually(ctx, func(g Gomega) {
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      r.Translators["aws"].ProviderName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, capaProvider))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(credentialReconciler.Reconcile(ctx, request)).Should(BeZero())
 
-		Eventually(ctx, func(g Gomega) {
-			res, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(res.RequeueAfter).To(BeZero())
+		err := fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
+
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(rancherAWSSecret), rancherAWSSecret)).Should(Succeed())
+		Expect(rancherAWSSecret.Finalizers).Should(BeEmpty())
 	})
 
 	It("Should translate existing Cloud Credentials after CAPA CAPIProvider is installed", func() {
 		// first we check that no translation happens when CAPA is not installed.
 		// then we install CAPA and expect existing Cloud Credentials to be translated.
-		capaProvider := &turtlesv1.CAPIProvider{}
-		Eventually(ctx, func(g Gomega) {
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      r.Translators["aws"].ProviderName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, capaProvider))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		_, err := credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		translatedSecret := &corev1.Secret{}
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
 
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		_, err = credentialReconciler.Reconcile(ctx, request)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		provider := providerTemplate.DeepCopy()
-
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
-		}
-
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
-
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAWSSecret.Namespace,
-					Name:      rancherAWSSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAWSSecret.GetName(),
-			}, translatedIdentity)).ToNot(HaveOccurred())
-
-			g.Expect(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAWSSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret)).ToNot(HaveOccurred())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)).Should(Succeed())
+		Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)).Should(Succeed())
 	})
 
 	It("Should not translate non-AWS Rancher Cloud Credential", func() {
-		provider := providerTemplate.DeepCopy()
+		Expect(fakeClient.Create(ctx, provider)).Should(Succeed())
 
-		Expect(cl.Create(ctx, provider)).ToNot(HaveOccurred())
-		patchBase := client.MergeFrom(provider.DeepCopy())
-		provider.Status = turtlesv1.CAPIProviderStatus{
-			Phase: turtlesv1.Ready,
+		rancherAzureSecret := &corev1.Secret{
+			Name:      "cctest-azure",
+			Namespace: rancherCredentialsNamespace,
+			Annotations: map[string]string{
+				"field.cattle.io/name": "azure-cred",
+				driverNameAnnotation:   "azure",
+			},
+			Data: map[string][]byte{
+				"sampleazure": []byte("sample-azure-key"),
+			},
 		}
+		Expect(fakeClient.Create(ctx, rancherAzureSecret)).Should(Succeed())
 
-		err := cl.Status().Patch(ctx, provider, patchBase)
-		Expect(err).NotTo(HaveOccurred())
+		_, err := credentialReconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(rancherAzureSecret)})
+		Expect(err).ShouldNot(HaveOccurred())
 
-		rancherAzureSecret.Annotations = map[string]string{
-			"field.cattle.io/name": "azure-cred",
-			driverNameAnnotation:   "azure",
-		}
-		rancherAzureSecret.StringData = map[string]string{
-			"sampleazure": "sample-azure-key",
-		}
-		Expect(cl.Create(ctx, rancherAzureSecret)).ToNot(HaveOccurred())
+		translatedSecret.Name = rancherAzureSecret.Name
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedSecret), translatedSecret)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 
-		Eventually(ctx, func(g Gomega) {
-			_, err := r.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: rancherAzureSecret.Namespace,
-					Name:      rancherAzureSecret.Name,
-				},
-			})
-			g.Expect(err).ToNot(HaveOccurred())
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name:      rancherAzureSecret.GetName(),
-				Namespace: r.Translators["aws"].ProviderNamespace(),
-			}, translatedSecret))).To(BeTrue())
-
-			g.Expect(apierrors.IsNotFound(cl.Get(ctx, types.NamespacedName{
-				Name: rancherAzureSecret.GetName(),
-			}, translatedIdentity))).To(BeTrue())
-		}).WithTimeout(10 * time.Second).Should(Succeed())
+		translatedIdentity.SetName(rancherAzureSecret.Name)
+		err = fakeClient.Get(ctx, client.ObjectKeyFromObject(translatedIdentity), translatedIdentity)
+		Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 	})
 })
