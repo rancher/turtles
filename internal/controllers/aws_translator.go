@@ -41,7 +41,8 @@ const (
 
 // allowedAWSClusterNamespace is the only namespace where AWSClusterStaticIdentities will be allowed to be used.
 // for now it only supports `fleet-default`.
-var allowedAWSClusterNamespaceList = []string{
+// It is []any because unstructured content must hold JSON-compatible types to be deep-copyable.
+var allowedAWSClusterNamespaceList = []any{
 	"fleet-default",
 }
 
