@@ -22,6 +22,7 @@ package rancher_managed_fleet
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/rancher/turtles/test/e2e"
@@ -69,7 +70,8 @@ var _ = Describe("[RancherManagedFleet] [Docker] [RKE2] Create and delete CAPI c
 			DeleteClusterWaitName:              "wait-controllers",
 			TopologyNamespace:                  topologyNamespace,
 			AdditionalTemplateVariables: map[string]string{
-				"RKE2_CNI": `""`,
+				"RKE2_CNI":         `""`,
+				"IN_PLACE_UPDATES": strconv.FormatBool(validateInPlaceUpdate),
 			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
