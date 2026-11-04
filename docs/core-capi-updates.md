@@ -13,6 +13,49 @@ A complete bump usually includes:
   - `rancher/turtles`
   - `rancher/rancher` for image mirroring.
 
+## Delegating the bump to an AI agent
+
+The local part of the bump (steps [3](#3-bump-go-modules),
+[4](#4-fetch-core-capi-manifest) and [5](#5-update-core-capi-controller-image-references))
+can be delegated to an AI coding agent through the `bump-core-capi` skill,
+defined in `.claude/skills/bump-core-capi/SKILL.md`. With Claude Code, run it
+with the target version:
+
+```text
+/bump-core-capi v1.x.y
+```
+
+The skill:
+
+- Checks that the downstream `rancher/cluster-api` release assets exist and
+that the upstream Go module version is available. If the downstream release is
+missing, it stops: create it first as described in
+[Create downstream release](#2-create-downstream-release).
+- Fetches the core CAPI manifest from the downstream release and embeds it in
+the `rancher-turtles` chart (`make update-core-capi-manifest`).
+- Bumps the CAPI Go modules in the root and `test` modules and runs
+`make generate`.
+- Updates all core CAPI, kubeadm (bootstrap and control plane) and docker
+provider references, including `CLUSTERCTL_VER` and its SHA256 in the
+`Makefile`.
+- Runs build, lint and unit test checks. For minor bumps that break
+compilation, it reads the upstream
+[provider migration guide](https://cluster-api.sigs.k8s.io/developer/providers/migrations/v1.13-to-v1.14.html)
+for the target version, fixes mechanical errors, and reports anything that
+needs a human decision.
+- Reports the changes and suggests a commit message.
+
+The skill is limited to local work and a fixed set of tools (see
+`allowed-tools` in the skill). It does **not**:
+
+- create the downstream release (step 2), which is managed manually;
+- update `rancher/rancher`;
+- create branches, commit, push, open PRs, or run the end-to-end suites.
+
+These steps, together with the [post update steps](#post-update-steps), remain
+the responsibility of whoever drives the bump. Always review the agent's
+changes before committing.
+
 ## What changes
 
 ## 1. Choose the target version
