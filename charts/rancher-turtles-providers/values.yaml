@@ -318,13 +318,13 @@ providers:
 images:
   bootstrapKubeadm:
     repository: rancher/kubeadm-bootstrap-controller
-    tag: v1.14.3
+    tag: v1.14.4
   bootstrapRKE2:
     repository: rancher/cluster-api-provider-rke2-bootstrap
     tag: v0.27.1
   controlplaneKubeadm:
     repository: rancher/kubeadm-control-plane-controller
-    tag: v1.14.3
+    tag: v1.14.4
   controlplaneRKE2:
     repository: rancher/cluster-api-provider-rke2-controlplane
     tag: v0.27.1
