@@ -105,15 +105,6 @@ var _ = SynchronizedBeforeSuite(
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
-		By("Waiting for Rancher to be ready")
-		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "rancher",
-				Namespace: e2e.RancherNamespace,
-			}},
-		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...)
-
 		By("Waiting for Turtles controller to be installed by system chart controller")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),

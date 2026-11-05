@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 /*
 Copyright © 2023 - 2024 SUSE LLC
@@ -27,7 +26,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -103,22 +101,13 @@ var _ = SynchronizedBeforeSuite(
 			RancherPatches:        [][]byte{e2e.RancherSettingPatch},
 		})
 
-		By("Waiting for Rancher to be ready")
-		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "rancher",
-				Namespace: e2e.RancherNamespace,
-			}},
-		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-rancher")...)
-
 		By("Waiting for Turtles controller to be installed by system chart controller")
 		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
 			Getter: setupClusterResult.BootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Deployment: &appsv1.Deployment{
 				Name:      "rancher-turtles-controller-manager",
 				Namespace: e2e.RancherTurtlesNamespace,
-			}},
+			},
 		}, e2eConfig.GetIntervals(setupClusterResult.BootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		data, err := json.Marshal(e2e.Setup{
