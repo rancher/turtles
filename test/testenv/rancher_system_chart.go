@@ -30,7 +30,6 @@ import (
 	"github.com/rancher/turtles/test/e2e"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	opframework "sigs.k8s.io/cluster-api-operator/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
@@ -188,10 +187,17 @@ func UpgradeInstallRancherWithGitea(ctx context.Context, input UpgradeInstallRan
 	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
 		Getter: input.BootstrapClusterProxy.GetClient(),
 		Deployment: &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "rancher",
-				Namespace: input.RancherNamespace,
-			},
+			Name:      "rancher",
+			Namespace: input.RancherNamespace,
+		},
+	}, input.RancherWaitInterval...)
+
+	By("Waiting for Rancher Webhook to be ready")
+	framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+		Getter: input.BootstrapClusterProxy.GetClient(),
+		Deployment: &appsv1.Deployment{
+			Name:      "rancher-webhook",
+			Namespace: e2e.RancherNamespace,
 		},
 	}, input.RancherWaitInterval...)
 

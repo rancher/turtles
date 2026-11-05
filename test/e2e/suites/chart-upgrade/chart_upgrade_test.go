@@ -199,15 +199,6 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			SkipPrivateCASetup:    true,
 		})
 
-		By("Waiting for Rancher to be ready after upgrade")
-		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
-			Getter: bootstrapClusterProxy.GetClient(),
-			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
-				Name:      "rancher",
-				Namespace: e2e.RancherNamespace,
-			}},
-		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...)
-
 		By("Verifying the Turtles controller Pod was rolled out")
 		Eventually(func() bool {
 			err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(toBeUpdatedTurtlesPod), toBeUpdatedTurtlesPod)
