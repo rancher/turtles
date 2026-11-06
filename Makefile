@@ -351,9 +351,9 @@ buildx-machine:
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
-	docker pull docker.io/docker/dockerfile:1.4
+	docker pull docker.io/docker/dockerfile:1.28
 	docker pull $(GO_CONTAINER_IMAGE)
-	docker pull gcr.io/distroless/static:latest
+	docker pull registry.suse.com/bci/bci-nano:16.0
 
 ## --------------------------------------
 ## Docker - turtles
