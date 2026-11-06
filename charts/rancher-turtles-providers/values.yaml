@@ -343,6 +343,9 @@ images:
   infrastructureVSphere:
     repository: rancher/cluster-api-vsphere-controller
     tag: v1.17.0
+  runtimeExtensionRKE2:
+    repository: rancher/cluster-api-provider-rke2-extension
+    tag: v0.27.1
 
 # Control additional labels and annotations on namespaces create by Rancher.
 rancherNamespaces:
