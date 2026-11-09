@@ -39,12 +39,10 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -tags "${go_build_tags}" -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM registry.suse.com/bci/bci-nano:16.0
 LABEL org.opencontainers.image.source=https://github.com/rancher/turtles
 WORKDIR /
 COPY --from=builder /workspace/manager .
-# Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies
-USER 65532
+# Run as unnamed uid/gid 65532
+USER 65532:65532
 ENTRYPOINT ["/manager"]
