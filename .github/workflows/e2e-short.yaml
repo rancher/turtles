@@ -11,6 +11,7 @@ concurrency:
 env:
   MANAGEMENT_CLUSTER_ENVIRONMENT: "isolated-kind"
   GINKGO_LABEL_FILTER: "short"
+  TURTLES_PROVIDERS: "docker,kubeadm,rke2"
   TAG: v0.0.1
   SOURCE_REPO: https://github.com/${{ github.event.pull_request.head.repo.full_name }}
 
