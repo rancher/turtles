@@ -117,7 +117,6 @@ var _ = SynchronizedBeforeSuite(
 		testenv.DeployRancherTurtlesProviders(ctx, testenv.DeployRancherTurtlesProvidersInput{
 			BootstrapClusterProxy:   setupClusterResult.BootstrapClusterProxy,
 			RancherTurtlesNamespace: e2e.RancherTurtlesNamespace,
-			ProviderList:            "docker,rke2,aws,azure,kubeadm,gcp,vsphere",
 			AdditionalValues:        providersValues,
 		})
 
