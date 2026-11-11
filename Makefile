@@ -740,13 +740,18 @@ clean-rancher-charts: ## Remove the local rancher charts folder
 	rm -rf $(RANCHER_CHARTS_REPO_DIR)
 
 ## --------------------------------------
-## Collect artifacts
+## Artifacts
 ## --------------------------------------
 
 .PHONY: collect-artifacts
 collect-artifacts: kubectl
 	mkdir -p $(ARTIFACTS_FOLDER)
 	kubectl crust-gather collect -f $(ARTIFACTS_FOLDER)/gather
+
+.PHONY: clean-artifacts
+clean-artifacts: # Remove the ARTIFACTS_FOLDER folder
+	rm -rf $(ARTIFACTS_FOLDER)
+
 
 ## --------------------------------------
 ## Update the CAPI Core Provider manifest
