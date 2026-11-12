@@ -109,6 +109,9 @@ variables:
   GCP_REGION: "europe-west2"
   GCP_IMAGE_ID: "cluster-api-ubuntu-2404-v1-36-1-1779178908" # Private image. See docs/image-builder
   GCP_IMAGE_ID_FORMATTED: "" #Calculated at runtime: https://www.googleapis.com/compute/v1/projects/${GCP_PROJECT_ID}/global/images/${GCP_IMAGE_ID}"
+  # RKE2 is installed at bootstrap, so a public cloud-init image without Kubernetes components is used
+  # NOTE: this solution would not work in an air-gapped configuration
+  GCP_RKE2_IMAGE_ID: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2404-lts-amd64"
 
   # CLI Tool Paths
   CLUSTERCTL_CONFIG_PATH: ""
