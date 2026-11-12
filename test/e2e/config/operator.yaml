@@ -36,10 +36,10 @@ variables:
   # Kubernetes Configuration
 
   # KUBERNETES_VERSION is the Kubernetes version used by default in Kubeadm tests.
-  # It ill trigger a `kind build node-image` first to ensure version exists.
+  # It will trigger a `kind build node-image` first to ensure version exists.
   KUBERNETES_VERSION: "v1.37.1"
   # KUBERNETES_MANAGEMENT_VERSION is the Kubernetes version used for the Rancher/CAPI management cluster
-  # It ill trigger a `kind build node-image` first to ensure version exists.
+  # It will trigger a `kind build node-image` first to ensure version exists.
   KUBERNETES_MANAGEMENT_VERSION: "v1.36.1"
   # EKS_MANAGEMENT_VERSION is is the Kubernetes version used for the Rancher/CAPI management cluster for EKS environment types.
   # Run: `aws eks describe-cluster-versions`
@@ -59,7 +59,7 @@ variables:
   # RKE2_KUBERNETES_VERSION_UPGRADE is the version RKE2_KUBERNETES_VERSION is upgraded to in-place.
   RKE2_KUBERNETES_VERSION_UPGRADE: "v1.37.1+rke2r1"
   # Kubernetes version used for v2prov
-  V2PROV_RKE2_KUBERNETES_VERSION: "v1.36.3+rke2r1"
+  V2PROV_RKE2_KUBERNETES_VERSION: "v1.37.2+rke2r1"
   RKE2_CNI: "none"
 
   # Azure Configuration
