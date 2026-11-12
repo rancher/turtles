@@ -27,7 +27,7 @@ GO_ARCH = arm64
 endif
 
 GO_VERSION ?= $(shell grep "go " go.mod | head -1 |awk '{print $$NF}')
-GO_CONTAINER_IMAGE ?= registry.rancher.com/rancher/appco-go:$(GO_VERSION)
+GO_CONTAINER_IMAGE ?= registry.suse.com/rancher/appco-go:$(GO_VERSION)
 REPO ?= rancher/turtles
 
 CAPI_UPSTREAM_REPO ?= https://github.com/kubernetes-sigs/cluster-api
