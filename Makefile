@@ -33,7 +33,7 @@ UPDATECLI_OS = Darwin
 endif
 
 GO_VERSION ?= $(shell grep "go " go.mod | head -1 |awk '{print $$NF}')
-GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
+GO_CONTAINER_IMAGE ?= registry.suse.com/rancher/appco-go:$(GO_VERSION)
 REPO ?= rancher/turtles
 
 CAPI_VERSION_TEST_BUMP ?= v1.10.7
