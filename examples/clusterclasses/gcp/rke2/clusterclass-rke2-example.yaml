@@ -207,7 +207,7 @@ metadata:
 spec:
   template:
     spec:
-      # Join through the control plane internal IPs: the CAPG load balancer does not forward 9345.
+      # TODO: CAPG should allow forwarding port 9345 to support other registration methods
       registrationMethod: internal-first
       rolloutStrategy:
         type: "RollingUpdate"
@@ -225,11 +225,9 @@ spec:
             - cloudController
         kubeAPIServer:
           extraArgs:
-            # The CAPG load balancer health check probes /readyz without credentials.
-            - --anonymous-auth=true
+            - --anonymous-auth=true # The CAPG load balancer health check probes /readyz without credentials.
         kubeControllerManager:
           extraArgs:
-            # Node CIDRs are allocated by the GCP CCM.
             - --allocate-node-cidrs=false
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -241,6 +239,7 @@ spec:
     spec:
       instanceType: REPLACEME # this value is replaced by a patch
       image: REPLACEME # this value is replaced by a patch
+      rootDeviceSize: 50
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPMachineTemplate
@@ -251,6 +250,7 @@ spec:
     spec:
       instanceType: REPLACEME # this value is replaced by a patch
       image: REPLACEME # this value is replaced by a patch
+      rootDeviceSize: 50
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
