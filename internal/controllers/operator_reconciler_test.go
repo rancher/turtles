@@ -28,10 +28,10 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorv1 "sigs.k8s.io/cluster-api-operator/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-operator/controller"
 )
@@ -65,16 +65,17 @@ var _ = Describe("Provider sync", func() {
 		otherNs, err = testEnv.CreateNamespace(ctx, "other")
 		Expect(err).ToNot(HaveOccurred())
 
-		capiProvider = &turtlesv1.CAPIProvider{ObjectMeta: metav1.ObjectMeta{
+		capiProvider = &turtlesv1.CAPIProvider{
 			Name:      "test",
 			Namespace: ns.Name,
 			Finalizers: []string{
 				operatorv1.ProviderFinalizer,
 			},
-		}, Spec: turtlesv1.CAPIProviderSpec{
-			Name: "docker",
-			Type: turtlesv1.Infrastructure,
-		}}
+			Spec: turtlesv1.CAPIProviderSpec{
+				Name: "docker",
+				Type: turtlesv1.Infrastructure,
+			},
+		}
 
 		capiProviderCore = capiProvider.DeepCopy()
 		capiProviderCore.Spec.Name = provider.CoreProvider
@@ -97,10 +98,8 @@ var _ = Describe("Provider sync", func() {
 		unknownCAPIProvider.Spec.Name = "unknown-provider"
 
 		clusterctlconfig = &turtlesv1.ClusterctlConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      turtlesv1.ClusterctlConfigName,
-				Namespace: ns.Name,
-			},
+			Name:      turtlesv1.ClusterctlConfigName,
+			Namespace: ns.Name,
 			Spec: turtlesv1.ClusterctlConfigSpec{
 				Providers: turtlesv1.ProviderList{{
 					Name: "custom-provider",
@@ -111,9 +110,7 @@ var _ = Describe("Provider sync", func() {
 		}
 
 		setting = &managementv3.Setting{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "system-default-registry",
-			},
+			Name:  "system-default-registry",
 			Value: "",
 		}
 
@@ -254,6 +251,34 @@ var _ = Describe("Provider sync", func() {
 			g.Expect(origin.Spec.Version).To(Equal("v1.0.0"))
 		}).Should(Succeed())
 	})
+
+	DescribeTable("CAPIProvider version CEL validation",
+		func(version string, valid bool) {
+			provider := &turtlesv1.CAPIProvider{
+				Name:      "version-validation",
+				Namespace: ns.Name,
+				Spec: turtlesv1.CAPIProviderSpec{
+					Name:    "docker",
+					Type:    turtlesv1.Infrastructure,
+					Version: version,
+				},
+			}
+
+			err := cl.Create(ctx, provider, client.DryRunAll)
+			if valid {
+				Expect(err).ToNot(HaveOccurred())
+			} else {
+				Expect(err).To(MatchError(ContainSubstring("CAPI Provider version should be in the semver format prefixed with 'v'")))
+			}
+		},
+		Entry("plain version", CAPIVersion, true),
+		Entry("pre-release", "v1.14.4-turtles.1", true),
+		Entry("build metadata", "v1.14.4+turtles.1", true),
+		Entry("missing 'v' prefix", "1.14.4", false),
+		Entry("missing patch", "v1.14", false),
+		Entry("empty build metadata", "v1.14.4+", false),
+		Entry("trailing dot in build metadata", "v1.14.4+turtles.", false),
+	)
 
 	It("Should sync core spec", func() {
 		origin := capiProviderCore.DeepCopy()
