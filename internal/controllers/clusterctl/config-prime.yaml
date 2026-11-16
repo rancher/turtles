@@ -64,6 +64,8 @@ data:
         repository: "registry.rancher.com/rancher"
       bootstrap-rke2:
         repository: "registry.rancher.com/rancher"
+      runtime-extension-rke2:
+        repository: "registry.rancher.com/rancher"
       infrastructure-aws:
         repository: "registry.rancher.com/rancher"
       infrastructure-azure:
