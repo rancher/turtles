@@ -4,5 +4,5 @@ go 1.27.4
 
 require (
 	github.com/agnivade/levenshtein v1.2.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 )
