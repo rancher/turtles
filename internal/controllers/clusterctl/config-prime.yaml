@@ -11,7 +11,7 @@ data:
     providers:
     # Cluster API core provider
     - name:         "cluster-api"
-      url:          "https://github.com/rancher/cluster-api/releases/v1.14.4/core-components.yaml"
+      url:          "https://github.com/rancher/cluster-api/releases/v1.14.4+turtles.1/core-components.yaml"
       type:         "CoreProvider"
 
     # Infrastructure providers
