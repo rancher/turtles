@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
+    "github>rancher/renovate-config//default#release",
     "github>rancher/renovate-config//rancher-main#release"
   ],
   "devbox": {
@@ -9,6 +10,7 @@
   "labels": ["area/dependency", "kind/chore"],
   "baseBranchPatterns": [
     "main",
+    "release/v0.28",
     "release/v0.27",
     "release/v0.26",
     "release/v0.25"
@@ -19,6 +21,13 @@
       "matchPackageNames": ["rancher/turtles"],
       "matchDatasources": ["docker"],
       "enabled": false
+    },
+    {
+      "description": "release/v0.28 ships with Rancher 2.16. Limit updates to vulnerability fixes via the shared Rancher config, then apply Turtles-specific constraints.",
+      "matchBaseBranches": ["release/v0.28"],
+      "extends": [
+        "github>rancher/renovate-config//rancher-2.16#release"
+      ]
     },
     {
       "description": "release/v0.27 ships with Rancher 2.15. Limit updates to vulnerability fixes via the shared Rancher config, then apply Turtles-specific constraints.",
