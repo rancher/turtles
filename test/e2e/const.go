@@ -216,7 +216,7 @@ const (
 )
 
 const (
-	CAPIVersion = "v1.14.4"
+	CAPIVersion = "v1.14.4+turtles.1"
 )
 
 const (
