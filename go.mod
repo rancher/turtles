@@ -23,7 +23,7 @@ require (
 	k8s.io/component-base v0.37.2
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/cluster-api v1.14.4
-	sigs.k8s.io/cluster-api-operator v0.30.0
+	sigs.k8s.io/cluster-api-operator v0.30.1
 	sigs.k8s.io/cluster-api/api v1.14.4
 	sigs.k8s.io/controller-runtime v0.25.2
 	sigs.k8s.io/yaml v1.6.0
