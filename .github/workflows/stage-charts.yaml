@@ -73,6 +73,22 @@ jobs:
         with:
           go-version-file: release/go.mod
 
+      # chart-release.yml makes the release of a tag as a draft, after the images are pushed, and
+      # a maintainer publishes it. A release candidate is a prerelease and is fine, since that is
+      # what Rancher pins, but a draft is not: the chart would be staged for an image that may not
+      # be there.
+      - name: Require a published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft --jq 'select(.isDraft == false)' > "$RUNNER_TEMP/release.json"
+          if [ ! -s "$RUNNER_TEMP/release.json" ]; then
+            echo "::error::The release $TAG is not published: publish it, after its images are pushed, before its chart is staged"
+            exit 1
+          fi
+
       # The tag is data, not trusted input: it goes through the environment and the script
       # checks it.
       - name: Prepare the chart
