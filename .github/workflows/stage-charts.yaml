@@ -1,0 +1,78 @@
+name: Stage the chart in the Rancher catalog
+
+# Sends rancher-turtles of a release to the staging registry of the Rancher catalog and has
+# rancher/charts ship it: the chart is built at the tag the way a release builds it, stamped
+# with its final version, checked against the catalog rules, packaged and pushed to
+# stgregistry.suse.com/rancher/catalog, and rancher/charts opens a pull request with it
+# against its staging branch.
+#
+# Run it by hand, from the default branch, naming the tag to stage:
+#
+#   gh workflow run stage-charts.yaml --repo rancher/turtles --ref main -f tag=v0.28.0
+#
+# It is additive: release.yaml, chart-release.yml and release-against-charts.yml are not
+# touched.
+#
+# The final version, 1XY.Z.W+upA.B.C, is worked out from the appVersion of the chart and the
+# versions already released. The catalog checks need two things in the chart at the tag that
+# this workflow does not change: both bounds in catalog.cattle.io/rancher-version and
+# catalog.cattle.io/kube-version, and a `dependency` on each entry of the helm.sh/images
+# annotation whose image is not in values.yaml. The action fails before it pushes anything
+# when they are not right.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag to stage, such as v0.28.0"
+        required: true
+        type: string
+
+permissions: {}
+
+# Two runs of the same tag could push at the same time, and the check that the version is not
+# in the registry yet and the push are two calls. A second run waits.
+concurrency:
+  group: stage-turtles-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  stage-chart:
+    name: Stage the chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # to log in to Vault with the OIDC token
+    steps:
+      # The script of the default branch, and the repository at the tag, which has the chart and
+      # the Makefile that builds it.
+      - name: Checkout the workflow
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout the release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          path: release
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: release/go.mod
+
+      # The tag is data, not trusted input: it goes through the environment and the script
+      # checks it.
+      - name: Prepare the chart
+        env:
+          TAG: ${{ inputs.tag }}
+        run: .github/workflows/scripts/prepare-charts.sh release "$RUNNER_TEMP/charts"
+
+      # The version is worked out by cargueiro from the appVersion and the versions that are
+      # already released.
+      - name: Stamp, check, package and push the chart, and start the shipping
+        uses: rancher/charts/.github/actions/ship-staged@chart-owners
+        with:
+          chart-dir: ${{ runner.temp }}/charts/rancher-turtles
