@@ -8,7 +8,7 @@ name: Stage the chart in the Rancher catalog
 #
 # Run it by hand, from the default branch, naming the tag to stage:
 #
-#   gh workflow run stage-charts.yaml --repo rancher/turtles --ref main -f tag=v0.28.0
+#   gh workflow run stage-charts.yaml --repo rancher/turtles --ref main -f tag=v0.28.0-rc.6
 #
 # It is additive: release.yaml, chart-release.yml and release-against-charts.yml are not
 # touched.
@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "The tag to stage, such as v0.28.0"
+        description: "The tag to stage, such as v0.28.0-rc.6"
         required: true
         type: string
 
@@ -91,6 +91,10 @@ jobs:
 
       # The tag is data, not trusted input: it goes through the environment and the script
       # checks it.
+      # The script is the one of the default branch, in the first checkout. The chart is built in
+      # the checkout of the tag (release/), with its Makefile, as the release of that tag builds
+      # it. The result is copied to the folder of the second argument, which the action reads, so
+      # the checkout stays as it is.
       - name: Prepare the chart
         env:
           TAG: ${{ inputs.tag }}
