@@ -22,16 +22,15 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 
 The providers chart should also be released whenever there is a new version of Turtles. In order to properly release the providers chart later in the release process:
 
-* Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release before creating a new tag for the release. The version should match the Turtles version.
+- The providers chart [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) is set automatically to the Turtles version when the release tag is created (see below), so it does not need to be updated manually.
 
-* If you are cutting a release candidate for a new patch, ensure that all dependencies are bumped to the latest available patch version. This includes:
+- If you are cutting a release candidate for a new patch, ensure that all dependencies are bumped to the latest available patch version. This includes:
   - go version
   - go.mod direct dependencies
   - CAPI providers (including Core)
   - rancher/kuberlr-kubectl image
 
   In case CAPI providers are updated, ensure test coverage by running the e2e long and/or vSphere suites against the related release branch.
-
 
 ### Create a new tag for the release
 
@@ -68,19 +67,12 @@ git clone git@github.com:rancher/turtles.git
         export RELEASE_TAG='v0.26.1-rc.0'
       ```
 
-1. Create a signed/annotated tag for the new release from the release branch and push it:
+1. Create the release tags by running the [Tag and release](https://github.com/rancher/turtles/actions/workflows/release-tag.yaml) workflow from GitHub. Select `Run workflow` and pass:
 
-  ```bash
-  # Create tags locally
-  git tag -s -a ${RELEASE_TAG} -m ${RELEASE_TAG}
-  git tag -s -a test/${RELEASE_TAG} -m "Testing framework ${RELEASE_TAG}"
-  git tag -s -a examples/${RELEASE_TAG} -m "ClusterClass examples ${RELEASE_TAG}"
-  # Push tags
-  # Note: `upstream` must be the remote pointing to `github.com/rancher/turtles`.
-  git push upstream ${RELEASE_TAG}
-  git push upstream test/${RELEASE_TAG}
-  git push upstream examples/${RELEASE_TAG}
-  ```
+- Use workflow from: `main`.
+- Tags to release: one or more comma-separated tags, e.g. `v0.26.5, v0.27.3, v0.28.1-rc.0`. Each tag is released from its release branch, e.g. `v0.28.1-rc.0` from `release/v0.28`.
+
+  For each tag, the workflow sets the providers chart version, commits it straight to the release branch and pushes the `${RELEASE_TAG}`, `test/${RELEASE_TAG}` and `examples/${RELEASE_TAG}` tags. Pushing the tags triggers the release workflow. Each tag runs as a separate job, so if one fails the others still complete.
 
 ### Write release description for non-developers
 
@@ -121,7 +113,7 @@ This part of the release is also automated via a GitHub Actions workflow, that n
   This must be set to the `rancher/rancher` branch that needs to be updated with the new Turtles release. Before running the workflow, determine which branch(es) to target by checking whether the corresponding Rancher release branch exists (e.g. `release/v2.15` for Turtles `v0.27.x`). The workflow must be run once per target branch. Based on that, follow one of these cases:
   - The corresponding release branch does not exist yet (e.g. cutting `v0.27.x` RCs and `release/v2.15` hasn't been created yet): run the workflow once, targeting `main` branch only.
   - The corresponding release branch exists (e.g. `release/v2.15` has been created): run the workflow twice - once targeting `release/v2.15` and once targeting `main`, to keep both branches up to date.
-  - A patch release for a previous minor (e.g. cutting `v0.26.x` while `v0.27.x` series is already active): run the workflow once, targeting 
+  - A patch release for a previous minor (e.g. cutting `v0.26.x` while `v0.27.x` series is already active): run the workflow once, targeting
   `release/v2.14` only. At this point `main` is already tracking `v0.27.x` and should not be updated with `v0.26.x` changes.
 
   Note that the Rancher release branch can be created at any point - before, during, or after the RC cycle - so always check whether it exists before running the workflow. If multiple Turtles releases are being cut at the same time (e.g. `v0.27.0-rc.4` and `v0.26.3`), apply the rules above independently for each one.
@@ -144,7 +136,7 @@ Once this workflow has finished, a new PR should have been created in the `ranch
 
 This value will be used by the release automation for fetching the `rancher-turtles-providers` chart files.
 
-2. Invoke the 'Manual Trigger for Auto Bump' [CI workflow](https://github.com/rancher/prime-charts/actions/workflows/auto-bump-manual-trigger.yaml) from the Prime charts repository and pass the following parameters:
+1. Invoke the 'Manual Trigger for Auto Bump' [CI workflow](https://github.com/rancher/prime-charts/actions/workflows/auto-bump-manual-trigger.yaml) from the Prime charts repository and pass the following parameters:
 
 - Use workflow from: Branch: dev-v2.14 (replace `v2.14` with the desired Rancher minor version)
 - Chart name: rancher-turtles-providers
