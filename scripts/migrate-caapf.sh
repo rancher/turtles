@@ -29,6 +29,9 @@ DRY_RUN=${DRY_RUN:-true}
 PHASE=${1:-"pre"} # "pre" or "post"
 TURTLES_NS="cattle-turtles-system"
 CAAPF_NS="fleet-addon-system"
+CAAPF_FIELD_MANAGER="addon-provider-fleet"
+RANCHER_CONFIG_NS="cattle-system"
+RANCHER_CONFIG_NAME="rancher-config"
 
 # Labels
 MIGRATION_LABEL="migration.fleet.cattle.io/upgrade-2.14=true"
@@ -90,6 +93,20 @@ discover_caapf_clusters() {
     done <<< "$CAPI_OWNED"
 }
 
+# CAAPF co-owns Helm-managed fields such as .metadata.labels.chart and a Helm server-side
+# upgrade of Rancher conflicts. Drop CAAPF's managedFields entry. Must run after CAAPF has been scaled down.
+release_caapf_field_ownership() {
+    local MANAGED
+    MANAGED=$(kubectl get configmap "$RANCHER_CONFIG_NAME" -n "$RANCHER_CONFIG_NS" -o json --show-managed-fields \
+        | jq -c --arg m "$CAAPF_FIELD_MANAGER" '.metadata.managedFields | select(any(.[]; .manager == $m))
+            | map(select(.manager != $m)) | if . == [] then [{}] else . end') || return 0
+    if [ -n "$MANAGED" ]; then
+        log "Removing $CAAPF_FIELD_MANAGER field ownership from $RANCHER_CONFIG_NS/$RANCHER_CONFIG_NAME..."
+        run_cmd kubectl patch configmap "$RANCHER_CONFIG_NAME" -n "$RANCHER_CONFIG_NS" --type=json \
+            -p "[{\"op\":\"replace\",\"path\":\"/metadata/managedFields\",\"value\":$MANAGED}]"
+    fi
+}
+
 if [ "$PHASE" == "pre" ]; then
     log "Starting pre-upgrade phase for Rancher 2.14..."
 
@@ -118,6 +135,8 @@ if [ "$PHASE" == "pre" ]; then
             log "Warning: timeout waiting for $NS/$NAME pods to terminate; proceeding anyway."
         fi
     done
+
+    release_caapf_field_ownership
 
     discover_caapf_clusters
 
