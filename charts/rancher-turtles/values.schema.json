@@ -170,6 +170,16 @@
                     }
                   }
                 },
+                "additionalArgs": {
+                  "type": "object"
+                },
+                "verbosity": {
+                  "type": "integer"
+                },
+                "featureGates": {
+                  "type": "object",
+                  "additionalProperties": { "type": "boolean" }
+                },
                 "enableAutomaticUpdates": {
                   "type": "boolean"
                 },

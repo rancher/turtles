@@ -75,6 +75,20 @@ spec:
       - name: manager
         imageUrl: {{ $core.imageUrl }}
 {{- end }}
+{{- if or $core.additionalArgs $core.verbosity $core.featureGates }}
+  manager:
+{{- if $core.verbosity }}
+    verbosity: {{ $core.verbosity }}
+{{- end }}
+{{- if $core.additionalArgs }}
+    additionalArgs:
+{{- toYaml $core.additionalArgs | nindent 6 }}
+{{- end }}
+{{- if $core.featureGates }}
+    featureGates:
+{{- toYaml $core.featureGates | nindent 6 }}
+{{- end }}
+{{- end }}
 {{- end }}
 ---
 apiVersion: v1
