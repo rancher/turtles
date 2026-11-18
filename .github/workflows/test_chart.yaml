@@ -98,6 +98,7 @@ jobs:
       - name: Check capi-controller-manager image
         run: |
           IMAGE=$(kubectl get deployment capi-controller-manager -n cattle-capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          echo "capi-controller-manager image: ${IMAGE}"
           if [[ "$IMAGE" != registry.suse.com/rancher/cluster-api-controller* ]]; then
             echo "capi-controller-manager does not use registry.suse.com/rancher/cluster-api-controller based image"
             exit 1
@@ -214,6 +215,7 @@ jobs:
       - name: Check capi-controller-manager image is from kubernetes-sigs (community)
         run: |
           IMAGE=$(kubectl get deployment capi-controller-manager -n cattle-capi-system -o jsonpath='{.spec.template.spec.containers[0].image}')
+          echo "capi-controller-manager image: ${IMAGE}"
           if [[ "$IMAGE" != rancher/cluster-api-controller* ]]; then
             echo "capi-controller-manager does not use rancher/cluster-api-controller based image"
             exit 1
