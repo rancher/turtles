@@ -1,17 +1,14 @@
 name: Stage the chart in the Rancher catalog
 
-# Sends rancher-turtles of a release to the staging registry of the Rancher catalog and has
-# rancher/charts ship it: the chart is built at the tag the way a release builds it, stamped
-# with its final version, checked against the catalog rules, packaged and pushed to
-# stgregistry.suse.com/rancher/catalog, and rancher/charts opens a pull request with it
-# against its staging branch.
+# Sends the rancher-turtles chart of a release to the staging registry of the Rancher catalog and
+# has rancher/charts ship it: the chart attached to the release is stamped with its final version,
+# checked against the catalog rules, packaged and pushed to stgregistry.suse.com/rancher/catalog,
+# and rancher/charts opens a pull request with it against its staging branch.
 #
-# Run it by hand, from the default branch, naming the tag to stage:
+# release.yaml calls it for every tag, after chart-release.yml has attached the chart to the
+# release and published it. It can also be run by hand, from the default branch, naming the tag:
 #
 #   gh workflow run stage-charts.yaml --repo rancher/turtles --ref main -f tag=v0.28.0-rc.6
-#
-# It is additive: release.yaml, chart-release.yml and release-against-charts.yml are not
-# touched.
 #
 # The final version, 1XY.Z.W+upA.B.C, is worked out from the appVersion of the chart and the
 # versions already released. The catalog checks need two things in the chart at the tag that
@@ -21,6 +18,12 @@ name: Stage the chart in the Rancher catalog
 # when they are not right.
 
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "The tag to stage, such as v0.28.0-rc.6"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       tag:
@@ -44,8 +47,10 @@ jobs:
       contents: read
       id-token: write # to log in to Vault with the OIDC token
     steps:
-      # The job logs in to Vault, so the script it runs must be the one of the default branch.
+      # A run by hand logs in to Vault with the workflow of the ref it is started from, so it must
+      # be the default branch. When release.yaml calls it, it runs on the tag of the release.
       - name: Require the default branch
+        if: github.event_name == 'workflow_dispatch'
         env:
           DEFAULT_REF: refs/heads/${{ github.event.repository.default_branch }}
         run: |
@@ -54,29 +59,9 @@ jobs:
             exit 1
           fi
 
-      # The script of the default branch, and the repository at the tag, which has the chart and
-      # the Makefile that builds it.
-      - name: Checkout the workflow
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Checkout the release
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.tag }}
-          path: release
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: release/go.mod
-
-      # chart-release.yml makes the release of a tag as a draft, after the images are pushed, and
-      # a maintainer publishes it. A release candidate is a prerelease and is fine, since that is
-      # what Rancher pins, but a draft is not: the chart would be staged for an image that may not
-      # be there.
+      # chart-release.yml attaches the chart to the release and publishes it. A release candidate
+      # is a prerelease and is fine, since that is what Rancher pins, but a draft is not: the chart
+      # would be staged for an image that may not be there.
       - name: Require a published release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -89,16 +74,18 @@ jobs:
             exit 1
           fi
 
-      # The tag is data, not trusted input: it goes through the environment and the script
-      # checks it.
-      # The script is the one of the default branch, in the first checkout. The chart is built in
-      # the checkout of the tag (release/), with its Makefile, as the release of that tag builds
-      # it. The result is copied to the folder of the second argument, which the action reads, so
-      # the checkout stays as it is.
-      - name: Prepare the chart
+      # The chart the release built and attached, with its appVersion set. The download fails when
+      # the release has no chart. The tag is data, not trusted input: it goes through the
+      # environment.
+      - name: Download the chart of the release
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
-        run: .github/workflows/scripts/prepare-charts.sh release "$RUNNER_TEMP/charts"
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "rancher-turtles-${TAG#v}.tgz" --dir "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/charts"
+          tar -xzf "$RUNNER_TEMP/rancher-turtles-${TAG#v}.tgz" -C "$RUNNER_TEMP/charts"
 
       # The version is worked out by cargueiro from the appVersion and the versions that are
       # already released.
