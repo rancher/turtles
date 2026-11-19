@@ -1,4 +1,4 @@
-name: Run long e2e tests
+name: Full E2E tests
 
 on:
   schedule:
@@ -14,11 +14,11 @@ env:
 
 jobs:
   publish_e2e_image:
-    uses: ./.github/workflows/e2e-image-publish.yaml
+    uses: ./.github/workflows/_e2e-image-publish.yaml
     secrets: inherit
   e2e_rancher_managed_fleet:
     needs: publish_e2e_image
-    uses: ./.github/workflows/run-e2e-suite.yaml
+    uses: ./.github/workflows/_e2e-run-suite.yaml
     with:
       test_suite: test/e2e/suites/rancher-managed-fleet
       test_name: Rancher Managed Fleet
@@ -27,7 +27,7 @@ jobs:
     secrets: inherit
   e2e_v2prov:
     needs: publish_e2e_image
-    uses: ./.github/workflows/run-e2e-suite.yaml
+    uses: ./.github/workflows/_e2e-run-suite.yaml
     with:
       test_suite: test/e2e/suites/v2prov
       test_name: v2 provisioning
@@ -41,5 +41,5 @@ jobs:
   e2e_cleanup:
     if: always()
     needs: [e2e_v2prov, e2e_rancher_managed_fleet]
-    uses: ./.github/workflows/e2e-cleanup.yaml
+    uses: ./.github/workflows/_e2e-cleanup.yaml
     secrets: inherit

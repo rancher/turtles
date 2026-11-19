@@ -1,4 +1,4 @@
-name: Check Issue Labels and Description
+name: Enforce Issue Labels and Description
 
 on:
   issues:

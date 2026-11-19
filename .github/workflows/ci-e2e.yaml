@@ -1,4 +1,4 @@
-name: Run short e2e tests
+name: Short E2E tests
 
 on:
   pull_request:

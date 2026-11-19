@@ -8,9 +8,9 @@ name: Stage the chart in the Rancher catalog
 #
 # Run it by hand, from the default branch, naming the tag to stage:
 #
-#   gh workflow run stage-charts.yaml --repo rancher/turtles --ref main -f tag=v0.28.0-rc.6
+#   gh workflow run release-chart-staging.yaml --repo rancher/turtles --ref main -f tag=v0.28.0-rc.6
 #
-# It is additive: release.yaml, chart-release.yml and release-against-charts.yml are not
+# It is additive: release.yaml, _release-chart.yaml and release-against-charts.yml are not
 # touched.
 #
 # The final version, 1XY.Z.W+upA.B.C, is worked out from the appVersion of the chart and the
@@ -73,7 +73,7 @@ jobs:
         with:
           go-version-file: release/go.mod
 
-      # chart-release.yml makes the release of a tag as a draft, after the images are pushed, and
+      # _release-chart.yaml makes the release of a tag as a draft, after the images are pushed, and
       # a maintainer publishes it. A release candidate is a prerelease and is fine, since that is
       # what Rancher pins, but a draft is not: the chart would be staged for an image that may not
       # be there.

@@ -181,7 +181,7 @@ jobs:
 
   chart-release:
     name: Helm chart release
-    uses: ./.github/workflows/chart-release.yml
+    uses: ./.github/workflows/_release-chart.yaml
     needs:
     - merge
     with:
