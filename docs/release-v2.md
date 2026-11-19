@@ -122,7 +122,7 @@ gh workflow run chart-staged.yaml --repo rancher/charts --ref staging -f chart=r
 
 ### Update `rancher/rancher` repository
 
-**Warning**: Before updating `rancher/rancher` repository, ensure that the chart from the previous [step](#check-the-chart-staged-in-the-rancher-catalog) is available. The workflow below checks that the new version is in the `index.yaml` of the `rancher/charts` branch that `rancher/rancher` reads its charts from (`chartDefaultBranch` in its `build.yaml`, e.g. `dev-v2.16`).
+**Note**: The workflow reads the chart version (e.g. `111.0.0+up0.28.0`) from `rancher/charts` instead of working it out: from the Rancher catalog (`entries/rancher-turtles` on the `staging` branch) first, then from `charts/rancher-turtles` on the `dev-v2.X` branch, for the release lines that are not staged in the catalog (Rancher 2.15 and older). It fails if the new Turtles version is in neither, so run it once the chart from the previous [step](#check-the-chart-staged-in-the-rancher-catalog) has been staged.
 
 This part of the release is also automated via a GitHub Actions workflow, that needs to be invoked manually from GitHub. To invoke it, navigate to the [workflow](https://github.com/rancher/turtles/actions/workflows/release-against-rancher.yml), select the option `Run workflow` from the UI and pass the following parameters:
 
@@ -140,8 +140,6 @@ This part of the release is also automated via a GitHub Actions workflow, that n
   This is self explanatory, the value must be set to the previous Turtles version, for example `v0.26.1-rc.0`.
 - New Turtles version (e.g. v0.26.0)
   This is self explanatory, the value must be set to the new Turtles version, for example `v0.26.1-rc.1`.
-- Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.26.0 -> v0.27.0-rc.0). Default: false
-  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`.
 
 Once this workflow has finished, a new PR should have been created in the `rancher/rancher` repository that updates the selected branch with the new Turtles version. You need to review and merge this PR. When this PR gets merged, you will have completed the process of releasing a new version of Turtles and including it in an upcoming version of Rancher.
 

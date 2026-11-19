@@ -3,9 +3,7 @@
 ## Important
 The `rancher-turtles` chart is staged in the Rancher catalog automatically: the release workflow (`release.yaml`) runs `stage-charts.yaml` for every tag, which pushes the chart to the staging registry and has `rancher/charts` ship it to its `staging` branch. See [Check the chart staged in the Rancher catalog](./release-v2.md#check-the-chart-staged-in-the-rancher-catalog).
 
-`release-against-charts.yml` is deprecated. It is only needed while `rancher/rancher` still reads its charts from a `dev-v2.X` branch of `rancher/charts`: `release-against-rancher.yml` checks that the new version is in the `index.yaml` of that branch. In that case, run the `rancher/charts` workflow first and merge its PR, and only then run the `rancher/rancher` workflow.
-
-> Following this order ensures the new Rancher Turtles version exists in charts and prevents broken CI in Rancher.
+`release-against-charts.yml` is deprecated. Run the `rancher/rancher` workflow once the chart has been staged: it reads the chart version from `rancher/charts` (`entries/rancher-turtles` on `staging`, then `charts/rancher-turtles` on `dev-v2.X`) and fails if it is not there.
 
 ---
 
@@ -55,13 +53,14 @@ This workflow creates a pull request in [rancher/rancher](https://github.com/ran
 
 ```yaml
 Inputs:
-rancher_ref – Target branch in rancher/rancher (e.g. release/v2.14). Defaults to 'auto', which derives the correct branch from the current turtles release branch (e.g. release/v0.26 → release/v2.14). Must be triggered from a release branch when using 'auto'.
+rancher_ref – Target branch in rancher/rancher (e.g. release/v2.14). Defaults to 'auto', which derives the branch from the lower bound of the catalog.cattle.io/rancher-version annotation of the chart at the new Turtles tag (e.g. '>= 2.14.0-0 < 2.15.0-0' → release/v2.14).
 prev_turtles – Previous Rancher Turtles version.
 new_turtles – New Rancher Turtles version.
-bump_major – Whether to bump the chart's major version when Turtles' minor version increases (true/false).
 ```
 
-> **Tip:** When triggering from a `release/v0.x` branch, leave `rancher_ref` as `auto` and the correct `rancher/rancher` branch will be derived automatically. Provide an explicit value only if you need to override this behaviour.
+> **Note:** The chart version set in `build.yaml` is read from `rancher/charts`, not worked out: first from the Rancher catalog (`entries/rancher-turtles` on `staging`), then from `charts/rancher-turtles` on `dev-v2.X` for the release lines that are not in the catalog.
+
+> **Tip:** Leave `rancher_ref` as `auto` and the `rancher/rancher` release branch will be derived from the chart automatically. Provide an explicit value only if you need to override this behaviour (e.g. to target `main`).
 
 > **Note:** Before a minor release branch is created in `rancher/rancher` (e.g. `release/v2.14` does not exist yet while `v2.14.0` is still in development), set `rancher_ref` to `main` explicitly instead of using `auto`.
 
@@ -71,7 +70,6 @@ bump_major – Whether to bump the chart's major version when Turtles' minor ver
 rancher_ref: release/v2.14
 prev_turtles: v0.25.0
 new_turtles: v0.26.0
-bump_major: true
 ```
 
 ### Release Flow
@@ -80,9 +78,7 @@ bump_major: true
 flowchart LR
     A[🚀 Tag pushed] --> B[⚙️ release.yaml: images, GitHub release]
     B --> S[⚙️ stage-charts.yaml: chart staged in the Rancher catalog]
-    B --> C[⚙️ Run `rancher/charts` workflow, while Rancher reads dev-v2.X]
-    C --> M[✅ Merge PR in `rancher/charts`]
-    M --> D[⚙️ Run `rancher/rancher` workflow]
+    S --> D[⚙️ Run `rancher/rancher` workflow]
     D --> E[✅ Merge PR in `rancher/rancher`]
 ```
 
