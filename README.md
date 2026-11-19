@@ -1,6 +1,6 @@
 <img src="./logos/cupid.png" width="50%" height="50%">
 
-[![Nightly e2e tests](https://github.com/rancher/turtles/actions/workflows/e2e-long.yaml/badge.svg)](https://github.com/rancher/turtles/actions/workflows/e2e-long.yaml)
+[![Nightly e2e tests](https://github.com/rancher/turtles/actions/workflows/e2e-nightly.yaml/badge.svg)](https://github.com/rancher/turtles/actions/workflows/e2e-nightly.yaml)
 
 # Rancher Turtles
 
