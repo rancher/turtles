@@ -1,8 +1,9 @@
 # Releasing Rancher Turtles against `rancher/charts` and `rancher/rancher` repositories.
 
 ## Important
-Before running the workflows, always run the `rancher/charts` workflow first and merge its PR.
-Only after the chart Pull Request is merged should you run the `rancher/rancher` workflow.
+The `rancher-turtles` chart is staged in the Rancher catalog automatically: the release workflow (`release.yaml`) runs `stage-charts.yaml` for every tag, which pushes the chart to the staging registry and has `rancher/charts` ship it to its `staging` branch. See [Check the chart staged in the Rancher catalog](./release-v2.md#check-the-chart-staged-in-the-rancher-catalog).
+
+`release-against-charts.yml` is deprecated. It is only needed while `rancher/rancher` still reads its charts from a `dev-v2.X` branch of `rancher/charts`: `release-against-rancher.yml` checks that the new version is in the `index.yaml` of that branch. In that case, run the `rancher/charts` workflow first and merge its PR, and only then run the `rancher/rancher` workflow.
 
 > Following this order ensures the new Rancher Turtles version exists in charts and prevents broken CI in Rancher.
 
@@ -13,14 +14,15 @@ Only after the chart Pull Request is merged should you run the `rancher/rancher`
 This repository provides GitHub Actions to automate bumping Rancher Turtles versions in `rancher/charts` and `rancher/rancher` repositories.  
 These workflows are located in the [.github/workflows](https://github.com/rancher/turtles/tree/main/.github/workflows) directory and include:
 
-- `release-against-charts.yml` – updates the `rancher-turtles` chart in `rancher/charts`.  
+- `stage-charts.yaml` – stages the `rancher-turtles` chart of a release in the Rancher catalog. Called by `release.yaml` for every tag; can also be run by hand from `main` with the tag as input.
+- `release-against-charts.yml` – (deprecated) updates the `rancher-turtles` chart in a `dev-v2.X` branch of `rancher/charts`.  
 - `release-against-rancher.yml` – updates the embedded Turtles version in `rancher/rancher`.  
 
-Both workflows are **manual** and run from the [Actions tab](https://github.com/rancher/turtles/actions).
+`release-against-charts.yml` and `release-against-rancher.yml` are **manual** and run from the [Actions tab](https://github.com/rancher/turtles/actions).
 
 ---
 
-### Release Rancher Turtles against `rancher/charts`
+### Release Rancher Turtles against `rancher/charts` (deprecated)
 
 This workflow creates a pull request in [rancher/charts](https://github.com/rancher/charts) repository to bump the Rancher Turtles version.
 
@@ -76,9 +78,11 @@ bump_major: true
 
 ```mermaid
 flowchart LR
-    A[🚀 Rancher Turtles release] --> B[⚙️ Run `rancher/charts` workflow]
-    B --> C[✅ Merge PR in `rancher/charts`]
-    C --> D[⚙️ Run `rancher/rancher` workflow]
+    A[🚀 Tag pushed] --> B[⚙️ release.yaml: images, GitHub release]
+    B --> S[⚙️ stage-charts.yaml: chart staged in the Rancher catalog]
+    B --> C[⚙️ Run `rancher/charts` workflow, while Rancher reads dev-v2.X]
+    C --> M[✅ Merge PR in `rancher/charts`]
+    M --> D[⚙️ Run `rancher/rancher` workflow]
     D --> E[✅ Merge PR in `rancher/rancher`]
 ```
 
