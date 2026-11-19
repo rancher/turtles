@@ -98,7 +98,7 @@ jobs:
       - name: Prepare the chart
         env:
           TAG: ${{ inputs.tag }}
-        run: .github/workflows/scripts/prepare-charts.sh release "$RUNNER_TEMP/charts"
+        run: .github/scripts/prepare-charts.sh release "$RUNNER_TEMP/charts"
 
       # The version is worked out by cargueiro from the appVersion and the versions that are
       # already released.
