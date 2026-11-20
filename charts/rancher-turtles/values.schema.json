@@ -28,6 +28,17 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "additionalEnvs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["name", "value"]
+      }
+    },
     "features": {
       "type": "object",
       "properties": {
@@ -169,16 +180,6 @@
                         }
                     }
                   }
-                },
-                "additionalArgs": {
-                  "type": "object"
-                },
-                "verbosity": {
-                  "type": "integer"
-                },
-                "featureGates": {
-                  "type": "object",
-                  "additionalProperties": { "type": "boolean" }
                 },
                 "enableAutomaticUpdates": {
                   "type": "boolean"

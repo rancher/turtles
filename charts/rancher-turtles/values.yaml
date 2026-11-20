@@ -18,6 +18,9 @@ namespace: cattle-turtles-system
 managerArguments: []
 # imagePullSecrets: Secrets for private registries.
 imagePullSecrets: []
+# additionalEnvs: Extra environment variables for the controller.
+additionalEnvs: []
+
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
@@ -90,13 +93,6 @@ cluster-api-operator:
             managed-by.turtles.cattle.io: "true"
             provider.cluster.x-k8s.io/name: cluster-api
             provider.cluster.x-k8s.io/type: core
-      # manager configuration: properties that can be enabled on the controller manager (CAPIProvider.spec.manager).
-      # additionalArgs: Additional arguments for the controller manager.
-      additionalArgs: {}
-      # feature flags that will be passed in as container args to the provider's controller manager
-      featureGates: {}
-      # verbosity: Logging verbosity level for the controller manager.
-      # verbosity: 1
 
 # Control additional labels and annotations on namespaces create by Rancher.
 rancherNamespaces:
