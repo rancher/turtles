@@ -151,7 +151,7 @@ CLUSTERCTL := $(TOOLS_BIN_DIR)/$(CLUSTERCTL_BIN)-$(CLUSTERCTL_VER)
 CLUSTERCTL_CONFIG_PATH := ${ROOT_DIR}/test/e2e/config/clusterctl-config.yaml
 
 GOLANGCI_LINT_BIN := golangci-lint
-GOLANGCI_LINT_VER := $(shell cat .github/workflows/golangci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
+GOLANGCI_LINT_VER := $(shell cat .github/workflows/ci-lint.yaml | grep [[:space:]]version: | sed 's/.*version: //')
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER))
 GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 

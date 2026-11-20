@@ -1,4 +1,4 @@
-name: Check PR Labels
+name: Enforce PR Labels
 
 on:
   pull_request:

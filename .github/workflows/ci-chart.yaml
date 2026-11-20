@@ -1,4 +1,4 @@
-name: Lint and Test Prime and Community Charts
+name: Test Prime/Community Charts
 
 on:
   pull_request:

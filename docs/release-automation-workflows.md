@@ -84,7 +84,7 @@ flowchart LR
 
 ### Backport PR Automation
 
-This repository provides a [GitHub Actions workflow](https://github.com/rancher/turtles/actions/workflows/backport-pr.yaml) to automate backporting pull requests to other branches.
+This repository provides a [GitHub Actions workflow](https://github.com/rancher/turtles/actions/workflows/ci-pr-backport.yaml) to automate backporting pull requests to other branches.
 
 > **Purpose:** Create a backport PR for a specific branch (for example, maintenance or release branches) without manually applying patches.
 

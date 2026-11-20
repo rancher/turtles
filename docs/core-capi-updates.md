@@ -152,6 +152,6 @@ To fully verify the update, the following is recommended:
 
 1. Create an upstream branch and push the changes.
 1. Open a draft PR.
-1. Run [Long E2E](https://github.com/rancher/turtles/actions/workflows/e2e-long.yaml)
-and [vSphere E2E](https://github.com/rancher/turtles/actions/workflows/run-vsphere-tests.yaml).
+1. Run [Long E2E](https://github.com/rancher/turtles/actions/workflows/e2e-nightly.yaml)
+and [vSphere E2E](https://github.com/rancher/turtles/actions/workflows/e2e-nightly-vsphere.yaml).
 1. Mark PR ready for review linking the successful end-to-end executions.

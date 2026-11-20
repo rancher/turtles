@@ -1,4 +1,4 @@
-name: Run vSphere e2e tests
+name: vSphere E2E tests
 
 on:
   schedule:
