@@ -1,0 +1,82 @@
+name: Tag and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Comma-separated tags to release, e.g. v0.26.5, v0.27.3, v0.28.1-rc.0. Each tag is released from its release branch, e.g. v0.28.1 from release/v0.28."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.split.outputs.tags }}
+    steps:
+      - name: Split the tags input
+        id: split
+        env:
+          TAGS: ${{ inputs.tags }}
+        run: echo "tags=$(jq -Rc 'split(",") | map(gsub("\\s"; "")) | map(select(. != ""))' <<< "$TAGS")" >> "$GITHUB_OUTPUT"
+
+  tag:
+    name: ${{ matrix.tag }}
+    needs: tags
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.tags.outputs.tags) }}
+    env:
+      TAG: ${{ matrix.tag }}
+    steps:
+      - name: Check the tag is valid and does not exist yet
+        run: |
+          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+)\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "'$TAG' is not a valid tag. Use a tag like v0.28.1 or v0.28.1-rc.0."
+            exit 1
+          fi
+          BRANCH="release/v${BASH_REMATCH[1]}"
+          REPO="https://github.com/$GITHUB_REPOSITORY"
+          if ! git ls-remote --exit-code --heads "$REPO" "$BRANCH" >/dev/null; then
+            echo "Branch $BRANCH does not exist."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags "$REPO" "$TAG" >/dev/null; then
+            echo "Tag $TAG already exists."
+            exit 1
+          fi
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Read GitHub token from Vault
+        uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
+        with:
+          secrets: |
+            github/token/rancher--turtles--contents--write token | GH_TOKEN
+
+      - name: Checkout release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.BRANCH }}
+          token: ${{ env.GH_TOKEN }}
+
+      - name: Set providers chart version
+        run: |
+          VERSION="${TAG#v}"
+          sed -i -E "s/^version: .*/version: ${VERSION}/; s/^appVersion: .*/appVersion: \"${VERSION}\"/" charts/rancher-turtles-providers/Chart.yaml
+          git diff
+
+      - name: Commit, tag and push
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git diff --quiet || git commit -s -am "chore: set providers chart version to ${TAG#v}"
+          git tag -a "$TAG" -m "$TAG"
+          git tag -a "test/$TAG" -m "Testing framework $TAG"
+          git tag -a "examples/$TAG" -m "ClusterClass examples $TAG"
+          git push --atomic origin "HEAD:$BRANCH" "$TAG" "test/$TAG" "examples/$TAG"
