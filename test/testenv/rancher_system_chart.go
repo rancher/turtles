@@ -319,9 +319,9 @@ type PushRancherChartsToGiteaInput struct {
 	// RancherChartsRepoDir is the directory where the rancher/charts repo will be created by the Makefile.
 	RancherChartsRepoDir string `env:"RANCHER_CHARTS_REPO_DIR"`
 
-	// RancherChartsBaseBranch is the branch name to use in the charts repo (e.g., dev-v2.16).
+	// RancherChartsBaseBranch is the branch of rancher/charts the local charts repo is built from.
 	// Turtles integration with Rancher system chart controller starts from Rancher v2.13.0.
-	RancherChartsBaseBranch string `env:"RANCHER_CHARTS_BASE_BRANCH" envDefault:"dev-v2.16"`
+	RancherChartsBaseBranch string `env:"RANCHER_CHARTS_BASE_BRANCH" envDefault:"staging"`
 
 	// GiteaServerAddress is the address of the Gitea server.
 	GiteaServerAddress string
