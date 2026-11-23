@@ -1,9 +1,13 @@
 name: Release Turtles against rancher/rancher
+
+# Opens a PR in rancher/rancher that sets turtlesVersion to the chart of a new Turtles release.
+# Run it once the chart is in rancher/charts.
+
 on:
   workflow_dispatch:
     inputs:
       rancher_ref:
-        description: "Submit PR against the following rancher/rancher branch (e.g. release/v2.14). Use 'auto' to derive from the current turtles branch."
+        description: "Submit PR against the following rancher/rancher branch (e.g. release/v2.14). Use 'auto' to derive it from the rancher-version annotation of the chart at the new Turtles tag."
         required: true
         default: "auto"
       prev_turtles:
@@ -14,54 +18,74 @@ on:
         description: "New Turtles version (e.g. v0.23.0)"
         required: true
         default: ""
-      bump_major:
-        description: "Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.23.0 → v0.24.0-rc.0). Default: false"
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "true"
-          - "false"
 
 env:
-  TURTLES_REF: "${{ github.ref_name }}"
-  PREV_TURTLES: ${{ github.event.inputs.prev_turtles }}
-  NEW_TURTLES: ${{ github.event.inputs.new_turtles }}
+  TURTLES_REF: ${{ github.ref_name }}
+  PREV_TURTLES: ${{ inputs.prev_turtles }}
+  NEW_TURTLES: ${{ inputs.new_turtles }}
+  OWNER: ${{ github.repository_owner }}
 
 jobs:
   create-rancher-pr:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Required for vault
-      id-token: write
+      id-token: write # for Vault
     steps:
-      - name: Resolve rancher_ref
+      # ">= 2.16.0-0 < 2.17.0-0" in the chart's rancher-version annotation means Rancher 2.16.
+      - name: Find the Rancher version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RANCHER_REF_INPUT: ${{ inputs.rancher_ref }}
         run: |
-          INPUT="${{ github.event.inputs.rancher_ref }}"
-          if [ "${INPUT}" != "auto" ]; then
-            echo "RANCHER_REF=${INPUT}" >> $GITHUB_ENV
-          else
-            # Derive from turtles branch: release/v0.25 → release/v2.13
-            # Formula: rancher_minor = turtles_minor - 12
-            TURTLES_BRANCH="${{ github.ref_name }}"
-            if [[ "$TURTLES_BRANCH" =~ ^release/v0\.([0-9]+)$ ]]; then
-              TURTLES_MINOR="${BASH_REMATCH[1]}"
-              RANCHER_MINOR=$(( TURTLES_MINOR - 12 ))
-              echo "RANCHER_REF=release/v2.${RANCHER_MINOR}" >> $GITHUB_ENV
-              echo "Derived rancher_ref: release/v2.${RANCHER_MINOR} from ${TURTLES_BRANCH}"
-            else
-              echo "ERROR: Cannot derive rancher_ref from branch '${TURTLES_BRANCH}'. Please trigger again with an explicit rancher_ref value."
-              exit 1
-            fi
+          set -euo pipefail
+          range=$(gh api "repos/$GITHUB_REPOSITORY/contents/charts/rancher-turtles/Chart.yaml?ref=$NEW_TURTLES" \
+            -H 'Accept: application/vnd.github.raw' | yq '.annotations["catalog.cattle.io/rancher-version"]')
+          re='^>= *([0-9]+\.[0-9]+)'
+          if ! [[ "$range" =~ $re ]]; then
+            echo "::error::Cannot read the Rancher version from '$range' in the chart at $NEW_TURTLES"
+            exit 1
           fi
+          version="${BASH_REMATCH[1]}"
+          ref="$RANCHER_REF_INPUT"
+          if [ "$ref" = "auto" ]; then ref="release/v$version"; fi
+          echo "Rancher $version, branch $ref"
+          echo "RANCHER_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RANCHER_REF=$ref" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Look in the catalog (staging) first, then in dev-v2.X for release lines not in the catalog.
+      # Rancher <=2.15 are not in catalog.
+      - name: Find the chart version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Prints the chart versions for NEW_TURTLES (ending in +up0.28.0) in <branch>:<folder>.
+          find_versions() {
+            for file in $(gh api "repos/$OWNER/charts/git/trees/$1:$2" --jq '.tree[].path' || true); do
+              if [[ "${file%.yaml}" == *"+up${NEW_TURTLES#v}" ]]; then echo "${file%.yaml}"; fi
+            done
+          }
+          versions=$(find_versions staging entries/rancher-turtles)
+          if [ -z "$versions" ]; then
+            versions=$(find_versions "dev-v$RANCHER_VERSION" charts/rancher-turtles)
+          fi
+          chart=$(echo "$versions" | sort -V | tail -1)
+          if [ -z "$chart" ]; then
+            echo "::error::rancher-turtles $NEW_TURTLES is not in rancher/charts (staging or dev-v$RANCHER_VERSION)"
+            exit 1
+          fi
+          echo "Chart $chart"
+          echo "NEW_CHART=$chart" >> "$GITHUB_ENV"
+
+      - name: Checkout rancher/turtles
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: "${{ env.TURTLES_REF }}"
+          ref: ${{ env.TURTLES_REF }}
           path: turtles
 
-      - uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
+      - name: Read the rancher/rancher token
+        uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6
         with:
           secrets: |
             github/token/rancher--rancher--pull_requests--write token | GH_TOKEN
@@ -70,72 +94,35 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ github.repository_owner }}/rancher
-          ref: "${{ env.RANCHER_REF }}"
-          token: "${{ env.GH_TOKEN }}"
+          ref: ${{ env.RANCHER_REF }}
+          token: ${{ env.GH_TOKEN }}
           path: rancher
-          # Allow making git push request later on
-          persist-credentials: true
-
-      - name: Find charts branch
-        id: find_charts_branch
-        run: |
-          cd rancher
-          # Extract dev-v2.16 out of the following line in build.yaml:
-          #   chartDefaultBranch: dev-v2.16
-          charts_branch=$(grep '^chartDefaultBranch:' build.yaml | awk -F': ' '{print $2}')
-          echo "charts_branch=$charts_branch" >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ github.repository_owner }}/charts
-          ref: "${{ steps.find_charts_branch.outputs.charts_branch }}"
-          path: charts
-
-      # Prevents the Rancher CI to continuously fail while the turtles RC is not
-      # yet added to charts' index.yaml file due to caching.
-      - name: Verify RC exists
-        env:
-          CHARTS_BRANCH: "${{ steps.find_charts_branch.outputs.charts_branch }}"
-        run: |
-          cd charts
-          new_turtles_short=$(echo "$NEW_TURTLES" | sed 's|^v||')  # e.g. 0.5.2-rc.3
-          # Empty output if the version is not found, otherwise the version will be outputed.
-          found=$(yq ".entries.rancher-turtles[].version | select(. == \"*$new_turtles_short\")" index.yaml)
-          if [ -z "$found" ]; then
-            echo "rancher-turtles RC version $NEW_TURTLES not found in charts (branch=$CHARTS_BRANCH). Aborting."
-            exit 1
-          fi
+          persist-credentials: true # to push the PR branch
 
       - name: Configure the committer
+        env:
+          APP_USER: ${{ github.actor }}
         run: |
-          cd rancher
           user_id=$(gh api "/users/$APP_USER" --jq .id)
           git config --global user.name "$APP_USER"
           git config --global user.email "${user_id}+${APP_USER}@users.noreply.github.com"
-        env:
-          GH_TOKEN: "${{ env.GH_TOKEN }}"
-          APP_USER: "${{ github.actor }}"
 
-      - name: Run release script
+      - name: Bump turtlesVersion
+        working-directory: rancher
         run: |
-          cd rancher
-          BRANCH="bump-turtles-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
-          git checkout -b "$BRANCH" "$RANCHER_REF"
-          ../turtles/.github/scripts/release-against-rancher.sh . "$NEW_TURTLES" ${{ github.event.inputs.bump_major }}
+          branch="bump-turtles-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "BRANCH=$branch" >> "$GITHUB_ENV"
+          git checkout -b "$branch" "$RANCHER_REF"
+          ../turtles/.github/scripts/release-against-rancher.sh . "$NEW_TURTLES" "$NEW_CHART"
 
-      - name: Push and create pull request
-        env:
-          GH_TOKEN: ${{ env.GH_TOKEN }}
+      - name: Open the pull request
+        working-directory: rancher
         run: |
-          cd rancher
-          git push origin $BRANCH
-
+          git push origin "$BRANCH"
           body=$(../turtles/.github/scripts/release-message.sh "$PREV_TURTLES" "$NEW_TURTLES")
-
           gh pr create \
+            --repo "$OWNER/rancher" \
+            --base "$RANCHER_REF" \
+            --head "$OWNER:$BRANCH" \
             --title "[$RANCHER_REF] Bump rancher-turtles to $NEW_TURTLES" \
-            --body "$body" \
-            --repo ${{ github.repository_owner }}/rancher \
-            --head "${{ github.repository_owner }}:$BRANCH" \
-            --base "$RANCHER_REF"
+            --body "$body"

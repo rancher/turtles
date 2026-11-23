@@ -4,7 +4,7 @@ This document describes the new release process for Turtles.
 
 ## Release Cadence
 
-- New Rancher Turtles versions are released every month, as they follow Rancher's monthly release cadence. Since Turtles is bundled with Rancher, it needs to be tested and released before Rancher's tentative monthly release date. To facilitate this we typical release multiple release candidate (RC) versions of Turtles before Rancher's code freeze date, in order to give QA enough time to test its integration with Rancher and address potential issues early. Once QA has signed off an RC version of Turtles, we then release (un-RC) the signed off version and that is the version that will be released with Rancher in its upcoming new release.
+New Rancher Turtles versions are released with each Rancher release. Since Turtles is bundled with Rancher, it needs to be tested and released before Rancher's tentative monthly release date. To facilitate this we typically release multiple release candidate (RC) versions of Turtles before Rancher's code freeze date, in order to give QA enough time to test its integration with Rancher and address potential issues early. Once QA has signed off an RC version of Turtles, we then release (un-RC) the signed off version and that is the version that will be released with Rancher in its upcoming new release.
 
 ## Release Process
 
@@ -12,7 +12,7 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 
 - [Create a new tag for the release](#create-a-new-tag-for-the-release)
 - [Write release description for non-developers](#write-release-description-for-non-developers)
-- [Update `rancher/charts` repository](#update-ranchercharts-repository)
+- [Check the chart staged in the Rancher catalog](#check-the-chart-staged-in-the-rancher-catalog)
 - [Update `rancher/rancher` repository](#update-rancherrancher-repository)
 - [Release providers chart](#release-providers-chart)
 - [Rancher Turtles Community Documentation](#rancher-turtles-community-documentation) (required only when cutting minor/major versions)
@@ -22,9 +22,9 @@ We maintain 3 release branches for Turtles, one for each of the minor versions o
 
 The providers chart should also be released whenever there is a new version of Turtles. In order to properly release the providers chart later in the release process:
 
-* Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release before creating a new tag for the release. The version should match the Turtles version.
+- Ensure that the providers chart has the correct [version/appVersion](https://github.com/rancher/turtles/blob/4a30465fb7c5503a2963bab1b041939d6e08a323/charts/rancher-turtles-providers/Chart.yaml#L6-L7) set for the upcoming release before creating a new tag for the release. The version should match the Turtles version.
 
-* If you are cutting a release candidate for a new patch, ensure that all dependencies are bumped to the latest available patch version. This includes:
+- If you are cutting a release candidate for a new patch, ensure that all dependencies are bumped to the latest available patch version. This includes:
   - go version
   - go.mod direct dependencies
   - CAPI providers (including Core)
@@ -32,10 +32,15 @@ The providers chart should also be released whenever there is a new version of T
 
   In case CAPI providers are updated, ensure test coverage by running the e2e long and/or vSphere suites against the related release branch.
 
-
 ### Create a new tag for the release
 
-Creating a new tag on `rancher/turtles` triggers a GitHub Actions [workflow](https://github.com/rancher/turtles/actions/workflows/release-v2.yaml) that builds the container images for the given tag and pushes them to their respective registries.
+Creating a new tag on `rancher/turtles` triggers the [release workflow](https://github.com/rancher/turtles/actions/workflows/release.yaml), which runs these jobs in order:
+
+1. `release` and `merge`: build the container images for the tag, push them to the corresponding registries, and sign the Prime image.
+1. `chart-release`: builds the `rancher-turtles` chart, creates the GitHub release for the tag with the chart artifact (`rancher-turtles-<version>.tgz`) attached, and publishes it (not marked as latest).
+1. `stage-chart`: stages the chart attached to the release in the Rancher catalog, see [Check the chart staged in the Rancher catalog](#check-the-chart-staged-in-the-rancher-catalog).
+
+The release workflow and `stage-charts.yaml` run from the tagged commit, so they must be present in the release branch the tag is created from.
 
 1. Clone the repository locally:
 
@@ -84,34 +89,40 @@ git clone git@github.com:rancher/turtles.git
 
 ### Write release description for non-developers
 
-Turtles release notes are automatically generated based on the commits that are published with the new version. However, these release notes may also include changes from older versions of Turtles, making it difficult for users to understand what has changed between the new version and the previous minor version. If that is the case, the generated release notes need to be deleted and new release notes need to be regenerated by selecting the previous minor version. For example, if the new release is `v0.25.0` then select `v0.24.0` as the previous tag rather than `Auto`, in the GitHub UI when editing the new release. While editing the release notes, the new release should also be marked as latest, if it is not an `rc` release.
+Turtles release notes are automatically generated based on the commits that are published with the new version. The release is already published by the release workflow, so the notes are edited on the published release. However, these release notes may also include changes from older versions of Turtles, making it difficult for users to understand what has changed between the new version and the previous minor version. If that is the case, the generated release notes need to be deleted and new release notes need to be regenerated by selecting the previous minor version. For example, if the new release is `v0.25.0` then select `v0.24.0` as the previous tag rather than `Auto`, in the GitHub UI when editing the new release. While editing the release notes, the new release should also be marked as latest, if it is not an `rc` release.
 
 Once the full list of commits is automatically generated, it must be truncated and adapted for non-developers. Note that this will be embedded in the Turtles documentation and it has to be kept brief and only relevant changes must be reflected.
 
 Refer to the [release notes guide](./release-notes.md) to find a reference of how release notes are structured, including a reusable template.
 
-### Update `rancher/charts` repository
+### Check the chart staged in the Rancher catalog
 
-**Warning**: Before updating `rancher/charts` repository, ensure that the previous [step](#create-a-new-tag-for-the-release) has created a new GitHub release for the tag. This release must include the Helm chart archive file in its assets (typically named `rancher-turtles-${RELEASE_TAG}.tgz`).
+This step is automated: the `stage-chart` job of the release workflow runs [stage-charts.yaml](https://github.com/rancher/turtles/actions/workflows/stage-charts.yaml) once `chart-release` has published the release. It takes the chart attached to the release and hands it to the `ship-staged` action of `rancher/charts`, which:
 
-This part of the release is automated via a GitHub Actions workflow that needs to be invoked manually from GitHub. To invoke it, navigate to the [workflow](https://github.com/rancher/turtles/actions/workflows/release-against-charts.yml), select the option `Run workflow` from the UI and pass the following parameters:
+- works out the final chart version (`1XY.Z.W+upA.B.C`) from the chart's `appVersion`, `catalog.cattle.io/rancher-version` and the versions already released,
+- stamps, checks and pushes the chart to the staging registry (`stgregistry.suse.com/rancher/catalog`),
+- starts the `chart-staged` workflow of `rancher/charts`, which opens a PR against its `staging` branch and merges it once its audit passes.
 
-- Use workflow from: Branch: main
-  This parameter should be set to the release branch that was used for creating the tag, for example `release/v0.25`. Using `main` branch may also work but using the release branch is safer, in case there are differences in the release workflows between these branches.
-- Submit PR against the following rancher/charts branch (e.g. dev-v2.12): dev-v2.12
-  This must be set to the `rancher/charts` branch that needs to be updated, with the new Turtles release. `dev-v2.12` is used for Rancher 2.12.x, `dev-v2.13` is used for Rancher 2.13.x and so on.
-- Previous Turtles version (e.g. v0.23.0-rc.0)
-  This is self explanatory, the value must be set to the previous Turtles version, for example `v0.25.1-rc.0`.
-- New Turtles version (e.g. v0.23.0)
-  This is self explanatory, the value must be set to the new Turtles version, for example `v0.25.1-rc.1`
-- Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.20.0 -> v0.21.0-rc.0). Default: false
-  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`.
+To check the result:
 
-Once this workflow has finished, a new PR should have been created in the `rancher/charts` repository that updates the selected branch with the new Turtles version. Here's an example [PR](https://github.com/rancher/charts/pull/6294) from a previous run against the `dev-v2.13` branch. You need to review and merge this PR before proceeding to the next step.
+1. In the run of the release workflow, the `stage-chart` job must have succeeded. Its summary shows the pushed chart and version.
+1. In `rancher/charts`, the [chart-staged workflow](https://github.com/rancher/charts/actions/workflows/chart-staged.yaml) run for that version must have succeeded and its PR (`[staging] ship rancher-turtles <version>`) must be merged. If the audit fails, the PR stays open for review.
+
+If the `stage-chart` job failed before pushing the chart (for example because a catalog check failed), fix the cause and stage the tag again by hand. Manual runs must start from `main`:
+
+```bash
+gh workflow run stage-charts.yaml --repo rancher/turtles --ref main -f tag=${RELEASE_TAG}
+```
+
+**Warning**: Do not run the staging again for a tag whose chart was already pushed. A pushed version is never overwritten or deleted: for a release candidate the run fails with "already published", and for a final release it pushes a second chart version for the same Turtles release. If the chart was pushed but `chart-staged` was not started, start it by hand with the version from the job summary:
+
+```bash
+gh workflow run chart-staged.yaml --repo rancher/charts --ref staging -f chart=rancher-turtles -f version=<chart version>
+```
 
 ### Update `rancher/rancher` repository
 
-**Warning**: Before updating `rancher/rancher` repository, ensure that the PR generated from the previous [step](#update-ranchercharts-repository) has been merged.
+**Note**: The workflow reads the chart version (e.g. `111.0.0+up0.28.0`) from `rancher/charts` instead of working it out: from the Rancher catalog (`entries/rancher-turtles` on the `staging` branch) first, then from `charts/rancher-turtles` on the `dev-v2.X` branch, for the release lines that are not staged in the catalog (Rancher 2.15 and older). It fails if the new Turtles version is in neither, so run it once the chart from the previous [step](#check-the-chart-staged-in-the-rancher-catalog) has been staged.
 
 This part of the release is also automated via a GitHub Actions workflow, that needs to be invoked manually from GitHub. To invoke it, navigate to the [workflow](https://github.com/rancher/turtles/actions/workflows/release-against-rancher.yml), select the option `Run workflow` from the UI and pass the following parameters:
 
@@ -121,7 +132,7 @@ This part of the release is also automated via a GitHub Actions workflow, that n
   This must be set to the `rancher/rancher` branch that needs to be updated with the new Turtles release. Before running the workflow, determine which branch(es) to target by checking whether the corresponding Rancher release branch exists (e.g. `release/v2.15` for Turtles `v0.27.x`). The workflow must be run once per target branch. Based on that, follow one of these cases:
   - The corresponding release branch does not exist yet (e.g. cutting `v0.27.x` RCs and `release/v2.15` hasn't been created yet): run the workflow once, targeting `main` branch only.
   - The corresponding release branch exists (e.g. `release/v2.15` has been created): run the workflow twice - once targeting `release/v2.15` and once targeting `main`, to keep both branches up to date.
-  - A patch release for a previous minor (e.g. cutting `v0.26.x` while `v0.27.x` series is already active): run the workflow once, targeting 
+  - A patch release for a previous minor (e.g. cutting `v0.26.x` while `v0.27.x` series is already active): run the workflow once, targeting
   `release/v2.14` only. At this point `main` is already tracking `v0.27.x` and should not be updated with `v0.26.x` changes.
 
   Note that the Rancher release branch can be created at any point - before, during, or after the RC cycle - so always check whether it exists before running the workflow. If multiple Turtles releases are being cut at the same time (e.g. `v0.27.0-rc.4` and `v0.26.3`), apply the rules above independently for each one.
@@ -129,8 +140,6 @@ This part of the release is also automated via a GitHub Actions workflow, that n
   This is self explanatory, the value must be set to the previous Turtles version, for example `v0.26.1-rc.0`.
 - New Turtles version (e.g. v0.26.0)
   This is self explanatory, the value must be set to the new Turtles version, for example `v0.26.1-rc.1`.
-- Set 'true' to bump chart major version when the Turtles minor version increases (e.g., v0.26.0 -> v0.27.0-rc.0). Default: false
-  This is self explanatory, the values should be set to `true` when bumping the Turtles minor version, otherwise it should be set to `false`.
 
 Once this workflow has finished, a new PR should have been created in the `rancher/rancher` repository that updates the selected branch with the new Turtles version. You need to review and merge this PR. When this PR gets merged, you will have completed the process of releasing a new version of Turtles and including it in an upcoming version of Rancher.
 
@@ -144,7 +153,7 @@ Once this workflow has finished, a new PR should have been created in the `ranch
 
 This value will be used by the release automation for fetching the `rancher-turtles-providers` chart files.
 
-2. Invoke the 'Manual Trigger for Auto Bump' [CI workflow](https://github.com/rancher/prime-charts/actions/workflows/auto-bump-manual-trigger.yaml) from the Prime charts repository and pass the following parameters:
+1. Invoke the 'Manual Trigger for Auto Bump' [CI workflow](https://github.com/rancher/prime-charts/actions/workflows/auto-bump-manual-trigger.yaml) from the Prime charts repository and pass the following parameters:
 
 - Use workflow from: Branch: dev-v2.14 (replace `v2.14` with the desired Rancher minor version)
 - Chart name: rancher-turtles-providers

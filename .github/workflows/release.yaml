@@ -189,3 +189,14 @@ jobs:
       org: rancher
       image: turtles
     secrets: inherit
+
+  stage-chart:
+    name: Stage the chart in the Rancher catalog
+    uses: ./.github/workflows/stage-charts.yaml
+    needs:
+    - chart-release
+    permissions:
+      contents: read
+      id-token: write # to log in to Vault with the OIDC token
+    with:
+      tag: ${{ github.ref_name }}
