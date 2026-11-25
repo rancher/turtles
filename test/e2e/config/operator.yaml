@@ -62,6 +62,10 @@ variables:
   V2PROV_RKE2_KUBERNETES_VERSION: "v1.37.2+rke2r1"
   RKE2_CNI: "none"
 
+  # K3s specifics
+  # K3S_KUBERNETES_VERSION is the k3s version installed on the kindest/node:${KUBERNETES_VERSION} machines of the Docker K3s test.
+  K3S_KUBERNETES_VERSION: "v1.37.1+k3s1"
+
   # Azure Configuration
   #
   # Azure Kubeadm tests need specific k8s version.
