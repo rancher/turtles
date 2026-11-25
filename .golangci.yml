@@ -135,7 +135,6 @@ linters:
           - revive
         text: "package-comments: should have a package comment"
     paths:
-      - examples/examples.go
       - .*_test\.go$
       - third_party$
       - builtin$
