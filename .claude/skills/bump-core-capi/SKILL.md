@@ -12,7 +12,6 @@ allowed-tools:
   - Bash(go list -m *)
   - Bash(go get sigs.k8s.io/cluster-api*)
   - Bash(go -C test get sigs.k8s.io/cluster-api*)
-  - Bash(go -C examples get sigs.k8s.io/cluster-api*)
   - Bash(go build ./...)
   - Bash(go test ./internal/controllers/clusterctl/...)
   - Bash(curl -fsSIL -o /dev/null https://github.com/rancher/cluster-api/releases/download/*)
@@ -56,7 +55,7 @@ Use only the tools listed in this skill's `allowed-tools`, and only for the purp
 | `Edit` | Update version references (never edit generated files by hand) |
 | `git status`, `git diff` | Inspect working tree state and review changes (read-only git only) |
 | `go list -m` | Resolve current version / check the upstream module exists |
-| `go get sigs.k8s.io/cluster-api...` (root, `-C test`, `-C examples`) | Bump CAPI modules only |
+| `go get sigs.k8s.io/cluster-api...` (root, `-C test`) | Bump CAPI modules only |
 | `go build ./...`, `go test ./internal/controllers/clusterctl/...` | Compile and targeted test checks |
 | `curl -fsSIL -o /dev/null https://github.com/rancher/cluster-api/releases/download/...` | HEAD check that fork release assets exist (no download) |
 | `gh api repos/kubernetes-sigs/cluster-api/releases/tags/...` | Read the `clusterctl` checksum from release metadata |
@@ -112,8 +111,6 @@ Verify:
 go get sigs.k8s.io/cluster-api@<NEW> sigs.k8s.io/cluster-api/api@<NEW>
 go -C test get sigs.k8s.io/cluster-api@<NEW> sigs.k8s.io/cluster-api/api@<NEW> sigs.k8s.io/cluster-api/test@<NEW>
 ```
-
-`Grep` for `sigs.k8s.io/cluster-api` in `examples/go.mod`; if required there, run `go -C examples get sigs.k8s.io/cluster-api@<NEW>` (plus `/api` if listed).
 
 Then regenerate (deepcopy, CRDs, RBAC, `go mod tidy` in all modules):
 

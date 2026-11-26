@@ -1,93 +1,53 @@
-# Examples CLI Tool
+# ClusterClass examples
 
-This CLI tool is designed to extract and apply cluster class examples.
+This directory contains example `ClusterClass` definitions and the supporting applications they rely on. They are plain Kubernetes manifests and can be applied with `kubectl`.
 
-## Usage
-
-From the `examples/` directory, configure the go workspace and download the dependencies:
-
-```bash
-go work use ./
-go mod download
-```
-
-Run the program with:
-
-```bash
-go run main.go <search_key>
-```
-
-`<search_key>`: The key to search for in the available cluster classes. In case of an incorrect `ClusterClass` key used, the closest matching key will be suggested.
-
-## Flags
-
-*   `-l`, `--list`: List available cluster class names from examples.
-*   `-r`, `--regex`: ClusterClass search regex.
-
-## Examples
-
-### List available cluster classes
-
-```bash
-go run main.go -l
-```
-
-Example output:
+## Layout
 
 ```text
-Available classes: [azure-aks-example azure-example azure-rke2-example]
+examples/
+├── clusterclasses/<provider>/<flavor>/   # one ClusterClass per directory, e.g. azure/rke2, docker/kubeadm
+├── applications/<type>/<name>/           # CNI, CCM, CSI and load balancer add-ons
+└── clusters/                             # example Cluster definitions using the ClusterClasses
 ```
 
-### Search for a specific cluster class
+## Applying a ClusterClass
+
+From a local checkout of the repository:
 
 ```bash
-go run main.go azure-aks
+kubectl apply -f examples/clusterclasses/azure/rke2/
 ```
 
-### Search for cluster classes using a regex
+Without cloning the repository, point `kubectl` at the file for a specific release tag:
 
 ```bash
-go run main.go -r "azure"
+kubectl apply -f https://raw.githubusercontent.com/rancher/turtles/<tag>/examples/clusterclasses/azure/rke2/clusterclass-rke2-example.yaml
 ```
 
-Note: Regex search can return multiple examples.
+To apply into a namespace other than the current one, add `-n <namespace>`.
 
-To apply the extracted examples, you can use the following command:
+## Applying the supporting applications
+
+Some ClusterClasses need additional applications, such as a CNI or a cloud provider. Apply only the ones that match the ClusterClass you are using, in the namespace where the `Cluster` will be created.
+
+For example, to apply the Docker RKE2 ClusterClass with its load balancer configuration from a local checkout:
 
 ```bash
-go run main.go <search_key> | kubectl apply -f -
+kubectl apply -n <namespace> \
+  -f examples/clusterclasses/docker/rke2/ \
+  -f examples/applications/lb/docker/
 ```
 
-## Running from tag or latest
-
-You can run the examples CLI tool using `go run`. This method allows you to execute the tool directly from the module path without needing to clone the repository locally first.
-
-Using a specific tag (`@<tag>`) is recommended for reproducible results, while `@latest` will always fetch the most recent version.
-
-To run the latest version:
+Or from a release tag:
 
 ```bash
-go run github.com/rancher/turtles/examples@latest
+BASE=https://raw.githubusercontent.com/rancher/turtles/<tag>/examples
+kubectl apply -n <namespace> \
+  -f ${BASE}/clusterclasses/docker/rke2/clusterclass-docker-rke2.yaml \
+  -f ${BASE}/applications/lb/docker/configmap.yaml
 ```
 
-To run from a specific tag:
+## Creating a cluster
 
-```bash
-go run github.com/rancher/turtles/examples@<tag>
-```
-
-Make sure to replace `<tag>` with the desired tag name.
-
-### Example: applying a specific cluster class from a specific tag
-
-Apply examples from the `azure-aks` cluster class in the default namespace:
-
-```bash
-go run github.com/rancher/turtles/examples@<tag> azure-aks | kubectl apply -f -
-```
-
-Apply all `azure` example cluster classes in a custom namespace:
-
-```bash
-go run github.com/rancher/turtles/examples@<tag> -r azure | kubectl apply -f -n <namespace> -
-```
+`clusters/` contains example `Cluster` definitions that use these ClusterClasses, e.g. `clusters/docker/rke2/cluster.yaml`. Review and adjust them (namespace, labels, versions) before applying.
