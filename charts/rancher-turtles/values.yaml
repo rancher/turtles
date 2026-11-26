@@ -22,12 +22,6 @@ imagePullSecrets: []
 additionalEnvs: []
   # - name: SOMEVAR
   #   value: somevalue
-  # - name: PASSWORD
-  #   valueFrom:
-  #     secretKeyRef:
-  #       name: mysecret
-  #       key: password
-  #       optional: false
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
