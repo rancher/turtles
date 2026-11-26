@@ -170,15 +170,14 @@
                     }
                   }
                 },
-                "additionalArgs": {
+                "manager": {
                   "type": "object"
                 },
-                "verbosity": {
-                  "type": "integer"
-                },
-                "featureGates": {
+                "variables": {
                   "type": "object",
-                  "additionalProperties": { "type": "boolean" }
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 },
                 "enableAutomaticUpdates": {
                   "type": "boolean"

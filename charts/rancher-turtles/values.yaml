@@ -90,13 +90,16 @@ cluster-api-operator:
             managed-by.turtles.cattle.io: "true"
             provider.cluster.x-k8s.io/name: cluster-api
             provider.cluster.x-k8s.io/type: core
-      # manager configuration: properties that can be enabled on the controller manager (CAPIProvider.spec.manager).
-      # additionalArgs: Additional arguments for the controller manager.
-      additionalArgs: {}
-      # feature flags that will be passed in as container args to the provider's controller manager
-      featureGates: {}
-      # verbosity: Logging verbosity level for the controller manager.
-      # verbosity: 1
+      # variables: Optional environment variables exposed to the controller manager (CAPIProvider.spec.variables).
+      # Use these to enable core CAPI feature gates, e.g. EXP_MACHINE_TAINT_PROPAGATION: "true".
+      variables: {}
+      # manager: Optional controller manager settings (CAPIProvider.spec.manager), e.g.:
+      #   syncPeriod: "5m"
+      #   verbosity: 5
+      #   additionalArgs:
+      #     --additional-sync-machine-labels: 'example\.com/.*'
+      # additionalArgs keys must include the leading "--" and must not repeat an argument already set on the container.
+      manager: {}
 
 # Control additional labels and annotations on namespaces create by Rancher.
 rancherNamespaces:
