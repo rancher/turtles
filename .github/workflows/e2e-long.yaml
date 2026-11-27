@@ -16,13 +16,13 @@ jobs:
   publish_e2e_image:
     uses: ./.github/workflows/e2e-image-publish.yaml
     secrets: inherit
-  e2e_rancher_managed_fleet:
+  e2e_gitops_provisioning:
     needs: publish_e2e_image
     uses: ./.github/workflows/run-e2e-suite.yaml
     with:
-      test_suite: test/e2e/suites/rancher-managed-fleet
-      test_name: Rancher Managed Fleet
-      artifact_name: rancher_managed_fleet
+      test_suite: test/e2e/suites/gitops-provisioning
+      test_name: GitOps Provisioning with Fleet
+      artifact_name: gitops_provisioning
       MANAGEMENT_CLUSTER_ENVIRONMENT: eks
     secrets: inherit
   e2e_v2prov:
@@ -40,6 +40,6 @@ jobs:
     secrets: inherit
   e2e_cleanup:
     if: always()
-    needs: [e2e_v2prov, e2e_rancher_managed_fleet]
+    needs: [e2e_v2prov, e2e_gitops_provisioning]
     uses: ./.github/workflows/e2e-cleanup.yaml
     secrets: inherit
