@@ -171,6 +171,43 @@ var _ = Describe("[RancherManagedFleet] [Docker] [Kubeadm]  Create and delete CA
 	})
 })
 
+var _ = Describe("[RancherManagedFleet] [Docker] [K3s] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.ShortTestLabel, e2e.K3sTestLabel, e2e.RancherManagedFleetLabel), func() {
+	var topologyNamespace string
+
+	BeforeEach(func() {
+		komega.SetClient(bootstrapClusterProxy.GetClient())
+		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-docker-k3s"
+	})
+
+	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		return specs.CreateUsingGitOpsSpecInput{
+			E2EConfig:                          e2e.LoadE2EConfig(),
+			BootstrapClusterProxy:              bootstrapClusterProxy,
+			ClusterTemplate:                    e2e.CAPIDockerK3sTopology,
+			ClusterName:                        "cluster-docker-k3s",
+			ControlPlaneMachineCount:           new(1),
+			WorkerMachineCount:                 new(1),
+			LabelNamespace:                     true,
+			ValidateFleetClusterTemplateValues: true,
+			ValidateFleetAgentWasInstalled:     true,
+			RancherServerURL:                   hostName,
+			CAPIClusterCreateWaitName:          "wait-rancher",
+			DeleteClusterWaitName:              "wait-controllers",
+			TopologyNamespace:                  topologyNamespace,
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "docker-cluster-classes-k3s",
+					Paths:           []string{"examples/clusterclasses/docker/k3s"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+			},
+		}
+	})
+})
+
 var _ = Describe("[RancherManagedFleet] [AWS] [EC2 RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.FullTestLabel, e2e.Rke2TestLabel), func() {
 	var topologyNamespace, capiClusterNamespace, credentialName string
 

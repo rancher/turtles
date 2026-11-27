@@ -46,6 +46,8 @@ const (
 	controlplaneRKE2Path    = "providers.controlplaneRKE2."
 	bootstrapKubeadmPath    = "providers.bootstrapKubeadm."
 	controlplaneKubeadmPath = "providers.controlplaneKubeadm."
+	bootstrapK3sPath        = "providers.bootstrapK3s."
+	controlplaneK3sPath     = "providers.controlplaneK3s."
 	dockerPath              = "providers.infrastructureDocker."
 	awsPath                 = "providers.infrastructureAWS."
 	azurePath               = "providers.infrastructureAzure."
@@ -54,6 +56,8 @@ const (
 
 	providerKubeadmBootstrap    = "kubeadm-bootstrap"
 	providerKubeadmControlPlane = "kubeadm-control-plane"
+	providerK3sBootstrap        = "k3s-bootstrap"
+	providerK3sControlPlane     = "k3s-control-plane"
 	providerDocker              = "docker"
 	providerAWS                 = "aws"
 	providerAzure               = "azure"
@@ -68,6 +72,12 @@ const (
 
 	deployKubeadmControlPlaneControllerManager = "capi-kubeadm-control-plane-controller-manager"
 	namespaceKubeadmControlPlaneSystem         = "capi-kubeadm-control-plane-system"
+
+	deployK3sBootstrapControllerManager = "capi-k3s-bootstrap-controller-manager"
+	namespaceK3sBootstrapSystem         = "capi-k3s-bootstrap-system"
+
+	deployK3sControlPlaneControllerManager = "capi-k3s-control-plane-controller-manager"
+	namespaceK3sControlPlaneSystem         = "capi-k3s-control-plane-system"
 
 	deployCAPDControllerManager = "capd-controller-manager"
 	namespaceCAPDSystem         = "capd-system"
@@ -182,6 +192,10 @@ func DeployRancherTurtlesProviders(ctx context.Context, input DeployRancherTurtl
 				values[bootstrapKubeadmPath+providerVerbosityKey] = debugVerbosityValue
 				values[controlplaneKubeadmPath+providerEnabledKey] = "true"
 				values[controlplaneKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+			case "k3s":
+				// The k3s managers do not support the --v flag, so their verbosity is not set.
+				values[bootstrapK3sPath+providerEnabledKey] = "true"
+				values[controlplaneK3sPath+providerEnabledKey] = "true"
 			case "docker", "capd":
 				values[dockerPath+providerEnabledKey] = "true"
 				values[dockerPath+providerVerbosityKey] = debugVerbosityValue
@@ -288,6 +302,9 @@ func enableAllProviders(values map[string]string) {
 	values[bootstrapKubeadmPath+providerVerbosityKey] = debugVerbosityValue
 	values[controlplaneKubeadmPath+providerEnabledKey] = "true"
 	values[controlplaneKubeadmPath+providerVerbosityKey] = debugVerbosityValue
+	// The k3s managers do not support the --v flag, so their verbosity is not set.
+	values[bootstrapK3sPath+providerEnabledKey] = "true"
+	values[controlplaneK3sPath+providerEnabledKey] = "true"
 	values[dockerPath+providerEnabledKey] = "true"
 	values[dockerPath+providerVerbosityKey] = debugVerbosityValue
 	values[awsPath+providerEnabledKey] = "true"
@@ -307,6 +324,12 @@ func getEnabledCAPIProviders(values map[string]string) []string {
 	}
 	if values[controlplaneKubeadmPath+providerEnabledKey] == "true" {
 		out = append(out, providerKubeadmControlPlane)
+	}
+	if values[bootstrapK3sPath+providerEnabledKey] == "true" {
+		out = append(out, providerK3sBootstrap)
+	}
+	if values[controlplaneK3sPath+providerEnabledKey] == "true" {
+		out = append(out, providerK3sControlPlane)
 	}
 	if values[dockerPath+providerEnabledKey] == "true" {
 		out = append(out, providerDocker)
@@ -337,6 +360,10 @@ func getDeploymentsForEnabledProviders(enabled []string) []types.NamespacedName 
 			deployments = append(deployments, types.NamespacedName{Name: deployKubeadmBootstrapControllerManager, Namespace: namespaceKubeadmBootstrapSystem})
 		case providerKubeadmControlPlane:
 			deployments = append(deployments, types.NamespacedName{Name: deployKubeadmControlPlaneControllerManager, Namespace: namespaceKubeadmControlPlaneSystem})
+		case providerK3sBootstrap:
+			deployments = append(deployments, types.NamespacedName{Name: deployK3sBootstrapControllerManager, Namespace: namespaceK3sBootstrapSystem})
+		case providerK3sControlPlane:
+			deployments = append(deployments, types.NamespacedName{Name: deployK3sControlPlaneControllerManager, Namespace: namespaceK3sControlPlaneSystem})
 		case providerDocker:
 			deployments = append(deployments, types.NamespacedName{Name: deployCAPDControllerManager, Namespace: namespaceCAPDSystem})
 		case providerAWS:

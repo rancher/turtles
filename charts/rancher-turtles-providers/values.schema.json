@@ -158,6 +158,9 @@
         "bootstrapRKE2": {
           "$ref": "#/$defs/providerSchema"
         },
+        "bootstrapK3s": {
+          "$ref": "#/$defs/providerSchema"
+        },
         "controlplaneKubeadm": {
           "$ref": "#/$defs/providerSchema"
         },
@@ -187,6 +190,9 @@
               }
             }
           ]
+        },
+        "controlplaneK3s": {
+          "$ref": "#/$defs/providerSchema"
         },
         "infrastructureAWS": {
           "$ref": "#/$defs/providerSchema"

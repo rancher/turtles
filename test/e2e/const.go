@@ -69,6 +69,9 @@ var (
 	//go:embed data/cluster-templates/docker-rke2-topology.yaml
 	CAPIDockerRKE2Topology []byte
 
+	//go:embed data/cluster-templates/docker-k3s-topology.yaml
+	CAPIDockerK3sTopology []byte
+
 	//go:embed data/cluster-templates/aws-eks-topology.yaml
 	CAPIAwsEKSTopology []byte
 
@@ -204,6 +207,7 @@ const (
 	VsphereTestLabel         = "vsphere"
 	KubeadmTestLabel         = "kubeadm"
 	Rke2TestLabel            = "rke2"
+	K3sTestLabel             = "k3s"
 	RancherManagedFleetLabel = "ranchermanagedfleet"
 
 	GCPImageIDVar          = "GCP_IMAGE_ID"

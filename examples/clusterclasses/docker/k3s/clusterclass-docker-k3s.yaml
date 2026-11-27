@@ -1,0 +1,106 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: ClusterClass
+metadata:
+  name: docker-k3s-example
+spec:
+  infrastructure:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: DevClusterTemplate
+      name: docker-k3s-clustertemplate
+  controlPlane:
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+      kind: KThreesControlPlaneTemplate
+      name: docker-k3s-control-plane
+    machineInfrastructure:
+      templateRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: DevMachineTemplate
+        name: docker-k3s-control-plane
+  workers:
+    machineDeployments:
+      - class: default-worker
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+            kind: KThreesConfigTemplate
+            name: docker-k3s-worker-bootstraptemplate
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: DevMachineTemplate
+            name: docker-k3s-worker-machinetemplate
+  variables:
+    - name: dockerImage
+      required: true
+      schema:
+        openAPIV3Schema:
+          description: The container image used for running the machines, e.g. kindest/node:v1.37.1. k3s is installed on top of it at bootstrap.
+          type: string
+  patches:
+    - name: dockerImage
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: DevMachineTemplate
+            matchResources:
+              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/backend/docker/customImage
+              valueFrom:
+                variable: dockerImage
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DevClusterTemplate
+metadata:
+  name: docker-k3s-clustertemplate
+spec:
+  template:
+    spec: {}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: KThreesControlPlaneTemplate
+metadata:
+  name: docker-k3s-control-plane
+spec:
+  template:
+    spec:
+      kthreesConfigSpec:
+        serverConfig:
+          tlsSan:
+            - 0.0.0.0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DevMachineTemplate
+metadata:
+  name: docker-k3s-control-plane
+spec:
+  template:
+    spec:
+      backend:
+        docker:
+          bootstrapTimeout: 15m
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DevMachineTemplate
+metadata:
+  name: docker-k3s-worker-machinetemplate
+spec:
+  template:
+    spec:
+      backend:
+        docker:
+          bootstrapTimeout: 15m
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KThreesConfigTemplate
+metadata:
+  name: docker-k3s-worker-bootstraptemplate
+spec:
+  template:
+    spec: {}

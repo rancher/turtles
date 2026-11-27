@@ -31,6 +31,10 @@ annotations:
       image: rancher/kubeadm-control-plane-controller:v1.14.4_turtles.3
     - name: cluster-api-provider-rke2-controlplane
       image: rancher/cluster-api-provider-rke2-controlplane:v0.27.3
+    - name: k3s-bootstrap-controller
+      image: rancher/k3s-bootstrap-controller:v0.5.1
+    - name: k3s-control-plane-controller
+      image: rancher/k3s-control-plane-controller:v0.5.1
     - name: cluster-api-aws-controller
       image: rancher/cluster-api-aws-controller:v2.13.0
     - name: cluster-api-azure-controller

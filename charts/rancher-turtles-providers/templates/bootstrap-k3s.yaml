@@ -1,0 +1,70 @@
+{{- if index .Values "providers" "bootstrapK3s" "enabled" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ index .Values "providers" "bootstrapK3s" "namespace" }}
+  {{- if .Values.rancherNamespaces.enabled }}
+  {{- with .Values.rancherNamespaces.labels }}
+  labels:
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+  annotations:
+    cattle.io/managed-namespace: "true"
+  {{- with .Values.rancherNamespaces.annotations }}
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+---
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: k3s-bootstrap
+  namespace: {{ index .Values "providers" "bootstrapK3s" "namespace" }}
+spec:
+  name: k3s
+  type: bootstrap
+{{- if index .Values  "providers" "bootstrapK3s" "version" }}
+  version: {{ index .Values "providers" "bootstrapK3s" "version" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapK3s" "enableAutomaticUpdate" }}
+  enableAutomaticUpdate: {{ index .Values "providers" "bootstrapK3s" "enableAutomaticUpdate" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapK3s" "features" }}
+  features:
+    machinePool: {{ index .Values "providers" "bootstrapK3s" "features" "machinePool" }}
+    clusterResourceSet: {{ index .Values "providers" "bootstrapK3s" "features" "clusterResourceSet" }}
+    clusterTopology: {{ index .Values "providers" "bootstrapK3s" "features" "clusterTopology" }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapK3s" "variables" }}
+  variables:
+  {{- range $key, $val := .Values.providers.bootstrapK3s.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
+{{- if index .Values  "providers" "bootstrapK3s" "manager" }}
+  manager:
+{{ toYaml (index .Values "providers" "bootstrapK3s" "manager") | nindent 4 }}
+{{- end }}
+{{- if or (index .Values "providers" "bootstrapK3s" "configSecret") }}
+  configSecret:
+    name: {{ index .Values "providers" "bootstrapK3s" "configSecret" "name" }}
+    namespace: {{ index .Values "providers" "bootstrapK3s" "configSecret" "namespace" }}
+{{- end }}
+{{- if .Values.imagePullSecrets }}
+  deployment:
+    imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+{{- end }}
+{{- end }}
+{{- if index .Values "providers" "bootstrapK3s" "fetchConfig" }}
+  fetchConfig:
+    {{- if index .Values "providers" "bootstrapK3s" "fetchConfig" "url" }}
+    url: {{ index .Values "providers" "bootstrapK3s" "fetchConfig" "url" }}
+    {{- end }}
+    {{- if index .Values "providers" "bootstrapK3s" "fetchConfig" "oci" }}
+    oci: {{ index .Values "providers" "bootstrapK3s" "fetchConfig" "oci" }}
+    {{- end }}
+{{- end }}
+{{- end }}

@@ -69,6 +69,36 @@ providers:
   # manager:
   #   syncPeriod: "5m"
   #   verbosity: 5
+  # bootstrapK3s: K3s Bootstrap Provider.
+  bootstrapK3s:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capi-k3s-bootstrap-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # version: Optional provider version
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   ENV_VAR: "value"
+  # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
+  #   verbosity: 5
   # controlplaneKubeadm: Kubeadm Control Plane Provider.
   controlplaneKubeadm:
     # enabled: Enables the installation of this provider.
@@ -146,6 +176,36 @@ providers:
   #   # manager: Optional manager settings.
   #   manager:
   #     verbosity: 5
+  # controlplaneK3s: K3s Control Plane Provider.
+  controlplaneK3s:
+    # enabled: Enables the installation of this provider.
+    enabled: false
+    # namespace: The namespace where the provider manifests will be applied.
+    namespace: capi-k3s-control-plane-system
+    # enableAutomaticUpdate: Allows the provider to be updated automatically whenever this chart is updated.
+    enableAutomaticUpdate: true
+  # version: Optional provider version
+  # version: ""
+  # features: Optional feature flags for this provider.
+  # features:
+  #   machinePool: false
+  #   clusterResourceSet: false
+  #   clusterTopology: false
+  # variables: Optional environment variables exposed to the controller manager.
+  # variables:
+  #   ENV_VAR: "value"
+  # configSecret: ConfigSecret is the object with name and namespace of the Secret providing the configuration variables for the current provider instance, like e.g. credentials.
+  # configSecret:
+  #   name: ""
+  #   namespace: ""
+  # fetchConfig: Override default artifact source via URL or OCI (specify one).
+  # fetchConfig:
+  #   url: "https://github.com/<org>/<repo>/releases"
+  #   # oci: "ghcr.io/<org>/<artifact>:<tag>"
+  # manager: Optional controller manager settings.
+  # manager:
+  #   syncPeriod: "5m"
+  #   verbosity: 5
   # infrastructureAWS: AWS Infrastructure Provider (CAPA).
   infrastructureAWS:
     # enabled: Enables the installation of this provider.
@@ -322,12 +382,18 @@ images:
   bootstrapRKE2:
     repository: rancher/cluster-api-provider-rke2-bootstrap
     tag: v0.27.3
+  bootstrapK3s:
+    repository: rancher/k3s-bootstrap-controller
+    tag: v0.5.1
   controlplaneKubeadm:
     repository: rancher/kubeadm-control-plane-controller
     tag: v1.14.4_turtles.3
   controlplaneRKE2:
     repository: rancher/cluster-api-provider-rke2-controlplane
     tag: v0.27.3
+  controlplaneK3s:
+    repository: rancher/k3s-control-plane-controller
+    tag: v0.5.1
   infrastructureAWS:
     repository: rancher/cluster-api-aws-controller
     tag: v2.13.0

@@ -36,6 +36,16 @@ sources:
       username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
       typeFilter:
         latest: true
+  capk3srelease:
+    kind: githubrelease
+    name: Get the latest CAPI k3s bootstrap/control plane provider release
+    spec:
+      owner: "rancher"
+      repository: "cluster-api-k3s"
+      token: '{{ requiredEnv "UPDATECLI_GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "UPDATECLI_GITHUB_ACTOR" }}'
+      typeFilter:
+        latest: true
   capzrelease:
     kind: githubrelease
     name: Get the latest CAPI Azure infrastructure provider release
@@ -133,6 +143,15 @@ targets:
       replacepattern: 'https://github.com/rancher/cluster-api-provider-rke2/releases/{{ source "caprke2release" }}/'
     scmid: turtles
     sourceid: caprke2release # Will be ignored as `replacepattern` is specified
+  bumpcapk3s:
+    name: bump capk3s provider
+    kind: file
+    spec:
+      file: ./internal/controllers/clusterctl/config-prime.yaml
+      matchpattern: "https://github.com/rancher/cluster-api-k3s/releases/(.*)/"
+      replacepattern: 'https://github.com/rancher/cluster-api-k3s/releases/{{ source "capk3srelease" }}/'
+    scmid: turtles
+    sourceid: capk3srelease # Will be ignored as `replacepattern` is specified
   bumpcapz:
     name: bump capz provider
     kind: file
