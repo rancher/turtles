@@ -76,6 +76,16 @@ spec:
         imageUrl: {{ $core.imageUrl }}
 {{- end }}
 {{- end }}
+{{- if $core.manager }}
+  manager:
+{{- toYaml $core.manager | nindent 4 }}
+{{- end }}
+{{- if $core.variables }}
+  variables:
+  {{- range $key, $val := $core.variables }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap

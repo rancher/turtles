@@ -170,6 +170,15 @@
                     }
                   }
                 },
+                "manager": {
+                  "type": "object"
+                },
+                "variables": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
                 "enableAutomaticUpdates": {
                   "type": "boolean"
                 },
