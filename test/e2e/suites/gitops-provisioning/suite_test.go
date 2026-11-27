@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rancher_managed_fleet
+package gitopsprov
 
 import (
 	"context"
@@ -53,13 +53,13 @@ func TestE2E(t *testing.T) {
 
 	ctrl.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	RunSpecs(t, "rancher-turtles-e2e-rancher-managed-fleet")
+	RunSpecs(t, "rancher-turtles-e2e-gitops-provisioning")
 }
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		e2eConfig := e2e.LoadE2EConfig()
-		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-rancher-managed-fleet"
+		e2eConfig.ManagementClusterName = e2eConfig.ManagementClusterName + "-gitops-provisioning"
 		setupClusterResult = testenv.SetupTestCluster(ctx, testenv.SetupTestClusterInput{
 			E2EConfig: e2eConfig,
 			Scheme:    e2e.InitScheme(),
