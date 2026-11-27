@@ -21,6 +21,7 @@ package gitopsprov
 
 import (
 	"os"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/rancher/turtles/test/e2e"
@@ -71,16 +72,21 @@ var _ = Describe("[RancherManagedFleet] [AWS] [RKE2] Create and delete CAPI clus
 	})
 
 	specs.CreateUsingGitOpsSpec(ctx, func() specs.CreateUsingGitOpsSpecInput {
+		e2eConfig := e2e.LoadE2EConfig()
+		validateInPlaceUpdate := e2eConfig.GetVariableOrEmpty(e2e.RKE2InPlaceUpdatesVar) == "true"
+
 		return specs.CreateUsingGitOpsSpecInput{
-			E2EConfig:                      e2e.LoadE2EConfig(),
-			BootstrapClusterProxy:          bootstrapClusterProxy,
-			ClusterTemplate:                e2e.CAPIAwsEC2RKE2Topology,
-			ClusterName:                    "cluster-aws-rke2",
-			Namespace:                      capiClusterNamespace,
-			ControlPlaneMachineCount:       ptr.To(3), // minimum 3 replicas for CSI controller
+			E2EConfig:             e2eConfig,
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ClusterTemplate:       e2e.CAPIAwsEC2RKE2Topology,
+			ClusterName:           "cluster-aws-rke2",
+			Namespace:             capiClusterNamespace,
+			// minimum 3 replicas for CSI controller and CAPRKE2 in-place updates
+			ControlPlaneMachineCount:       ptr.To(3),
 			WorkerMachineCount:             ptr.To(1),
 			LabelNamespace:                 true,
 			ValidateFleetAgentWasInstalled: true,
+			ValidateInPlaceUpdate:          validateInPlaceUpdate,
 			RancherServerURL:               hostName,
 			CAPIClusterCreateWaitName:      "wait-capa-create-cluster",
 			DeleteClusterWaitName:          "wait-eks-delete",
@@ -89,6 +95,7 @@ var _ = Describe("[RancherManagedFleet] [AWS] [RKE2] Create and delete CAPI clus
 			AdditionalTemplateVariables: map[string]string{
 				"AWS_CLUSTER_IDENTITY_NAME": credentialName,
 				"NAMESPACE":                 capiClusterNamespace,
+				"IN_PLACE_UPDATES":          strconv.FormatBool(validateInPlaceUpdate),
 			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
