@@ -45,6 +45,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
+        {{- with .Values.additionalEnvs }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         {{- if (contains "sha256:" .Values.image.tag) }}
         image: '{{ template "system_default_registry" . }}{{ .Values.image.repository }}@{{ .Values.image.tag }}'
         {{- else }}

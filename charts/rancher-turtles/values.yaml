@@ -18,6 +18,10 @@ namespace: cattle-turtles-system
 managerArguments: []
 # imagePullSecrets: Secrets for private registries.
 imagePullSecrets: []
+# additionalEnvs: Extra environment variables for the controller.
+additionalEnvs: []
+  # - name: SOMEVAR
+  #   value: somevalue
 # features: Optional and experimental features.
 features:
   # agent-tls-mode: Beta feature for agent TLS.
